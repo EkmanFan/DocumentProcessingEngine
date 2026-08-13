@@ -1,6 +1,6 @@
-using UglyToad.PdfPig.Content;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Pdf;
+using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
@@ -23,6 +23,9 @@ public sealed class PdfPigDocumentExtractorTests
         var page = Assert.Single(result.Pages);
         Assert.Equal(1, page.PhysicalPageNumber);
         Assert.Contains("Hello PDF", page.SourceText, StringComparison.Ordinal);
+        Assert.True(page.WordCount > 0);
+        Assert.Equal(0, page.RasterImageCount);
+        Assert.Equal(0, page.LargestRasterImageAreaRatio);
     }
 
     [Fact]

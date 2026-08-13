@@ -50,9 +50,30 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 physicalPageNumber++;
+
+                var words = page.GetWords().ToArray();
+                var images = page.GetImages().ToArray();
+
+                var pageArea =
+                    Convert.ToDouble(page.Width) *
+                    Convert.ToDouble(page.Height);
+
+                var largestRasterImageAreaRatio = pageArea <= 0
+                    ? 0
+                    : images
+                        .Select(image =>
+                            Convert.ToDouble(image.BoundingBox.Width) *
+                            Convert.ToDouble(image.BoundingBox.Height) /
+                            pageArea)
+                        .DefaultIfEmpty(0)
+                        .Max();
+
                 pages.Add(new DocumentExtractionPage(
                     physicalPageNumber,
-                    ContentOrderTextExtractor.GetText(page)));
+                    ContentOrderTextExtractor.GetText(page),
+                    words.Length,
+                    images.Length,
+                    largestRasterImageAreaRatio));
             }
 
             return new DocumentExtractionResult(DocumentFormatId.Pdf, pages);
@@ -60,6 +81,7 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
         finally
         {
             bufferedInput?.Dispose();
+
             if (originalPosition.HasValue)
             {
                 source.Content.Position = originalPosition.Value;
