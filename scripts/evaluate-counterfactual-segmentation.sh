@@ -196,7 +196,7 @@ ehrman_bytes = int(sys.argv[4])
 de_sha = sys.argv[5]
 de_bytes = int(sys.argv[6])
 
-SCHEMA = "document-processing-counterfactual-segmentation-analysis-v1"
+SCHEMA = "document-processing-counterfactual-segmentation-analysis-v2"
 NORMALIZATION = "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1"
 PRODUCTION_SEGMENTATION = "typography-aware-cross-page-fallback-v2"
 
@@ -205,6 +205,8 @@ EXPECTED_POLICIES = [
     "B-TypographyOnly",
     "C-TypographyPlusStrongExplicit",
     "D-TypographyPlusHints",
+    "E-StrictTypographyOnly",
+    "F-StrictTypographyPlusHints",
 ]
 
 def require(condition, message):
@@ -230,23 +232,132 @@ def validate_common(report, sha, byte_length):
 ehrman_policies = validate_common(ehrman, ehrman_sha, ehrman_bytes)
 de_policies = validate_common(de, de_sha, de_bytes)
 
-# Freeze the production baseline. Counterfactual outcomes remain observations.
-production = ehrman_policies["A-ProductionV2"]["metrics"]
-require(production["segmentCount"] == 380, "Ehrman production segment count changed")
-require(production["headingSegmentCount"] == 380, "Ehrman production heading count changed")
-require(production["fallbackSegmentCount"] == 0, "Ehrman production fallback count changed")
-require(production["crossPageSegmentCount"] == 204, "Ehrman production cross-page count changed")
+# Freeze the complete 8.4d A-D baseline. E/F remain observations.
+expected_ehrman = {
+    "A-ProductionV2": {
+        "segmentCount": 380,
+        "headingSegmentCount": 380,
+        "fallbackSegmentCount": 0,
+        "crossPageSegmentCount": 204,
+        "smallSegmentCount": 85,
+        "largeSegmentCount": 142,
+    },
+    "B-TypographyOnly": {
+        "segmentCount": 278,
+        "headingSegmentCount": 278,
+        "fallbackSegmentCount": 0,
+        "crossPageSegmentCount": 166,
+        "smallSegmentCount": 60,
+        "largeSegmentCount": 125,
+    },
+    "C-TypographyPlusStrongExplicit": {
+        "segmentCount": 315,
+        "headingSegmentCount": 315,
+        "fallbackSegmentCount": 0,
+        "crossPageSegmentCount": 184,
+        "smallSegmentCount": 61,
+        "largeSegmentCount": 136,
+    },
+    "D-TypographyPlusHints": {
+        "segmentCount": 285,
+        "headingSegmentCount": 285,
+        "fallbackSegmentCount": 0,
+        "crossPageSegmentCount": 168,
+        "smallSegmentCount": 63,
+        "largeSegmentCount": 126,
+    },
+}
 
-production_de = de_policies["A-ProductionV2"]["metrics"]
-require(production_de["segmentCount"] == 50, "De Decretis production segment count changed")
-require(production_de["headingSegmentCount"] == 0, "De Decretis production false heading returned")
-require(production_de["fallbackSegmentCount"] == 50, "De Decretis production fallback count changed")
-require(production_de["crossPageSegmentCount"] == 0, "De Decretis production cross-page count changed")
+for name, expected in expected_ehrman.items():
+    actual = ehrman_policies[name]["metrics"]
+    for key, value in expected.items():
+        require(
+            actual[key] == value,
+            f"Ehrman 8.4d baseline changed for {name}.{key}: "
+            f"expected {value}, got {actual[key]}",
+        )
+
+expected_probe_counts = {
+    "A-ProductionV2": {
+        "TAKE A STAND": (6, 6),
+        "WHAT DO YOU THINK?": (6, 7),
+        "SUGGESTIONS FOR FURTHER READING": (18, 21),
+    },
+    "B-TypographyOnly": {
+        "TAKE A STAND": (5, 6),
+        "WHAT DO YOU THINK?": (5, 7),
+        "SUGGESTIONS FOR FURTHER READING": (18, 21),
+    },
+    "C-TypographyPlusStrongExplicit": {
+        "TAKE A STAND": (5, 6),
+        "WHAT DO YOU THINK?": (5, 7),
+        "SUGGESTIONS FOR FURTHER READING": (18, 21),
+    },
+    "D-TypographyPlusHints": {
+        "TAKE A STAND": (6, 6),
+        "WHAT DO YOU THINK?": (6, 7),
+        "SUGGESTIONS FOR FURTHER READING": (18, 21),
+    },
+}
+
+for policy_name, probes in expected_probe_counts.items():
+    actual_probes = {
+        item["probe"]: (item["headingMatches"], item["segmentTextMatches"])
+        for item in ehrman_policies[policy_name]["probes"]
+    }
+    require(
+        actual_probes == probes,
+        f"Ehrman 8.4d probe baseline changed for {policy_name}",
+    )
+
+# De Decretis must remain insensitive to every experimental policy.
+for name in EXPECTED_POLICIES:
+    metrics = de_policies[name]["metrics"]
+    require(metrics["segmentCount"] == 50, f"De Decretis {name} segment count changed")
+    require(metrics["headingSegmentCount"] == 0, f"De Decretis {name} false heading returned")
+    require(metrics["fallbackSegmentCount"] == 50, f"De Decretis {name} fallback count changed")
+    require(metrics["crossPageSegmentCount"] == 0, f"De Decretis {name} cross-page count changed")
 
 # All counterfactuals must preserve source-block coverage. The CLI enforces this
-# before serializing; here we only ensure the expected normalized corpora remain.
+# before serializing; here we ensure the normalized corpus baselines remain.
 require(ehrman["includedBlockCount"] == 2648, "Ehrman included-block baseline changed")
 require(de["includedBlockCount"] == 269, "De Decretis included-block baseline changed")
+
+# The strict gate must only remove automatic boundaries; it cannot invent any.
+require(ehrman["strictMinimumHeadingLetterCount"] == 4, "strict minimum letter count changed")
+require(abs(ehrman["strictMinimumAlphaNumericRatio"] - 0.55) < 1e-12,
+        "strict alphanumeric ratio changed")
+
+comparisons = {
+    (item["fromPolicy"], item["toPolicy"]): item
+    for item in ehrman["strictGateComparisons"]
+}
+
+expected_comparison_keys = {
+    ("B-TypographyOnly", "E-StrictTypographyOnly"),
+    ("D-TypographyPlusHints", "F-StrictTypographyPlusHints"),
+}
+
+require(set(comparisons) == expected_comparison_keys,
+        "strict-gate comparison set changed")
+
+for key, comparison in comparisons.items():
+    require(
+        comparison["addedBoundaryCount"] == 0,
+        f"strict gate unexpectedly added boundaries for {key}",
+    )
+
+require(
+    ehrman_policies["E-StrictTypographyOnly"]["metrics"]["headingSegmentCount"]
+    <= ehrman_policies["B-TypographyOnly"]["metrics"]["headingSegmentCount"],
+    "strict typography has more headings than typography-only",
+)
+
+require(
+    ehrman_policies["F-StrictTypographyPlusHints"]["metrics"]["headingSegmentCount"]
+    <= ehrman_policies["D-TypographyPlusHints"]["metrics"]["headingSegmentCount"],
+    "strict typography+hints has more headings than typography+hints",
+)
 
 def print_report(label, report, policies):
     print()
@@ -279,9 +390,27 @@ def print_report(label, report, policies):
             )
 
 print()
-print("RESULT: COUNTERFACTUAL SEGMENTATION EVALUATION COMPLETE")
-print("Only production A is a regression gate; B/C/D remain observational.")
+print("RESULT: STRICT HEADING QUALITY-GATE EVALUATION COMPLETE")
+print("A-D are frozen 8.4d regressions; E/F remain observational.")
 print_report("Ehrman", ehrman, ehrman_policies)
+
+print()
+print("Ehrman strict-gate deltas")
+for item in ehrman["strictGateComparisons"]:
+    print(
+        f"  {item['fromPolicy']} -> {item['toPolicy']}: "
+        f"removed={item['removedBoundaryCount']} "
+        f"added={item['addedBoundaryCount']}"
+    )
+    for sample in item["removedBoundarySamples"][:12]:
+        print(
+            f"    p{sample['physicalPageNumber']} "
+            f"font_ratio={sample['fontRatio']} "
+            f"letters={sample['letterCount']} "
+            f"alnum_ratio={sample['alphaNumericRatio']:.3f} "
+            f"{sample['text']}"
+        )
+
 print_report("De Decretis", de, de_policies)
 PY
 

@@ -23,11 +23,15 @@ namespace DocumentProcessing.EvaluationCli;
 internal static class CounterfactualSegmentationAnalysisCli
 {
     private const string ReportSchemaVersion =
-        "document-processing-counterfactual-segmentation-analysis-v1";
+        "document-processing-counterfactual-segmentation-analysis-v2";
 
     private const int MaximumHeadingCharacters = 180;
     private const int MaximumHeadingWords = 24;
     private const int MinimumHeadingLetterCount = 3;
+
+    // Historical Stage 2 quality gate, evaluated counterfactually only.
+    private const int StrictMinimumHeadingLetterCount = 4;
+    private const double StrictMinimumAlphaNumericRatio = 0.55;
 
     private const double MinimumHeadingFontRatio = 1.18;
     private const double SectionFontRatio = 1.30;
@@ -183,6 +187,16 @@ internal static class CounterfactualSegmentationAnalysisCli
                     context.Key)
                 .ToHashSet();
 
+        var strictTypographyHeadingKeys =
+            contexts
+                .Where(context =>
+                    IsStrictTypographyHeading(
+                        context.Block,
+                        bodyFontSize))
+                .Select(context =>
+                    context.Key)
+                .ToHashSet();
+
         var strongExplicitHeadingKeys =
             contexts
                 .Where(context =>
@@ -204,6 +218,18 @@ internal static class CounterfactualSegmentationAnalysisCli
             contexts
                 .Where(context =>
                     IsTypographyHeading(
+                        context.Block,
+                        bodyFontSize) ||
+                    hintMatcher.IsMatch(
+                        context.Block))
+                .Select(context =>
+                    context.Key)
+                .ToHashSet();
+
+        var strictTypographyPlusHintsHeadingKeys =
+            contexts
+                .Where(context =>
+                    IsStrictTypographyHeading(
                         context.Block,
                         bodyFontSize) ||
                     hintMatcher.IsMatch(
@@ -265,7 +291,51 @@ internal static class CounterfactualSegmentationAnalysisCli
                     key =>
                         typographyHeadingKeys.Contains(key)
                             ? "Typography"
+                            : "EditorialHint"),
+                BuildCounterfactualPolicyResult(
+                    "E-StrictTypographyOnly",
+                    "Font hierarchy with the historical minimum textual-signal gate: >=4 letters and >=0.55 alphanumeric ratio.",
+                    normalized,
+                    contexts,
+                    strictTypographyHeadingKeys,
+                    productionHeadingKeys,
+                    bodyFontSize,
+                    options.Probes,
+                    options.HistoricalSegmentCount,
+                    key => "StrictTypography"),
+                BuildCounterfactualPolicyResult(
+                    "F-StrictTypographyPlusHints",
+                    "Strict typography plus configured editorial hints; hints remain independent of the automatic text-quality gate.",
+                    normalized,
+                    contexts,
+                    strictTypographyPlusHintsHeadingKeys,
+                    productionHeadingKeys,
+                    bodyFontSize,
+                    options.Probes,
+                    options.HistoricalSegmentCount,
+                    key =>
+                        strictTypographyHeadingKeys.Contains(key)
+                            ? "StrictTypography"
                             : "EditorialHint")
+            };
+
+        var strictGateComparisons =
+            new[]
+            {
+                BuildHeadingSetComparison(
+                    "B-TypographyOnly",
+                    "E-StrictTypographyOnly",
+                    typographyHeadingKeys,
+                    strictTypographyHeadingKeys,
+                    contexts,
+                    bodyFontSize),
+                BuildHeadingSetComparison(
+                    "D-TypographyPlusHints",
+                    "F-StrictTypographyPlusHints",
+                    typographyPlusHintsHeadingKeys,
+                    strictTypographyPlusHintsHeadingKeys,
+                    contexts,
+                    bodyFontSize)
             };
 
         return new CounterfactualReport(
@@ -286,7 +356,10 @@ internal static class CounterfactualSegmentationAnalysisCli
             options.HeadingHints,
             options.Probes,
             contexts.Count,
-            policies);
+            StrictMinimumHeadingLetterCount,
+            StrictMinimumAlphaNumericRatio,
+            policies,
+            strictGateComparisons);
     }
 
     private static PolicyResult
@@ -443,6 +516,61 @@ internal static class CounterfactualSegmentationAnalysisCli
             addedSamples,
             smallestSegments,
             largestSegments);
+    }
+
+    private static HeadingSetComparison
+        BuildHeadingSetComparison(
+            string fromPolicy,
+            string toPolicy,
+            IReadOnlySet<BlockKey> fromHeadingKeys,
+            IReadOnlySet<BlockKey> toHeadingKeys,
+            IReadOnlyList<BlockContext> contexts,
+            double? bodyFontSize)
+    {
+        var contextByKey =
+            contexts.ToDictionary(
+                context =>
+                    context.Key);
+
+        var removed =
+            fromHeadingKeys
+                .Except(toHeadingKeys)
+                .OrderBy(key =>
+                    key.PhysicalPageNumber)
+                .ThenBy(key =>
+                    key.SourceSequence)
+                .ToArray();
+
+        var added =
+            toHeadingKeys
+                .Except(fromHeadingKeys)
+                .OrderBy(key =>
+                    key.PhysicalPageNumber)
+                .ThenBy(key =>
+                    key.SourceSequence)
+                .ToArray();
+
+        return new HeadingSetComparison(
+            fromPolicy,
+            toPolicy,
+            removed.Length,
+            added.Length,
+            removed
+                .Select(key =>
+                    BuildBoundarySample(
+                        contextByKey[key],
+                        contexts,
+                        bodyFontSize))
+                .Take(SampleLimit)
+                .ToArray(),
+            added
+                .Select(key =>
+                    BuildBoundarySample(
+                        contextByKey[key],
+                        contexts,
+                        bodyFontSize))
+                .Take(SampleLimit)
+                .ToArray());
     }
 
     private static IReadOnlyList<EvaluationSegment>
@@ -730,6 +858,10 @@ internal static class CounterfactualSegmentationAnalysisCli
                     context.GlobalIndex + 1]
                 : null;
 
+        var textQuality =
+            GetTextQualityMetrics(
+                context.Block.Text);
+
         return new BoundarySample(
             context.PhysicalPageNumber,
             context.Block.SourceBlock
@@ -744,6 +876,10 @@ internal static class CounterfactualSegmentationAnalysisCli
                 bodyFontSize),
             context.Block.SourceBlock
                 .WordCount,
+            textQuality.LetterCount,
+            textQuality.NonWhitespaceCount,
+            textQuality.AlphaNumericCount,
+            textQuality.AlphaNumericRatio,
             previous?.PhysicalPageNumber,
             previous is null
                 ? null
@@ -803,6 +939,21 @@ internal static class CounterfactualSegmentationAnalysisCli
         }
 
         return true;
+    }
+
+    private static bool IsStrictTypographyHeading(
+        NormalizedDocumentTextBlock block,
+        double? bodyFontSize)
+    {
+        if (!IsTypographyHeading(
+                block,
+                bodyFontSize))
+        {
+            return false;
+        }
+
+        return HasStrictHeadingTextQuality(
+            block.Text);
     }
 
     private static bool IsStrongExplicitHeading(
@@ -870,6 +1021,51 @@ internal static class CounterfactualSegmentationAnalysisCli
         return nonWhitespaceCount > 0 &&
                alphaNumericCount * 2 >=
                nonWhitespaceCount;
+    }
+
+    private static bool HasStrictHeadingTextQuality(
+        string text)
+    {
+        var quality =
+            GetTextQualityMetrics(
+                text);
+
+        return quality.NonWhitespaceCount > 0 &&
+               quality.LetterCount >=
+               StrictMinimumHeadingLetterCount &&
+               quality.AlphaNumericRatio >=
+               StrictMinimumAlphaNumericRatio;
+    }
+
+    private static TextQualityMetrics
+        GetTextQualityMetrics(
+            string text)
+    {
+        var letterCount =
+            text.Count(
+                char.IsLetter);
+
+        var nonWhitespaceCount =
+            text.Count(character =>
+                !char.IsWhiteSpace(
+                    character));
+
+        var alphaNumericCount =
+            text.Count(character =>
+                char.IsLetterOrDigit(
+                    character));
+
+        var alphaNumericRatio =
+            nonWhitespaceCount == 0
+                ? 0
+                : alphaNumericCount /
+                  (double)nonWhitespaceCount;
+
+        return new TextQualityMetrics(
+            letterCount,
+            nonWhitespaceCount,
+            alphaNumericCount,
+            alphaNumericRatio);
     }
 
     private static bool LooksLikeSentence(
@@ -1129,6 +1325,11 @@ internal static class CounterfactualSegmentationAnalysisCli
             $"Configured hints: " +
             $"{(report.HeadingHints.Count == 0 ? "(none)" : string.Join(" | ", report.HeadingHints))}");
 
+        Console.WriteLine(
+            $"Strict automatic text gate: " +
+            $"letters>={report.StrictMinimumHeadingLetterCount}, " +
+            $"alphanumeric_ratio>={report.StrictMinimumAlphaNumericRatio:F2}");
+
         foreach (var policy in report.Policies)
         {
             Console.WriteLine();
@@ -1201,6 +1402,29 @@ internal static class CounterfactualSegmentationAnalysisCli
                         $"ratio={FormatNullable(sample.FontRatio)} " +
                         $"{sample.Text}");
                 }
+            }
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "Strict quality-gate comparisons:");
+
+        foreach (var comparison in report.StrictGateComparisons)
+        {
+            Console.WriteLine(
+                $"  {comparison.FromPolicy} -> {comparison.ToPolicy}: " +
+                $"removed={comparison.RemovedBoundaryCount} " +
+                $"added={comparison.AddedBoundaryCount}");
+
+            foreach (var sample in comparison.RemovedBoundarySamples
+                         .Take(12))
+            {
+                Console.WriteLine(
+                    $"    p{sample.PhysicalPageNumber} " +
+                    $"ratio={FormatNullable(sample.FontRatio)} " +
+                    $"letters={sample.LetterCount} " +
+                    $"alnum={sample.AlphaNumericRatio:F3} " +
+                    $"{sample.Text}");
             }
         }
 
@@ -1652,7 +1876,10 @@ internal static class CounterfactualSegmentationAnalysisCli
         IReadOnlyList<string> HeadingHints,
         IReadOnlyList<string> Probes,
         int IncludedBlockCount,
-        IReadOnlyList<PolicyResult> Policies);
+        int StrictMinimumHeadingLetterCount,
+        double StrictMinimumAlphaNumericRatio,
+        IReadOnlyList<PolicyResult> Policies,
+        IReadOnlyList<HeadingSetComparison> StrictGateComparisons);
 
     private sealed record PdfPageSelection(
         int FirstPage,
@@ -1673,6 +1900,14 @@ internal static class CounterfactualSegmentationAnalysisCli
         IReadOnlyList<BoundarySample> AddedBoundarySamples,
         IReadOnlyList<SegmentSample> SmallestSegments,
         IReadOnlyList<SegmentSample> LargestSegments);
+
+    private sealed record HeadingSetComparison(
+        string FromPolicy,
+        string ToPolicy,
+        int RemovedBoundaryCount,
+        int AddedBoundaryCount,
+        IReadOnlyList<BoundarySample> RemovedBoundarySamples,
+        IReadOnlyList<BoundarySample> AddedBoundarySamples);
 
     private sealed record PolicyMetrics(
         int SegmentCount,
@@ -1703,6 +1938,10 @@ internal static class CounterfactualSegmentationAnalysisCli
         double? MedianPointSize,
         double? FontRatio,
         int WordCount,
+        int LetterCount,
+        int NonWhitespaceCount,
+        int AlphaNumericCount,
+        double AlphaNumericRatio,
         int? PreviousBlockPage,
         string? PreviousBlockText,
         int? NextBlockPage,
@@ -1770,6 +2009,12 @@ internal static class CounterfactualSegmentationAnalysisCli
                 context);
         }
     }
+
+    private sealed record TextQualityMetrics(
+        int LetterCount,
+        int NonWhitespaceCount,
+        int AlphaNumericCount,
+        double AlphaNumericRatio);
 
     private sealed record FontSample(
         double PointSize,

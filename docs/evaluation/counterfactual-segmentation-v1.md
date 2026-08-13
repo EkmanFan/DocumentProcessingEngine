@@ -168,3 +168,143 @@ bash scripts/evaluate-counterfactual-segmentation.sh
 ```
 
 JSON reports are written under `scripts/tmp/`.
+
+
+## Increment 8.4e — strict heading quality gate
+
+8.4d established that the automatic typography-only policy is much closer to
+the historical structure than the current production fallback heuristics:
+
+```text
+A ProductionV2                  380
+B TypographyOnly                278
+C TypographyPlusStrongExplicit  315
+D TypographyPlusHints           285
+
+Historical comparison           277
+```
+
+8.4e does not change production. It adds two counterfactual policies:
+
+### E — StrictTypographyOnly
+
+E starts from B and restores the historical Stage 2 minimum textual-signal gate
+for automatic font-based headings:
+
+```text
+minimum letters       4
+alphanumeric ratio   >= 0.55
+```
+
+The existing structural constraints remain unchanged:
+
+```text
+maximum heading characters   180
+maximum heading words         24
+minimum font ratio           1.18
+sentence-like rejection      below 1.30
+```
+
+The strict gate is intentionally evaluated independently before being proposed
+for production.
+
+### F — StrictTypographyPlusHints
+
+F starts from E and adds the same caller-provided editorial hints used by D.
+
+Hints remain independent of the automatic text-quality gate. This preserves the
+historical separation:
+
+```text
+automatic evidence
+    -> font hierarchy + text quality
+
+explicit editorial evidence
+    -> external heading hints
+```
+
+A legitimate explicit hint is therefore not rejected merely because extraction
+noise causes the automatic text-quality gate to fail.
+
+### Why these exact thresholds
+
+The historical ApologiaStudio Stage 2 correction required:
+
+```text
+letterCount >= 4
+letterOrDigitCount / nonWhitespaceCount >= 0.55
+```
+
+before an automatic font candidate could create a structural boundary. The
+change was introduced specifically to reject decorative glyph fragments and
+extraction noise. Editorial hints bypassed that automatic gate. This experiment
+replays that generic rule against the current neutral Document Processing Engine
+model.
+
+### Strict-gate comparison diagnostics
+
+The report schema is now:
+
+```text
+document-processing-counterfactual-segmentation-analysis-v2
+```
+
+In addition to A-F policy metrics, it records exact heading-set comparisons:
+
+```text
+B-TypographyOnly
+    -> E-StrictTypographyOnly
+
+D-TypographyPlusHints
+    -> F-StrictTypographyPlusHints
+```
+
+For each comparison the evaluator reports:
+
+- removed boundary count;
+- added boundary count;
+- bounded samples of removed/added boundaries;
+- page and source sequence;
+- font ratio;
+- letter count;
+- non-whitespace count;
+- alphanumeric count and ratio;
+- previous/next block context.
+
+The strict gate is expected to be monotonic: it may remove automatic
+typography-based boundaries, but it must not invent new ones.
+
+### 8.4d regression freeze
+
+While E/F remain observational, 8.4e freezes the previously measured A-D Ehrman
+results and probe counts. This ensures that extending the evaluator cannot
+silently change the experiment being compared.
+
+De Decretis must remain:
+
+```text
+50 segments
+0 headings
+50 page-bounded fallbacks
+0 cross-page segments
+```
+
+under all A-F policies.
+
+### Decision rule after 8.4e
+
+Do not choose a production policy from segment count alone.
+
+The next decision should favor F only if the evidence shows that the strict
+quality gate:
+
+1. removes clearly noisy short typography boundaries;
+2. preserves useful editorial probes through external hints;
+3. does not regress De Decretis;
+4. improves the segment-size distribution without creating pathological
+   mega-segments;
+5. remains generic and source-agnostic.
+
+If those conditions hold, the following increment can simplify production by
+removing generic numbered/weak-uppercase fallback heuristics and exposing
+optional heading hints through a neutral contract.
