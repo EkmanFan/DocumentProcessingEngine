@@ -27,6 +27,15 @@ internal static class Program
 
             if (string.Equals(
                     args[0],
+                    "analyze-heading-boundaries-pdf",
+                    StringComparison.Ordinal))
+            {
+                return await HeadingBoundaryAnalysisCli.RunAsync(
+                    args[1..]);
+            }
+
+            if (string.Equals(
+                    args[0],
                     "analyze-typography-pdf",
                     StringComparison.Ordinal))
             {
@@ -60,7 +69,8 @@ internal static class Program
                 throw new ArgumentException(
                     $"Unknown command '{args[0]}'. " +
                     "Expected 'analyze-pdf', 'analyze-normalized-pdf', " +
-                    "'analyze-segmented-pdf', or 'analyze-typography-pdf'.");
+                    "'analyze-segmented-pdf', 'analyze-typography-pdf', " +
+                    "or 'analyze-heading-boundaries-pdf'.");
             }
 
             var options = AnalysisOptions.Parse(args[1..]);
@@ -582,6 +592,7 @@ internal static class Program
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-normalized-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 [--probe "text"]
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-segmented-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 [--probe "text"]
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-typography-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-heading-boundaries-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561
 
             These commands are evaluation-only. They do not modify the PDF,
             persist document content, create retrieval chunks, or run OCR.
