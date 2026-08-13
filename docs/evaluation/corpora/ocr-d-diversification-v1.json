@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "document-processing-ocr-diversification-manifest-v1",
+  "benchmarkId": "ocr-d-gt-structure-text-diversification-v1",
+  "purpose": "Diversify PaddleOCR validation beyond the Ehrman corpus using real historical scan images paired with PAGE-XML ground truth.",
+  "upstream": {
+    "repository": "https://github.com/OCR-D/gt_structure_text.git",
+    "commit": "379f597a8dada882e6c2e4f509dbf9fdf2ebffa1",
+    "license": "CC-BY-SA-4.0",
+    "dataset": "OCR-D/gt_structure_text"
+  },
+  "selection": {
+    "eligiblePageCount": 162,
+    "algorithm": "deterministic-four-specimen-v1:early-print;eighteenth-century;nineteenth-century;multi-column-or-explicit-fallback",
+    "minimumNormalizedReferenceCharacters": 600,
+    "requiresCompleteExplicitTextRegionReadingOrder": true
+  },
+  "normalization": {
+    "profile": "unicode-nfc-whitespace-v1",
+    "caseSensitive": true,
+    "historicalCharactersPreserved": true,
+    "dehyphenation": false
+  },
+  "specimens": [
+    {
+      "id": "ocrd-01",
+      "category": "early-print",
+      "documentId": "aepinus_bekentnis_1548",
+      "year": 1548,
+      "pageType": "content",
+      "pageXmlPath": "data/aepinus_bekentnis_1548/GT-PAGE/aepinus_bekentnis_1548_0006.xml",
+      "pageXmlSha256": "4c8b6961ef07ee8fc8d0e50bd40650934a0139080622758eba336c9bb63fd294",
+      "imagePath": "data/aepinus_bekentnis_1548/GT-PAGE/aepinus_bekentnis_1548_0006.tif",
+      "imageSha256": "393817d21a5c406d47236540eabc75d5b6d6952b76934dd23d40b2581770d831",
+      "imageWidth": 1737,
+      "imageHeight": 2354,
+      "referenceCharacterCount": 1088,
+      "referenceWordCount": 201,
+      "textRegionCount": 4,
+      "textLineCount": 18,
+      "multiColumnScore": 0.0
+    },
+    {
+      "id": "ocrd-02",
+      "category": "eighteenth-century",
+      "documentId": "ballenstedt_delatio_1777",
+      "year": 1777,
+      "pageType": "content",
+      "pageXmlPath": "data/ballenstedt_delatio_1777/GT-PAGE/ballenstedt_delatio_1777_00003.xml",
+      "pageXmlSha256": "4b7cdfeec4fe4d119b287364a1ed68afd1f54935c0882e13a9c2d287687cb17c",
+      "imagePath": "data/ballenstedt_delatio_1777/GT-PAGE/ballenstedt_delatio_1777_00003.tif",
+      "imageSha256": "c73a6d01b3eeacee61b112980a92d1276d0c027e7420870881a2fd0706df644d",
+      "imageWidth": 2463,
+      "imageHeight": 2578,
+      "referenceCharacterCount": 1746,
+      "referenceWordCount": 238,
+      "textRegionCount": 9,
+      "textLineCount": 31,
+      "multiColumnScore": 0.0
+    },
+    {
+      "id": "ocrd-03",
+      "category": "nineteenth-century",
+      "documentId": "arnimb_goethe03_1835",
+      "year": 1835,
+      "pageType": "content",
+      "pageXmlPath": "data/arnimb_goethe03_1835/GT-PAGE/arnimb_goethe03_1835_0029.xml",
+      "pageXmlSha256": "7204b05a4b4ca99b790f93baf2def833690aa48abb93a123d75c20b77b291713",
+      "imagePath": "data/arnimb_goethe03_1835/GT-PAGE/arnimb_goethe03_1835_0029.tif",
+      "imageSha256": "ad0320478393bf50cfecfeaa957cf84937a6aadae25deac29d028a925f30e264",
+      "imageWidth": 1675,
+      "imageHeight": 2286,
+      "referenceCharacterCount": 1059,
+      "referenceWordCount": 192,
+      "textRegionCount": 5,
+      "textLineCount": 22,
+      "multiColumnScore": 0.0
+    },
+    {
+      "id": "ocrd-04",
+      "category": "multi-column",
+      "documentId": "glauber_opera01_1658",
+      "year": 1658,
+      "pageType": "table-of-contents",
+      "pageXmlPath": "data/glauber_opera01_1658/GT-PAGE/glauber_opera01_1658_0007.xml",
+      "pageXmlSha256": "06a3a3d94282acb4506a9a34206c81662bdd9afc218ed1901174f9ebd0c5d5e9",
+      "imagePath": "data/glauber_opera01_1658/GT-PAGE/glauber_opera01_1658_0007.tif",
+      "imageSha256": "5c654e89875380880b92e331030c7f5949c203cc49aacb1b8169fb36d59708bc",
+      "imageWidth": 2000,
+      "imageHeight": 2497,
+      "referenceCharacterCount": 1820,
+      "referenceWordCount": 268,
+      "textRegionCount": 35,
+      "textLineCount": 88,
+      "multiColumnScore": 1.3865
+    }
+  ]
+}
