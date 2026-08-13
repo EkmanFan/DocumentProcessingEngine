@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "document-processing-ocr-ground-truth-v1",
+  "benchmarkId": "ehrman-8e-compress-ocr-v1",
+  "sourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+  "status": "curated-v1",
+  "referenceMethod": "Manual visual transcription from the exact pinned PDF source. Zones are evaluated against neutral OCR regions selected by normalized region-center geometry.",
+  "normalizationProfile": "unicode-nfc-lower-punctuation-fold-whitespace-collapse-linebreak-dehyphenation-v1",
+  "zones": [
+    {
+      "id": "p20-maps",
+      "pageNumber": 20,
+      "description": "Maps heading and complete map/figure list.",
+      "bounds": {
+        "left": 0.05,
+        "top": 0.39,
+        "right": 0.95,
+        "bottom": 0.68
+      },
+      "text": "MAPS\nFRONTMATTER The Roman Empire: Central and Eastern Provinces xxviii\nFIGURE 3.1 The Journeys of Alexander the Great (334–323 B.C.E.) 44\nFIGURE 3.7 The Spread of Roman Rule 55\nFIGURE 5.2 Christian Churches in Existence by 100 C.E. 84\nFIGURE 6.2 Palestine in New Testament Times 109\nFIGURE 15.1 Jerusalem in the First Century C.E. 291\nFIGURE 17.1 Paul’s Missionary Journeys According to the Book of Acts 321\nFIGURE 18.2 Places Associated with Paul in the New Testament 354\nFIGURE 20.5 The Roman Province of Galatia in Central Asia Minor (Modern-Day Turkey) 389\nFIGURE 26.1 The Distribution of Christianity by 300 C.E. 510\nFIGURE 28.1 The Seven Churches of Asia Minor Addressed in Revelation 2–3 539"
+    },
+    {
+      "id": "p20-timelines",
+      "pageNumber": 20,
+      "description": "Timelines and diagrams heading and complete list.",
+      "bounds": {
+        "left": 0.05,
+        "top": 0.69,
+        "right": 0.95,
+        "bottom": 0.85
+      },
+      "text": "TIMELINES AND DIAGRAMS\nFRONTMATTER Master Timeline xxv\nFIGURE 3.2 The Divine Pyramid as Understood in Greco-Roman Religion 48\nFIGURE 3.9 Timeline of Key Events in Hellenistic and Roman Times 58\nFIGURE 4.4 Timeline of Key Events in the History of Palestine 72\nFIGURE 5.1 Timeline of the Early Christian Movement 83\nFIGURE 7.1 The Four-Source Hypothesis and the Farrer Hypothesis 125"
+    },
+    {
+      "id": "p32-intro",
+      "pageNumber": 32,
+      "description": "Introduction lead paragraph in the left column.",
+      "bounds": {
+        "left": 0.055,
+        "top": 0.485,
+        "right": 0.49,
+        "bottom": 0.615
+      },
+      "text": "The New Testament is the most commonly purchased, widely read, and deeply cherished book in the history of Western civilization. It is also the most widely misunderstood, misinterpreted, and misused. These facts alone should make it worth our time to study it. But there are other reasons as well—religious reasons, historical reasons, and literary reasons."
+    },
+    {
+      "id": "p32-religious-first",
+      "pageNumber": 32,
+      "description": "Religious Reasons heading and first complete paragraph.",
+      "bounds": {
+        "left": 0.055,
+        "top": 0.625,
+        "right": 0.49,
+        "bottom": 0.78
+      },
+      "text": "Religious Reasons\nMost people who study the New Testament do so, of course, for religious reasons. Many people revere the Bible as the Word of God and want to know what it can teach them about what to believe and how to live. If that is also your reason for wanting to study the New Testament, you are in good company! And obviously you will want to get to know as much about the New Testament as possible."
+    },
+    {
+      "id": "p32-historical",
+      "pageNumber": 32,
+      "description": "Historical Reasons heading and complete paragraph in the right column.",
+      "bounds": {
+        "left": 0.5,
+        "top": 0.575,
+        "right": 0.95,
+        "bottom": 0.915
+      },
+      "text": "Historical Reasons\nOne of the most important reasons for studying the New Testament—especially from a historical point of view—is its importance for the history of Western civilization. The dominant religion of Europe and the New World for the past two thousand years has been Christianity. This religion continues to assert an enormous influence on our form of culture. This is true not only on the individual level, as people are guided in their thoughts, beliefs, and actions by what they learn in this religion. It is also true on the broadest historical scale imaginable. Christianity has had the single greatest impact on Western civilization of any religion, ideology, or worldview—whether looked at culturally, socially, politically, or economically. There is no other institution that can even come close. And at the foundation of Christianity—at its heart, one could argue—stands the New Testament. If one does not understand the New Testament, one cannot fully understand the course of the history of the world we inhabit."
+    },
+    {
+      "id": "p35-title",
+      "pageNumber": 35,
+      "description": "Chapter number, label, title, and subtitle.",
+      "bounds": {
+        "left": 0.225,
+        "top": 0.205,
+        "right": 0.84,
+        "bottom": 0.435
+      },
+      "text": "1\nCHAPTER\nWhat Is the New Testament?\nThe Early Christians and Their Literature"
+    },
+    {
+      "id": "p35-what-to-expect",
+      "pageNumber": 35,
+      "description": "Complete What to Expect callout.",
+      "bounds": {
+        "left": 0.245,
+        "top": 0.505,
+        "right": 0.87,
+        "bottom": 0.79
+      },
+      "text": "WHAT TO EXPECT\nThis chapter is concerned with some hard but intriguing questions that many people have never thought to ask about the New Testament: Where did this book—or, rather, this collection of books—come from? How did the twenty-seven books of the New Testament get gathered together into a “canon,” a collection of authoritative books? Why were these books included in the Scriptures, but not other Christian books—some of them written at the same time? Who made the decisions? On what grounds? And when?\nWe will start by considering a basic feature of early Christianity that will recur time and again throughout our study: its remarkable diversity. Rather than being one thing, early Christianity was lots of different things, so much so that some scholars prefer to speak about “early Christianities” rather than “early Christianity.” As we will see, it was in the context of early Christian struggles to determine the “right” beliefs and practices that one group of Christians decided which books should be included among the Scriptures. Somewhat surprisingly, the final decisions did not come in just a few years or decades: they took more than three hundred years."
+    }
+  ]
+}

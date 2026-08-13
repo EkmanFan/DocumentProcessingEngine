@@ -42,6 +42,14 @@ internal static class Program
                 return await OcrBenchmarkEvaluationCli.EvaluateAsync(
                     args[1..]);
             }
+            if (string.Equals(
+                    args[0],
+                    "evaluate-ocr-ground-truth",
+                    StringComparison.Ordinal))
+            {
+                return await OcrGroundTruthEvaluationCli.RunAsync(
+                    args[1..]);
+            }
 
             if (string.Equals(
                     args[0],
@@ -118,8 +126,8 @@ internal static class Program
                     "'analyze-heading-boundaries-pdf', " +
                     "'analyze-counterfactual-segmentation-pdf', " +
                     "'analyze-outline-pdf', 'analyze-outline-alignment-pdf', " +
-                    "'verify-ocr-benchmark-corpus', or " +
-                    "'evaluate-ocr-benchmark'.");
+                    "'verify-ocr-benchmark-corpus', 'evaluate-ocr-benchmark', or " +
+                    "'evaluate-ocr-ground-truth'.");
             }
 
             var options = AnalysisOptions.Parse(args[1..]);
@@ -647,6 +655,7 @@ internal static class Program
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-outline-alignment-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- verify-ocr-benchmark-corpus --manifest /absolute/path/manifest.json --source /absolute/path/document.pdf --report /absolute/path/report.json
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- evaluate-ocr-benchmark --manifest /absolute/path/manifest.json --input-index /absolute/path/input-index.json --result /absolute/path/engine-result.json --report /absolute/path/report.json
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- evaluate-ocr-ground-truth --ground-truth /absolute/path/ground-truth.json --result /absolute/path/engine-result.json --report /absolute/path/report.json
 
             These commands are evaluation-only. They do not modify the PDF,
             persist document content, create retrieval chunks, or invoke an OCR
