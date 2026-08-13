@@ -15,7 +15,7 @@ public sealed class HeuristicDocumentSegmenter :
     IDocumentSegmenter
 {
     public const string SegmentationProfileId =
-        "typography-aware-cross-page-fallback-v2";
+        "strict-typography-cross-page-fallback-v3";
 
     public DocumentSegmentationResult Segment(
         DocumentTextNormalizationResult document,

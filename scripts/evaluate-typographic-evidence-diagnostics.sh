@@ -186,7 +186,7 @@ de_bytes = int(sys.argv[6])
 
 SCHEMA = "document-processing-typography-pdf-analysis-v2"
 NORMALIZATION = "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1"
-SEGMENTATION = "typography-aware-cross-page-fallback-v2"
+SEGMENTATION = "strict-typography-cross-page-fallback-v3"
 
 def require(condition, message):
     if not condition:

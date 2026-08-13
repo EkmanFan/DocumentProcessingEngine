@@ -175,8 +175,9 @@ public sealed class HeuristicDocumentSegmenterTests
             result.Segments[2].HeadingText);
     }
 
+
     [Fact]
-    public void Segment_AcceptsExplicitStructuralHeadingWithoutTypography()
+    public void Segment_DoesNotInferHeadingWithoutTypography()
     {
         var segment =
             Assert.Single(
@@ -191,9 +192,12 @@ public sealed class HeuristicDocumentSegmenterTests
                             "Body.")))
                 .Segments);
 
-        Assert.Equal(
-            "1. Introduction",
+        Assert.Null(
             segment.HeadingText);
+
+        Assert.Equal(
+            2,
+            segment.SourceBlocks.Count);
     }
 
     [Fact]
@@ -252,8 +256,81 @@ public sealed class HeuristicDocumentSegmenterTests
             segment.HeadingText);
     }
 
+
     [Fact]
-    public void Segment_AcceptsUppercaseLabelWithModestTypographicLift()
+    public void Segment_RejectsUppercaseLabelBelowTypographyThreshold()
+    {
+        var segment =
+            Assert.Single(
+                Segment(
+                    CreatePage(
+                        1,
+                        CreateBlock(
+                            0,
+                            "ANOTHER GLIMPSE INTO THE PAST",
+                            pointSize: 11.5,
+                            wordCount: 5),
+                        CreateBlock(
+                            1,
+                            "Ordinary body with sufficient weight.",
+                            pointSize: 10,
+                            wordCount: 12)))
+                .Segments);
+
+        Assert.Null(
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void Segment_RejectsTypographyWithTooFewLetters()
+    {
+        var segment =
+            Assert.Single(
+                Segment(
+                    CreatePage(
+                        1,
+                        CreateBlock(
+                            0,
+                            "eox 6.2",
+                            pointSize: 13,
+                            wordCount: 2),
+                        CreateBlock(
+                            1,
+                            "Ordinary body with sufficient weight.",
+                            pointSize: 10,
+                            wordCount: 12)))
+                .Segments);
+
+        Assert.Null(
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void Segment_RejectsTypographyBelowAlphaNumericRatio()
+    {
+        var segment =
+            Assert.Single(
+                Segment(
+                    CreatePage(
+                        1,
+                        CreateBlock(
+                            0,
+                            "l) J'(l l) N J).f",
+                            pointSize: 14,
+                            wordCount: 6),
+                        CreateBlock(
+                            1,
+                            "Ordinary body with sufficient weight.",
+                            pointSize: 10,
+                            wordCount: 12)))
+                .Segments);
+
+        Assert.Null(
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void Segment_AcceptsStrictTypographyHeading()
     {
         var result =
             Segment(
@@ -261,9 +338,9 @@ public sealed class HeuristicDocumentSegmenterTests
                     1,
                     CreateBlock(
                         0,
-                        "ANOTHER GLIMPSE INTO THE PAST",
-                        pointSize: 11.5,
-                        wordCount: 5),
+                        "Structured Topic",
+                        pointSize: 12,
+                        wordCount: 2),
                     CreateBlock(
                         1,
                         "Ordinary body with sufficient weight.",
@@ -275,7 +352,7 @@ public sealed class HeuristicDocumentSegmenterTests
                 result.Segments);
 
         Assert.Equal(
-            "ANOTHER GLIMPSE INTO THE PAST",
+            "Structured Topic",
             segment.HeadingText);
     }
 

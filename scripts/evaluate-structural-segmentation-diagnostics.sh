@@ -197,7 +197,7 @@ de_historical = int(sys.argv[8])
 
 EXPECTED_SCHEMA = "document-processing-segmented-pdf-analysis-v1"
 EXPECTED_NORMALIZATION = "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1"
-EXPECTED_SEGMENTATION = "typography-aware-cross-page-fallback-v2"
+EXPECTED_SEGMENTATION = "strict-typography-cross-page-fallback-v3"
 
 def require(condition, message):
     if not condition:
@@ -212,6 +212,21 @@ def validate_common(report, sha, size):
 
 validate_common(ehrman, ehrman_sha, ehrman_bytes)
 validate_common(de, de_sha, de_bytes)
+
+# 8.4f production regression: strict typography-only automatic boundaries.
+ehrman_seg = ehrman["segmentation"]
+require(ehrman_seg["segmentCount"] == 267, "Ehrman strict production segment count changed")
+require(ehrman_seg["headingSegmentCount"] == 267, "Ehrman strict production heading count changed")
+require(ehrman_seg["fallbackSegmentCount"] == 0, "Ehrman strict production fallback count changed")
+require(ehrman_seg["crossPageSegmentCount"] == 166, "Ehrman strict production cross-page count changed")
+require(ehrman_seg["smallSegmentCount"] == 50, "Ehrman strict production small-segment count changed")
+
+de_seg = de["segmentation"]
+require(de_seg["segmentCount"] == 50, "De Decretis segment count changed")
+require(de_seg["headingSegmentCount"] == 0, "De Decretis false heading returned")
+require(de_seg["fallbackSegmentCount"] == 50, "De Decretis fallback count changed")
+require(de_seg["crossPageSegmentCount"] == 0, "De Decretis cross-page count changed")
+
 
 # Freeze already-established upstream behavior. Segment counts themselves are
 # observations in 8.2 and deliberately are not asserted.

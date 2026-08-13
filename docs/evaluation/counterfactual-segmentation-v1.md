@@ -308,3 +308,18 @@ quality gate:
 If those conditions hold, the following increment can simplify production by
 removing generic numbered/weak-uppercase fallback heuristics and exposing
 optional heading hints through a neutral contract.
+
+## Production update — Increment 8.4f
+
+The strict typography experiment E has been promoted to production as:
+
+```text
+strict-typography-cross-page-fallback-v3
+```
+
+The counterfactual report now labels policy A as
+`A-ProductionStrictTypographyV3` and requires its production metrics and probes
+to match the independently reconstructed `E-StrictTypographyOnly` policy.
+
+The remaining comparison policies are retained to preserve evidence about why
+the earlier generic explicit and weak-uppercase fallbacks were rejected.

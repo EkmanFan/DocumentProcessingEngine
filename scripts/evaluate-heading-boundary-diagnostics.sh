@@ -186,7 +186,7 @@ de_bytes = int(sys.argv[6])
 
 SCHEMA = "document-processing-heading-boundary-analysis-v1"
 NORMALIZATION = "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1"
-SEGMENTATION = "typography-aware-cross-page-fallback-v2"
+SEGMENTATION = "strict-typography-cross-page-fallback-v3"
 
 def require(condition, message):
     if not condition:
@@ -209,13 +209,14 @@ def validate_common(report, sha, byte_length):
 validate_common(ehrman, ehrman_sha, ehrman_bytes)
 validate_common(de, de_sha, de_bytes)
 
-# 8.4b is the frozen production baseline that 8.4c must explain, not alter.
+# 8.4f strict-typography production baseline.
 require(ehrman["totalPdfPages"] == 617, "Ehrman PDF page count changed")
 require(ehrman["pageSelection"]["pageCount"] == 617, "Ehrman selected page count changed")
-require(ehrman["segmentation"]["segmentCount"] == 380, "Ehrman segment count changed")
-require(ehrman["segmentation"]["headingSegmentCount"] == 380, "Ehrman heading count changed")
+require(ehrman["segmentation"]["segmentCount"] == 267, "Ehrman segment count changed")
+require(ehrman["segmentation"]["headingSegmentCount"] == 267, "Ehrman heading count changed")
 require(ehrman["segmentation"]["fallbackSegmentCount"] == 0, "Ehrman fallback count changed")
-require(ehrman["segmentation"]["crossPageSegmentCount"] == 204, "Ehrman cross-page count changed")
+require(ehrman["segmentation"]["crossPageSegmentCount"] == 166, "Ehrman cross-page count changed")
+require(ehrman["flags"]["smallSegments"] == 50, "Ehrman small-segment count changed")
 
 require(de["totalPdfPages"] == 1479, "De Decretis PDF page count changed")
 require(de["pageSelection"]["pageCount"] == 50, "De Decretis selected page count changed")
@@ -265,7 +266,7 @@ def print_summary(label, report, historical):
 
 print()
 print("RESULT: HEADING-BOUNDARY DIAGNOSTICS COMPLETE")
-print("Production segmentation was not tuned; current boundaries were only explained.")
+print("Diagnostic mirror matched production heading boundaries; this command does not modify production.")
 print_summary("Ehrman", ehrman, 277)
 print_summary("De Decretis", de, 50)
 PY

@@ -1,31 +1,24 @@
-using System.Text.RegularExpressions;
 using DocumentProcessing.Core.Normalization;
 
 namespace DocumentProcessing.Engine.Segmentation;
 
 /// <summary>
-/// Deterministic heading decision over neutral normalized block evidence.
+/// Deterministic automatic heading decision over neutral normalized block
+/// evidence.
 ///
-/// Typography is optional. When it is unavailable the evaluator degrades to
-/// conservative explicit/uppercase textual evidence rather than fabricating a
-/// font hierarchy.
+/// Automatic heading inference requires typography. Textual shape alone is not
+/// promoted to structural truth. Source- or caller-supplied editorial heading
+/// hints are a separate concern and are intentionally not handled here.
 /// </summary>
-internal sealed partial class HeadingEvidenceEvaluator
+internal sealed class HeadingEvidenceEvaluator
 {
     private const int MaximumHeadingCharacters = 180;
     private const int MaximumHeadingWords = 24;
-    private const int MinimumHeadingLetterCount = 3;
+    private const int MinimumHeadingLetterCount = 4;
 
+    private const double MinimumAlphaNumericRatio = 0.55;
     private const double MinimumHeadingFontRatio = 1.18;
     private const double SectionFontRatio = 1.30;
-
-    // Explicit structural text can survive ordinary font styling, but strong
-    // evidence that it is smaller than body text contradicts the heading claim.
-    private const double MinimumExplicitFontRatio = 0.95;
-
-    // Short all-caps labels are common subsection headings. Require a modest
-    // typographic lift when typography exists.
-    private const double MinimumUppercaseFontRatio = 1.10;
 
     private readonly double? _bodyFontSize;
 
@@ -54,15 +47,13 @@ internal sealed partial class HeadingEvidenceEvaluator
         var text =
             block.Text.Trim();
 
-        if (!HasAcceptableHeadingText(text))
+        if (!HasAcceptableHeadingText(
+                text))
         {
             return false;
         }
 
-        var wordCount =
-            block.SourceBlock.WordCount;
-
-        if (wordCount >
+        if (block.SourceBlock.WordCount >
             MaximumHeadingWords)
         {
             return false;
@@ -71,34 +62,21 @@ internal sealed partial class HeadingEvidenceEvaluator
         var fontRatio =
             GetFontRatio(block);
 
-        if (IsExplicitStructuralHeading(text))
-        {
-            return fontRatio is null ||
-                   fontRatio >=
-                   MinimumExplicitFontRatio;
-        }
-
-        if (fontRatio is >=
+        if (fontRatio is not >=
             MinimumHeadingFontRatio)
         {
-            if (fontRatio <
-                SectionFontRatio &&
-                LooksLikeSentence(text))
-            {
-                return false;
-            }
-
-            return true;
+            return false;
         }
 
-        if (IsUppercaseHeading(text))
+        if (fontRatio <
+            SectionFontRatio &&
+            LooksLikeSentence(
+                text))
         {
-            return fontRatio is null ||
-                   fontRatio >=
-                   MinimumUppercaseFontRatio;
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     private double? GetFontRatio(
@@ -124,18 +102,16 @@ internal sealed partial class HeadingEvidenceEvaluator
             MaximumHeadingCharacters ||
             text.Contains(
                 '\uFFFD',
-                StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        if (text.Any(char.IsControl))
+                StringComparison.Ordinal) ||
+            text.Any(
+                char.IsControl))
         {
             return false;
         }
 
         var letterCount =
-            text.Count(char.IsLetter);
+            text.Count(
+                char.IsLetter);
 
         if (letterCount <
             MinimumHeadingLetterCount)
@@ -145,44 +121,22 @@ internal sealed partial class HeadingEvidenceEvaluator
 
         var nonWhitespaceCount =
             text.Count(character =>
-                !char.IsWhiteSpace(character));
+                !char.IsWhiteSpace(
+                    character));
+
+        if (nonWhitespaceCount == 0)
+        {
+            return false;
+        }
 
         var alphaNumericCount =
             text.Count(character =>
-                char.IsLetterOrDigit(character));
+                char.IsLetterOrDigit(
+                    character));
 
-        return nonWhitespaceCount > 0 &&
-               alphaNumericCount * 2 >=
-               nonWhitespaceCount;
-    }
-
-    private static bool IsExplicitStructuralHeading(
-        string text) =>
-        ExplicitStructuralHeadingRegex()
-            .IsMatch(text);
-
-    private static bool IsUppercaseHeading(
-        string text)
-    {
-        var hasLetter =
-            false;
-
-        foreach (var character in text)
-        {
-            if (!char.IsLetter(character))
-            {
-                continue;
-            }
-
-            hasLetter = true;
-
-            if (char.IsLower(character))
-            {
-                return false;
-            }
-        }
-
-        return hasLetter;
+        return alphaNumericCount /
+               (double)nonWhitespaceCount >=
+               MinimumAlphaNumericRatio;
     }
 
     private static bool LooksLikeSentence(
@@ -235,7 +189,8 @@ internal sealed partial class HeadingEvidenceEvaluator
                 (long)sample.Weight);
 
         var medianPosition =
-            (totalWeight + 1) / 2;
+            (totalWeight + 1) /
+            2;
 
         long accumulatedWeight = 0;
 
@@ -254,12 +209,6 @@ internal sealed partial class HeadingEvidenceEvaluator
         return samples[^1]
             .PointSize;
     }
-
-    [GeneratedRegex(
-        @"^(?:(?:CHAPTER|PART|SECTION|BOOK)\b|(?:\d+\.\d+(?:\.\d+)*|\d+[.)]|[IVXLCDM]+[.)])\s+\S+)",
-        RegexOptions.IgnoreCase |
-        RegexOptions.CultureInvariant)]
-    private static partial Regex ExplicitStructuralHeadingRegex();
 
     private sealed record FontSample(
         double PointSize,

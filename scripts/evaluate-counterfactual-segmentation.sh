@@ -198,10 +198,10 @@ de_bytes = int(sys.argv[6])
 
 SCHEMA = "document-processing-counterfactual-segmentation-analysis-v2"
 NORMALIZATION = "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1"
-PRODUCTION_SEGMENTATION = "typography-aware-cross-page-fallback-v2"
+PRODUCTION_SEGMENTATION = "strict-typography-cross-page-fallback-v3"
 
 EXPECTED_POLICIES = [
-    "A-ProductionV2",
+    "A-ProductionStrictTypographyV3",
     "B-TypographyOnly",
     "C-TypographyPlusStrongExplicit",
     "D-TypographyPlusHints",
@@ -232,15 +232,15 @@ def validate_common(report, sha, byte_length):
 ehrman_policies = validate_common(ehrman, ehrman_sha, ehrman_bytes)
 de_policies = validate_common(de, de_sha, de_bytes)
 
-# Freeze the complete 8.4d A-D baseline. E/F remain observations.
+# Freeze production v3 plus the established counterfactual baselines.
 expected_ehrman = {
-    "A-ProductionV2": {
-        "segmentCount": 380,
-        "headingSegmentCount": 380,
+    "A-ProductionStrictTypographyV3": {
+        "segmentCount": 267,
+        "headingSegmentCount": 267,
         "fallbackSegmentCount": 0,
-        "crossPageSegmentCount": 204,
-        "smallSegmentCount": 85,
-        "largeSegmentCount": 142,
+        "crossPageSegmentCount": 166,
+        "smallSegmentCount": 50,
+        "largeSegmentCount": 125,
     },
     "B-TypographyOnly": {
         "segmentCount": 278,
@@ -278,9 +278,9 @@ for name, expected in expected_ehrman.items():
         )
 
 expected_probe_counts = {
-    "A-ProductionV2": {
-        "TAKE A STAND": (6, 6),
-        "WHAT DO YOU THINK?": (6, 7),
+    "A-ProductionStrictTypographyV3": {
+        "TAKE A STAND": (5, 6),
+        "WHAT DO YOU THINK?": (5, 7),
         "SUGGESTIONS FOR FURTHER READING": (18, 21),
     },
     "B-TypographyOnly": {
@@ -359,6 +359,36 @@ require(
     "strict typography+hints has more headings than typography+hints",
 )
 
+# Production v3 must equal the independently reconstructed strict policy E.
+production_metrics = ehrman_policies["A-ProductionStrictTypographyV3"]["metrics"]
+strict_metrics = ehrman_policies["E-StrictTypographyOnly"]["metrics"]
+
+for key in (
+    "segmentCount",
+    "headingSegmentCount",
+    "fallbackSegmentCount",
+    "crossPageSegmentCount",
+    "smallSegmentCount",
+    "largeSegmentCount",
+):
+    require(
+        production_metrics[key] == strict_metrics[key],
+        f"production v3 diverges from strict counterfactual E for {key}",
+    )
+
+production_probes = {
+    item["probe"]: (item["headingMatches"], item["segmentTextMatches"])
+    for item in ehrman_policies["A-ProductionStrictTypographyV3"]["probes"]
+}
+strict_probes = {
+    item["probe"]: (item["headingMatches"], item["segmentTextMatches"])
+    for item in ehrman_policies["E-StrictTypographyOnly"]["probes"]
+}
+require(
+    production_probes == strict_probes,
+    "production v3 probes diverge from strict counterfactual E",
+)
+
 def print_report(label, report, policies):
     print()
     print(label)
@@ -391,7 +421,7 @@ def print_report(label, report, policies):
 
 print()
 print("RESULT: STRICT HEADING QUALITY-GATE EVALUATION COMPLETE")
-print("A-D are frozen 8.4d regressions; E/F remain observational.")
+print("Production A is v3 and must match E; B-F remain comparison policies.")
 print_report("Ehrman", ehrman, ehrman_policies)
 
 print()

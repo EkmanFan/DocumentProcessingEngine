@@ -15,7 +15,7 @@ namespace DocumentProcessing.EvaluationCli;
 /// <summary>
 /// Evaluation-only explanation of the production heading boundaries.
 ///
-/// The diagnostic intentionally mirrors HeadingEvidenceEvaluator's v2 decision
+/// The diagnostic intentionally mirrors HeadingEvidenceEvaluator's v3 decision
 /// rules locally, then proves parity against the actual production segmenter.
 /// If the mirrored classifier and production output disagree, the report runner
 /// fails rather than silently presenting stale explanations.
@@ -27,12 +27,11 @@ internal static class HeadingBoundaryAnalysisCli
 
     private const int MaximumHeadingCharacters = 180;
     private const int MaximumHeadingWords = 24;
-    private const int MinimumHeadingLetterCount = 3;
+    private const int MinimumHeadingLetterCount = 4;
+    private const double MinimumAlphaNumericRatio = 0.55;
 
     private const double MinimumHeadingFontRatio = 1.18;
     private const double SectionFontRatio = 1.30;
-    private const double MinimumExplicitFontRatio = 0.95;
-    private const double MinimumUppercaseFontRatio = 1.10;
 
     private const int SmallSegmentCharacterThreshold = 120;
     private const int LargeSegmentCharacterThreshold = 4000;
@@ -42,12 +41,6 @@ internal static class HeadingBoundaryAnalysisCli
     private const int ReportSampleLimit = 40;
     private const int ContextCharacterLimit = 240;
 
-    private static readonly Regex ExplicitStructuralHeadingRegex =
-        new(
-            @"^(?:(?:CHAPTER|PART|SECTION|BOOK)\b|(?:\d+\.\d+(?:\.\d+)*|\d+[.)]|[IVXLCDM]+[.)])\s+\S+)",
-            RegexOptions.IgnoreCase |
-            RegexOptions.CultureInvariant |
-            RegexOptions.Compiled);
 
     private static readonly Regex NumberedStructuralHeadingRegex =
         new(
@@ -558,92 +551,38 @@ internal static class HeadingBoundaryAnalysisCli
                 block,
                 bodyFontSize);
 
-        if (!HasAcceptableHeadingText(text))
-        {
-            return new HeadingDecision(
-                false,
-                null,
-                fontRatio);
-        }
-
-        if (block.SourceBlock.WordCount >
-            MaximumHeadingWords)
-        {
-            return new HeadingDecision(
-                false,
-                null,
-                fontRatio);
-        }
-
-        if (ExplicitStructuralHeadingRegex
-            .IsMatch(text))
-        {
-            if (fontRatio is null ||
-                fontRatio >=
-                MinimumExplicitFontRatio)
-            {
-                return new HeadingDecision(
-                    true,
-                    fontRatio is null
-                        ? "ExplicitStructuralNoTypography"
-                        : "ExplicitStructural",
-                    fontRatio);
-            }
-
-            return new HeadingDecision(
-                false,
-                null,
-                fontRatio);
-        }
-
-        if (fontRatio is >=
+        if (!HasAcceptableHeadingText(
+                text) ||
+            block.SourceBlock.WordCount >
+            MaximumHeadingWords ||
+            fontRatio is not >=
             MinimumHeadingFontRatio)
         {
-            if (fontRatio <
-                SectionFontRatio &&
-                LooksLikeSentence(text))
-            {
-                return new HeadingDecision(
-                    false,
-                    null,
-                    fontRatio);
-            }
-
             return new HeadingDecision(
-                true,
-                fontRatio <
-                SectionFontRatio
-                    ? "TypographySubsection"
-                    : "TypographyStrong",
+                false,
+                null,
                 fontRatio);
         }
 
-        if (IsUppercaseHeading(text))
+        if (fontRatio <
+            SectionFontRatio &&
+            LooksLikeSentence(
+                text))
         {
-            if (fontRatio is null)
-            {
-                return new HeadingDecision(
-                    true,
-                    "UppercaseNoTypography",
-                    fontRatio);
-            }
-
-            if (fontRatio >=
-                MinimumUppercaseFontRatio)
-            {
-                return new HeadingDecision(
-                    true,
-                    "UppercaseModest",
-                    fontRatio);
-            }
+            return new HeadingDecision(
+                false,
+                null,
+                fontRatio);
         }
 
         return new HeadingDecision(
-            false,
-            null,
+            true,
+            fontRatio <
+            SectionFontRatio
+                ? "TypographySubsection"
+                : "TypographyStrong",
             fontRatio);
     }
-
     private static double? GetFontRatio(
         NormalizedDocumentTextBlock block,
         double? bodyFontSize)
@@ -696,33 +635,11 @@ internal static class HeadingBoundaryAnalysisCli
                 char.IsLetterOrDigit(character));
 
         return nonWhitespaceCount > 0 &&
-               alphaNumericCount * 2 >=
-               nonWhitespaceCount;
+               alphaNumericCount /
+               (double)nonWhitespaceCount >=
+               MinimumAlphaNumericRatio;
     }
 
-    private static bool IsUppercaseHeading(
-        string text)
-    {
-        var hasLetter =
-            false;
-
-        foreach (var character in text)
-        {
-            if (!char.IsLetter(character))
-            {
-                continue;
-            }
-
-            hasLetter = true;
-
-            if (char.IsLower(character))
-            {
-                return false;
-            }
-        }
-
-        return hasLetter;
-    }
 
     private static bool LooksLikeSentence(
         string text)

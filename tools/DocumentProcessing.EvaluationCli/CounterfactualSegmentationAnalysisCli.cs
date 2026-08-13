@@ -167,7 +167,7 @@ internal static class CounterfactualSegmentationAnalysisCli
         ValidateCoverage(
             contexts,
             productionSegments,
-            "ProductionV2");
+            "ProductionStrictTypographyV3");
 
         var productionHeadingKeys =
             productionSegments
@@ -242,8 +242,8 @@ internal static class CounterfactualSegmentationAnalysisCli
             new List<PolicyResult>
             {
                 BuildPolicyResult(
-                    "A-ProductionV2",
-                    "Current production typography + explicit + uppercase policy.",
+                    "A-ProductionStrictTypographyV3",
+                    "Current production strict typography policy; no textual fallback and no editorial hints.",
                     contexts,
                     productionSegments,
                     productionHeadingKeys,

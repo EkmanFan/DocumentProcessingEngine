@@ -135,3 +135,24 @@ Increment 8.4c does not:
 
 Any production change must be justified from the observations produced by this
 diagnostic.
+
+## Production update — Increment 8.4f
+
+The current production segmentation profile is now:
+
+```text
+strict-typography-cross-page-fallback-v3
+```
+
+The diagnostic mirror follows the same automatic decision policy: strict text
+quality followed by font hierarchy only. Generic explicit-number and weak
+uppercase fallbacks are no longer production decision origins.
+
+Pinned Ehrman production regression:
+
+```text
+267 segments
+267 heading-led segments
+166 cross-page segments
+50 segments <= 120 characters
+```
