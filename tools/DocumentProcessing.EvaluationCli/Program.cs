@@ -27,6 +27,15 @@ internal static class Program
 
             if (string.Equals(
                     args[0],
+                    "analyze-outline-pdf",
+                    StringComparison.Ordinal))
+            {
+                return await PdfOutlineAnalysisCli.RunAsync(
+                    args[1..]);
+            }
+
+            if (string.Equals(
+                    args[0],
                     "analyze-counterfactual-segmentation-pdf",
                     StringComparison.Ordinal))
             {
@@ -79,8 +88,9 @@ internal static class Program
                     $"Unknown command '{args[0]}'. " +
                     "Expected 'analyze-pdf', 'analyze-normalized-pdf', " +
                     "'analyze-segmented-pdf', 'analyze-typography-pdf', " +
-                    "'analyze-heading-boundaries-pdf', or " +
-                    "'analyze-counterfactual-segmentation-pdf'.");
+                    "'analyze-heading-boundaries-pdf', " +
+                    "'analyze-counterfactual-segmentation-pdf', or " +
+                    "'analyze-outline-pdf'.");
             }
 
             var options = AnalysisOptions.Parse(args[1..]);
@@ -604,6 +614,7 @@ internal static class Program
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-typography-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-heading-boundaries-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-counterfactual-segmentation-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 --historical-segments 50 [--hint "heading"] [--probe "text"]
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-outline-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561
 
             These commands are evaluation-only. They do not modify the PDF,
             persist document content, create retrieval chunks, or run OCR.
