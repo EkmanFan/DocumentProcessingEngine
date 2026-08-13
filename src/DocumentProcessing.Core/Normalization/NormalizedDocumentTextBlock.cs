@@ -10,7 +10,8 @@ public sealed class NormalizedDocumentTextBlock
 {
     public NormalizedDocumentTextBlock(
         DocumentTextBlock sourceBlock,
-        string text)
+        string text,
+        DocumentBlockExclusionReason? exclusionReason = null)
     {
         SourceBlock =
             sourceBlock ??
@@ -19,6 +20,9 @@ public sealed class NormalizedDocumentTextBlock
         Text =
             text ??
             throw new ArgumentNullException(nameof(text));
+
+        ExclusionReason =
+            exclusionReason;
     }
 
     public DocumentTextBlock SourceBlock { get; }
@@ -26,4 +30,9 @@ public sealed class NormalizedDocumentTextBlock
     public string SourceText => SourceBlock.Text;
 
     public string Text { get; }
+
+    public bool IsExcluded =>
+        ExclusionReason.HasValue;
+
+    public DocumentBlockExclusionReason? ExclusionReason { get; }
 }

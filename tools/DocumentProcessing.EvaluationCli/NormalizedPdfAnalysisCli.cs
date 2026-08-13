@@ -3,78 +3,47 @@ using System.Text;
 using System.Text.Json;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
+using DocumentProcessing.Core.Normalization;
+using DocumentProcessing.Engine.Normalization;
 using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing.EvaluationCli;
 
-internal static class Program
+internal static class NormalizedPdfAnalysisCli
 {
     private const string ReportSchemaVersion =
-        "document-processing-native-pdf-analysis-v1";
+        "document-processing-normalized-pdf-analysis-v1";
 
-    private const double DominantRasterImageAreaRatio = 0.60;
-
-    public static async Task<int> Main(string[] args)
+    public static async Task<int> RunAsync(
+        string[] args)
     {
-        try
-        {
-            if (args.Length == 0 ||
-                args.Contains("--help", StringComparer.Ordinal))
-            {
-                WriteUsage();
-                return args.Length == 0 ? 2 : 0;
-            }
+        var options =
+            AnalysisOptions.Parse(args);
 
-            if (string.Equals(
-                    args[0],
-                    "analyze-normalized-pdf",
-                    StringComparison.Ordinal))
-            {
-                return await NormalizedPdfAnalysisCli.RunAsync(
-                    args[1..]);
-            }
+        var report =
+            await AnalyzeAsync(options);
 
-            if (!string.Equals(
-                    args[0],
-                    "analyze-pdf",
-                    StringComparison.Ordinal))
-            {
-                throw new ArgumentException(
-                    $"Unknown command '{args[0]}'. Expected 'analyze-pdf'.");
-            }
+        await WriteReportAsync(
+            options.ReportPath,
+            report);
 
-            var options = AnalysisOptions.Parse(args[1..]);
+        WriteSummary(
+            report,
+            options.ReportPath);
 
-            var report = await AnalyzeAsync(options);
-
-            await WriteReportAsync(
-                options.ReportPath,
-                report);
-
-            WriteSummary(
-                report,
-                options.ReportPath);
-
-            return 0;
-        }
-        catch (Exception exception) when (
-            exception is ArgumentException
-                or IOException
-                or UnauthorizedAccessException
-                or InvalidDataException
-                or NotSupportedException)
-        {
-            Console.Error.WriteLine(
-                $"ERROR: {exception.Message}");
-            return 2;
-        }
+        return 0;
     }
 
-    private static async Task<PdfNativeAnalysisReport> AnalyzeAsync(
-        AnalysisOptions options)
+    private static async Task<NormalizedPdfAnalysisReport>
+        AnalyzeAsync(
+            AnalysisOptions options)
     {
-        var sourcePath = Path.GetFullPath(options.SourcePath);
-        var fileInfo = new FileInfo(sourcePath);
+        var sourcePath =
+            Path.GetFullPath(
+                options.SourcePath);
+
+        var fileInfo =
+            new FileInfo(sourcePath);
 
         if (!fileInfo.Exists)
         {
@@ -84,15 +53,17 @@ internal static class Program
         }
 
         var sourceSha256 =
-            await ComputeSha256Async(sourcePath);
+            await ComputeSha256Async(
+                sourcePath);
 
         await using var sourceStream =
             File.OpenRead(sourcePath);
 
-        var source = new DocumentSource(
-            sourceStream,
-            fileInfo.Name,
-            "application/pdf");
+        var source =
+            new DocumentSource(
+                sourceStream,
+                fileInfo.Name,
+                "application/pdf");
 
         var extractor =
             new PdfPigDocumentExtractor();
@@ -102,57 +73,44 @@ internal static class Program
                 source,
                 DocumentFormatId.Pdf);
 
-        var selectedPages = SelectPages(
-            extracted.Pages,
-            options.FirstPage,
-            options.LastPage);
+        var selectedPages =
+            SelectPages(
+                extracted.Pages,
+                options.FirstPage,
+                options.LastPage);
 
-        var pagesWithWords =
-            selectedPages.Count(page =>
-                page.Words.Count > 0);
+        var selectedExtraction =
+            new DocumentExtractionResult(
+                extracted.Format,
+                selectedPages);
 
-        var textlessDominantRasterPages =
-            selectedPages
-                .Where(page =>
-                    page.Words.Count == 0 &&
-                    page.LargestRasterImageAreaRatio >=
-                    DominantRasterImageAreaRatio)
-                .Select(page =>
-                    page.PhysicalPageNumber)
-                .OrderBy(pageNumber =>
-                    pageNumber)
-                .ToArray();
+        var normalized =
+            new DocumentTextNormalizer()
+                .Normalize(
+                    selectedExtraction);
 
         var extractionMetrics =
-            new PdfExtractionMetrics(
-                selectedPages.Sum(page =>
-                    page.Words.Count),
-                selectedPages.Sum(page =>
-                    page.Blocks.Count),
-                pagesWithWords,
-                selectedPages.Count - pagesWithWords,
-                selectedPages.Count(page =>
-                    page.Blocks.Count == 0),
-                selectedPages.Count == 0
-                    ? 0
-                    : Math.Round(
-                        pagesWithWords * 100.0 /
-                        selectedPages.Count,
-                        1),
-                DominantRasterImageAreaRatio,
-                textlessDominantRasterPages.Length);
+            BuildExtractionMetrics(
+                selectedPages);
+
+        var normalizationMetrics =
+            BuildNormalizationMetrics(
+                normalized.Pages);
 
         var layoutMetrics =
-            BuildRawLayoutMetrics(selectedPages);
+            BuildLayoutMetrics(
+                normalized.Pages);
 
-        var probes = options.Probes
-            .Select(probe =>
-                BuildProbeDiagnostic(
-                    probe,
-                    selectedPages))
-            .ToArray();
+        var probes =
+            options.Probes
+                .Select(probe =>
+                    BuildProbeDiagnostic(
+                        probe,
+                        selectedPages,
+                        normalized.Pages))
+                .ToArray();
 
-        return new PdfNativeAnalysisReport(
+        return new NormalizedPdfAnalysisReport(
             ReportSchemaVersion,
             DateTimeOffset.UtcNow,
             fileInfo.Name,
@@ -164,36 +122,59 @@ internal static class Program
                 options.LastPage,
                 selectedPages.Count),
             extractionMetrics,
+            normalized.NormalizationProfileId,
+            normalizationMetrics,
             layoutMetrics,
             probes);
     }
 
-    private static IReadOnlyList<DocumentExtractionPage>
-        SelectPages(
-            IReadOnlyList<DocumentExtractionPage> pages,
-            int firstPage,
-            int lastPage)
+    private static PdfExtractionMetrics
+        BuildExtractionMetrics(
+            IReadOnlyCollection<DocumentExtractionPage> pages)
     {
-        if (firstPage < 1 ||
-            lastPage < firstPage ||
-            lastPage > pages.Count)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(firstPage),
-                $"Invalid page range {firstPage}-{lastPage}. " +
-                $"The PDF contains {pages.Count} pages.");
-        }
+        var pagesWithWords =
+            pages.Count(page =>
+                page.Words.Count > 0);
 
-        return pages
-            .Where(page =>
-                page.PhysicalPageNumber >= firstPage &&
-                page.PhysicalPageNumber <= lastPage)
-            .ToArray();
+        return new PdfExtractionMetrics(
+            pages.Sum(page =>
+                page.Words.Count),
+            pages.Sum(page =>
+                page.Blocks.Count),
+            pagesWithWords,
+            pages.Count - pagesWithWords,
+            pages.Count == 0
+                ? 0
+                : Math.Round(
+                    pagesWithWords * 100.0 /
+                    pages.Count,
+                    1));
     }
 
-    private static PdfRawLayoutMetrics
-        BuildRawLayoutMetrics(
-            IReadOnlyList<DocumentExtractionPage> pages)
+    private static PdfNormalizationMetrics
+        BuildNormalizationMetrics(
+            IReadOnlyCollection<NormalizedDocumentPage> pages)
+    {
+        var blocks =
+            pages.SelectMany(page =>
+                    page.Blocks)
+                .ToArray();
+
+        return new PdfNormalizationMetrics(
+            blocks.Length,
+            blocks.Count(block =>
+                !block.IsExcluded),
+            blocks.Count(block =>
+                block.ExclusionReason ==
+                DocumentBlockExclusionReason.RepeatedHeader),
+            blocks.Count(block =>
+                block.ExclusionReason ==
+                DocumentBlockExclusionReason.RepeatedFooter));
+    }
+
+    private static PdfLayoutMetrics
+        BuildLayoutMetrics(
+            IReadOnlyCollection<NormalizedDocumentPage> pages)
     {
         var candidates =
             new List<PdfPageLayoutDiagnostic>();
@@ -202,12 +183,14 @@ internal static class Program
         {
             var blocks = page.Blocks
                 .Where(block =>
-                    !string.IsNullOrWhiteSpace(block.Text))
+                    !block.IsExcluded &&
+                    !string.IsNullOrWhiteSpace(
+                        block.Text))
                 .OrderBy(block =>
-                    block.ReadingOrder ??
+                    block.SourceBlock.ReadingOrder ??
                     int.MaxValue)
                 .ThenBy(block =>
-                    block.SourceSequence)
+                    block.SourceBlock.SourceSequence)
                 .ToArray();
 
             var classified = blocks
@@ -231,21 +214,23 @@ internal static class Program
                 continue;
             }
 
-            var narrow = classified
-                .Where(item =>
-                    item.Column is "L" or "R")
-                .ToArray();
+            var narrow =
+                classified
+                    .Where(item =>
+                        item.Column is "L" or "R")
+                    .ToArray();
 
             var switchCount =
-                CountColumnSwitches(narrow);
+                CountColumnSwitches(
+                    narrow);
 
             var verticalReversalCount =
                 CountVerticalReversals(
-                    page.SourceHeight,
+                    page.SourcePage.SourceHeight,
                     narrow,
                     "L") +
                 CountVerticalReversals(
-                    page.SourceHeight,
+                    page.SourcePage.SourceHeight,
                     narrow,
                     "R");
 
@@ -258,36 +243,23 @@ internal static class Program
                     verticalReversalCount > 0));
         }
 
-        return new PdfRawLayoutMetrics(
+        return new PdfLayoutMetrics(
             candidates.Count,
             candidates.Count(page =>
                 page.InterleavedColumns),
             candidates.Count(page =>
-                page.HasVerticalReversal),
-            candidates
-                .Select(page =>
-                    page.PhysicalPageNumber)
-                .ToArray(),
-            candidates
-                .Where(page =>
-                    page.InterleavedColumns)
-                .Select(page =>
-                    page.PhysicalPageNumber)
-                .ToArray(),
-            candidates
-                .Where(page =>
-                    page.HasVerticalReversal)
-                .Select(page =>
-                    page.PhysicalPageNumber)
-                .ToArray());
+                page.HasVerticalReversal));
     }
 
     private static string ClassifyColumn(
-        DocumentTextBlock block)
+        NormalizedDocumentTextBlock block)
     {
+        var bounds =
+            block.SourceBlock.Bounds;
+
         var width =
-            block.Bounds.Right -
-            block.Bounds.Left;
+            bounds.Right -
+            bounds.Left;
 
         if (width >= 0.55)
         {
@@ -295,8 +267,8 @@ internal static class Program
         }
 
         var center =
-            (block.Bounds.Left +
-             block.Bounds.Right) / 2.0;
+            (bounds.Left +
+             bounds.Right) / 2.0;
 
         return center < 0.5
             ? "L"
@@ -326,6 +298,7 @@ internal static class Program
             }
 
             switches++;
+
             previous =
                 blocks[index].Column;
         }
@@ -351,12 +324,8 @@ internal static class Program
         foreach (var item in blocks.Where(item =>
                      item.Column == column))
         {
-            // ApologiaStudio used PdfPig's bottom-left coordinate system:
-            // current.Top > previous.Top + tolerance means a move upward.
-            // Core uses a normalized top-left origin, so the equivalent
-            // comparison is inverted.
             if (previousTop is not null &&
-                item.Block.Bounds.Top <
+                item.Block.SourceBlock.Bounds.Top <
                 previousTop.Value -
                 normalizedTolerance)
             {
@@ -364,7 +333,7 @@ internal static class Program
             }
 
             previousTop =
-                item.Block.Bounds.Top;
+                item.Block.SourceBlock.Bounds.Top;
         }
 
         return reversals;
@@ -373,34 +342,38 @@ internal static class Program
     private static PdfProbeDiagnostic
         BuildProbeDiagnostic(
             string probe,
-            IReadOnlyList<DocumentExtractionPage> pages)
+            IReadOnlyCollection<DocumentExtractionPage> sourcePages,
+            IReadOnlyCollection<NormalizedDocumentPage> normalizedPages)
     {
-        var wordStreamPages = pages
-            .Where(page =>
-                string.Join(
-                        ' ',
-                        page.Words
-                            .OrderBy(word =>
-                                word.SourceSequence)
-                            .Select(word =>
-                                word.Text))
-                    .Contains(
-                        probe,
-                        StringComparison.OrdinalIgnoreCase))
-            .Select(page =>
-                page.PhysicalPageNumber)
-            .ToArray();
-
-        var blockPages = pages
-            .SelectMany(page =>
-                page.Blocks
-                    .Where(block =>
-                        block.Text.Contains(
+        var wordStreamPages =
+            sourcePages
+                .Where(page =>
+                    string.Join(
+                            ' ',
+                            page.Words
+                                .OrderBy(word =>
+                                    word.SourceSequence)
+                                .Select(word =>
+                                    word.Text))
+                        .Contains(
                             probe,
                             StringComparison.OrdinalIgnoreCase))
-                    .Select(_ =>
-                        page.PhysicalPageNumber))
-            .ToArray();
+                .Select(page =>
+                    page.PhysicalPageNumber)
+                .ToArray();
+
+        var blockPages =
+            normalizedPages
+                .SelectMany(page =>
+                    page.Blocks
+                        .Where(block =>
+                            !block.IsExcluded &&
+                            block.Text.Contains(
+                                probe,
+                                StringComparison.OrdinalIgnoreCase))
+                        .Select(_ =>
+                            page.PhysicalPageNumber))
+                .ToArray();
 
         return new PdfProbeDiagnostic(
             probe,
@@ -414,8 +387,34 @@ internal static class Program
                 .ToArray());
     }
 
+    private static IReadOnlyList<DocumentExtractionPage>
+        SelectPages(
+            IReadOnlyList<DocumentExtractionPage> pages,
+            int firstPage,
+            int lastPage)
+    {
+        if (firstPage < 1 ||
+            lastPage < firstPage ||
+            lastPage > pages.Count)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(firstPage),
+                $"Invalid page range {firstPage}-{lastPage}. " +
+                $"The PDF contains {pages.Count} pages.");
+        }
+
+        return pages
+            .Where(page =>
+                page.PhysicalPageNumber >=
+                firstPage &&
+                page.PhysicalPageNumber <=
+                lastPage)
+            .ToArray();
+    }
+
     private static async Task<string>
-        ComputeSha256Async(string sourcePath)
+        ComputeSha256Async(
+            string sourcePath)
     {
         await using var stream =
             File.OpenRead(sourcePath);
@@ -424,7 +423,8 @@ internal static class Program
             SHA256.Create();
 
         var hash =
-            await sha256.ComputeHashAsync(stream);
+            await sha256.ComputeHashAsync(
+                stream);
 
         return Convert
             .ToHexString(hash)
@@ -433,17 +433,20 @@ internal static class Program
 
     private static async Task WriteReportAsync(
         string reportPath,
-        PdfNativeAnalysisReport report)
+        NormalizedPdfAnalysisReport report)
     {
         var fullPath =
-            Path.GetFullPath(reportPath);
+            Path.GetFullPath(
+                reportPath);
 
         var directory =
-            Path.GetDirectoryName(fullPath);
+            Path.GetDirectoryName(
+                fullPath);
 
         if (!string.IsNullOrWhiteSpace(directory))
         {
-            Directory.CreateDirectory(directory);
+            Directory.CreateDirectory(
+                directory);
         }
 
         var serializerOptions =
@@ -488,20 +491,17 @@ internal static class Program
     }
 
     private static void WriteSummary(
-        PdfNativeAnalysisReport report,
+        NormalizedPdfAnalysisReport report,
         string reportPath)
     {
         Console.WriteLine(
-            "RESULT: ANALYZED");
+            "RESULT: NORMALIZED");
 
         Console.WriteLine(
             $"Source: {report.SourceFileName}");
 
         Console.WriteLine(
             $"Source SHA-256: {report.SourceSha256}");
-
-        Console.WriteLine(
-            $"Source bytes: {report.SourceByteLength}");
 
         Console.WriteLine(
             $"PDF pages total: {report.TotalPdfPages}");
@@ -519,52 +519,45 @@ internal static class Program
             $"Blocks: {report.Extraction.BlockCount}");
 
         Console.WriteLine(
-            $"Text-layer coverage: " +
-            $"{report.Extraction.TextLayerCoveragePercent:F1}% " +
-            $"({report.Extraction.PagesWithWords}/" +
-            $"{report.PageSelection.PageCount} selected pages)");
+            $"Normalization profile: " +
+            $"{report.NormalizationProfileId}");
 
         Console.WriteLine(
-            $"Textless pages with dominant raster image: " +
-            $"{report.Extraction.TextlessPagesWithDominantRasterImage}");
+            $"Included blocks: " +
+            $"{report.Normalization.IncludedBlocks}");
 
         Console.WriteLine(
-            $"Raw multi-column candidate pages: " +
-            $"{report.RawLayout.MultiColumnCandidatePages}");
+            $"Excluded recurring headers: " +
+            $"{report.Normalization.ExcludedHeaderBlocks}");
 
         Console.WriteLine(
-            $"Raw interleaved multi-column pages: " +
-            $"{report.RawLayout.InterleavedColumnPages}");
+            $"Excluded recurring footers: " +
+            $"{report.Normalization.ExcludedFooterBlocks}");
 
         Console.WriteLine(
-            $"Raw vertical reading-order reversal pages: " +
-            $"{report.RawLayout.VerticalReversalPages}");
+            $"Multi-column candidate pages: " +
+            $"{report.Layout.MultiColumnCandidatePages}");
+
+        Console.WriteLine(
+            $"Interleaved multi-column pages: " +
+            $"{report.Layout.InterleavedColumnPages}");
+
+        Console.WriteLine(
+            $"Vertical reading-order reversal pages: " +
+            $"{report.Layout.VerticalReversalPages}");
 
         foreach (var probe in report.Probes)
         {
             Console.WriteLine(
                 $"Probe '{probe.Probe}': " +
                 $"{probe.WordStreamMatches} page-word-stream match(es), " +
-                $"{probe.BlockMatches} block match(es)");
+                $"{probe.BlockMatches} normalized block match(es)");
         }
 
         Console.WriteLine(
             $"Report: {Path.GetFullPath(reportPath)}");
     }
 
-    private static void WriteUsage()
-    {
-        Console.WriteLine(
-            """
-            Usage:
-              dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 [--probe "text"]
-
-              dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-normalized-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 [--probe "text"]
-
-            These commands are evaluation-only. They do not modify the PDF,
-            persist document content, create retrieval chunks, or run OCR.
-            """);
-    }
     private sealed record AnalysisOptions(
         string SourcePath,
         string ReportPath,
@@ -578,6 +571,7 @@ internal static class Program
             string? source = null;
             string? report = null;
             string? pages = null;
+
             var probes =
                 new List<string>();
 
@@ -585,29 +579,33 @@ internal static class Program
                  index < args.Length;
                  index++)
             {
-                var option = args[index];
+                var option =
+                    args[index];
 
                 switch (option)
                 {
                     case "--source":
-                        source = ReadValue(
-                            args,
-                            ref index,
-                            option);
+                        source =
+                            ReadValue(
+                                args,
+                                ref index,
+                                option);
                         break;
 
                     case "--report":
-                        report = ReadValue(
-                            args,
-                            ref index,
-                            option);
+                        report =
+                            ReadValue(
+                                args,
+                                ref index,
+                                option);
                         break;
 
                     case "--pages":
-                        pages = ReadValue(
-                            args,
-                            ref index,
-                            option);
+                        pages =
+                            ReadValue(
+                                args,
+                                ref index,
+                                option);
                         break;
 
                     case "--probe":
@@ -673,13 +671,15 @@ internal static class Program
             ref int index,
             string option)
         {
-            if (index + 1 >= args.Count)
+            if (index + 1 >=
+                args.Count)
             {
                 throw new ArgumentException(
                     $"Missing value for {option}.");
             }
 
             index++;
+
             var value =
                 args[index];
 
@@ -696,7 +696,7 @@ internal static class Program
         }
     }
 
-    private sealed record PdfNativeAnalysisReport(
+    private sealed record NormalizedPdfAnalysisReport(
         string SchemaVersion,
         DateTimeOffset GeneratedAtUtc,
         string SourceFileName,
@@ -705,7 +705,9 @@ internal static class Program
         int TotalPdfPages,
         PdfPageSelection PageSelection,
         PdfExtractionMetrics Extraction,
-        PdfRawLayoutMetrics RawLayout,
+        string NormalizationProfileId,
+        PdfNormalizationMetrics Normalization,
+        PdfLayoutMetrics Layout,
         IReadOnlyList<PdfProbeDiagnostic> Probes);
 
     private sealed record PdfPageSelection(
@@ -718,18 +720,18 @@ internal static class Program
         int BlockCount,
         int PagesWithWords,
         int PagesWithoutWords,
-        int PagesWithoutBlocks,
-        double TextLayerCoveragePercent,
-        double DominantRasterImageAreaThreshold,
-        int TextlessPagesWithDominantRasterImage);
+        double TextLayerCoveragePercent);
 
-    private sealed record PdfRawLayoutMetrics(
+    private sealed record PdfNormalizationMetrics(
+        int BlockCount,
+        int IncludedBlocks,
+        int ExcludedHeaderBlocks,
+        int ExcludedFooterBlocks);
+
+    private sealed record PdfLayoutMetrics(
         int MultiColumnCandidatePages,
         int InterleavedColumnPages,
-        int VerticalReversalPages,
-        IReadOnlyList<int> MultiColumnCandidatePageNumbers,
-        IReadOnlyList<int> InterleavedColumnPageNumbers,
-        IReadOnlyList<int> VerticalReversalPageNumbers);
+        int VerticalReversalPages);
 
     private sealed record PdfPageLayoutDiagnostic(
         int PhysicalPageNumber,
@@ -746,6 +748,6 @@ internal static class Program
         IReadOnlyList<int> BlockPages);
 
     private sealed record ClassifiedBlock(
-        DocumentTextBlock Block,
+        NormalizedDocumentTextBlock Block,
         string Column);
 }

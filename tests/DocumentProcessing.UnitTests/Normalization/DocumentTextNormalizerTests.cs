@@ -1,5 +1,6 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
+using DocumentProcessing.Core.Normalization;
 using DocumentProcessing.Engine.Normalization;
 
 namespace DocumentProcessing.UnitTests.Normalization;
@@ -24,11 +25,9 @@ public sealed class DocumentTextNormalizerTests
                     physicalPageNumber: 1,
                     sourceBlock));
 
-        var normalizer =
-            new DocumentTextNormalizer();
-
         var result =
-            normalizer.Normalize(extraction);
+            new DocumentTextNormalizer()
+                .Normalize(extraction);
 
         var page =
             Assert.Single(result.Pages);
@@ -51,6 +50,12 @@ public sealed class DocumentTextNormalizerTests
         Assert.Equal(
             "Café international study",
             block.Text);
+
+        Assert.False(
+            block.IsExcluded);
+
+        Assert.Null(
+            block.ExclusionReason);
 
         Assert.Equal(
             DocumentTextNormalizer.NormalizationProfileId,
@@ -149,6 +154,155 @@ public sealed class DocumentTextNormalizerTests
     }
 
     [Fact]
+    public void Normalize_ExcludesRecurringHeadersAndCanonicalizesDigits()
+    {
+        var extraction =
+            CreateExtraction(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        0,
+                        "CHAPTER 1",
+                        HeaderBounds)),
+                CreatePage(
+                    2,
+                    CreateBlock(
+                        0,
+                        0,
+                        "CHAPTER 2",
+                        HeaderBounds)),
+                CreatePage(
+                    3,
+                    CreateBlock(
+                        0,
+                        0,
+                        "CHAPTER 3",
+                        HeaderBounds)));
+
+        var result =
+            new DocumentTextNormalizer()
+                .Normalize(extraction);
+
+        var blocks =
+            result.Pages
+                .SelectMany(page =>
+                    page.Blocks)
+                .ToArray();
+
+        Assert.All(
+            blocks,
+            block =>
+            {
+                Assert.True(
+                    block.IsExcluded);
+
+                Assert.Equal(
+                    DocumentBlockExclusionReason.RepeatedHeader,
+                    block.ExclusionReason);
+            });
+    }
+
+    [Fact]
+    public void Normalize_ExcludesRecurringFooters()
+    {
+        var extraction =
+            CreateExtraction(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        0,
+                        "Copyright notice",
+                        FooterBounds)),
+                CreatePage(
+                    2,
+                    CreateBlock(
+                        0,
+                        0,
+                        "Copyright notice",
+                        FooterBounds)),
+                CreatePage(
+                    3,
+                    CreateBlock(
+                        0,
+                        0,
+                        "Copyright notice",
+                        FooterBounds)));
+
+        var result =
+            new DocumentTextNormalizer()
+                .Normalize(extraction);
+
+        Assert.All(
+            result.Pages.SelectMany(page =>
+                page.Blocks),
+            block =>
+                Assert.Equal(
+                    DocumentBlockExclusionReason.RepeatedFooter,
+                    block.ExclusionReason));
+    }
+
+    [Fact]
+    public void Normalize_DoesNotExcludeNonRecurringOrBodyBlocks()
+    {
+        var extraction =
+            CreateExtraction(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        0,
+                        "Only twice",
+                        HeaderBounds),
+                    CreateBlock(
+                        1,
+                        1,
+                        "Repeated body",
+                        BodyBounds)),
+                CreatePage(
+                    2,
+                    CreateBlock(
+                        0,
+                        0,
+                        "Only twice",
+                        HeaderBounds),
+                    CreateBlock(
+                        1,
+                        1,
+                        "Repeated body",
+                        BodyBounds)),
+                CreatePage(
+                    3,
+                    CreateBlock(
+                        0,
+                        0,
+                        "Different header",
+                        HeaderBounds),
+                    CreateBlock(
+                        1,
+                        1,
+                        "Repeated body",
+                        BodyBounds)));
+
+        var result =
+            new DocumentTextNormalizer()
+                .Normalize(extraction);
+
+        Assert.All(
+            result.Pages.SelectMany(page =>
+                page.Blocks),
+            block =>
+            {
+                Assert.False(
+                    block.IsExcluded);
+
+                Assert.Null(
+                    block.ExclusionReason);
+            });
+    }
+
+    [Fact]
     public void Normalize_HonorsCancellation()
     {
         var extraction =
@@ -172,6 +326,27 @@ public sealed class DocumentTextNormalizerTests
                         extraction,
                         cancellation.Token));
     }
+
+    private static readonly NormalizedRectangle HeaderBounds =
+        new(
+            0.1,
+            0.02,
+            0.9,
+            0.07);
+
+    private static readonly NormalizedRectangle BodyBounds =
+        new(
+            0.1,
+            0.30,
+            0.9,
+            0.40);
+
+    private static readonly NormalizedRectangle FooterBounds =
+        new(
+            0.1,
+            0.90,
+            0.9,
+            0.96);
 
     private static DocumentExtractionResult
         CreateExtraction(
@@ -200,14 +375,16 @@ public sealed class DocumentTextNormalizerTests
         CreateBlock(
             int sourceSequence,
             int? readingOrder,
-            string text) =>
+            string text,
+            NormalizedRectangle? bounds = null) =>
         new(
             sourceSequence,
             readingOrder,
             text,
+            bounds ??
             new NormalizedRectangle(
                 0.1,
-                0.1,
+                0.20,
                 0.9,
-                0.2));
+                0.30));
 }
