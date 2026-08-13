@@ -126,3 +126,11 @@ The 8.4e experiment showed that external hints can recover useful weakly styled
 editorial labels without reintroducing broad text-only heuristics. They should be
 introduced separately through a neutral optional segmentation contract so their
 behavior can be reviewed and tested independently.
+
+## Superseded by v4
+
+Increment 8.4g retains this strict automatic typography policy unchanged and
+adds optional caller-provided editorial heading hints through the neutral
+`DocumentSegmentationOptions` contract.
+
+See `structural-segmentation-v4.md`.

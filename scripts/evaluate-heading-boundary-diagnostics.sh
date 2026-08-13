@@ -186,7 +186,7 @@ de_bytes = int(sys.argv[6])
 
 SCHEMA = "document-processing-heading-boundary-analysis-v1"
 NORMALIZATION = "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1"
-SEGMENTATION = "strict-typography-cross-page-fallback-v3"
+SEGMENTATION = "strict-typography-optional-hints-cross-page-fallback-v4"
 
 def require(condition, message):
     if not condition:

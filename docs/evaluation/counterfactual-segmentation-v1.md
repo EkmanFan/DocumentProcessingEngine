@@ -323,3 +323,27 @@ to match the independently reconstructed `E-StrictTypographyOnly` policy.
 
 The remaining comparison policies are retained to preserve evidence about why
 the earlier generic explicit and weak-uppercase fallbacks were rejected.
+
+## Production update — Increment 8.4g
+
+Optional heading hints are now part of the production segmentation contract.
+
+The counterfactual evaluator runs two real production modes:
+
+```text
+A-ProductionStrictTypographyV4
+    default empty hints
+
+G-ProductionStrictTypographyPlusHintsV4
+    caller-provided evaluation hints
+```
+
+The evaluator requires exact heading-identity parity before reporting:
+
+```text
+production A == independent strict policy E
+production G == independent strict+hints policy F
+```
+
+The pinned Ehrman production-with-hints regression is 274 segments, while
+De Decretis remains 50.

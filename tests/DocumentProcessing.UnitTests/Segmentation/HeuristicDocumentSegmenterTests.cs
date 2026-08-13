@@ -201,6 +201,141 @@ public sealed class HeuristicDocumentSegmenterTests
     }
 
     [Fact]
+    public void Segment_DefaultOptionsPreserveStrictTypographyBehavior()
+    {
+        var normalization =
+            CreateNormalization(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        "Structured Topic",
+                        pointSize: 12,
+                        wordCount: 2),
+                    CreateBlock(
+                        1,
+                        "Ordinary body with sufficient weight.",
+                        pointSize: 10,
+                        wordCount: 12)));
+
+        var segmenter =
+            new HeuristicDocumentSegmenter();
+
+        var implicitDefault =
+            segmenter.Segment(
+                normalization);
+
+        var explicitDefault =
+            segmenter.Segment(
+                normalization,
+                DocumentSegmentationOptions.Default);
+
+        Assert.Equal(
+            implicitDefault.SegmentationProfileId,
+            explicitDefault.SegmentationProfileId);
+
+        Assert.Equal(
+            implicitDefault.Segments.Select(segment =>
+                (
+                    segment.Id,
+                    segment.HeadingText,
+                    segment.Text)),
+            explicitDefault.Segments.Select(segment =>
+                (
+                    segment.Id,
+                    segment.HeadingText,
+                    segment.Text)));
+    }
+
+    [Fact]
+    public void Segment_UsesExactEditorialHintBelowTypographyThreshold()
+    {
+        var result =
+            Segment(
+                new DocumentSegmentationOptions(
+                    ["TAKE A STAND"]),
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        "TAKE A STAND",
+                        pointSize: 11,
+                        wordCount: 3),
+                    CreateBlock(
+                        1,
+                        "Ordinary body with sufficient weight.",
+                        pointSize: 10,
+                        wordCount: 12)));
+
+        var segment =
+            Assert.Single(
+                result.Segments);
+
+        Assert.Equal(
+            "TAKE A STAND",
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void Segment_UsesDecoratedEditorialHintWithoutTypography()
+    {
+        var result =
+            Segment(
+                new DocumentSegmentationOptions(
+                    ["INTRODUCTION"]),
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        "I INTRODUCTION"),
+                    CreateBlock(
+                        1,
+                        "Body.")));
+
+        var segment =
+            Assert.Single(
+                result.Segments);
+
+        Assert.Equal(
+            "I INTRODUCTION",
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void Segment_UsesCompactEditorialHintForSplitExtraction()
+    {
+        var result =
+            Segment(
+                new DocumentSegmentationOptions(
+                    ["WHAT DO YOU THINK?"]),
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        "WHAT DO YOU THI NK?"),
+                    CreateBlock(
+                        1,
+                        "Body.")));
+
+        var segment =
+            Assert.Single(
+                result.Segments);
+
+        Assert.Equal(
+            "WHAT DO YOU THI NK?",
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void SegmentationOptions_RejectHintWithoutAlphaNumericContent()
+    {
+        Assert.Throws<ArgumentException>(
+            () =>
+                new DocumentSegmentationOptions(
+                    ["***"]));
+    }
+
+    [Fact]
     public void Segment_RejectsBareLeadingNumberAtBodyFontSize()
     {
         var result =
@@ -595,6 +730,15 @@ public sealed class HeuristicDocumentSegmenterTests
             .Segment(
                 CreateNormalization(
                     pages));
+
+    private static DocumentSegmentationResult Segment(
+        DocumentSegmentationOptions options,
+        params NormalizedDocumentPage[] pages) =>
+        new HeuristicDocumentSegmenter()
+            .Segment(
+                CreateNormalization(
+                    pages),
+                options);
 
     private static DocumentTextNormalizationResult
         CreateNormalization(

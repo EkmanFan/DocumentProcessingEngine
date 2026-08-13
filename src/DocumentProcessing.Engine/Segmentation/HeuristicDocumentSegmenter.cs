@@ -15,18 +15,32 @@ public sealed class HeuristicDocumentSegmenter :
     IDocumentSegmenter
 {
     public const string SegmentationProfileId =
-        "strict-typography-cross-page-fallback-v3";
+        "strict-typography-optional-hints-cross-page-fallback-v4";
 
     public DocumentSegmentationResult Segment(
         DocumentTextNormalizationResult document,
+        CancellationToken cancellationToken = default) =>
+        Segment(
+            document,
+            DocumentSegmentationOptions.Default,
+            cancellationToken);
+
+    public DocumentSegmentationResult Segment(
+        DocumentTextNormalizationResult document,
+        DocumentSegmentationOptions options,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(options);
         cancellationToken.ThrowIfCancellationRequested();
 
         var headingEvaluator =
             new HeadingEvidenceEvaluator(
                 document);
+
+        var headingHintMatcher =
+            new HeadingHintMatcher(
+                options.HeadingHints);
 
         var segments =
             new List<DocumentSegment>();
@@ -59,6 +73,8 @@ public sealed class HeuristicDocumentSegmenter :
                 cancellationToken.ThrowIfCancellationRequested();
 
                 if (headingEvaluator.IsHeading(
+                        block) ||
+                    headingHintMatcher.IsHeading(
                         block))
                 {
                     if (structured is not null)

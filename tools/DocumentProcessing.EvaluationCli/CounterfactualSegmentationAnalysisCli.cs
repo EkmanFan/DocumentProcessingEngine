@@ -23,7 +23,7 @@ namespace DocumentProcessing.EvaluationCli;
 internal static class CounterfactualSegmentationAnalysisCli
 {
     private const string ReportSchemaVersion =
-        "document-processing-counterfactual-segmentation-analysis-v2";
+        "document-processing-counterfactual-segmentation-analysis-v3";
 
     private const int MaximumHeadingCharacters = 180;
     private const int MaximumHeadingWords = 24;
@@ -164,13 +164,41 @@ internal static class CounterfactualSegmentationAnalysisCli
                         contextByBlock))
                 .ToArray();
 
+        var productionHintedResult =
+            new HeuristicDocumentSegmenter()
+                .Segment(
+                    normalized,
+                    new DocumentSegmentationOptions(
+                        options.HeadingHints));
+
+        var productionHintedSegments =
+            productionHintedResult.Segments
+                .Select(segment =>
+                    ToEvaluationSegment(
+                        segment,
+                        contextByBlock))
+                .ToArray();
+
         ValidateCoverage(
             contexts,
             productionSegments,
-            "ProductionStrictTypographyV3");
+            "ProductionStrictTypographyV4");
+
+        ValidateCoverage(
+            contexts,
+            productionHintedSegments,
+            "ProductionStrictTypographyPlusHintsV4");
 
         var productionHeadingKeys =
             productionSegments
+                .Where(segment =>
+                    segment.HeadingText is not null)
+                .Select(segment =>
+                    segment.Blocks[0].Key)
+                .ToHashSet();
+
+        var productionHintedHeadingKeys =
+            productionHintedSegments
                 .Where(segment =>
                     segment.HeadingText is not null)
                 .Select(segment =>
@@ -238,12 +266,26 @@ internal static class CounterfactualSegmentationAnalysisCli
                     context.Key)
                 .ToHashSet();
 
+        if (!productionHeadingKeys.SetEquals(
+                strictTypographyHeadingKeys))
+        {
+            throw new InvalidDataException(
+                "Production default heading identities differ from the independent strict-typography policy.");
+        }
+
+        if (!productionHintedHeadingKeys.SetEquals(
+                strictTypographyPlusHintsHeadingKeys))
+        {
+            throw new InvalidDataException(
+                "Production hinted heading identities differ from the independent strict-typography-plus-hints policy.");
+        }
+
         var policies =
             new List<PolicyResult>
             {
                 BuildPolicyResult(
-                    "A-ProductionStrictTypographyV3",
-                    "Current production strict typography policy; no textual fallback and no editorial hints.",
+                    "A-ProductionStrictTypographyV4",
+                    "Current production strict typography policy using default empty heading hints.",
                     contexts,
                     productionSegments,
                     productionHeadingKeys,
@@ -316,7 +358,21 @@ internal static class CounterfactualSegmentationAnalysisCli
                     key =>
                         strictTypographyHeadingKeys.Contains(key)
                             ? "StrictTypography"
-                            : "EditorialHint")
+                            : "EditorialHint"),
+                BuildPolicyResult(
+                    "G-ProductionStrictTypographyPlusHintsV4",
+                    "Real production segmenter with caller-provided heading hints.",
+                    contexts,
+                    productionHintedSegments,
+                    productionHintedHeadingKeys,
+                    productionHeadingKeys,
+                    bodyFontSize,
+                    options.Probes,
+                    options.HistoricalSegmentCount,
+                    key =>
+                        productionHeadingKeys.Contains(key)
+                            ? "ProductionTypography"
+                            : "ProductionEditorialHint")
             };
 
         var strictGateComparisons =

@@ -197,7 +197,7 @@ de_historical = int(sys.argv[8])
 
 EXPECTED_SCHEMA = "document-processing-segmented-pdf-analysis-v1"
 EXPECTED_NORMALIZATION = "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1"
-EXPECTED_SEGMENTATION = "strict-typography-cross-page-fallback-v3"
+EXPECTED_SEGMENTATION = "strict-typography-optional-hints-cross-page-fallback-v4"
 
 def require(condition, message):
     if not condition:
