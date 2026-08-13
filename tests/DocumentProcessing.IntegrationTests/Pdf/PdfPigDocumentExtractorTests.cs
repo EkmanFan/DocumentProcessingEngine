@@ -10,7 +10,7 @@ namespace DocumentProcessing.IntegrationTests.Pdf;
 public sealed class PdfPigDocumentExtractorTests
 {
     [Fact]
-    public async Task ExtractAsync_ExtractsNativeTextFromGeneratedPdf()
+    public async Task ExtractAsync_ExtractsNativeTextAndStructuredWordsFromGeneratedPdf()
     {
         var pdfBytes = CreateSinglePagePdf("Hello PDF");
         await using var stream = new MemoryStream(pdfBytes);
@@ -20,12 +20,37 @@ public sealed class PdfPigDocumentExtractorTests
         var result = await extractor.ExtractAsync(source, DocumentFormatId.Pdf);
 
         Assert.Equal(DocumentFormatId.Pdf, result.Format);
+
         var page = Assert.Single(result.Pages);
+
         Assert.Equal(1, page.PhysicalPageNumber);
         Assert.Contains("Hello PDF", page.SourceText, StringComparison.Ordinal);
-        Assert.True(page.WordCount > 0);
+        Assert.True(page.SourceWidth > 0);
+        Assert.True(page.SourceHeight > 0);
+        Assert.NotEmpty(page.Words);
+        Assert.Equal(page.Words.Count, page.WordCount);
         Assert.Equal(0, page.RasterImageCount);
         Assert.Equal(0, page.LargestRasterImageAreaRatio);
+
+        Assert.Equal(
+            Enumerable.Range(0, page.Words.Count),
+            page.Words.Select(word => word.SourceSequence));
+
+        Assert.Contains(
+            page.Words,
+            word => word.Text.Contains("Hello", StringComparison.Ordinal));
+
+        Assert.All(
+            page.Words,
+            word =>
+            {
+                Assert.True(double.IsFinite(word.Bounds.Left));
+                Assert.True(double.IsFinite(word.Bounds.Top));
+                Assert.True(double.IsFinite(word.Bounds.Right));
+                Assert.True(double.IsFinite(word.Bounds.Bottom));
+                Assert.True(word.Bounds.Right >= word.Bounds.Left);
+                Assert.True(word.Bounds.Bottom >= word.Bounds.Top);
+            });
     }
 
     [Fact]
@@ -59,7 +84,9 @@ public sealed class PdfPigDocumentExtractorTests
         var builder = new PdfDocumentBuilder();
         var font = builder.AddStandard14Font(Standard14Font.Helvetica);
         var page = builder.AddPage(PageSize.A4);
+
         page.AddText(text, 12, new PdfPoint(72, 720), font);
+
         return builder.Build();
     }
 }
