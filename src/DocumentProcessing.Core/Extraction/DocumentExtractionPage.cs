@@ -10,7 +10,8 @@ public sealed class DocumentExtractionPage
         double largestRasterImageAreaRatio = 0,
         double sourceWidth = 0,
         double sourceHeight = 0,
-        IReadOnlyList<DocumentWord>? words = null)
+        IReadOnlyList<DocumentWord>? words = null,
+        IReadOnlyList<DocumentTextBlock>? blocks = null)
     {
         if (physicalPageNumber <= 0)
         {
@@ -54,6 +55,7 @@ public sealed class DocumentExtractionPage
         SourceWidth = sourceWidth;
         SourceHeight = sourceHeight;
         Words = words ?? [];
+        Blocks = blocks ?? [];
     }
 
     public int PhysicalPageNumber { get; }
@@ -73,4 +75,10 @@ public sealed class DocumentExtractionPage
     public double SourceHeight { get; }
 
     public IReadOnlyList<DocumentWord> Words { get; }
+
+    /// <summary>
+    /// Layout blocks in derived reading order.
+    /// Each block retains its original SourceSequence independently.
+    /// </summary>
+    public IReadOnlyList<DocumentTextBlock> Blocks { get; }
 }

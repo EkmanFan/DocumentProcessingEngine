@@ -10,7 +10,7 @@ namespace DocumentProcessing.IntegrationTests.Pdf;
 public sealed class PdfPigDocumentExtractorTests
 {
     [Fact]
-    public async Task ExtractAsync_ExtractsNativeTextAndStructuredWordsFromGeneratedPdf()
+    public async Task ExtractAsync_ExtractsNativeTextWordsAndLayoutBlocksFromGeneratedPdf()
     {
         var pdfBytes = CreateSinglePagePdf("Hello PDF");
         await using var stream = new MemoryStream(pdfBytes);
@@ -50,6 +50,33 @@ public sealed class PdfPigDocumentExtractorTests
                 Assert.True(double.IsFinite(word.Bounds.Bottom));
                 Assert.True(word.Bounds.Right >= word.Bounds.Left);
                 Assert.True(word.Bounds.Bottom >= word.Bounds.Top);
+            });
+
+        Assert.NotEmpty(page.Blocks);
+
+        Assert.Equal(
+            Enumerable.Range(0, page.Blocks.Count),
+            page.Blocks.Select(block => block.ReadingOrder!.Value));
+
+        Assert.Equal(
+            Enumerable.Range(0, page.Blocks.Count),
+            page.Blocks
+                .Select(block => block.SourceSequence)
+                .OrderBy(sourceSequence => sourceSequence));
+
+        Assert.All(
+            page.Blocks,
+            block =>
+            {
+                Assert.NotNull(block.ReadingOrder);
+                Assert.False(string.IsNullOrWhiteSpace(block.Text));
+                Assert.NotEmpty(block.Words);
+                Assert.True(block.Bounds.Right >= block.Bounds.Left);
+                Assert.True(block.Bounds.Bottom >= block.Bounds.Top);
+
+                Assert.All(
+                    block.Words,
+                    word => Assert.Contains(word, page.Words));
             });
     }
 

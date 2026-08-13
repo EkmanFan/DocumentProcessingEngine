@@ -2,6 +2,10 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.Core;
+using UglyToad.PdfPig.DocumentLayoutAnalysis;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.ReadingOrderDetector;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
@@ -76,6 +80,39 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
                             sourceHeight))
                     .ToArray();
 
+                var documentWordBySourceWord =
+                    new Dictionary<Word, DocumentWord>(ReferenceEqualityComparer.Instance);
+
+                for (var i = 0; i < sourceWords.Length; i++)
+                {
+                    documentWordBySourceWord.Add(sourceWords[i], documentWords[i]);
+                }
+
+                var sourceBlocks = DocstrumBoundingBoxes.Instance
+                    .GetBlocks(sourceWords);
+
+                var blockSourceSequence =
+                    new Dictionary<TextBlock, int>(ReferenceEqualityComparer.Instance);
+
+                for (var i = 0; i < sourceBlocks.Count; i++)
+                {
+                    blockSourceSequence.Add(sourceBlocks[i], i);
+                }
+
+                var orderedBlocks = UnsupervisedReadingOrderDetector.Instance
+                    .Get(sourceBlocks)
+                    .ToArray();
+
+                var documentBlocks = orderedBlocks
+                    .Select(block =>
+                        ToDocumentTextBlock(
+                            block,
+                            blockSourceSequence[block],
+                            documentWordBySourceWord,
+                            sourceWidth,
+                            sourceHeight))
+                    .ToArray();
+
                 var images = page.GetImages().ToArray();
                 var pageArea = sourceWidth * sourceHeight;
 
@@ -95,7 +132,8 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
                     largestRasterImageAreaRatio,
                     sourceWidth,
                     sourceHeight,
-                    documentWords));
+                    documentWords,
+                    documentBlocks));
             }
 
             return new DocumentExtractionResult(DocumentFormatId.Pdf, pages);
@@ -115,10 +153,42 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
         Word word,
         int sourceSequence,
         double pageWidth,
+        double pageHeight) =>
+        new(
+            sourceSequence,
+            word.Text,
+            ToNormalizedRectangle(word.BoundingBox, pageWidth, pageHeight));
+
+    private static DocumentTextBlock ToDocumentTextBlock(
+        TextBlock block,
+        int sourceSequence,
+        IReadOnlyDictionary<Word, DocumentWord> documentWordBySourceWord,
+        double pageWidth,
         double pageHeight)
     {
-        var bounds = word.BoundingBox;
+        var words = block.TextLines
+            .SelectMany(line => line.Words)
+            .Select(word =>
+                documentWordBySourceWord.TryGetValue(word, out var documentWord)
+                    ? documentWord
+                    : throw new InvalidDataException(
+                        "PdfPig layout analysis returned a word that was not present " +
+                        "in the native word extraction result."))
+            .ToArray();
 
+        return new DocumentTextBlock(
+            sourceSequence,
+            block.ReadingOrder >= 0 ? block.ReadingOrder : null,
+            block.Text,
+            ToNormalizedRectangle(block.BoundingBox, pageWidth, pageHeight),
+            words);
+    }
+
+    private static NormalizedRectangle ToNormalizedRectangle(
+        PdfRectangle bounds,
+        double pageWidth,
+        double pageHeight)
+    {
         var left = Convert.ToDouble(bounds.Left) / pageWidth;
         var right = Convert.ToDouble(bounds.Right) / pageWidth;
 
@@ -126,9 +196,6 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
         var top = 1 - Convert.ToDouble(bounds.Top) / pageHeight;
         var bottom = 1 - Convert.ToDouble(bounds.Bottom) / pageHeight;
 
-        return new DocumentWord(
-            sourceSequence,
-            word.Text,
-            new NormalizedRectangle(left, top, right, bottom));
+        return new NormalizedRectangle(left, top, right, bottom);
     }
 }
