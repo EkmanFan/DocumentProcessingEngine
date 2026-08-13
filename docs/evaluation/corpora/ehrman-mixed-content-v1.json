@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "document-processing-ocr-benchmark-manifest-v1",
+  "benchmarkId": "ehrman-8e-page233-mixed-content-v1",
+  "description": "Single real mixed-content Ehrman page: modern two-column prose, ancient papyrus facsimile, and modern figure caption.",
+  "source": {
+    "fileName": "the-new-testament-a-historical-introduction-to-the-early-christian-writings-9780197754023-9780197754030-9780197754047_compress.pdf",
+    "sha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+    "byteLength": 233369762,
+    "totalPages": 617
+  },
+  "rendering": {
+    "format": "png",
+    "dpi": 300,
+    "colorMode": "rgb",
+    "preprocessing": "none"
+  },
+  "pages": [
+    {
+      "pageNumber": 233,
+      "printedPageNumber": "202",
+      "group": "mixed-content",
+      "expectedNativeState": "TextlessDominantRaster"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "document-processing-ocr-mixed-content-structure-v1",
+  "benchmarkId": "ehrman-8e-page233-mixed-content-v1",
+  "sourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+  "pageNumber": 233,
+  "printedPageNumber": "202",
+  "referenceMethod": "Manual visual region annotation on the exact pinned page. Bounds were derived from a verified render of physical PDF page 233.",
+  "regions": [
+    {
+      "id": "section-title",
+      "kind": "ModernHeading",
+      "bounds": {
+        "left": 0.210269,
+        "top": 0.2092,
+        "right": 0.515077,
+        "bottom": 0.266541
+      }
+    },
+    {
+      "id": "left-body",
+      "kind": "ModernPrintedText",
+      "bounds": {
+        "left": 0.210269,
+        "top": 0.277253,
+        "right": 0.516707,
+        "bottom": 0.373031
+      }
+    },
+    {
+      "id": "right-opening",
+      "kind": "ModernPrintedText",
+      "bounds": {
+        "left": 0.528117,
+        "top": 0.206049,
+        "right": 0.836186,
+        "bottom": 0.364209
+      }
+    },
+    {
+      "id": "facsimile",
+      "kind": "FacsimileImage",
+      "bounds": {
+        "left": 0.210269,
+        "top": 0.382483,
+        "right": 0.515077,
+        "bottom": 0.770006
+      }
+    },
+    {
+      "id": "caption",
+      "kind": "Caption",
+      "bounds": {
+        "left": 0.208639,
+        "top": 0.770006,
+        "right": 0.516707,
+        "bottom": 0.845621
+      }
+    }
+  ],
+  "narrativeContinuity": {
+    "leftRegionId": "left-body",
+    "leftNeedle": "imagine",
+    "rightRegionId": "right-opening",
+    "rightNeedle": "for example",
+    "humanReading": "Imagine, for example",
+    "excludedKinds": [
+      "FacsimileImage",
+      "Caption"
+    ]
+  },
+  "policyObservation": {
+    "facsimileOcrIsNarrativeTruth": false,
+    "facsimileRecognitionRequiredForV1": false,
+    "facsimilePreservationRequiredForFutureProduction": true
+  }
+}

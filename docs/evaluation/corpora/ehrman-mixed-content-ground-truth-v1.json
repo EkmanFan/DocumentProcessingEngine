@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "document-processing-ocr-ground-truth-v1",
+  "benchmarkId": "ehrman-8e-page233-mixed-content-v1",
+  "sourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+  "status": "curated-v1",
+  "referenceMethod": "Manual visual transcription from the exact pinned PDF physical page 233 / printed page 202, cross-checked against the user-provided page image. Only modern printed text and the modern figure caption are scored; the ancient papyrus facsimile is explicitly not treated as narrative ground truth.",
+  "normalizationProfile": "unicode-nfc-lower-punctuation-fold-whitespace-collapse-linebreak-dehyphenation-v1",
+  "zones": [
+    {
+      "id": "p233-section-title",
+      "pageNumber": 233,
+      "description": "Modern printed section title above the left column.",
+      "bounds": {
+        "left": 0.210269,
+        "top": 0.2092,
+        "right": 0.515077,
+        "bottom": 0.266541
+      },
+      "text": "THE NEW TESTAMENT\nEPISTLES AND THE CONTEXTUAL\nMETHOD"
+    },
+    {
+      "id": "p233-left-body",
+      "pageNumber": 233,
+      "description": "Complete modern prose block in the left column ending with the cross-column continuation word Imagine.",
+      "bounds": {
+        "left": 0.210269,
+        "top": 0.277253,
+        "right": 0.516707,
+        "bottom": 0.373031
+      },
+      "text": "As we have noted, 1 John, 2 John, and 3 John are forms of correspondence—epistles or letters—which address specific communities or individuals to resolve specific problems. This fact, however, makes these texts more difficult to interpret than the narrative Gospels we have studied so far. We are, in effect, reading other people’s mail. Imagine,"
+    },
+    {
+      "id": "p233-right-opening",
+      "pageNumber": 233,
+      "description": "First complete modern paragraph at the top of the right column, which continues the left-column sentence.",
+      "bounds": {
+        "left": 0.528117,
+        "top": 0.206049,
+        "right": 0.836186,
+        "bottom": 0.364209
+      },
+      "text": "for example, you stumble on a short message addressed to someone else that says, “Great. We’ll meet there at noon.” Without additional context, you would have trouble making sense of it. You would wonder why the two parties are meeting and what they intend to discuss. You would not know, for example, where “there” is. For that matter, you would not even know what day the meeting will take place. To make sense of their message, you would have to know more about its context. Put another way, knowing a document’s historical context is absolutely vital for its interpretation."
+    },
+    {
+      "id": "p233-caption",
+      "pageNumber": 233,
+      "description": "Modern printed Figure 11.1 caption below the papyrus facsimile.",
+      "bounds": {
+        "left": 0.208639,
+        "top": 0.770006,
+        "right": 0.516707,
+        "bottom": 0.845621
+      },
+      "text": "Figure 11.1 Example of a papyrus letter from antiquity; letters from that period tended (like this one) to be much shorter than those of the New Testament. This particular specimen is from a person in Alexandria to a physician, requesting that he provide a friend with the medication he needs."
+    }
+  ]
+}
