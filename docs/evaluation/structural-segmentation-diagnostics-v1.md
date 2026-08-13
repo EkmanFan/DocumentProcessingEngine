@@ -11,7 +11,7 @@ gate.
 The current segmentation profile is:
 
 ```text
-page-bounded-obvious-headings-v1
+typography-aware-cross-page-fallback-v2
 ```
 
 ## Historical references
@@ -59,10 +59,10 @@ For each corpus the JSON report contains:
 
 - total segment count;
 - heading-triggered and fallback segment counts;
-- pages with no segment;
+- pages with no source block represented by a segment;
 - pages with multiple segments;
 - maximum segments on one page;
-- cross-page segment count;
+- cross-page segment count and exact source-page coverage;
 - min/median/average/max character count;
 - min/median/average/max source-block count;
 - small segments (`<= 120` characters);

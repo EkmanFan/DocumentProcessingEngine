@@ -184,9 +184,9 @@ ehrman_bytes = int(sys.argv[4])
 de_sha = sys.argv[5]
 de_bytes = int(sys.argv[6])
 
-SCHEMA = "document-processing-typography-pdf-analysis-v1"
+SCHEMA = "document-processing-typography-pdf-analysis-v2"
 NORMALIZATION = "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1"
-SEGMENTATION = "page-bounded-obvious-headings-v1"
+SEGMENTATION = "typography-aware-cross-page-fallback-v2"
 
 def require(condition, message):
     if not condition:
@@ -242,8 +242,8 @@ def summary(label, report):
         f"(sub={f['subsection']}, sec={f['section']}, chap={f['chapter']})"
     )
     print(
-        "  current text headings / overlap / text-only / font-only: "
-        f"{h['currentTextHeadings']} / {h['overlap']} / {h['textOnly']} / {h['fontOnly']}"
+        "  current segmenter headings / overlap / segmenter-only / font-only: "
+        f"{h['currentSegmenterHeadings']} / {h['overlap']} / {h['segmenterOnly']} / {h['fontOnly']}"
     )
 
 print()

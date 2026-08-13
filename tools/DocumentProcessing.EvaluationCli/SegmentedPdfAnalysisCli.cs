@@ -98,7 +98,7 @@ internal static class SegmentedPdfAnalysisCli
 
         var segmentation =
             BuildSegmentationMetrics(
-                selectedPages,
+                normalized.Pages,
                 segmented.Segments);
 
         var headings =
@@ -189,7 +189,7 @@ internal static class SegmentedPdfAnalysisCli
 
     private static SegmentationMetrics
         BuildSegmentationMetrics(
-            IReadOnlyCollection<DocumentExtractionPage> pages,
+            IReadOnlyCollection<NormalizedDocumentPage> pages,
             IReadOnlyList<DocumentSegment> segments)
     {
         var selectedPageNumbers =
@@ -199,18 +199,56 @@ internal static class SegmentedPdfAnalysisCli
                     pageNumber)
                 .ToArray();
 
-        var groups =
-            segments
-                .GroupBy(segment =>
-                    segment.FirstPhysicalPageNumber)
-                .ToDictionary(
-                    group =>
-                        group.Key,
-                    group =>
-                        group.Count());
+        var pageByBlock =
+            new Dictionary<
+                NormalizedDocumentTextBlock,
+                int>(
+                ReferenceEqualityComparer.Instance);
+
+        foreach (var page in pages)
+        {
+            foreach (var block in page.Blocks)
+            {
+                if (!pageByBlock.TryAdd(
+                        block,
+                        page.PhysicalPageNumber))
+                {
+                    throw new InvalidOperationException(
+                        "A normalized block instance appeared on more than one page.");
+                }
+            }
+        }
+
+        var segmentsPerPage =
+            new Dictionary<int, int>();
+
+        foreach (var segment in segments)
+        {
+            var touchedPages =
+                segment.SourceBlocks
+                    .Select(block =>
+                        pageByBlock.TryGetValue(
+                            block,
+                            out var pageNumber)
+                            ? pageNumber
+                            : throw new InvalidOperationException(
+                                "Segment referenced a normalized block outside the analyzed document."))
+                    .Distinct()
+                    .ToArray();
+
+            foreach (var pageNumber in touchedPages)
+            {
+                segmentsPerPage[pageNumber] =
+                    segmentsPerPage.TryGetValue(
+                        pageNumber,
+                        out var count)
+                        ? count + 1
+                        : 1;
+            }
+        }
 
         var pageNumbersWithSegments =
-            groups.Keys
+            segmentsPerPage.Keys
                 .OrderBy(pageNumber =>
                     pageNumber)
                 .ToArray();
@@ -218,11 +256,12 @@ internal static class SegmentedPdfAnalysisCli
         var pageNumbersWithoutSegments =
             selectedPageNumbers
                 .Where(pageNumber =>
-                    !groups.ContainsKey(pageNumber))
+                    !segmentsPerPage.ContainsKey(
+                        pageNumber))
                 .ToArray();
 
         var pageNumbersWithMultipleSegments =
-            groups
+            segmentsPerPage
                 .Where(pair =>
                     pair.Value > 1)
                 .OrderBy(pair =>
@@ -256,9 +295,9 @@ internal static class SegmentedPdfAnalysisCli
             pageNumbersWithSegments.Length,
             pageNumbersWithoutSegments.Length,
             pageNumbersWithMultipleSegments.Length,
-            groups.Count == 0
+            segmentsPerPage.Count == 0
                 ? 0
-                : groups.Values.Max(),
+                : segmentsPerPage.Values.Max(),
             segments.Count(segment =>
                 segment.FirstPhysicalPageNumber !=
                 segment.LastPhysicalPageNumber),

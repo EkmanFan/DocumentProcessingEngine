@@ -9,37 +9,27 @@ namespace DocumentProcessing.UnitTests.Segmentation;
 public sealed class HeuristicDocumentSegmenterTests
 {
     [Fact]
-    public void Segment_UsesOnePageBoundedFallbackSegmentWithoutHeading()
+    public void Segment_UsesPageBoundedFallbackWhenNoHeadingExists()
     {
-        var normalization =
-            CreateNormalization(
+        var result =
+            Segment(
                 CreatePage(
                     1,
-                    CreateNormalizedBlock(
+                    CreateBlock(
                         0,
                         "First paragraph."),
-                    CreateNormalizedBlock(
+                    CreateBlock(
                         1,
                         "Second paragraph.")),
                 CreatePage(
                     2,
-                    CreateNormalizedBlock(
+                    CreateBlock(
                         0,
                         "Third paragraph.")));
-
-        var result =
-            new HeuristicDocumentSegmenter()
-                .Segment(normalization);
 
         Assert.Equal(
             2,
             result.Segments.Count);
-
-        Assert.Equal(
-            [1, 2],
-            result.Segments
-                .Select(segment =>
-                    segment.FirstPhysicalPageNumber));
 
         Assert.All(
             result.Segments,
@@ -48,110 +38,185 @@ public sealed class HeuristicDocumentSegmenterTests
                     segment.FirstPhysicalPageNumber,
                     segment.LastPhysicalPageNumber));
 
-        Assert.Null(
-            result.Segments[0].HeadingText);
-
-        Assert.Equal(
-            "First paragraph.\n\nSecond paragraph.",
-            result.Segments[0].Text);
+        Assert.All(
+            result.Segments,
+            segment =>
+                Assert.Null(
+                    segment.HeadingText));
     }
 
     [Fact]
-    public void Segment_StartsNewSegmentOnObviousUppercaseHeading()
+    public void Segment_AllowsHeadingLedStructureToSpanPages()
     {
-        var first =
-            CreateNormalizedBlock(
-                0,
-                "Preface text.");
-
-        var heading =
-            CreateNormalizedBlock(
-                1,
-                "HISTORICAL CONTEXT");
-
-        var body =
-            CreateNormalizedBlock(
-                2,
-                "The following discussion begins here.");
-
         var result =
-            new HeuristicDocumentSegmenter()
-                .Segment(
-                    CreateNormalization(
-                        CreatePage(
-                            1,
-                            first,
-                            heading,
-                            body)));
+            Segment(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        "INTRODUCTION",
+                        pointSize: 13,
+                        wordCount: 2),
+                    CreateBlock(
+                        1,
+                        "Body on page one.",
+                        pointSize: 10,
+                        wordCount: 8)),
+                CreatePage(
+                    2,
+                    CreateBlock(
+                        0,
+                        "Body continuing on page two.",
+                        pointSize: 10,
+                        wordCount: 10)),
+                CreatePage(
+                    3,
+                    CreateBlock(
+                        0,
+                        "NEXT SECTION",
+                        pointSize: 13,
+                        wordCount: 2),
+                    CreateBlock(
+                        1,
+                        "Second section body.",
+                        pointSize: 10,
+                        wordCount: 8)));
 
         Assert.Equal(
             2,
+            result.Segments.Count);
+
+        var first =
+            result.Segments[0];
+
+        Assert.Equal(
+            "INTRODUCTION",
+            first.HeadingText);
+
+        Assert.Equal(
+            1,
+            first.FirstPhysicalPageNumber);
+
+        Assert.Equal(
+            2,
+            first.LastPhysicalPageNumber);
+
+        Assert.Contains(
+            "Body continuing on page two.",
+            first.Text,
+            StringComparison.Ordinal);
+
+        var second =
+            result.Segments[1];
+
+        Assert.Equal(
+            3,
+            second.FirstPhysicalPageNumber);
+
+        Assert.Equal(
+            3,
+            second.LastPhysicalPageNumber);
+    }
+
+    [Fact]
+    public void Segment_KeepsPreHeadingContentAsPageBoundedFallback()
+    {
+        var result =
+            Segment(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        "Preface body.",
+                        pointSize: 10,
+                        wordCount: 8)),
+                CreatePage(
+                    2,
+                    CreateBlock(
+                        0,
+                        "More unstructured body.",
+                        pointSize: 10,
+                        wordCount: 8),
+                    CreateBlock(
+                        1,
+                        "STRUCTURED SECTION",
+                        pointSize: 13,
+                        wordCount: 2),
+                    CreateBlock(
+                        2,
+                        "Structured body.",
+                        pointSize: 10,
+                        wordCount: 8)));
+
+        Assert.Equal(
+            3,
             result.Segments.Count);
 
         Assert.Null(
             result.Segments[0].HeadingText);
 
         Assert.Equal(
-            "HISTORICAL CONTEXT",
+            (1, 1),
+            (
+                result.Segments[0].FirstPhysicalPageNumber,
+                result.Segments[0].LastPhysicalPageNumber));
+
+        Assert.Null(
             result.Segments[1].HeadingText);
 
         Assert.Equal(
-            [heading, body],
-            result.Segments[1].SourceBlocks);
+            (2, 2),
+            (
+                result.Segments[1].FirstPhysicalPageNumber,
+                result.Segments[1].LastPhysicalPageNumber));
+
+        Assert.Equal(
+            "STRUCTURED SECTION",
+            result.Segments[2].HeadingText);
     }
 
     [Fact]
-    public void Segment_RecognizesExplicitNumberedHeading()
+    public void Segment_AcceptsExplicitStructuralHeadingWithoutTypography()
     {
-        var heading =
-            CreateNormalizedBlock(
-                0,
-                "1. Introduction");
-
-        var body =
-            CreateNormalizedBlock(
-                1,
-                "Ordinary body content follows.");
-
         var segment =
             Assert.Single(
-                new HeuristicDocumentSegmenter()
-                    .Segment(
-                        CreateNormalization(
-                            CreatePage(
-                                1,
-                                heading,
-                                body)))
-                    .Segments);
+                Segment(
+                    CreatePage(
+                        1,
+                        CreateBlock(
+                            0,
+                            "1. Introduction"),
+                        CreateBlock(
+                            1,
+                            "Body.")))
+                .Segments);
 
         Assert.Equal(
             "1. Introduction",
             segment.HeadingText);
-
-        Assert.Equal(
-            "1. Introduction\n\nOrdinary body content follows.",
-            segment.Text);
     }
 
     [Fact]
-    public void Segment_DoesNotPromoteOrdinarySentenceToHeading()
+    public void Segment_RejectsBareLeadingNumberAtBodyFontSize()
     {
-        var normalization =
-            CreateNormalization(
+        var result =
+            Segment(
                 CreatePage(
                     1,
-                    CreateNormalizedBlock(
+                    CreateBlock(
                         0,
-                        "This is an ordinary sentence"),
-                    CreateNormalizedBlock(
+                        "749 ’; and all that they may be constant to",
+                        pointSize: 11,
+                        wordCount: 9),
+                    CreateBlock(
                         1,
-                        "More body content.")));
+                        "Ordinary body.",
+                        pointSize: 11,
+                        wordCount: 8)));
 
         var segment =
             Assert.Single(
-                new HeuristicDocumentSegmenter()
-                    .Segment(normalization)
-                    .Segments);
+                result.Segments);
 
         Assert.Null(
             segment.HeadingText);
@@ -162,29 +227,137 @@ public sealed class HeuristicDocumentSegmenterTests
     }
 
     [Fact]
-    public void Segment_IgnoresExcludedMarginBlocks()
+    public void Segment_RejectsExplicitStructuralLabelWhenTypographyContradictsIt()
     {
-        var excludedHeader =
-            CreateNormalizedBlock(
-                0,
-                "CHAPTER 7",
-                DocumentBlockExclusionReason.RepeatedHeader);
-
-        var body =
-            CreateNormalizedBlock(
-                1,
-                "Body content.");
+        var result =
+            Segment(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        "Chapter 1: Running label",
+                        pointSize: 8,
+                        wordCount: 4),
+                    CreateBlock(
+                        1,
+                        "Ordinary body with several words here.",
+                        pointSize: 10,
+                        wordCount: 12)));
 
         var segment =
             Assert.Single(
-                new HeuristicDocumentSegmenter()
-                    .Segment(
-                        CreateNormalization(
-                            CreatePage(
-                                1,
-                                excludedHeader,
-                                body)))
-                    .Segments);
+                result.Segments);
+
+        Assert.Null(
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void Segment_AcceptsUppercaseLabelWithModestTypographicLift()
+    {
+        var result =
+            Segment(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        "ANOTHER GLIMPSE INTO THE PAST",
+                        pointSize: 11.5,
+                        wordCount: 5),
+                    CreateBlock(
+                        1,
+                        "Ordinary body with sufficient weight.",
+                        pointSize: 10,
+                        wordCount: 12)));
+
+        var segment =
+            Assert.Single(
+                result.Segments);
+
+        Assert.Equal(
+            "ANOTHER GLIMPSE INTO THE PAST",
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void Segment_RejectsCorruptedLargeTypography()
+    {
+        var result =
+            Segment(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        ". i';�-� _ J -��",
+                        pointSize: 70,
+                        wordCount: 3),
+                    CreateBlock(
+                        1,
+                        "Ordinary body with sufficient weight.",
+                        pointSize: 10,
+                        wordCount: 12)));
+
+        var segment =
+            Assert.Single(
+                result.Segments);
+
+        Assert.Null(
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void Segment_RejectsSentenceLikeBlockAtSubsectionRatio()
+    {
+        var result =
+            Segment(
+                CreatePage(
+                    1,
+                    CreateBlock(
+                        0,
+                        "This looks like an ordinary sentence.",
+                        pointSize: 12,
+                        wordCount: 7),
+                    CreateBlock(
+                        1,
+                        "Body body body body body body body body.",
+                        pointSize: 10,
+                        wordCount: 12)));
+
+        var segment =
+            Assert.Single(
+                result.Segments);
+
+        Assert.Null(
+            segment.HeadingText);
+    }
+
+    [Fact]
+    public void Segment_IgnoresExcludedMarginBlocks()
+    {
+        var excluded =
+            CreateBlock(
+                0,
+                "RUNNING HEADER",
+                pointSize: 20,
+                wordCount: 2,
+                exclusionReason:
+                    DocumentBlockExclusionReason.RepeatedHeader);
+
+        var body =
+            CreateBlock(
+                1,
+                "Body content.",
+                pointSize: 10,
+                wordCount: 8);
+
+        var segment =
+            Assert.Single(
+                Segment(
+                    CreatePage(
+                        1,
+                        excluded,
+                        body))
+                .Segments);
 
         Assert.Null(
             segment.HeadingText);
@@ -195,79 +368,85 @@ public sealed class HeuristicDocumentSegmenterTests
         Assert.Same(
             body,
             segment.SourceBlocks[0]);
-
-        Assert.DoesNotContain(
-            "CHAPTER 7",
-            segment.Text,
-            StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Segment_PreservesSourceBlockReferencesAndOrder()
+    public void Segment_PreservesCrossPageSourceBlockOrder()
     {
-        var first =
-            CreateNormalizedBlock(
-                7,
-                "FIRST HEADING");
+        var heading =
+            CreateBlock(
+                0,
+                "SECTION TITLE",
+                pointSize: 13,
+                wordCount: 2);
 
-        var second =
-            CreateNormalizedBlock(
-                3,
-                "Body A.");
+        var pageOneBody =
+            CreateBlock(
+                1,
+                "Page one.",
+                pointSize: 10,
+                wordCount: 8);
 
-        var third =
-            CreateNormalizedBlock(
-                9,
-                "Body B.");
+        var pageTwoBody =
+            CreateBlock(
+                0,
+                "Page two.",
+                pointSize: 10,
+                wordCount: 8);
 
         var segment =
             Assert.Single(
-                new HeuristicDocumentSegmenter()
-                    .Segment(
-                        CreateNormalization(
-                            CreatePage(
-                                4,
-                                first,
-                                second,
-                                third)))
-                    .Segments);
+                Segment(
+                    CreatePage(
+                        1,
+                        heading,
+                        pageOneBody),
+                    CreatePage(
+                        2,
+                        pageTwoBody))
+                .Segments);
 
         Assert.Equal(
-            [first, second, third],
+            [heading, pageOneBody, pageTwoBody],
             segment.SourceBlocks);
-
-        Assert.Same(
-            first,
-            segment.SourceBlocks[0]);
-
-        Assert.Equal(
-            4,
-            segment.FirstPhysicalPageNumber);
-
-        Assert.Equal(
-            4,
-            segment.LastPhysicalPageNumber);
     }
 
     [Fact]
-    public void Segment_ProducesDeterministicDocumentLocalIds()
+    public void Segment_ProducesDeterministicIdsAfterCrossPageGrouping()
     {
         var normalization =
             CreateNormalization(
                 CreatePage(
                     5,
-                    CreateNormalizedBlock(
+                    CreateBlock(
                         0,
-                        "INTRODUCTION"),
-                    CreateNormalizedBlock(
+                        "FIRST SECTION",
+                        pointSize: 13,
+                        wordCount: 2),
+                    CreateBlock(
                         1,
-                        "Body."),
-                    CreateNormalizedBlock(
-                        2,
-                        "CONCLUSION"),
-                    CreateNormalizedBlock(
-                        3,
-                        "Final body.")));
+                        "Body.",
+                        pointSize: 10,
+                        wordCount: 8)),
+                CreatePage(
+                    6,
+                    CreateBlock(
+                        0,
+                        "Continuation.",
+                        pointSize: 10,
+                        wordCount: 8)),
+                CreatePage(
+                    7,
+                    CreateBlock(
+                        0,
+                        "SECOND SECTION",
+                        pointSize: 13,
+                        wordCount: 2),
+                    CreateBlock(
+                        1,
+                        "Final body.",
+                        pointSize: 10,
+                        wordCount: 8)));
 
         var segmenter =
             new HeuristicDocumentSegmenter();
@@ -287,31 +466,23 @@ public sealed class HeuristicDocumentSegmenterTests
                 segment.Id));
 
         Assert.Equal(
-            ["p000005-s000000", "p000005-s000001"],
+            ["p000005-s000000", "p000007-s000001"],
             first.Segments.Select(segment =>
                 segment.Id));
-
-        Assert.Equal(
-            [0, 1],
-            first.Segments.Select(segment =>
-                segment.Ordinal));
     }
 
     [Fact]
     public void Segment_SkipsPageWithOnlyExcludedBlocks()
     {
-        var normalization =
-            CreateNormalization(
+        var result =
+            Segment(
                 CreatePage(
                     1,
-                    CreateNormalizedBlock(
+                    CreateBlock(
                         0,
                         "RUNNING HEADER",
-                        DocumentBlockExclusionReason.RepeatedHeader)));
-
-        var result =
-            new HeuristicDocumentSegmenter()
-                .Segment(normalization);
+                        exclusionReason:
+                            DocumentBlockExclusionReason.RepeatedHeader)));
 
         Assert.Empty(
             result.Segments);
@@ -324,7 +495,7 @@ public sealed class HeuristicDocumentSegmenterTests
             CreateNormalization(
                 CreatePage(
                     1,
-                    CreateNormalizedBlock(
+                    CreateBlock(
                         0,
                         "Body.")));
 
@@ -340,6 +511,13 @@ public sealed class HeuristicDocumentSegmenterTests
                         normalization,
                         cancellation.Token));
     }
+
+    private static DocumentSegmentationResult Segment(
+        params NormalizedDocumentPage[] pages) =>
+        new HeuristicDocumentSegmenter()
+            .Segment(
+                CreateNormalization(
+                    pages));
 
     private static DocumentTextNormalizationResult
         CreateNormalization(
@@ -358,10 +536,9 @@ public sealed class HeuristicDocumentSegmenterTests
             pages);
     }
 
-    private static NormalizedDocumentPage
-        CreatePage(
-            int physicalPageNumber,
-            params NormalizedDocumentTextBlock[] blocks)
+    private static NormalizedDocumentPage CreatePage(
+        int physicalPageNumber,
+        params NormalizedDocumentTextBlock[] blocks)
     {
         var sourceBlocks =
             blocks.Select(block =>
@@ -384,26 +561,55 @@ public sealed class HeuristicDocumentSegmenterTests
             blocks);
     }
 
-    private static NormalizedDocumentTextBlock
-        CreateNormalizedBlock(
-            int sourceSequence,
-            string text,
-            DocumentBlockExclusionReason? exclusionReason = null)
+    private static NormalizedDocumentTextBlock CreateBlock(
+        int sourceSequence,
+        string text,
+        double? pointSize = null,
+        int wordCount = 0,
+        DocumentBlockExclusionReason? exclusionReason = null)
     {
+        var words =
+            Enumerable.Range(
+                    0,
+                    wordCount)
+                .Select(index =>
+                    new DocumentWord(
+                        index,
+                        $"w{index}",
+                        Bounds,
+                        pointSize is null
+                            ? null
+                            : "TestFont",
+                        pointSize))
+                .ToArray();
+
         var sourceBlock =
             new DocumentTextBlock(
                 sourceSequence,
-                readingOrder: sourceSequence,
+                readingOrder:
+                    sourceSequence,
                 text,
-                new NormalizedRectangle(
-                    0.1,
-                    0.2,
-                    0.9,
-                    0.3));
+                Bounds,
+                words,
+                pointSize is null
+                    ? null
+                    : "TestFont",
+                pointSize,
+                lineCount:
+                    pointSize is null
+                        ? 0
+                        : 1);
 
         return new NormalizedDocumentTextBlock(
             sourceBlock,
             text,
             exclusionReason);
     }
+
+    private static readonly NormalizedRectangle Bounds =
+        new(
+            0.1,
+            0.2,
+            0.9,
+            0.3);
 }

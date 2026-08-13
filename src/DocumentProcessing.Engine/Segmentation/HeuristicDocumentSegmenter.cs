@@ -1,25 +1,21 @@
-using System.Text.RegularExpressions;
 using DocumentProcessing.Core.Normalization;
 using DocumentProcessing.Core.Segmentation;
 
 namespace DocumentProcessing.Engine.Segmentation;
 
 /// <summary>
-/// Minimal deterministic structural segmenter.
+/// Deterministic structural segmenter.
 ///
-/// V1 is intentionally page-bounded. It starts a new segment only on
-/// conservative, text-only heading evidence and otherwise falls back to one
-/// content segment per physical page.
+/// Recognized heading-led structures may span physical pages. Content that has
+/// not entered a recognized structure remains page-bounded fallback. This keeps
+/// uncertain body flow bounded while allowing real intellectual sections to
+/// continue naturally across pages.
 /// </summary>
-public sealed partial class HeuristicDocumentSegmenter :
+public sealed class HeuristicDocumentSegmenter :
     IDocumentSegmenter
 {
     public const string SegmentationProfileId =
-        "page-bounded-obvious-headings-v1";
-
-    private const int MaximumHeadingLength = 120;
-    private const int MaximumHeadingWordCount = 14;
-    private const int MinimumHeadingLetterCount = 3;
+        "typography-aware-cross-page-fallback-v2";
 
     public DocumentSegmentationResult Segment(
         DocumentTextNormalizationResult document,
@@ -28,18 +24,96 @@ public sealed partial class HeuristicDocumentSegmenter :
         ArgumentNullException.ThrowIfNull(document);
         cancellationToken.ThrowIfCancellationRequested();
 
+        var headingEvaluator =
+            new HeadingEvidenceEvaluator(
+                document);
+
         var segments =
             new List<DocumentSegment>();
+
+        SegmentAccumulator? structured =
+            null;
 
         foreach (var page in document.Pages)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            SegmentPage(
-                page,
-                segments,
-                cancellationToken);
+            var eligibleBlocks =
+                page.Blocks
+                    .Where(block =>
+                        !block.IsExcluded &&
+                        !string.IsNullOrWhiteSpace(
+                            block.Text))
+                    .ToArray();
+
+            if (eligibleBlocks.Length == 0)
+            {
+                continue;
+            }
+
+            var fallbackBlocks =
+                new List<NormalizedDocumentTextBlock>();
+
+            foreach (var block in eligibleBlocks)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (headingEvaluator.IsHeading(
+                        block))
+                {
+                    if (structured is not null)
+                    {
+                        FlushSegment(
+                            segments,
+                            ref structured);
+                    }
+                    else if (fallbackBlocks.Count > 0)
+                    {
+                        AddFallbackSegment(
+                            page.PhysicalPageNumber,
+                            fallbackBlocks,
+                            segments);
+
+                        fallbackBlocks.Clear();
+                    }
+
+                    structured =
+                        new SegmentAccumulator(
+                            block.Text);
+
+                    structured.Add(
+                        page.PhysicalPageNumber,
+                        block);
+
+                    continue;
+                }
+
+                if (structured is not null)
+                {
+                    structured.Add(
+                        page.PhysicalPageNumber,
+                        block);
+                }
+                else
+                {
+                    fallbackBlocks.Add(
+                        block);
+                }
+            }
+
+            if (structured is null &&
+                fallbackBlocks.Count > 0)
+            {
+                AddFallbackSegment(
+                    page.PhysicalPageNumber,
+                    fallbackBlocks,
+                    segments);
+            }
         }
+
+        FlushSegment(
+            segments,
+            ref structured);
 
         return new DocumentSegmentationResult(
             document,
@@ -47,64 +121,8 @@ public sealed partial class HeuristicDocumentSegmenter :
             segments);
     }
 
-    private static void SegmentPage(
-        NormalizedDocumentPage page,
-        ICollection<DocumentSegment> output,
-        CancellationToken cancellationToken)
-    {
-        var eligibleBlocks =
-            page.Blocks
-                .Where(block =>
-                    !block.IsExcluded &&
-                    !string.IsNullOrWhiteSpace(
-                        block.Text))
-                .ToArray();
-
-        if (eligibleBlocks.Length == 0)
-        {
-            return;
-        }
-
-        var currentBlocks =
-            new List<NormalizedDocumentTextBlock>();
-
-        string? currentHeading = null;
-
-        foreach (var block in eligibleBlocks)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (IsObviousHeading(block.Text) &&
-                currentBlocks.Count > 0)
-            {
-                AddSegment(
-                    page.PhysicalPageNumber,
-                    currentHeading,
-                    currentBlocks,
-                    output);
-
-                currentBlocks = [];
-                currentHeading = block.Text;
-            }
-            else if (currentBlocks.Count == 0 &&
-                     IsObviousHeading(block.Text))
-            {
-                currentHeading = block.Text;
-            }
-
-            currentBlocks.Add(block);
-        }
-
-        AddSegment(
-            page.PhysicalPageNumber,
-            currentHeading,
-            currentBlocks,
-            output);
-    }
-
-    private static void AddSegment(
+    private static void AddFallbackSegment(
         int physicalPageNumber,
-        string? headingText,
         IReadOnlyList<NormalizedDocumentTextBlock> blocks,
         ICollection<DocumentSegment> output)
     {
@@ -113,6 +131,42 @@ public sealed partial class HeuristicDocumentSegmenter :
             return;
         }
 
+        AddSegment(
+            physicalPageNumber,
+            physicalPageNumber,
+            headingText: null,
+            blocks,
+            output);
+    }
+
+    private static void FlushSegment(
+        ICollection<DocumentSegment> output,
+        ref SegmentAccumulator? current)
+    {
+        if (current is null ||
+            current.Blocks.Count == 0)
+        {
+            current = null;
+            return;
+        }
+
+        AddSegment(
+            current.FirstPhysicalPageNumber,
+            current.LastPhysicalPageNumber,
+            current.HeadingText,
+            current.Blocks,
+            output);
+
+        current = null;
+    }
+
+    private static void AddSegment(
+        int firstPhysicalPageNumber,
+        int lastPhysicalPageNumber,
+        string? headingText,
+        IReadOnlyList<NormalizedDocumentTextBlock> blocks,
+        ICollection<DocumentSegment> output)
+    {
         var ordinal =
             output.Count;
 
@@ -125,73 +179,56 @@ public sealed partial class HeuristicDocumentSegmenter :
         output.Add(
             new DocumentSegment(
                 CreateSegmentId(
-                    physicalPageNumber,
+                    firstPhysicalPageNumber,
                     ordinal),
                 ordinal,
-                physicalPageNumber,
-                physicalPageNumber,
+                firstPhysicalPageNumber,
+                lastPhysicalPageNumber,
                 text,
                 blocks.ToArray(),
                 headingText));
     }
 
     private static string CreateSegmentId(
-        int physicalPageNumber,
+        int firstPhysicalPageNumber,
         int ordinal) =>
-        $"p{physicalPageNumber:D6}-s{ordinal:D6}";
+        $"p{firstPhysicalPageNumber:D6}-s{ordinal:D6}";
 
-    private static bool IsObviousHeading(
-        string text)
+    private sealed class SegmentAccumulator(
+        string headingText)
     {
-        var candidate =
-            text.Trim();
+        public string HeadingText { get; } =
+            headingText;
 
-        if (candidate.Length == 0 ||
-            candidate.Length >
-            MaximumHeadingLength)
+        public int FirstPhysicalPageNumber { get; private set; }
+
+        public int LastPhysicalPageNumber { get; private set; }
+
+        public List<NormalizedDocumentTextBlock> Blocks { get; } =
+            [];
+
+        public void Add(
+            int physicalPageNumber,
+            NormalizedDocumentTextBlock block)
         {
-            return false;
+            ArgumentNullException.ThrowIfNull(block);
+
+            if (physicalPageNumber <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(physicalPageNumber));
+            }
+
+            if (Blocks.Count == 0)
+            {
+                FirstPhysicalPageNumber =
+                    physicalPageNumber;
+            }
+
+            LastPhysicalPageNumber =
+                physicalPageNumber;
+
+            Blocks.Add(block);
         }
-
-        var words =
-            candidate.Split(
-                ' ',
-                StringSplitOptions.RemoveEmptyEntries |
-                StringSplitOptions.TrimEntries);
-
-        if (words.Length == 0 ||
-            words.Length >
-            MaximumHeadingWordCount)
-        {
-            return false;
-        }
-
-        var letterCount =
-            candidate.Count(
-                char.IsLetter);
-
-        if (letterCount <
-            MinimumHeadingLetterCount)
-        {
-            return false;
-        }
-
-        if (StructuralHeadingRegex()
-            .IsMatch(candidate))
-        {
-            return true;
-        }
-
-        var hasLowercaseLetter =
-            candidate.Any(
-                char.IsLower);
-
-        return !hasLowercaseLetter;
     }
-
-    [GeneratedRegex(
-        @"^(?:(?:CHAPTER|PART|SECTION|BOOK)\s+\S+|(?:\d+(?:\.\d+)*|[IVXLCDM]+)[.)]?\s+\S+)",
-        RegexOptions.IgnoreCase |
-        RegexOptions.CultureInvariant)]
-    private static partial Regex StructuralHeadingRegex();
 }

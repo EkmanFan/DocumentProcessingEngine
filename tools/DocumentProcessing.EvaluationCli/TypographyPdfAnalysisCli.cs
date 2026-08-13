@@ -14,7 +14,7 @@ namespace DocumentProcessing.EvaluationCli;
 internal static class TypographyPdfAnalysisCli
 {
     private const string ReportSchemaVersion =
-        "document-processing-typography-pdf-analysis-v1";
+        "document-processing-typography-pdf-analysis-v2";
 
     // Historical generic font-hierarchy thresholds used by ApologiaStudio.
     private const int MaximumHeadingCharacters = 180;
@@ -168,7 +168,7 @@ internal static class TypographyPdfAnalysisCli
                         context.Key))
                 .ToArray();
 
-        var textOnlyHeadings =
+        var segmenterOnlyHeadings =
             currentHeadingContexts
                 .Where(context =>
                     !fontCandidateKeys.Contains(
@@ -338,7 +338,7 @@ internal static class TypographyPdfAnalysisCli
             pointSizeDistribution,
             topFonts,
             strongestFontCandidates,
-            textOnlyHeadings,
+            segmenterOnlyHeadings,
             fontOnlyHeadings);
     }
 
@@ -750,21 +750,21 @@ internal static class TypographyPdfAnalysisCli
             $"chapter={report.FontCandidates.Chapter})");
 
         Console.WriteLine(
-            $"Current text headings: {report.HeadingComparison.CurrentTextHeadings}");
+            $"Current segmenter headings: {report.HeadingComparison.CurrentSegmenterHeadings}");
 
         Console.WriteLine(
-            $"Overlap text/font: {report.HeadingComparison.Overlap}");
+            $"Overlap segmenter/font: {report.HeadingComparison.Overlap}");
 
         Console.WriteLine(
-            $"Text-only headings: {report.HeadingComparison.TextOnly}");
+            $"Segmenter-only headings: {report.HeadingComparison.SegmenterOnly}");
 
         Console.WriteLine(
             $"Font-only candidates: {report.HeadingComparison.FontOnly}");
 
         Console.WriteLine(
-            "Text-only heading samples:");
+            "Segmenter-only heading samples:");
 
-        foreach (var sample in report.TextOnlyHeadingSamples.Take(12))
+        foreach (var sample in report.SegmenterOnlyHeadingSamples.Take(12))
         {
             Console.WriteLine(
                 $"  p{sample.PhysicalPageNumber} " +
@@ -950,7 +950,7 @@ internal static class TypographyPdfAnalysisCli
         IReadOnlyList<PointSizeDistribution> PointSizeDistribution,
         IReadOnlyList<FontDistribution> TopFonts,
         IReadOnlyList<HeadingEvidenceSample> StrongestFontCandidateSamples,
-        IReadOnlyList<HeadingEvidenceSample> TextOnlyHeadingSamples,
+        IReadOnlyList<HeadingEvidenceSample> SegmenterOnlyHeadingSamples,
         IReadOnlyList<HeadingEvidenceSample> FontOnlyHeadingSamples);
 
     private sealed record PdfPageSelection(
@@ -990,10 +990,10 @@ internal static class TypographyPdfAnalysisCli
         int Chapter);
 
     private sealed record HeadingComparison(
-        int CurrentTextHeadings,
+        int CurrentSegmenterHeadings,
         int HistoricalFontCandidates,
         int Overlap,
-        int TextOnly,
+        int SegmenterOnly,
         int FontOnly);
 
     private sealed record PointSizeDistribution(

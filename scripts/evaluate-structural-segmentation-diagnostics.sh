@@ -197,7 +197,7 @@ de_historical = int(sys.argv[8])
 
 EXPECTED_SCHEMA = "document-processing-segmented-pdf-analysis-v1"
 EXPECTED_NORMALIZATION = "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1"
-EXPECTED_SEGMENTATION = "page-bounded-obvious-headings-v1"
+EXPECTED_SEGMENTATION = "typography-aware-cross-page-fallback-v2"
 
 def require(condition, message):
     if not condition:
@@ -209,7 +209,6 @@ def validate_common(report, sha, size):
     require(report["sourceByteLength"] == size, "source byte length changed")
     require(report["normalizationProfileId"] == EXPECTED_NORMALIZATION, "normalization profile changed")
     require(report["segmentationProfileId"] == EXPECTED_SEGMENTATION, "segmentation profile changed")
-    require(report["segmentation"]["crossPageSegmentCount"] == 0, "v1 unexpectedly produced cross-page segment")
 
 validate_common(ehrman, ehrman_sha, ehrman_bytes)
 validate_common(de, de_sha, de_bytes)
@@ -250,6 +249,7 @@ def print_summary(label, report, historical):
     print(f"  pages without seg:   {s['pagesWithoutSegments']}")
     print(f"  multi-segment pages: {s['pagesWithMultipleSegments']}")
     print(f"  max segments/page:   {s['maximumSegmentsOnPage']}")
+    print(f"  cross-page segments: {s['crossPageSegmentCount']}")
     print(
         "  chars min/med/avg/max: "
         f"{s['minimumCharacterCount']} / "

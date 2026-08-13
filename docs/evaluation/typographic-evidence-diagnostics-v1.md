@@ -20,8 +20,8 @@ The diagnostic measures:
 - dominant-font distribution;
 - historical font-ratio bands;
 - historical font-hierarchy heading candidates;
-- overlap between those candidates and the current text-only heading heuristic;
-- text-only heading samples;
+- overlap between those candidates and the current production heading evaluator;
+- segmenter-only heading samples;
 - font-only candidate samples.
 
 ## Historical font hierarchy
@@ -42,8 +42,8 @@ The body-font baseline is the word-count-weighted median block point size.
 For a ratio below `1.30`, a block ending in `.`, `;`, or `,` is rejected as a
 sentence-like heading candidate.
 
-These values are diagnostic references. Increment 8.4a does not change the
-production segmenter and does not assume that historical thresholds are
+These values are diagnostic references. Increment 8.4a originally did not change the
+production segmenter; after Increment 8.4b this diagnostic compares the new evaluator and does not assume that historical thresholds are
 automatically optimal.
 
 ## Why compare with the current text heuristic
@@ -61,10 +61,10 @@ heading detections on De Decretis.
 The typography diagnostic therefore reports:
 
 ```text
-current text headings
+current segmenter headings
 historical font candidates
 overlap
-text-only headings
+segmenter-only headings
 font-only candidates
 ```
 
