@@ -27,6 +27,15 @@ internal static class Program
 
             if (string.Equals(
                     args[0],
+                    "analyze-segmented-pdf",
+                    StringComparison.Ordinal))
+            {
+                return await SegmentedPdfAnalysisCli.RunAsync(
+                    args[1..]);
+            }
+
+            if (string.Equals(
+                    args[0],
                     "analyze-normalized-pdf",
                     StringComparison.Ordinal))
             {
@@ -40,7 +49,9 @@ internal static class Program
                     StringComparison.Ordinal))
             {
                 throw new ArgumentException(
-                    $"Unknown command '{args[0]}'. Expected 'analyze-pdf'.");
+                    $"Unknown command '{args[0]}'. " +
+                    "Expected 'analyze-pdf', 'analyze-normalized-pdf', " +
+                    "or 'analyze-segmented-pdf'.");
             }
 
             var options = AnalysisOptions.Parse(args[1..]);
@@ -560,6 +571,7 @@ internal static class Program
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 [--probe "text"]
 
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-normalized-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 [--probe "text"]
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-segmented-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 [--probe "text"]
 
             These commands are evaluation-only. They do not modify the PDF,
             persist document content, create retrieval chunks, or run OCR.
