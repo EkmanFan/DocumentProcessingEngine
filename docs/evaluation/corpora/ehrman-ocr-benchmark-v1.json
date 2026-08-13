@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "document-processing-ocr-benchmark-manifest-v1",
+  "benchmarkId": "ehrman-8e-compress-ocr-v1",
+  "description": "Small discriminating OCR corpus for backend evaluation. It combines raster reference pages, raster chapter-opening pages with PDF-outline title evidence, and born-digital controls.",
+  "source": {
+    "fileName": "the-new-testament-a-historical-introduction-to-the-early-christian-writings-9780197754023-9780197754030-9780197754047_compress.pdf",
+    "sha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+    "byteLength": 233369762,
+    "totalPages": 617
+  },
+  "rendering": {
+    "format": "png",
+    "dpi": 300,
+    "colorMode": "rgb",
+    "preprocessing": "none"
+  },
+  "historicalReferences": {
+    "rasterReferencePageRange": "14-20",
+    "easyOcrRecoveredPages": 7,
+    "easyOcrRecoveredCharacters": 12393,
+    "note": "Historical Docling + EasyOCR challenger reference. Character totals are observational and not a hard equality gate because normalization and OCR output formatting may differ."
+  },
+  "pages": [
+    {
+      "pageNumber": 14,
+      "group": "raster-reference",
+      "expectedNativeState": "TextlessDominantRaster"
+    },
+    {
+      "pageNumber": 15,
+      "group": "raster-reference",
+      "expectedNativeState": "TextlessDominantRaster"
+    },
+    {
+      "pageNumber": 16,
+      "group": "raster-reference",
+      "expectedNativeState": "TextlessDominantRaster"
+    },
+    {
+      "pageNumber": 17,
+      "group": "raster-reference",
+      "expectedNativeState": "TextlessDominantRaster"
+    },
+    {
+      "pageNumber": 18,
+      "group": "raster-reference",
+      "expectedNativeState": "TextlessDominantRaster"
+    },
+    {
+      "pageNumber": 19,
+      "group": "raster-reference",
+      "expectedNativeState": "TextlessDominantRaster"
+    },
+    {
+      "pageNumber": 20,
+      "group": "raster-reference",
+      "expectedNativeState": "TextlessDominantRaster"
+    },
+    {
+      "pageNumber": 32,
+      "group": "outline-target",
+      "expectedNativeState": "TextlessDominantRaster",
+      "expectedTitle": "Introduction: Why Study the New Testament?",
+      "expectedTitleSource": "PdfOutline"
+    },
+    {
+      "pageNumber": 35,
+      "group": "outline-target",
+      "expectedNativeState": "TextlessDominantRaster",
+      "expectedTitle": "1. What is the New Testament? The Early Christians and Their Literature",
+      "expectedTitleSource": "PdfOutline"
+    },
+    {
+      "pageNumber": 51,
+      "group": "outline-target",
+      "expectedNativeState": "TextlessDominantRaster",
+      "expectedTitle": "2. Do We Have the Original New Testament?",
+      "expectedTitleSource": "PdfOutline"
+    },
+    {
+      "pageNumber": 72,
+      "group": "outline-target",
+      "expectedNativeState": "TextlessDominantRaster",
+      "expectedTitle": "3. The Greco-Roman World of Early Christian Traditions",
+      "expectedTitleSource": "PdfOutline"
+    },
+    {
+      "pageNumber": 92,
+      "group": "outline-target",
+      "expectedNativeState": "TextlessDominantRaster",
+      "expectedTitle": "4. The Jewish World of Jesus and His Followers",
+      "expectedTitleSource": "PdfOutline"
+    },
+    {
+      "pageNumber": 113,
+      "group": "outline-target",
+      "expectedNativeState": "TextlessDominantRaster",
+      "expectedTitle": "5. From Oral Traditions to Written Gospels",
+      "expectedTitleSource": "PdfOutline"
+    },
+    {
+      "pageNumber": 134,
+      "group": "outline-target",
+      "expectedNativeState": "TextlessDominantRaster",
+      "expectedTitle": "6. Jesus, the Suffering Son of God: The Gospel According to Mark",
+      "expectedTitleSource": "PdfOutline"
+    },
+    {
+      "pageNumber": 33,
+      "group": "born-digital-control",
+      "expectedNativeState": "NativeText"
+    },
+    {
+      "pageNumber": 34,
+      "group": "born-digital-control",
+      "expectedNativeState": "NativeText"
+    },
+    {
+      "pageNumber": 398,
+      "group": "born-digital-control",
+      "expectedNativeState": "NativeText"
+    },
+    {
+      "pageNumber": 400,
+      "group": "born-digital-control",
+      "expectedNativeState": "NativeText"
+    },
+    {
+      "pageNumber": 405,
+      "group": "born-digital-control",
+      "expectedNativeState": "NativeText"
+    }
+  ]
+}

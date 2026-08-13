@@ -27,6 +27,24 @@ internal static class Program
 
             if (string.Equals(
                     args[0],
+                    "verify-ocr-benchmark-corpus",
+                    StringComparison.Ordinal))
+            {
+                return await OcrBenchmarkEvaluationCli.VerifyCorpusAsync(
+                    args[1..]);
+            }
+
+            if (string.Equals(
+                    args[0],
+                    "evaluate-ocr-benchmark",
+                    StringComparison.Ordinal))
+            {
+                return await OcrBenchmarkEvaluationCli.EvaluateAsync(
+                    args[1..]);
+            }
+
+            if (string.Equals(
+                    args[0],
                     "analyze-outline-alignment-pdf",
                     StringComparison.Ordinal))
             {
@@ -99,8 +117,9 @@ internal static class Program
                     "'analyze-segmented-pdf', 'analyze-typography-pdf', " +
                     "'analyze-heading-boundaries-pdf', " +
                     "'analyze-counterfactual-segmentation-pdf', " +
-                    "'analyze-outline-pdf', or " +
-                    "'analyze-outline-alignment-pdf'.");
+                    "'analyze-outline-pdf', 'analyze-outline-alignment-pdf', " +
+                    "'verify-ocr-benchmark-corpus', or " +
+                    "'evaluate-ocr-benchmark'.");
             }
 
             var options = AnalysisOptions.Parse(args[1..]);
@@ -626,9 +645,12 @@ internal static class Program
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-counterfactual-segmentation-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 --historical-segments 50 [--hint "heading"] [--probe "text"]
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-outline-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-outline-alignment-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- verify-ocr-benchmark-corpus --manifest /absolute/path/manifest.json --source /absolute/path/document.pdf --report /absolute/path/report.json
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- evaluate-ocr-benchmark --manifest /absolute/path/manifest.json --input-index /absolute/path/input-index.json --result /absolute/path/engine-result.json --report /absolute/path/report.json
 
             These commands are evaluation-only. They do not modify the PDF,
-            persist document content, create retrieval chunks, or run OCR.
+            persist document content, create retrieval chunks, or invoke an OCR
+            engine. OCR benchmark evaluation consumes externally produced JSON.
             """);
     }
     private sealed record AnalysisOptions(
