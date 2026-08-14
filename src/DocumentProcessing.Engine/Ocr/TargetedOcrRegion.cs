@@ -1,4 +1,5 @@
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Raster;
 
 namespace DocumentProcessing.Engine.Ocr;
 
@@ -8,4 +9,4 @@ namespace DocumentProcessing.Engine.Ocr;
 /// </summary>
 public sealed record TargetedOcrRegion(
     LayoutObservation SourceLayoutObservation,
-    RasterCropRectangle Crop);
+    PixelRectangle Crop);

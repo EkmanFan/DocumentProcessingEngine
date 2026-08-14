@@ -1,13 +1,13 @@
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
-using DocumentProcessing.Engine.Ocr;
+using DocumentProcessing.Engine.Visual;
 
-namespace DocumentProcessing.UnitTests.Ocr;
+namespace DocumentProcessing.UnitTests.Visual;
 
-public sealed class TargetedOcrPlannerTests
+public sealed class VisualPreservationPlannerTests
 {
     [Fact]
-    public void Create_EhrmanRepresentativeLayout_OnlyPlansRecognizeTextRegions()
+    public void Create_EhrmanRepresentativeLayout_OnlyPlansPreserveVisualRegions()
     {
         var observations =
             new[]
@@ -17,7 +17,7 @@ public sealed class TargetedOcrPlannerTests
                     LayoutObservationKind.Unknown,
                     0.01,
                     0.01,
-                    0.1,
+                    0.10,
                     0.05),
                 Observation(
                     2,
@@ -36,24 +36,17 @@ public sealed class TargetedOcrPlannerTests
                 Observation(
                     4,
                     LayoutObservationKind.Figure,
-                    0.24,
-                    0.44,
-                    0.57,
-                    0.86),
+                    0.236697,
+                    0.429652,
+                    0.582942,
+                    0.865355),
                 Observation(
                     5,
                     LayoutObservationKind.Caption,
                     0.24,
                     0.87,
                     0.56,
-                    0.94),
-                Observation(
-                    6,
-                    LayoutObservationKind.Text,
-                    0.60,
-                    0.23,
-                    0.93,
-                    0.41)
+                    0.94)
             };
 
         var layout =
@@ -63,32 +56,56 @@ public sealed class TargetedOcrPlannerTests
                 observations);
 
         var plan =
-            TargetedOcrPlanner.Create(
+            VisualPreservationPlanner.Create(
                 layout,
                 2556,
                 3305);
 
+        var target =
+            Assert.Single(plan);
+
         Assert.Equal(
-            new[] { 2, 3, 5, 6 },
-            plan
-                .Select(
-                    region =>
-                        region.SourceLayoutObservation.ObservationSequence)
-                .ToArray());
+            4,
+            target.SourceLayoutObservation.ObservationSequence);
+        Assert.Equal(
+            LayoutObservationKind.Figure,
+            target.SourceLayoutObservation.Kind);
+        Assert.True(target.Crop.Width > 0);
+        Assert.True(target.Crop.Height > 0);
+    }
 
-        Assert.DoesNotContain(
-            plan,
-            region =>
-                region.SourceLayoutObservation.Kind ==
-                LayoutObservationKind.Figure);
+    [Fact]
+    public void Create_NoPreserveVisualRegions_ReturnsEmptyPlan()
+    {
+        var layout =
+            new LayoutAnalysisResult(
+                "pp-structurev3",
+                233,
+                new[]
+                {
+                    Observation(
+                        0,
+                        LayoutObservationKind.Text,
+                        0.1,
+                        0.1,
+                        0.5,
+                        0.2),
+                    Observation(
+                        1,
+                        LayoutObservationKind.Unknown,
+                        0.1,
+                        0.3,
+                        0.5,
+                        0.4)
+                });
 
-        Assert.All(
-            plan,
-            region =>
-            {
-                Assert.True(region.Crop.Width > 0);
-                Assert.True(region.Crop.Height > 0);
-            });
+        var plan =
+            VisualPreservationPlanner.Create(
+                layout,
+                1000,
+                2000);
+
+        Assert.Empty(plan);
     }
 
     private static LayoutObservation Observation(

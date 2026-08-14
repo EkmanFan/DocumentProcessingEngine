@@ -32,7 +32,7 @@ RecognizeText
         ↓
 TargetedOcrPlanner
         ↓
-RasterCropRectangle
+PixelRectangle
         ↓
 PaddleOcrServingClient
         ↓
@@ -83,8 +83,8 @@ Native/OCR reconciliation remains Phase 17.
 
 `NormalizedRectangle` remains unclamped evidence.
 
-`RasterCropRectangle.FromNormalized(...)` converts that evidence into the only
-pixel rectangle that can be physically addressed on a page raster:
+`RasterCropGeometry.FromNormalized(...)` converts that evidence into the only
+`PixelRectangle` that can be physically addressed on a page raster:
 
 - left/top use floor;
 - right/bottom use ceiling;
@@ -93,6 +93,10 @@ pixel rectangle that can be physically addressed on a page raster:
 
 This preserves the earlier decision that source evidence itself is not silently
 rewritten merely because a physical raster cannot contain out-of-page pixels.
+
+Phase 16 promotes this geometry from the OCR namespace into the shared
+`Core.Raster` / `Engine.Raster` boundary because figure preservation is now a
+second concrete consumer. Targeted OCR behavior is unchanged.
 
 ## Serving boundary
 

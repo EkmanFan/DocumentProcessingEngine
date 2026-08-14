@@ -4,7 +4,9 @@ using System.Text.Json;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
+using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Layout;
+using DocumentProcessing.Engine.Raster;
 
 namespace DocumentProcessing.Engine.Ocr;
 
@@ -104,7 +106,7 @@ public sealed class PaddleOcrServingClient
     public async ValueTask<OcrRegionResult> RecognizeAsync(
         Stream rasterRegion,
         LayoutObservation sourceLayoutObservation,
-        RasterCropRectangle crop,
+        PixelRectangle crop,
         int pagePixelWidth,
         int pagePixelHeight,
         CancellationToken cancellationToken = default)
@@ -139,7 +141,7 @@ public sealed class PaddleOcrServingClient
         }
 
         var expectedCrop =
-            RasterCropRectangle.FromNormalized(
+            RasterCropGeometry.FromNormalized(
                 sourceLayoutObservation.Bounds,
                 pagePixelWidth,
                 pagePixelHeight);
@@ -262,7 +264,7 @@ public sealed class PaddleOcrServingClient
     private OcrRegionResult ParseSuccessfulResponse(
         byte[] responseBytes,
         LayoutObservation sourceLayoutObservation,
-        RasterCropRectangle crop,
+        PixelRectangle crop,
         int pagePixelWidth,
         int pagePixelHeight)
     {
@@ -423,7 +425,7 @@ public sealed class PaddleOcrServingClient
 
     private static NormalizedRectangle MapToPageBounds(
         LocalBox localBox,
-        RasterCropRectangle crop,
+        PixelRectangle crop,
         int pagePixelWidth,
         int pagePixelHeight)
     {

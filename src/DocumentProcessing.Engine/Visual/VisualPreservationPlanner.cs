@@ -2,18 +2,18 @@ using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Raster;
 
-namespace DocumentProcessing.Engine.Ocr;
+namespace DocumentProcessing.Engine.Visual;
 
 /// <summary>
-/// Converts neutral layout evidence into a deterministic OCR work plan.
+/// Converts neutral layout evidence into a deterministic visual-preservation
+/// plan.
 ///
-/// Only regions whose LayoutTreatment is RecognizeText are returned. Figure,
-/// Table, Unknown, and any future unrecognized layout kinds are excluded unless
-/// the deterministic policy is deliberately changed.
+/// A region is selected only when LayoutTreatmentPolicy explicitly returns
+/// PreserveVisualWithoutOcr.
 /// </summary>
-public static class TargetedOcrPlanner
+public static class VisualPreservationPlanner
 {
-    public static IReadOnlyList<TargetedOcrRegion> Create(
+    public static IReadOnlyList<VisualPreservationTarget> Create(
         LayoutAnalysisResult layoutResult,
         int pagePixelWidth,
         int pagePixelHeight)
@@ -31,18 +31,18 @@ public static class TargetedOcrPlanner
         }
 
         var result =
-            new List<TargetedOcrRegion>();
+            new List<VisualPreservationTarget>();
 
         foreach (var observation in layoutResult.Observations)
         {
             if (LayoutTreatmentPolicy.Decide(observation.Kind) !=
-                LayoutTreatment.RecognizeText)
+                LayoutTreatment.PreserveVisualWithoutOcr)
             {
                 continue;
             }
 
             result.Add(
-                new TargetedOcrRegion(
+                new VisualPreservationTarget(
                     observation,
                     RasterCropGeometry.FromNormalized(
                         observation.Bounds,

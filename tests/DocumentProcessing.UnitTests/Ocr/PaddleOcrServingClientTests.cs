@@ -3,7 +3,9 @@ using System.Text;
 using System.Text.Json;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Ocr;
+using DocumentProcessing.Engine.Raster;
 
 namespace DocumentProcessing.UnitTests.Ocr;
 
@@ -98,7 +100,7 @@ public sealed class PaddleOcrServingClientTests
             TextObservation();
 
         var crop =
-            RasterCropRectangle.FromNormalized(
+            RasterCropGeometry.FromNormalized(
                 source.Bounds,
                 1000,
                 1000);
@@ -202,7 +204,7 @@ public sealed class PaddleOcrServingClientTests
                 rawLabel: "image");
 
         var crop =
-            RasterCropRectangle.FromNormalized(
+            RasterCropGeometry.FromNormalized(
                 figure.Bounds,
                 1000,
                 1000);
@@ -264,7 +266,7 @@ public sealed class PaddleOcrServingClientTests
                     .RecognizeAsync(
                         image,
                         source,
-                        new RasterCropRectangle(
+                        new PixelRectangle(
                             0,
                             0,
                             10,
@@ -317,7 +319,7 @@ public sealed class PaddleOcrServingClientTests
         var source =
             TextObservation();
         var crop =
-            RasterCropRectangle.FromNormalized(
+            RasterCropGeometry.FromNormalized(
                 source.Bounds,
                 1000,
                 1000);
@@ -364,7 +366,7 @@ public sealed class PaddleOcrServingClientTests
         var source =
             TextObservation();
         var crop =
-            RasterCropRectangle.FromNormalized(
+            RasterCropGeometry.FromNormalized(
                 source.Bounds,
                 1000,
                 1000);
@@ -414,7 +416,7 @@ public sealed class PaddleOcrServingClientTests
         var source =
             TextObservation();
         var crop =
-            RasterCropRectangle.FromNormalized(
+            RasterCropGeometry.FromNormalized(
                 source.Bounds,
                 1000,
                 1000);
@@ -467,7 +469,7 @@ public sealed class PaddleOcrServingClientTests
         var source =
             TextObservation();
         var crop =
-            RasterCropRectangle.FromNormalized(
+            RasterCropGeometry.FromNormalized(
                 source.Bounds,
                 1000,
                 1000);
