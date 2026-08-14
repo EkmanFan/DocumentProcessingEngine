@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "document-processing-figure-preservation-live-integration-v1",
+  "decision": {
+    "overallPass": true,
+    "interpretation": "PASS proves that the committed production layout client, deterministic visual-preservation planner, shared raster crop geometry, and VisualAssetPreserver can preserve the pinned Ehrman page 233 Figure #4 as reproducible PNG bytes with neutral provenance/integrity evidence while the same Figure remains excluded from targeted OCR. It is an integration proof, not a general visual-semantic, storage-backend, performance, or end-to-end ingestion claim."
+  },
+  "pageNumber": 233,
+  "sourceDocumentSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+  "raster": {
+    "width": 2556,
+    "height": 3305
+  },
+  "layout": {
+    "backendId": "pp-structurev3",
+    "requestElapsedMilliseconds": 7964.5264,
+    "observationCount": 10
+  },
+  "visual": {
+    "targetCount": 1,
+    "sourceSequence": 4,
+    "kind": "Figure",
+    "rawLabel": "image",
+    "treatment": "PreserveVisualWithoutOcr",
+    "normalizedBounds": {
+      "left": 0.24256651017214398,
+      "top": 0.43630862329803327,
+      "right": 0.5715962441314554,
+      "bottom": 0.859304084720121
+    },
+    "crop": {
+      "left": 620,
+      "top": 1442,
+      "right": 1461,
+      "bottom": 2840,
+      "width": 841,
+      "height": 1398
+    },
+    "profileId": "pdftoppm-26.01.0-300dpi-rgb-png-pillow-10.1.0-crop-v1",
+    "mediaType": "image/png",
+    "contentLength": 1534766,
+    "contentSha256": "aaf62775d525104c737d2d238df1840894b42572e52de3874705fa10c926009d",
+    "independentMaterializationCount": 2,
+    "preservationCount": 2
+  },
+  "targetedOcr": {
+    "sourceSequences": [
+      2,
+      3,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "figureSequence4Included": false,
+    "ocrServiceStartedByThisValidation": false,
+    "ocrRequestsIssuedByThisValidation": 0
+  },
+  "gates": {
+    "layoutBackendIsPpStructureV3": true,
+    "pageIdentityIsPinnedEhrman233": true,
+    "tenNeutralLayoutObservationsProduced": true,
+    "exactlyOneVisualTargetProduced": true,
+    "visualTargetIsFigureSequence4": true,
+    "visualTreatmentIsPreserveWithoutOcr": true,
+    "figureBoundsMatchCommittedLiveEvidence": true,
+    "deterministicPixelCropMatchesBaseline": true,
+    "figureExcludedFromTargetedOcrPlan": true,
+    "preservedContentIsNonEmpty": true,
+    "independentCropEncodingIsByteReproducible": true,
+    "visualAssetPreserverCopiedExactBytes": true,
+    "preservedSha256IsReproducible": true,
+    "sourceDocumentIdentityRetained": true,
+    "sourcePageAndLayoutSequenceRetained": true,
+    "normalizedBoundsRetained": true,
+    "processingProfileRetained": true,
+    "mediaTypeRetained": true
+  },
+  "binaryVisualCommitted": false,
+  "binaryRetention": "The preserved PNG and source crop remain local evaluation artifacts under scripts/tmp; the repository records only derived provenance, integrity, geometry, and integration evidence."
+}

@@ -2,19 +2,20 @@
 
 ## Status
 
-Phase B / 16A production-boundary increment.
+Phase B / 16 figure preservation is complete.
 
-This increment establishes the neutral visual-evidence model, deterministic
-visual-preservation planning, shared raster crop geometry, integrity hashing,
-and a caller-owned binary destination boundary.
-
-It intentionally stops before claiming real figure preservation on the pinned
-corpus.
+The production boundary establishes the neutral visual-evidence model,
+deterministic visual-preservation planning, shared raster crop geometry,
+integrity hashing, and a caller-owned binary destination boundary. Phase 16B
+then validated that boundary against a real self-hosted PP-StructureV3 service
+on the pinned Ehrman mixed-content page.
 
 ```text
 16 Figure preservation
-   16A neutral model + preservation boundary   THIS INCREMENT
-   16B real figure preservation integration    NEXT
+   16A neutral model + preservation boundary   DONE
+   16B real figure preservation integration    DONE
+
+17 Native/OCR reconciliation                   NEXT
 ```
 
 ## Architectural rule
@@ -167,38 +168,62 @@ This increment does **not** add:
 - ApologiaStudio semantics;
 - end-to-end ingestion orchestration.
 
-## Next step — Phase 16B
+## Live figure-preservation validation
 
-Validate the production boundary on the pinned Ehrman physical page 233:
+Phase B / 16B validated the production boundary on 2026-08-14 against the
+pinned Ehrman physical page 233 using a real self-hosted PP-StructureV3 service.
+
+The live layout produced 10 neutral observations and exactly one
+visual-preservation target:
 
 ```text
-real PP-StructureV3
-        ↓
-Figure observation sequence 4
-        ↓
-VisualPreservationPlanner
-        ↓
-exact papyrus PixelRectangle
-        ↓
-real raster crop
-        ↓
-VisualAssetPreserver
-        ↓
-preserved PNG bytes
-        +
-PreservedVisualEvidence
+sequence 4
+kind Figure
+rawLabel image
+treatment PreserveVisualWithoutOcr
 ```
 
-Acceptance should prove:
+The deterministic crop was:
 
-- exactly one visual-preservation target for the papyrus Figure;
-- no Text/Heading/Caption region enters the preservation plan;
-- deterministic crop coordinates and dimensions;
-- preserved PNG dimensions match the planned crop;
-- preserved byte length is non-zero;
-- preserved SHA-256 is reproducible;
-- source document SHA-256, page, source layout sequence and bbox remain
-  traceable;
-- the preserved Figure still produces no OCR evidence.
+```text
+620,1442 -> 1461,2840
+841 x 1398 pixels
+```
 
-Only after that live proof should Phase 16 be marked DONE.
+Two independently materialized PNG crops were byte-identical. Each contained
+1,534,766 bytes and had SHA-256:
+
+```text
+aaf62775d525104c737d2d238df1840894b42572e52de3874705fa10c926009d
+```
+
+Both were then passed through the production `VisualAssetPreserver`, which
+copied the exact bytes and retained the same content hash, source document
+identity, page/layout provenance, normalized bounds, pixel crop, media type and
+processing profile.
+
+The same Figure remained excluded from `TargetedOcrPlanner`; this validation
+started no OCR service and issued zero OCR requests.
+
+Detailed evidence is recorded in:
+
+```text
+docs/evaluation/figure-preservation-live-integration-v1.md
+docs/evaluation/figure-preservation-live-integration-v1.json
+```
+
+The source and preserved PNG artifacts remain local and are not committed.
+
+Phase B / 16 is therefore complete.
+
+## Next step — Phase 17
+
+Implement native/OCR reconciliation.
+
+The next increment should introduce the smallest neutral model and deterministic
+policy required to combine native text evidence and OCR text evidence while
+retaining their distinct provenance and confidence/quality signals.
+
+Do not add cross-page hybrid regression, final structural segmentation,
+ApologiaStudio semantics, or end-to-end ingestion orchestration in the same
+increment.
