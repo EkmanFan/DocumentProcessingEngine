@@ -8,7 +8,7 @@ namespace DocumentProcessing.Engine.Segmentation;
 ///
 /// Matching intentionally does not reuse the automatic typography quality gate:
 /// a hint is explicit external evidence. The containing segmenter still ignores
-/// excluded and empty normalized blocks before consulting this matcher.
+/// excluded and empty normalized text before consulting this matcher.
 /// </summary>
 internal sealed class HeadingHintMatcher
 {
@@ -28,12 +28,13 @@ internal sealed class HeadingHintMatcher
 
         _hints =
             hints
-                .Select(hint =>
-                    new HintKey(
-                        NormalizeHeadingKey(
-                            hint),
-                        CompactHeadingKey(
-                            hint)))
+                .Select(
+                    hint =>
+                        new HintKey(
+                            NormalizeHeadingKey(
+                                hint),
+                            CompactHeadingKey(
+                                hint)))
                 .ToArray();
     }
 
@@ -43,6 +44,25 @@ internal sealed class HeadingHintMatcher
         ArgumentNullException.ThrowIfNull(
             block);
 
+        return IsHeading(
+            block.Text,
+            block.SourceText);
+    }
+
+    /// <summary>
+    /// Source-agnostic overload used by the hybrid segmenter. The caller remains
+    /// responsible for ensuring the candidate is eligible structural text.
+    /// </summary>
+    public bool IsHeading(
+        string normalizedText,
+        string sourceText)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            normalizedText);
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            sourceText);
+
         if (_hints.Length == 0)
         {
             return false;
@@ -50,10 +70,10 @@ internal sealed class HeadingHintMatcher
 
         var normalizedCandidate =
             NormalizeHeadingKey(
-                block.Text);
+                normalizedText);
 
         var sourceFirstLine =
-            block.SourceText
+            sourceText
                 .Replace(
                     "\r\n",
                     "\n",
@@ -66,7 +86,7 @@ internal sealed class HeadingHintMatcher
                     StringSplitOptions.RemoveEmptyEntries |
                     StringSplitOptions.TrimEntries)
                 .FirstOrDefault() ??
-            block.Text;
+            normalizedText;
 
         var compactFirstLine =
             CompactHeadingKey(
@@ -123,13 +143,16 @@ internal sealed class HeadingHintMatcher
 
         var prefix =
             candidate[
-                ..prefixLength]
+                    ..prefixLength]
                 .Trim();
 
         return prefix.Length is > 0 and <= 3 &&
-               prefix.All(character =>
-                   !char.IsLetter(character) ||
-                   char.IsUpper(character));
+               prefix.All(
+                   character =>
+                       !char.IsLetter(
+                           character) ||
+                       char.IsUpper(
+                           character));
     }
 
     private static string NormalizeHeadingKey(
@@ -142,7 +165,8 @@ internal sealed class HeadingHintMatcher
                     " ")
                 .Trim();
 
-        var start = 0;
+        var start =
+            0;
 
         while (start <
                normalized.Length &&
