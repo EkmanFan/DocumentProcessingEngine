@@ -194,6 +194,55 @@ Text    -> RecognizeText
 This increment still does not execute OCR or persist the figure. It only makes
 the treatment decision explicit and testable.
 
-The next production increment should add the smallest live layout-execution
-boundary required to obtain neutral observations from a raster page. Targeted
-OCR and figure persistence remain separate later increments.
+## Live PP-StructureV3 execution boundary
+
+Production Layout Increment 3 adds a concrete client for the official
+self-hosted PP-StructureV3 serving contract.
+
+The engine deliberately does not launch Python, Paddle, Docker, or a model
+process. The architecture remains .NET-first and model hosting is an external
+infrastructure concern. The selected boundary is therefore:
+
+```text
+raster image stream
+        ↓
+PpStructureV3ServingClient
+        ↓ HTTP POST /layout-parsing
+self-hosted PP-StructureV3 service
+        ↓ prunedResult
+PpStructureV3LayoutAdapter
+        ↓
+LayoutAnalysisResult
+```
+
+The request uses the same conservative feature switches established by
+LAYOUT-0A: orientation classification, unwarping, text-line orientation,
+seal, table, formula and chart recognition are disabled; region detection is
+enabled. Visualization and Markdown image payloads are disabled because this
+boundary only consumes layout evidence.
+
+The service may still internally emit `block_content`. Only `prunedResult` is
+passed to `PpStructureV3LayoutAdapter`, which continues to discard recognized
+content and retain only label/order/bounds evidence.
+
+Operational safeguards in this boundary are intentionally explicit:
+
+```text
+caller cancellation
+finite per-request timeout
+bounded input image size
+bounded HTTP response size
+HTTP status validation
+service errorCode validation
+exactly one page result for image input
+fail-closed response schema checks
+```
+
+`HttpClient` is injected so connection pooling, DNS behavior, proxy/TLS
+configuration and application lifetime remain with the hosting application.
+No generic `ILayoutAnalyzer` is introduced yet: there is still one selected
+layout backend and one concrete execution boundary.
+
+The next production step should validate this HTTP boundary against a real
+self-hosted PP-StructureV3 service on the pinned Ehrman page 233 before adding
+targeted OCR or figure persistence.
