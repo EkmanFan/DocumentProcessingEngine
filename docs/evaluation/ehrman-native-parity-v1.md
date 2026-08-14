@@ -28,7 +28,13 @@ The complete PDF must produce:
 - 331 pages with native words;
 - 286 pages without native words;
 - 53.6% text-layer coverage;
-- 286 textless pages with a dominant raster image.
+- 285 textless pages whose largest raster image covers at least 60% of the
+  canonical MediaBox viewport.
+
+There are still **286 pages without native words**. The dominant-raster count is
+a raster-area diagnostic, not a synonym for textlessness. The original `286`
+diagnostic predates the Phase 17C CropBox-to-MediaBox coordinate-space
+correction.
 
 Native word-stream probes must occur on:
 
@@ -58,6 +64,10 @@ Physical PDF pages 14-20 must produce:
 - 0 layout blocks;
 - 7 textless dominant-raster pages.
 
+These physical pages are raster-only front-matter/table-of-contents pages. They
+are useful OCR/layout/structure cases but are not representative narrative-body
+segmentation cases.
+
 This is deliberately a no-OCR baseline.
 
 ## Deferred post-normalization parity
@@ -71,9 +81,14 @@ The following historical ApologiaStudio values are not native-stage assertions:
 - 10 vertical reading-order reversal pages;
 - normalized block-probe parity.
 
-The current raw extraction observes 252 multi-column candidates,
-146 interleaved pages, and 10 vertical-reversal pages before recurring margins
-are excluded.
+After the Phase 17C MediaBox coordinate-space correction, the current raw
+geometry observation is 258 multi-column candidates, 156 interleaved pages, and
+17 vertical-reversal pages before recurring margins are excluded.
+
+These raw geometry values are observations rather than post-normalization
+acceptance gates. The normalized production regression remains the authoritative
+structural guard: 531 recurring headers, 229 multi-column candidates,
+144 interleaved pages, and 10 vertical reversals after normalization.
 
 These post-normalization assertions belong to the normalization increment and
 must not be forced into the PDF extractor.

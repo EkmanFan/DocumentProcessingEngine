@@ -227,7 +227,7 @@ require(
     extraction["textLayerCoveragePercent"] == 53.6,
     "text-layer coverage is not at parity")
 require(
-    extraction["textlessPagesWithDominantRasterImage"] == 286,
+    extraction["textlessPagesWithDominantRasterImage"] == 285,
     "dominant-raster textless-page count is not at parity")
 
 for value, expected in (

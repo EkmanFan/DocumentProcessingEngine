@@ -1,3 +1,5 @@
+using DocumentProcessing.Core.Extraction;
+
 namespace DocumentProcessing.Core.Hybrid;
 
 /// <summary>
@@ -5,17 +7,48 @@ namespace DocumentProcessing.Core.Hybrid;
 ///
 /// Elements are already in deterministic page reading order. Physical page
 /// boundaries remain explicit and are not semantic segmentation boundaries.
+///
+/// ContentViewport preserves page-level geometric provenance inside the
+/// canonical page coordinate space.
 /// </summary>
 public sealed class HybridDocumentPage
 {
+    private static readonly NormalizedRectangle FullPageViewport =
+        new(
+            0,
+            0,
+            1,
+            1);
+
     public HybridDocumentPage(
         int physicalPageNumber,
+        IReadOnlyList<HybridDocumentElement>? elements = null)
+        : this(
+            physicalPageNumber,
+            FullPageViewport,
+            elements)
+    {
+    }
+
+    public HybridDocumentPage(
+        int physicalPageNumber,
+        NormalizedRectangle contentViewport,
         IReadOnlyList<HybridDocumentElement>? elements = null)
     {
         if (physicalPageNumber <= 0)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(physicalPageNumber));
+        }
+
+        if (contentViewport.Right -
+                contentViewport.Left <= 0 ||
+            contentViewport.Bottom -
+                contentViewport.Top <= 0)
+        {
+            throw new ArgumentException(
+                "Content viewport must have positive width and height.",
+                nameof(contentViewport));
         }
 
         var resolved =
@@ -48,11 +81,16 @@ public sealed class HybridDocumentPage
         PhysicalPageNumber =
             physicalPageNumber;
 
+        ContentViewport =
+            contentViewport;
+
         Elements =
             resolved.ToArray();
     }
 
     public int PhysicalPageNumber { get; }
+
+    public NormalizedRectangle ContentViewport { get; }
 
     public IReadOnlyList<HybridDocumentElement> Elements { get; }
 

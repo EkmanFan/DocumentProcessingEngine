@@ -12,9 +12,6 @@ public sealed class DocumentTextNormalizer
     public const string NormalizationProfileId =
         "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1";
 
-    private const double HeaderZoneFraction = 0.12;
-    private const double FooterZoneFraction = 0.12;
-    private const double MaximumMarginBlockHeightFraction = 0.20;
     private const int MaximumRecurringCandidateLength = 160;
 
     public DocumentTextNormalizationResult Normalize(
@@ -88,7 +85,9 @@ public sealed class DocumentTextNormalizer
                 }
 
                 var zone =
-                    GetMarginZone(block);
+                    GetMarginZone(
+                        page,
+                        block);
 
                 if (zone is null)
                 {
@@ -146,7 +145,9 @@ public sealed class DocumentTextNormalizer
             .Select(block =>
             {
                 var zone =
-                    GetMarginZone(block);
+                    GetMarginZone(
+                        page,
+                        block);
 
                 if (zone is null)
                 {
@@ -167,7 +168,7 @@ public sealed class DocumentTextNormalizer
                 return new NormalizedDocumentTextBlock(
                     block.SourceBlock,
                     block.Text,
-                    zone == MarginZone.Header
+                    zone == RecurringMarginZone.Header
                         ? DocumentBlockExclusionReason.RepeatedHeader
                         : DocumentBlockExclusionReason.RepeatedFooter);
             })
@@ -178,40 +179,12 @@ public sealed class DocumentTextNormalizer
             blocks);
     }
 
-    private static MarginZone? GetMarginZone(
-        NormalizedDocumentTextBlock block)
-    {
-        var bounds =
-            block.SourceBlock.Bounds;
-
-        var height =
-            bounds.Bottom -
-            bounds.Top;
-
-        if (height <= 0 ||
-            height >
-            MaximumMarginBlockHeightFraction)
-        {
-            return null;
-        }
-
-        // Core geometry has a normalized top-left origin.
-        // Historical PdfPig geometry used a bottom-left origin.
-        if (bounds.Top <=
-            HeaderZoneFraction)
-        {
-            return MarginZone.Header;
-        }
-
-        if (bounds.Bottom >=
-            1.0 -
-            FooterZoneFraction)
-        {
-            return MarginZone.Footer;
-        }
-
-        return null;
-    }
+    private static RecurringMarginZone? GetMarginZone(
+        NormalizedDocumentPage page,
+        NormalizedDocumentTextBlock block) =>
+        RecurringMarginGeometry.GetZone(
+            block.SourceBlock.Bounds,
+            page.SourcePage.ContentViewport);
 
     private static string
         CanonicalizeRecurringText(
@@ -233,13 +206,7 @@ public sealed class DocumentTextNormalizer
                 proportionalCount));
     }
 
-    private enum MarginZone
-    {
-        Header = 0,
-        Footer = 1
-    }
-
     private readonly record struct MarginKey(
-        MarginZone Zone,
+        RecurringMarginZone Zone,
         string Text);
 }

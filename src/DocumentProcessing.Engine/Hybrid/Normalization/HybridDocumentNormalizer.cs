@@ -19,14 +19,6 @@ public sealed class HybridDocumentNormalizer
     public const string NormalizationProfileId =
         "hybrid-unicode-nfc-whitespace-source-dehyphenation-recurring-margins-v1";
 
-    private const double HeaderZoneFraction =
-        0.12;
-
-    private const double FooterZoneFraction =
-        0.12;
-
-    private const double MaximumMarginElementHeightFraction =
-        0.20;
 
     private const int MaximumRecurringCandidateLength =
         160;
@@ -156,6 +148,7 @@ public sealed class HybridDocumentNormalizer
 
                 var zone =
                     GetMarginZone(
+                        page,
                         element);
 
                 if (zone is null)
@@ -225,6 +218,7 @@ public sealed class HybridDocumentNormalizer
 
                         var zone =
                             GetMarginZone(
+                                page,
                                 element);
 
                         if (zone is null)
@@ -249,7 +243,7 @@ public sealed class HybridDocumentNormalizer
                             element.SourceElement,
                             element.Text,
                             zone ==
-                                MarginZone.Header
+                                RecurringMarginZone.Header
                                 ? DocumentBlockExclusionReason.RepeatedHeader
                                 : DocumentBlockExclusionReason.RepeatedFooter,
                             element.NormalizationDehyphenation);
@@ -261,38 +255,12 @@ public sealed class HybridDocumentNormalizer
             elements);
     }
 
-    private static MarginZone? GetMarginZone(
-        NormalizedHybridDocumentElement element)
-    {
-        var bounds =
-            element.Bounds;
-
-        var height =
-            bounds.Bottom -
-            bounds.Top;
-
-        if (height <= 0 ||
-            height >
-            MaximumMarginElementHeightFraction)
-        {
-            return null;
-        }
-
-        if (bounds.Top <=
-            HeaderZoneFraction)
-        {
-            return MarginZone.Header;
-        }
-
-        if (bounds.Bottom >=
-            1.0 -
-            FooterZoneFraction)
-        {
-            return MarginZone.Footer;
-        }
-
-        return null;
-    }
+    private static RecurringMarginZone? GetMarginZone(
+        NormalizedHybridDocumentPage page,
+        NormalizedHybridDocumentElement element) =>
+        RecurringMarginGeometry.GetZone(
+            element.Bounds,
+            page.SourcePage.ContentViewport);
 
     private static int GetMinimumOccurrenceCount(
         int pageCount)
@@ -309,13 +277,7 @@ public sealed class HybridDocumentNormalizer
                 proportionalCount));
     }
 
-    private enum MarginZone
-    {
-        Header = 0,
-        Footer = 1
-    }
-
     private readonly record struct MarginKey(
-        MarginZone Zone,
+        RecurringMarginZone Zone,
         string Text);
 }

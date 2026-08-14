@@ -187,13 +187,21 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
                         physicalPageNumber,
                         ContentOrderTextExtractor.GetText(
                             page),
-                        documentWords.Length,
-                        images.Length,
-                        largestRasterImageAreaRatio,
-                        sourceWidth,
-                        sourceHeight,
-                        documentWords,
-                        documentBlocks));
+                        coordinateSpace.ContentViewport,
+                        wordCount:
+                            documentWords.Length,
+                        rasterImageCount:
+                            images.Length,
+                        largestRasterImageAreaRatio:
+                            largestRasterImageAreaRatio,
+                        sourceWidth:
+                            sourceWidth,
+                        sourceHeight:
+                            sourceHeight,
+                        words:
+                            documentWords,
+                        blocks:
+                            documentBlocks));
             }
 
             return new DocumentExtractionResult(

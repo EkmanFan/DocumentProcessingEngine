@@ -51,6 +51,43 @@ public sealed class PdfPigMediaCoordinateSpaceTests
             page.SourceHeight,
             precision: 6);
 
+        var expectedContentViewport =
+            rotation is 0 or 180
+                ? new
+                {
+                    Left = 1d / 6d,
+                    Top = 0.0625d,
+                    Right = 5d / 6d,
+                    Bottom = 0.9375d
+                }
+                : new
+                {
+                    Left = 0.0625d,
+                    Top = 1d / 6d,
+                    Right = 0.9375d,
+                    Bottom = 5d / 6d
+                };
+
+        Assert.Equal(
+            expectedContentViewport.Left,
+            page.ContentViewport.Left,
+            precision: 6);
+
+        Assert.Equal(
+            expectedContentViewport.Top,
+            page.ContentViewport.Top,
+            precision: 6);
+
+        Assert.Equal(
+            expectedContentViewport.Right,
+            page.ContentViewport.Right,
+            precision: 6);
+
+        Assert.Equal(
+            expectedContentViewport.Bottom,
+            page.ContentViewport.Bottom,
+            precision: 6);
+
         var word =
             Assert.Single(
                 page.Words,

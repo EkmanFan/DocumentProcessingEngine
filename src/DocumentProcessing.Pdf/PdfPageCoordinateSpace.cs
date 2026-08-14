@@ -14,6 +14,11 @@ namespace DocumentProcessing.Pdf;
 /// pdftoppm without -cropbox, which renders the MediaBox. Native and raster
 /// evidence therefore require an explicit viewport transform before spatial
 /// comparison.
+///
+/// The effective CropBox is also retained as ContentViewport inside that
+/// canonical MediaBox space. Position-sensitive document heuristics can then
+/// reason relative to the visible source viewport without corrupting cross-modal
+/// canonical coordinates.
 /// </summary>
 internal readonly record struct PdfPageCoordinateSpace
 {
@@ -21,7 +26,9 @@ internal readonly record struct PdfPageCoordinateSpace
         double width,
         double height,
         double offsetX,
-        double offsetY)
+        double offsetY,
+        double contentWidth,
+        double contentHeight)
     {
         if (!double.IsFinite(width) ||
             width <= 0)
@@ -49,15 +56,45 @@ internal readonly record struct PdfPageCoordinateSpace
                 nameof(offsetY));
         }
 
+        if (!double.IsFinite(contentWidth) ||
+            contentWidth <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(contentWidth));
+        }
+
+        if (!double.IsFinite(contentHeight) ||
+            contentHeight <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(contentHeight));
+        }
+
         Width = width;
         Height = height;
         OffsetX = offsetX;
         OffsetY = offsetY;
+
+        ContentViewport =
+            new NormalizedRectangle(
+                offsetX / width,
+                1 -
+                (offsetY + contentHeight) /
+                height,
+                (offsetX + contentWidth) /
+                width,
+                1 - offsetY / height);
     }
 
     public double Width { get; }
 
     public double Height { get; }
+
+    /// <summary>
+    /// Effective CropBox viewport expressed in canonical MediaBox-normalized
+    /// top-left coordinates.
+    /// </summary>
+    public NormalizedRectangle ContentViewport { get; }
 
     private double OffsetX { get; }
 
@@ -126,28 +163,36 @@ internal readonly record struct PdfPageCoordinateSpace
                     mediaWidth,
                     mediaHeight,
                     cropLeft - mediaLeft,
-                    cropBottom - mediaBottom),
+                    cropBottom - mediaBottom,
+                    cropWidth,
+                    cropHeight),
 
             90 =>
                 new PdfPageCoordinateSpace(
                     mediaHeight,
                     mediaWidth,
                     cropBottom - mediaBottom,
-                    mediaRight - cropRight),
+                    mediaRight - cropRight,
+                    cropHeight,
+                    cropWidth),
 
             180 =>
                 new PdfPageCoordinateSpace(
                     mediaWidth,
                     mediaHeight,
                     mediaRight - cropRight,
-                    mediaTop - cropTop),
+                    mediaTop - cropTop,
+                    cropWidth,
+                    cropHeight),
 
             270 =>
                 new PdfPageCoordinateSpace(
                     mediaHeight,
                     mediaWidth,
                     mediaTop - cropTop,
-                    cropLeft - mediaLeft),
+                    cropLeft - mediaLeft,
+                    cropHeight,
+                    cropWidth),
 
             _ =>
                 throw new InvalidDataException(

@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
 
 namespace DocumentProcessing.Engine.Hybrid;
@@ -17,6 +18,32 @@ public static class HybridDocumentAssembler
 
     public static HybridDocumentPage AssemblePage(
         int physicalPageNumber,
+        IEnumerable<HybridDocumentElement> elements) =>
+        AssemblePage(
+            physicalPageNumber,
+            new NormalizedRectangle(
+                0,
+                0,
+                1,
+                1),
+            elements);
+
+    public static HybridDocumentPage AssemblePage(
+        DocumentExtractionPage sourcePage,
+        IEnumerable<HybridDocumentElement> elements)
+    {
+        ArgumentNullException.ThrowIfNull(
+            sourcePage);
+
+        return AssemblePage(
+            sourcePage.PhysicalPageNumber,
+            sourcePage.ContentViewport,
+            elements);
+    }
+
+    public static HybridDocumentPage AssemblePage(
+        int physicalPageNumber,
+        NormalizedRectangle contentViewport,
         IEnumerable<HybridDocumentElement> elements)
     {
         if (physicalPageNumber <= 0)
@@ -59,6 +86,7 @@ public static class HybridDocumentAssembler
 
         return new HybridDocumentPage(
             physicalPageNumber,
+            contentViewport,
             ordered);
     }
 
