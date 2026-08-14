@@ -56,10 +56,7 @@ public sealed record DocumentTextBlock
         SourceSequence = sourceSequence;
         ReadingOrder = readingOrder;
         Text = text;
-        Bounds =
-            bounds ??
-            throw new ArgumentNullException(
-                nameof(bounds));
+        Bounds = bounds;
 
         Words =
             words ??

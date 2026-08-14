@@ -28,7 +28,7 @@ public sealed class LayoutObservationTests
         Assert.Equal(11, observation.ObservationSequence);
         Assert.Equal(3, observation.ReadingOrder);
         Assert.Equal(LayoutObservationKind.Figure, observation.Kind);
-        Assert.Same(bounds, observation.Bounds);
+        Assert.Equal(bounds, observation.Bounds);
         Assert.Equal("image", observation.RawLabel);
     }
 
@@ -80,14 +80,6 @@ public sealed class LayoutObservationTests
                 -1,
                 LayoutObservationKind.Text,
                 bounds));
-
-        Assert.Throws<ArgumentNullException>(
-            () => new LayoutObservation(
-                1,
-                0,
-                0,
-                LayoutObservationKind.Text,
-                null!));
     }
 
     [Fact]

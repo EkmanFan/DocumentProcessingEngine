@@ -23,7 +23,7 @@ public sealed class DocumentTextBlockTests
         Assert.Equal(7, block.SourceSequence);
         Assert.Equal(2, block.ReadingOrder!.Value);
         Assert.Equal("text", block.Text);
-        Assert.Same(bounds, block.Bounds);
+        Assert.Equal(bounds, block.Bounds);
         Assert.Same(word, Assert.Single(block.Words));
     }
 
@@ -52,8 +52,5 @@ public sealed class DocumentTextBlockTests
 
         Assert.Throws<ArgumentException>(
             () => new DocumentTextBlock(0, 0, " ", bounds));
-
-        Assert.Throws<ArgumentNullException>(
-            () => new DocumentTextBlock(0, 0, "text", null!));
     }
 }

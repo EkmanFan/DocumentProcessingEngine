@@ -13,7 +13,7 @@ public sealed class DocumentWordTests
 
         Assert.Equal(7, word.SourceSequence);
         Assert.Equal("text", word.Text);
-        Assert.Same(bounds, word.Bounds);
+        Assert.Equal(bounds, word.Bounds);
     }
 
     [Fact]
@@ -26,8 +26,5 @@ public sealed class DocumentWordTests
 
         Assert.Throws<ArgumentException>(
             () => new DocumentWord(0, " ", bounds));
-
-        Assert.Throws<ArgumentNullException>(
-            () => new DocumentWord(0, "text", null!));
     }
 }

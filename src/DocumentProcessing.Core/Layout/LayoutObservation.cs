@@ -43,7 +43,7 @@ public sealed record LayoutObservation
         ObservationSequence = observationSequence;
         ReadingOrder = readingOrder;
         Kind = kind;
-        Bounds = bounds ?? throw new ArgumentNullException(nameof(bounds));
+        Bounds = bounds;
         RawLabel = string.IsNullOrWhiteSpace(rawLabel)
             ? null
             : rawLabel.Trim();

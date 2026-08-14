@@ -33,10 +33,7 @@ public sealed record DocumentWord
 
         SourceSequence = sourceSequence;
         Text = text;
-        Bounds =
-            bounds ??
-            throw new ArgumentNullException(
-                nameof(bounds));
+        Bounds = bounds;
 
         FontName =
             string.IsNullOrWhiteSpace(fontName)
