@@ -149,6 +149,51 @@ GPU execution
 There is no live analyzer implementation yet, so introducing a generic
 `ILayoutAnalyzer` abstraction in this increment would be premature.
 
-The next production increment should add deterministic treatment policy and the
-smallest live execution boundary required to obtain these observations from a
-raster page.
+## Deterministic treatment policy
+
+Production Layout Increment 2 adds the first engine-owned processing policy for
+layout observations.
+
+The policy is deliberately small:
+
+```text
+LayoutObservationKind          LayoutTreatment
+-------------------------------------------------------------
+Text                           RecognizeText
+Heading                        RecognizeText
+Caption                        RecognizeText
+Figure                         PreserveVisualWithoutOcr
+Table                          Deferred
+Unknown                        Deferred
+undefined enum value           Deferred
+```
+
+This makes the mixed-content safety rule explicit in deterministic code:
+
+```text
+figure/image -> preserve visual evidence -> no OCR
+```
+
+The decision is not delegated to PP-StructureV3, PaddleOCR, an LLM, a prompt, or
+backend-provided `block_content`.
+
+`Table` and `Unknown` are deliberately deferred rather than silently treated as
+text. Their production behavior has not yet been established by a representative
+evaluation.
+
+The representative Ehrman page 233 sequence therefore becomes:
+
+```text
+Heading -> RecognizeText
+Text    -> RecognizeText
+Figure  -> PreserveVisualWithoutOcr
+Caption -> RecognizeText
+Text    -> RecognizeText
+```
+
+This increment still does not execute OCR or persist the figure. It only makes
+the treatment decision explicit and testable.
+
+The next production increment should add the smallest live layout-execution
+boundary required to obtain neutral observations from a raster page. Targeted
+OCR and figure persistence remain separate later increments.
