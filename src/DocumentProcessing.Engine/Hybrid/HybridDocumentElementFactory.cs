@@ -206,6 +206,14 @@ public static class HybridDocumentElementFactory
             LayoutObservationKind.Caption =>
                 HybridDocumentElementKind.Caption,
 
+            // Table is a source-layout role, not a final text-flow type.
+            // OCR-recovered table text participates in neutral text flow while
+            // the original LayoutObservationKind.Table remains attached as
+            // provenance. Cell/row/column structure is intentionally not
+            // inferred by this fallback.
+            LayoutObservationKind.Table =>
+                HybridDocumentElementKind.Text,
+
             _ =>
                 throw new InvalidOperationException(
                     $"Layout kind {kind} is not a supported textual hybrid kind.")

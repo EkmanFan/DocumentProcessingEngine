@@ -632,7 +632,7 @@ public sealed class HybridDocumentNormalizerTests
                     1,
                     sequence: 0,
                     readingOrder: 0,
-                    LayoutObservationKind.Table,
+                    LayoutObservationKind.Unknown,
                     new NormalizedRectangle(
                         0.10,
                         0.20,

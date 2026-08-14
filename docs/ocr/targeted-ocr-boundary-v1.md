@@ -46,7 +46,7 @@ Text     -> RecognizeText
 Heading  -> RecognizeText
 Caption  -> RecognizeText
 Figure   -> PreserveVisualWithoutOcr
-Table    -> Deferred
+Table    -> RecognizeText
 Unknown  -> Deferred
 ```
 
@@ -140,7 +140,7 @@ This increment does **not** add:
 - a generic `IOcrEngine` plugin abstraction;
 - a second OCR backend;
 - figure persistence;
-- table OCR;
+- table cell/row/column reconstruction;
 - `Unknown` OCR;
 - native/OCR reconciliation;
 - cross-page hybrid continuity;

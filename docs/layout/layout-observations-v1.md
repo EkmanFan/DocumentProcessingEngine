@@ -165,7 +165,7 @@ Text                           RecognizeText
 Heading                        RecognizeText
 Caption                        RecognizeText
 Figure                         PreserveVisualWithoutOcr
-Table                          Deferred
+Table                          RecognizeText
 Unknown                        Deferred
 undefined enum value           Deferred
 ```
@@ -179,9 +179,18 @@ figure/image -> preserve visual evidence -> no OCR
 The decision is not delegated to PP-StructureV3, PaddleOCR, an LLM, a prompt, or
 backend-provided `block_content`.
 
-`Table` and `Unknown` are deliberately deferred rather than silently treated as
-text. Their production behavior has not yet been established by a representative
-evaluation.
+`Unknown` remains deliberately deferred and fail-closed.
+
+Phase 18E provided the missing representative evidence for `Table`: the pinned
+Ehrman raster table-of-contents pages 14–20 were classified predominantly as
+`Table`. Deferring those regions caused physical pages 14, 16, and 18 to emit no
+authoritative text even though the page visibly contains document text.
+
+`Table` is therefore now authorized for OCR text recovery. This is deliberately
+a **text fallback**, not table-structure extraction: the original
+`LayoutObservationKind.Table` remains attached as provenance while the recovered
+text participates in neutral hybrid text flow. Row/column/cell reconstruction
+remains deferred.
 
 The representative Ehrman page 233 sequence therefore becomes:
 

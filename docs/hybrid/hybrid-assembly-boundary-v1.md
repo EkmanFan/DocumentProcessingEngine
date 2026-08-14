@@ -31,7 +31,8 @@ native-only text
 resolved native/OCR text
 unresolved native/OCR evidence
 preserved visual evidence
-deferred Unknown/Table evidence
+OCR-recovered Table text with Table provenance
+deferred Unknown evidence
         ↓
 HybridDocumentAssembler
         ↓
@@ -73,7 +74,13 @@ Rules:
   text;
 - `Deferred` contains neutral layout evidence only and no selected text.
 
-`Unknown` and `Table` therefore remain non-authoritative.
+`Unknown` remains non-authoritative and deferred.
+
+Phase 18E later established a generic text-recovery requirement for
+`LayoutObservationKind.Table`. A resolved OCR result from a Table region now
+becomes neutral `HybridDocumentElementKind.Text` while retaining the original
+Table layout observation as provenance. This does not claim row/column/cell
+structure.
 
 ## Evidence adapters
 
@@ -187,7 +194,9 @@ The unit regression proves that:
 - mixed text/figure/caption elements are ordered deterministically;
 - a figure is textless;
 - conflicts remain unresolved and textless;
-- Unknown/Table evidence remains deferred;
+- Unknown evidence remains deferred;
+- Table OCR fallback can become authoritative neutral text while preserving
+  Table layout provenance;
 - standalone native text retains NativePdf provenance;
 - duplicate layout evidence is rejected;
 - standalone/reconciled native duplication is rejected;

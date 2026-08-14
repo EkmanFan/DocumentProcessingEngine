@@ -17,13 +17,13 @@ public static class LayoutTreatmentPolicy
         {
             LayoutObservationKind.Text or
             LayoutObservationKind.Heading or
-            LayoutObservationKind.Caption =>
+            LayoutObservationKind.Caption or
+            LayoutObservationKind.Table =>
                 LayoutTreatment.RecognizeText,
 
             LayoutObservationKind.Figure =>
                 LayoutTreatment.PreserveVisualWithoutOcr,
 
-            LayoutObservationKind.Table or
             LayoutObservationKind.Unknown =>
                 LayoutTreatment.Deferred,
 

@@ -543,7 +543,7 @@ public sealed class HybridDocumentAssemblerTests
                         Layout(
                             sequence: 0,
                             readingOrder: 0,
-                            LayoutObservationKind.Table,
+                            LayoutObservationKind.Unknown,
                             0.10,
                             0.10,
                             0.90,

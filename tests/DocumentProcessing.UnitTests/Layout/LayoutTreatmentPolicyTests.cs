@@ -20,7 +20,7 @@ public sealed class LayoutTreatmentPolicyTests
         LayoutTreatment.PreserveVisualWithoutOcr)]
     [InlineData(
         LayoutObservationKind.Table,
-        LayoutTreatment.Deferred)]
+        LayoutTreatment.RecognizeText)]
     [InlineData(
         LayoutObservationKind.Unknown,
         LayoutTreatment.Deferred)]
