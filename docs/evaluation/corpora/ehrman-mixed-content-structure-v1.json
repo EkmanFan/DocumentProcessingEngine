@@ -4,56 +4,56 @@
   "sourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
   "pageNumber": 233,
   "printedPageNumber": "202",
-  "referenceMethod": "Manual visual region annotation on the exact pinned page. Bounds were derived from a verified render of physical PDF page 233.",
+  "referenceMethod": "Manual visual region annotation on the exact pinned physical PDF page 233 rendered at 300 DPI to a 2556x3305 RGB image. Bounds were re-annotated directly on that render after LAYOUT-0A exposed a coordinate-reference mismatch in the initial OCR-0H annotations.",
   "regions": [
     {
       "id": "section-title",
       "kind": "ModernHeading",
       "bounds": {
-        "left": 0.210269,
-        "top": 0.2092,
-        "right": 0.515077,
-        "bottom": 0.266541
+        "left": 0.23865414710485133,
+        "top": 0.24205748865355523,
+        "right": 0.5555555555555556,
+        "bottom": 0.30257186081694404
       }
     },
     {
       "id": "left-body",
       "kind": "ModernPrintedText",
       "bounds": {
-        "left": 0.210269,
-        "top": 0.277253,
-        "right": 0.516707,
-        "bottom": 0.373031
+        "left": 0.23865414710485133,
+        "top": 0.3101361573373676,
+        "right": 0.582942097026604,
+        "bottom": 0.4236006051437216
       }
     },
     {
       "id": "right-opening",
       "kind": "ModernPrintedText",
       "bounds": {
-        "left": 0.528117,
-        "top": 0.206049,
-        "right": 0.836186,
-        "bottom": 0.364209
+        "left": 0.5907668231611893,
+        "top": 0.22995461422087746,
+        "right": 0.9428794992175273,
+        "bottom": 0.4114977307110439
       }
     },
     {
       "id": "facsimile",
       "kind": "FacsimileImage",
       "bounds": {
-        "left": 0.210269,
-        "top": 0.382483,
-        "right": 0.515077,
-        "bottom": 0.770006
+        "left": 0.236697965571205,
+        "top": 0.4296520423600605,
+        "right": 0.582942097026604,
+        "bottom": 0.8653555219364599
       }
     },
     {
       "id": "caption",
       "kind": "Caption",
       "bounds": {
-        "left": 0.208639,
-        "top": 0.770006,
-        "right": 0.516707,
-        "bottom": 0.845621
+        "left": 0.2347417840375587,
+        "top": 0.8653555219364599,
+        "right": 0.582942097026604,
+        "bottom": 0.9500756429652042
       }
     }
   ],
