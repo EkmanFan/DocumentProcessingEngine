@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Normalization;
 
@@ -9,7 +7,7 @@ namespace DocumentProcessing.Engine.Normalization;
 /// Applies deterministic text normalization and recurring margin detection
 /// without mutating extracted source evidence.
 /// </summary>
-public sealed partial class DocumentTextNormalizer
+public sealed class DocumentTextNormalizer
 {
     public const string NormalizationProfileId =
         "unicode-nfc-whitespace-dehyphenation-recurring-margins-v1";
@@ -38,7 +36,8 @@ public sealed partial class DocumentTextNormalizer
                 .Select(block =>
                     new NormalizedDocumentTextBlock(
                         block,
-                        NormalizeText(block.Text)))
+                        DeterministicTextNormalizationRules
+                            .Normalize(block.Text)))
                 .ToArray();
 
             provisionalPages.Add(
@@ -63,34 +62,6 @@ public sealed partial class DocumentTextNormalizer
             extraction,
             NormalizationProfileId,
             finalPages);
-    }
-
-    private static string NormalizeText(
-        string sourceText)
-    {
-        ArgumentNullException.ThrowIfNull(sourceText);
-
-        var normalized = sourceText
-            .Normalize(NormalizationForm.FormC)
-            .Replace(
-                "\r\n",
-                "\n",
-                StringComparison.Ordinal)
-            .Replace(
-                '\r',
-                '\n');
-
-        normalized =
-            DehyphenationRegex()
-                .Replace(
-                    normalized,
-                    string.Empty);
-
-        return WhitespaceRegex()
-            .Replace(
-                normalized,
-                " ")
-            .Trim();
     }
 
     private static HashSet<MarginKey>
@@ -244,18 +215,10 @@ public sealed partial class DocumentTextNormalizer
 
     private static string
         CanonicalizeRecurringText(
-            string text)
-    {
-        var normalized =
-            NormalizeText(text)
-                .ToUpperInvariant();
-
-        return DigitRunRegex()
-            .Replace(
-                normalized,
-                "#");
-    }
-
+        string text) =>
+        DeterministicTextNormalizationRules
+            .CanonicalizeRecurringText(
+                text);
     private static int GetMinimumOccurrenceCount(
         int pageCount)
     {
@@ -269,21 +232,6 @@ public sealed partial class DocumentTextNormalizer
                 10,
                 proportionalCount));
     }
-
-    [GeneratedRegex(
-        @"(?<=\p{L})-[\t ]*\n[\t ]*(?=\p{Ll})",
-        RegexOptions.CultureInvariant)]
-    private static partial Regex DehyphenationRegex();
-
-    [GeneratedRegex(
-        @"\s+",
-        RegexOptions.CultureInvariant)]
-    private static partial Regex WhitespaceRegex();
-
-    [GeneratedRegex(
-        @"\d+",
-        RegexOptions.CultureInvariant)]
-    private static partial Regex DigitRunRegex();
 
     private enum MarginZone
     {
