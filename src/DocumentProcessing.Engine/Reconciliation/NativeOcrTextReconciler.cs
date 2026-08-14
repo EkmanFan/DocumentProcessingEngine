@@ -1,4 +1,5 @@
 using System.Text;
+using DocumentProcessing.Core.Normalization;
 using DocumentProcessing.Core.Reconciliation;
 
 namespace DocumentProcessing.Engine.Reconciliation;
@@ -15,19 +16,107 @@ namespace DocumentProcessing.Engine.Reconciliation;
 /// </summary>
 public static class NativeOcrTextReconciler
 {
+    /// <summary>
+    /// Raw block-level reconciliation retained for Phase 17A compatibility.
+    ///
+    /// When native and OCR evidence have been spatially paired, callers should
+    /// obtain a ComparableNativeTextExtent and use ReconcileComparable so the
+    /// policy compares equivalent textual extent.
+    /// </summary>
     public static TextReconciliationResult Reconcile(
         TextReconciliationInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
 
-        var nativeText =
-            input.NativeBlock?.Text;
+        return ReconcileCore(
+            input,
+            input.NativeBlock?.Text,
+            ComposeOcrText(input),
+            comparableNativeExtent: null,
+            nativeTextPreparation: null,
+            ocrTextPreparation: null);
+    }
 
-        var ocrText =
-            ComposeOcrText(input);
+    /// <summary>
+    /// Reconciles one caller-supplied native/OCR pair after deterministic
+    /// comparable-extent projection and source-aware dehyphenation.
+    ///
+    /// This method does not perform automatic pairing and does not use fuzzy
+    /// similarity. It applies the same V1 authority policy as Reconcile.
+    /// </summary>
+    public static TextReconciliationResult ReconcileComparable(
+        TextReconciliationInput input,
+        ComparableNativeTextExtent comparableNativeExtent)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(comparableNativeExtent);
 
+        if (input.NativeStatus == NativeTextStatus.Missing ||
+            input.NativeBlock is null)
+        {
+            throw new ArgumentException(
+                "Comparable reconciliation requires native evidence.",
+                nameof(input));
+        }
+
+        if (input.OcrRegion is null)
+        {
+            throw new ArgumentException(
+                "Comparable reconciliation requires OCR evidence.",
+                nameof(input));
+        }
+
+        if (!ReferenceEquals(
+                comparableNativeExtent.SourceBlock,
+                input.NativeBlock))
+        {
+            throw new ArgumentException(
+                "Comparable native extent must originate from the input native block.",
+                nameof(comparableNativeExtent));
+        }
+
+        if (!ReferenceEquals(
+                comparableNativeExtent.SourceLayoutObservation,
+                input.OcrRegion.SourceLayoutObservation))
+        {
+            throw new ArgumentException(
+                "Comparable native extent must originate from the input OCR layout observation.",
+                nameof(comparableNativeExtent));
+        }
+
+        var nativeTextPreparation =
+            ReconciliationTextDehyphenator
+                .DehyphenateNative(
+                    comparableNativeExtent);
+
+        var ocrTextPreparation =
+            ReconciliationTextDehyphenator
+                .DehyphenateOcr(
+                    input.OcrRegion);
+
+        return ReconcileCore(
+            input,
+            nativeTextPreparation.Text,
+            string.IsNullOrWhiteSpace(
+                ocrTextPreparation.Text)
+                ? null
+                : ocrTextPreparation.Text,
+            comparableNativeExtent,
+            nativeTextPreparation,
+            ocrTextPreparation);
+    }
+
+    private static TextReconciliationResult ReconcileCore(
+        TextReconciliationInput input,
+        string? nativeText,
+        string? ocrText,
+        ComparableNativeTextExtent? comparableNativeExtent,
+        TextDehyphenationResult? nativeTextPreparation,
+        TextDehyphenationResult? ocrTextPreparation)
+    {
         var hasOcrText =
-            ocrText is not null;
+            !string.IsNullOrWhiteSpace(
+                ocrText);
 
         if (input.NativeStatus == NativeTextStatus.Missing)
         {
@@ -38,14 +127,20 @@ public static class NativeOcrTextReconciler
                     TextSelectionOrigin.Ocr,
                     ocrText,
                     ocrText,
-                    textsEquivalent: null)
+                    textsEquivalent: null,
+                    comparableNativeExtent,
+                    nativeTextPreparation,
+                    ocrTextPreparation)
                 : Result(
                     input,
                     TextReconciliationDecision.NoTextRecovered,
                     TextSelectionOrigin.None,
                     selectedText: null,
                     ocrText: null,
-                    textsEquivalent: null);
+                    textsEquivalent: null,
+                    comparableNativeExtent,
+                    nativeTextPreparation,
+                    ocrTextPreparation);
         }
 
         if (!hasOcrText)
@@ -57,14 +152,20 @@ public static class NativeOcrTextReconciler
                     TextSelectionOrigin.NativePdf,
                     nativeText,
                     ocrText: null,
-                    textsEquivalent: null)
+                    textsEquivalent: null,
+                    comparableNativeExtent,
+                    nativeTextPreparation,
+                    ocrTextPreparation)
                 : Result(
                     input,
                     TextReconciliationDecision.SuspiciousNativeUnverified,
                     TextSelectionOrigin.None,
                     selectedText: null,
                     ocrText: null,
-                    textsEquivalent: null);
+                    textsEquivalent: null,
+                    comparableNativeExtent,
+                    nativeTextPreparation,
+                    ocrTextPreparation);
         }
 
         var textsEquivalent =
@@ -80,7 +181,10 @@ public static class NativeOcrTextReconciler
                 TextSelectionOrigin.NativePdf,
                 nativeText,
                 ocrText,
-                textsEquivalent: true);
+                textsEquivalent: true,
+                comparableNativeExtent,
+                nativeTextPreparation,
+                ocrTextPreparation);
         }
 
         if (input.NativeStatus == NativeTextStatus.Healthy)
@@ -91,7 +195,10 @@ public static class NativeOcrTextReconciler
                 TextSelectionOrigin.NativePdf,
                 nativeText,
                 ocrText,
-                textsEquivalent: false);
+                textsEquivalent: false,
+                comparableNativeExtent,
+                nativeTextPreparation,
+                ocrTextPreparation);
         }
 
         return Result(
@@ -100,7 +207,10 @@ public static class NativeOcrTextReconciler
             TextSelectionOrigin.None,
             selectedText: null,
             ocrText,
-            textsEquivalent: false);
+            textsEquivalent: false,
+            comparableNativeExtent,
+            nativeTextPreparation,
+            ocrTextPreparation);
     }
 
     /// <summary>
@@ -128,14 +238,20 @@ public static class NativeOcrTextReconciler
         TextSelectionOrigin selectedOrigin,
         string? selectedText,
         string? ocrText,
-        bool? textsEquivalent) =>
+        bool? textsEquivalent,
+        ComparableNativeTextExtent? comparableNativeExtent = null,
+        TextDehyphenationResult? nativeTextPreparation = null,
+        TextDehyphenationResult? ocrTextPreparation = null) =>
         new(
             input,
             decision,
             selectedOrigin,
             selectedText,
             ocrText,
-            textsEquivalent);
+            textsEquivalent,
+            comparableNativeExtent,
+            nativeTextPreparation,
+            ocrTextPreparation);
 
     private static string? ComposeOcrText(
         TextReconciliationInput input)
@@ -161,17 +277,21 @@ public static class NativeOcrTextReconciler
 
         return fragments.Length == 0
             ? null
-            : string.Join(" ", fragments);
+            : string.Join(
+                " ",
+                fragments);
     }
 
     private static string NormalizeForComparison(
         string value)
     {
         var normalized =
-            value.Normalize(NormalizationForm.FormKC);
+            value.Normalize(
+                NormalizationForm.FormKC);
 
         var builder =
-            new StringBuilder(normalized.Length);
+            new StringBuilder(
+                normalized.Length);
 
         var pendingWhitespace =
             false;
@@ -187,7 +307,8 @@ public static class NativeOcrTextReconciler
             {
                 if (builder.Length > 0)
                 {
-                    pendingWhitespace = true;
+                    pendingWhitespace =
+                        true;
                 }
 
                 continue;
@@ -196,10 +317,12 @@ public static class NativeOcrTextReconciler
             if (pendingWhitespace)
             {
                 builder.Append(' ');
-                pendingWhitespace = false;
+                pendingWhitespace =
+                    false;
             }
 
-            builder.Append(character);
+            builder.Append(
+                character);
         }
 
         return builder.ToString();
