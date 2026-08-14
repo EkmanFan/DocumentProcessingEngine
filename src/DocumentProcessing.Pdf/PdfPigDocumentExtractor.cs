@@ -78,13 +78,15 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
 
                 physicalPageNumber++;
 
+                var coordinateSpace =
+                    PdfPageCoordinateSpace.Create(
+                        page);
+
                 var sourceWidth =
-                    Convert.ToDouble(
-                        page.Width);
+                    coordinateSpace.Width;
 
                 var sourceHeight =
-                    Convert.ToDouble(
-                        page.Height);
+                    coordinateSpace.Height;
 
                 if (sourceWidth <= 0 ||
                     sourceHeight <= 0)
@@ -109,8 +111,7 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
                                 ToDocumentWord(
                                     word,
                                     sourceSequence,
-                                    sourceWidth,
-                                    sourceHeight))
+                                    coordinateSpace))
                         .ToArray();
 
                 var documentWordBySourceWord =
@@ -159,8 +160,7 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
                                 block,
                                 blockSourceSequence[block],
                                 documentWordBySourceWord,
-                                sourceWidth,
-                                sourceHeight))
+                                coordinateSpace))
                         .ToArray();
 
                 var images =
@@ -215,15 +215,12 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
     private static DocumentWord ToDocumentWord(
         Word word,
         int sourceSequence,
-        double pageWidth,
-        double pageHeight) =>
+        PdfPageCoordinateSpace coordinateSpace) =>
         new(
             sourceSequence,
             word.Text,
-            ToNormalizedRectangle(
-                word.BoundingBox,
-                pageWidth,
-                pageHeight),
+            coordinateSpace.ToNormalizedRectangle(
+                word.BoundingBox),
             word.FontName,
             GetMedianPointSize(
                 word.Letters));
@@ -232,8 +229,7 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
         TextBlock block,
         int sourceSequence,
         IReadOnlyDictionary<Word, DocumentWord> documentWordBySourceWord,
-        double pageWidth,
-        double pageHeight)
+        PdfPageCoordinateSpace coordinateSpace)
     {
         var sourceWords =
             block.TextLines
@@ -265,10 +261,8 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
                 ? block.ReadingOrder
                 : null,
             block.Text,
-            ToNormalizedRectangle(
-                block.BoundingBox,
-                pageWidth,
-                pageHeight),
+            coordinateSpace.ToNormalizedRectangle(
+                block.BoundingBox),
             words,
             GetDominantFontName(
                 letters),
@@ -329,38 +323,5 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
             : pointSizes[middle];
     }
 
-    private static NormalizedRectangle ToNormalizedRectangle(
-        PdfRectangle bounds,
-        double pageWidth,
-        double pageHeight)
-    {
-        var left =
-            Convert.ToDouble(
-                bounds.Left) /
-            pageWidth;
 
-        var right =
-            Convert.ToDouble(
-                bounds.Right) /
-            pageWidth;
-
-        // PdfPig uses a bottom-left origin. Core uses a top-left origin.
-        var top =
-            1 -
-            Convert.ToDouble(
-                bounds.Top) /
-            pageHeight;
-
-        var bottom =
-            1 -
-            Convert.ToDouble(
-                bounds.Bottom) /
-            pageHeight;
-
-        return new NormalizedRectangle(
-            left,
-            top,
-            right,
-            bottom);
-    }
 }

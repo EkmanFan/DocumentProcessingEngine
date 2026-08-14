@@ -65,12 +65,12 @@ public sealed class DocumentExtractionPage
     public double LargestRasterImageAreaRatio { get; }
 
     /// <summary>
-    /// Width of the page in the source extractor coordinate space.
+    /// Width of the canonical page coordinate space used by extractor evidence.
     /// </summary>
     public double SourceWidth { get; }
 
     /// <summary>
-    /// Height of the page in the source extractor coordinate space.
+    /// Height of the canonical page coordinate space used by extractor evidence.
     /// </summary>
     public double SourceHeight { get; }
 
