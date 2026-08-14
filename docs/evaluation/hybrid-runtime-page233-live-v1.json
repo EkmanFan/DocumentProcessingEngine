@@ -1,0 +1,188 @@
+{
+  "schemaVersion": "document-processing-hybrid-runtime-page233-closeout-v1",
+  "validatedBaseline": "d0316f5de669bb261b664e0792ddb7389dfe82e7",
+  "source": {
+    "sha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+    "physicalPageNumber": 233
+  },
+  "raster": {
+    "width": 2556,
+    "height": 3305,
+    "sha256": "654dd8186552c2727808c48b2e4376815693e1d845f489a66dbca8305e61d484"
+  },
+  "runtime": {
+    "layoutBackendId": "pp-structurev3",
+    "ocrBackendId": "paddleocr-general-ocr",
+    "ocrProfileId": "paddleocr-3.7.0-ppocrv6-medium-cpu-v1",
+    "visualProfileId": "pdftoppm-26.01.0-300dpi-rgb-png-pillow-10.1.0-crop-v1",
+    "assemblyProfileId": "hybrid-evidence-assembly-v1"
+  },
+  "twoIndependentExactBaselineRunsPassed": true,
+  "counts": {
+    "nativeWords": 0,
+    "nativeBlocks": 0,
+    "layoutObservations": 10,
+    "ocrRequests": 7,
+    "authoritativeTextElements": 7,
+    "visualElements": 1,
+    "deferredElements": 2,
+    "unresolvedTextElements": 0
+  },
+  "visual": {
+    "sequence": 4,
+    "contentLength": 1534766,
+    "contentSha256": "aaf62775d525104c737d2d238df1840894b42572e52de3874705fa10c926009d",
+    "crop": {
+      "left": 620,
+      "top": 1442,
+      "right": 1461,
+      "bottom": 2840,
+      "width": 841,
+      "height": 1398
+    }
+  },
+  "narrativeSequences": [
+    3,
+    6,
+    7,
+    8,
+    9
+  ],
+  "elements": [
+    {
+      "layoutSequence": 0,
+      "readingOrder": 0,
+      "kind": "Deferred",
+      "textOrigin": "None",
+      "textLength": null,
+      "textSha256": null,
+      "reconciliationDecision": null,
+      "visualContentLength": null,
+      "visualContentSha256": null
+    },
+    {
+      "layoutSequence": 1,
+      "readingOrder": 1,
+      "kind": "Deferred",
+      "textOrigin": "None",
+      "textLength": null,
+      "textSha256": null,
+      "reconciliationDecision": null,
+      "visualContentLength": null,
+      "visualContentSha256": null
+    },
+    {
+      "layoutSequence": 2,
+      "readingOrder": 2,
+      "kind": "Heading",
+      "textOrigin": "Ocr",
+      "textLength": 52,
+      "textSha256": "fb8b51a49df3ebfccfcadb0487db939f6454f1837a0bc636f9e36bef5109bc32",
+      "reconciliationDecision": "OcrOnly",
+      "visualContentLength": null,
+      "visualContentSha256": null
+    },
+    {
+      "layoutSequence": 3,
+      "readingOrder": 3,
+      "kind": "Text",
+      "textOrigin": "Ocr",
+      "textLength": 346,
+      "textSha256": "fe7ceffe86969894e61739e6dbb902050be15addcc4069b9eec3771d3046b2c3",
+      "reconciliationDecision": "OcrOnly",
+      "visualContentLength": null,
+      "visualContentSha256": null
+    },
+    {
+      "layoutSequence": 4,
+      "readingOrder": 4,
+      "kind": "Visual",
+      "textOrigin": "None",
+      "textLength": null,
+      "textSha256": null,
+      "reconciliationDecision": null,
+      "visualContentLength": 1534766,
+      "visualContentSha256": "aaf62775d525104c737d2d238df1840894b42572e52de3874705fa10c926009d"
+    },
+    {
+      "layoutSequence": 5,
+      "readingOrder": 5,
+      "kind": "Caption",
+      "textOrigin": "Ocr",
+      "textLength": 293,
+      "textSha256": "fd77538d48691627ca193c399503787409933d6fc5839b67e6a0170877f3535e",
+      "reconciliationDecision": "OcrOnly",
+      "visualContentLength": null,
+      "visualContentSha256": null
+    },
+    {
+      "layoutSequence": 6,
+      "readingOrder": 6,
+      "kind": "Text",
+      "textOrigin": "Ocr",
+      "textLength": 581,
+      "textSha256": "207bb0e258a1edf1c63fcdcf4339aeab45989aea435143cae1fecfbd6184220d",
+      "reconciliationDecision": "OcrOnly",
+      "visualContentLength": null,
+      "visualContentSha256": null
+    },
+    {
+      "layoutSequence": 7,
+      "readingOrder": 7,
+      "kind": "Text",
+      "textOrigin": "Ocr",
+      "textLength": 783,
+      "textSha256": "0c4196163ccfb5ec8f7db75e653fc8c448bf2ba93a6f1d9deb1987af7896dd7c",
+      "reconciliationDecision": "OcrOnly",
+      "visualContentLength": null,
+      "visualContentSha256": null
+    },
+    {
+      "layoutSequence": 8,
+      "readingOrder": 8,
+      "kind": "Text",
+      "textOrigin": "Ocr",
+      "textLength": 774,
+      "textSha256": "3d24065e8a5c8740964647f2447e7ca4cea7b6cea17ebd285a0feadacf8109f8",
+      "reconciliationDecision": "OcrOnly",
+      "visualContentLength": null,
+      "visualContentSha256": null
+    },
+    {
+      "layoutSequence": 9,
+      "readingOrder": 9,
+      "kind": "Text",
+      "textOrigin": "Ocr",
+      "textLength": 236,
+      "textSha256": "aa352f254c2fb202f95f3c4b63f7c87e6747058e50b2cf01286959a3e6e9a041",
+      "reconciliationDecision": "OcrOnly",
+      "visualContentLength": null,
+      "visualContentSha256": null
+    }
+  ],
+  "gates": {
+    "nativePage233RemainsMissing": true,
+    "layoutStreamHasTenElementsInExpectedKinds": true,
+    "exactlySevenAuthoritativeTextElements": true,
+    "allAuthoritativeTextOriginatesFromOcr": true,
+    "allTextualReconciliationsAreOcrOnly": true,
+    "exactlySevenRealOcrRequestsIssued": true,
+    "figureSequence4NeverHasOcrOrNarrativeText": true,
+    "figureBytesMatchValidatedPhase16B": true,
+    "twoDeferredRegionsRemainVisible": true,
+    "documentSignalsDeferredEvidence": true,
+    "noUnresolvedTextConflictOnMissingNativePage": true,
+    "headingSentinelsRecovered": true,
+    "leftNarrativeImagineRecovered": true,
+    "captionSentinelsRecovered": true,
+    "rightNarrativeForExampleRecovered": true,
+    "crossColumnNarrativeOrderUsable": true,
+    "assemblyProfileIsExpected": true,
+    "assemblyContainsOnlyPhysicalPage233": true,
+    "noNativeBlockWasInventedForOcrOnlyText": true,
+    "layoutProvenanceIsUnique": true
+  },
+  "overallPass": true,
+  "rawTextCommitted": false,
+  "rawCropsCommitted": false
+}
