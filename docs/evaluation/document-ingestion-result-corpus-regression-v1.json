@@ -1,0 +1,206 @@
+{
+  "schemaVersion": "document-processing-phase20d-document-ingestion-result-corpus-regression-v1",
+  "validatedBaseline": "3a29a38094fa54ec20f818317194d2a732810d2d",
+  "resultSchemaVersion": "document-ingestion-result-v1",
+  "resultProjectionProfileId": "document-ingestion-result-projection-v1",
+  "fixtureDerivation": {
+    "method": "poppler-pdfseparate-pdfunite",
+    "purpose": "complete-document transport-contract proof without weakening DocumentIngestionResult complete-page invariants",
+    "fixturePdfsCommitted": false
+  },
+  "ehrman": {
+    "originalSourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+    "originalSourceBytes": 233369762,
+    "derivedFixtureSha256": "4fbe78eb1d4a6b723ab4af9397fdee2d35c8a2005635f2f4fd059b6313ecc373",
+    "derivedFixtureBytes": 4993114,
+    "pageMap": [
+      {
+        "fixturePage": 1,
+        "originalPage": 233
+      },
+      {
+        "fixturePage": 2,
+        "originalPage": 380
+      },
+      {
+        "fixturePage": 3,
+        "originalPage": 405
+      }
+    ],
+    "result": {
+      "schemaVersion": "document-processing-phase20d-ehrman-serialized-result-summary-v1",
+      "derivedFixtureSha256": "4fbe78eb1d4a6b723ab4af9397fdee2d35c8a2005635f2f4fd059b6313ecc373",
+      "derivedFixtureByteLength": 4993114,
+      "resultSchemaVersion": "document-ingestion-result-v1",
+      "resultProjectionProfileId": "document-ingestion-result-projection-v1",
+      "pageCount": 3,
+      "elementCount": 12,
+      "segmentCount": 1,
+      "ocrConfidenceObservationCount": 9,
+      "page1": {
+        "fixturePage": 1,
+        "originalPage": 233,
+        "layoutObservationCount": 10,
+        "ocrRequestCount": 7,
+        "authoritativeOcrTextElementCount": 7,
+        "visualElementCount": 1,
+        "deferredElementCount": 2,
+        "unresolvedTextElementCount": 0,
+        "visualContentSha256": "c4170e36da6d0bfdec419f8db199ba972baf3075887a264aa2e9e4d46e6e4e77"
+      },
+      "suspiciousControl": {
+        "fixturePage": 2,
+        "originalPage": 380,
+        "layoutObservationSequence": 5,
+        "nativeBlockSourceSequence": 2,
+        "comparableNativeWordCount": 299,
+        "decision": "Conflict",
+        "textOrigin": "None",
+        "isResolved": false,
+        "hasDivergence": true,
+        "nativeBoundaryJoinCount": 5,
+        "ocrBoundaryJoinCount": 5,
+        "ocrTextObservationCount": 33
+      },
+      "healthyControl": {
+        "fixturePage": 3,
+        "originalPage": 405,
+        "layoutObservationSequence": 9,
+        "nativeBlockSourceSequence": 6,
+        "comparableNativeWordCount": 132,
+        "decision": "Agreement",
+        "textOrigin": "NativePdf",
+        "isResolved": true,
+        "hasDivergence": false,
+        "nativeBoundaryJoinCount": 4,
+        "ocrBoundaryJoinCount": 4,
+        "ocrTextObservationCount": 15
+      },
+      "processingManifest": {
+        "engineVersion": "git-3a29a38",
+        "nativeBackendId": "pdfpig",
+        "nativeProfileId": "pdfpig-0.1.15-native-v1",
+        "rasterizationBackendId": "pdftoppm",
+        "rasterizationProfileId": "pdftoppm-300dpi-media-box-v1",
+        "layoutBackendId": "pp-structurev3",
+        "layoutProfileId": "paddlex-3.7.0-pp-structurev3-paddle3.2.2-cpu-v1",
+        "ocrIdentities": [
+          "paddleocr-general-ocr|paddleocr-3.7.0-ppocrv6-medium-cpu-v1"
+        ],
+        "reconciliationBackendId": "native-ocr-reconciler",
+        "reconciliationProfileId": "native-ocr-reconciliation-v1",
+        "visualProfileIds": [
+          "pdftoppm-300dpi-direct-pixel-crop-v1"
+        ],
+        "assemblyProfileId": "hybrid-evidence-assembly-v1",
+        "normalizationProfileId": "hybrid-unicode-nfc-whitespace-source-dehyphenation-recurring-margins-v1",
+        "segmentationProfileId": "hybrid-layout-heading-strict-native-typography-optional-hints-cross-page-fallback-v1"
+      },
+      "serializedJsonByteLength": 25103,
+      "serializedJsonSha256": "422e9b9d941924471434a19dcaea27ad629cd2a0e6615ba200975baab5f9ceca",
+      "stableRoundTripBytes": true,
+      "rawResultContainsForbiddenFields": false,
+      "overallPass": true
+    },
+    "representativeScope": {
+      "fixturePage1Original233": "full pinned mixed-content layout/OCR/visual/deferred page",
+      "fixturePage2Original380": "pinned representative suspicious reconciliation region only",
+      "fixturePage3Original405": "pinned representative healthy reconciliation region only",
+      "fullOriginalDocumentIngestionClaimed": false
+    }
+  },
+  "deDecretis": {
+    "originalSourceSha256": "de5e95573b7910292b4b07c02b5cfd834fe63dd5daf4056e9a947c96cb81bc75",
+    "originalSourceBytes": 11963985,
+    "derivedFixtureSha256": "4dcd46d067ba5d3b5fbc8d4c09d9bbc9d2558fd0dea0d8441ca6b1c272c616d2",
+    "derivedFixtureBytes": 35686317,
+    "originalPageRange": "512-561",
+    "derivedFixturePageRange": "1-50",
+    "result": {
+      "schemaVersion": "document-processing-phase20d-de-decretis-serialized-result-summary-v1",
+      "derivedFixtureSha256": "4dcd46d067ba5d3b5fbc8d4c09d9bbc9d2558fd0dea0d8441ca6b1c272c616d2",
+      "derivedFixtureByteLength": 35686317,
+      "resultSchemaVersion": "document-ingestion-result-v1",
+      "resultProjectionProfileId": "document-ingestion-result-projection-v1",
+      "pageCount": 50,
+      "wordCount": 29044,
+      "blockCount": 269,
+      "elementCount": 269,
+      "segmentCount": 50,
+      "ocrConfidenceObservationCount": 0,
+      "nativeTextElementCount": 269,
+      "processingManifest": {
+        "engineVersion": "git-3a29a38",
+        "nativeBackendId": "pdfpig",
+        "nativeProfileId": "pdfpig-0.1.15-native-v1",
+        "rasterizationBackendId": null,
+        "rasterizationProfileId": null,
+        "layoutBackendId": null,
+        "layoutProfileId": null,
+        "ocrIdentities": [],
+        "reconciliationBackendId": null,
+        "reconciliationProfileId": null,
+        "visualProfileIds": [],
+        "assemblyProfileId": "hybrid-evidence-assembly-v1",
+        "normalizationProfileId": "hybrid-unicode-nfc-whitespace-source-dehyphenation-recurring-margins-v1",
+        "segmentationProfileId": "hybrid-layout-heading-strict-native-typography-optional-hints-cross-page-fallback-v1"
+      },
+      "serializedJsonByteLength": 758096,
+      "serializedJsonSha256": "88d3b7ea0269eef276314dfaf9c93234ceb14581d18c9c03bc8aa5fd0178a406",
+      "stableRoundTripBytes": true,
+      "rawResultContainsForbiddenFields": false,
+      "overallPass": true
+    }
+  },
+  "offlineDeserialization": {
+    "schemaVersion": "document-processing-phase20d-offline-deserialization-proof-v1",
+    "ehrmanSourceSha256": "4fbe78eb1d4a6b723ab4af9397fdee2d35c8a2005635f2f4fd059b6313ecc373",
+    "ehrmanSchemaVersion": "document-ingestion-result-v1",
+    "ehrmanPageCount": 3,
+    "ehrmanElementCount": 12,
+    "ehrmanSegmentCount": 1,
+    "ehrmanOcrConfidenceObservationCount": 9,
+    "ehrmanConflictPreserved": true,
+    "ehrmanAgreementPreserved": true,
+    "ehrmanVisualMetadataPreserved": true,
+    "deDecretisSourceSha256": "4dcd46d067ba5d3b5fbc8d4c09d9bbc9d2558fd0dea0d8441ca6b1c272c616d2",
+    "deDecretisSchemaVersion": "document-ingestion-result-v1",
+    "deDecretisPageCount": 50,
+    "deDecretisElementCount": 269,
+    "deDecretisSegmentCount": 50,
+    "deDecretisOcrConfidenceObservationCount": 0,
+    "stableRoundTripBytes": true,
+    "pdfSourceNeededAfterDeserialize": false,
+    "layoutServiceNeededAfterDeserialize": false,
+    "ocrServiceNeededAfterDeserialize": false,
+    "rasterOrCropNeededAfterDeserialize": false,
+    "overallPass": true
+  },
+  "operationalIsolation": {
+    "layoutAndOcrNeverConcurrent": true,
+    "modelContainerMemoryLimit": "12g",
+    "minimumAvailableMemoryBeforeModelStartupMiB": 12288,
+    "harnessCompiledBeforeMlStartup": true,
+    "resumeUsedRetainedLiveArtifactsWithoutMlRerun": true
+  },
+  "commitBoundary": {
+    "rawDocumentIngestionResultJsonCommitted": false,
+    "rawOcrTextCommitted": false,
+    "rawLayoutSnapshotsCommitted": false,
+    "rawRasterOrCropBytesCommitted": false,
+    "fixturePdfBytesCommitted": false,
+    "onlySanitizedEvidenceCommitted": true
+  },
+  "transportHashBoundary": {
+    "serializedJsonSha256RecordedForRegression": true,
+    "serializedJsonSha256IsDocumentCustodyIdentity": false,
+    "documentCustodyRootIsDerivedFixtureSha256": true
+  },
+  "claimBoundary": {
+    "documentIngestionResultTransportProof": true,
+    "genericEndToEndOrchestratorClaimed": false,
+    "full617PageEhrmanHybridIngestionClaimed": false,
+    "productionThroughputClaimed": false
+  },
+  "overallPass": true
+}
