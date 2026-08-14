@@ -1,0 +1,664 @@
+{
+  "schemaVersion": "document-processing-phase18-hybrid-corpus-closeout-v1",
+  "validatedBaseline": "af793ab152de5175ad1ba8bd5fd015d0131ecdaa",
+  "ehrmanSourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+  "deDecretisSourceSha256": "de5e95573b7910292b4b07c02b5cfd834fe63dd5daf4056e9a947c96cb81bc75",
+  "layoutBackendId": "pp-structurev3",
+  "ocrBackendId": "paddleocr-general-ocr",
+  "ocrProfileId": "paddleocr-3.7.0-ppocrv6-medium-cpu-v1",
+  "ehrmanScenarios": [
+    {
+      "name": "ehrman-front-matter-pages-1-10",
+      "pageCount": 10,
+      "nativePageCount": 2,
+      "ocrLayoutPageCount": 8,
+      "layoutRequestCount": 8,
+      "ocrRequestCount": 42,
+      "visualElementCount": 3,
+      "deferredElementCount": 8,
+      "unresolvedTextElementCount": 0,
+      "textFlowElementCount": 52,
+      "segmentCount": 10,
+      "crossPageSegmentCount": 6,
+      "mixedTextOriginSegmentCount": 1,
+      "mixedCrossPageSegmentCount": 1,
+      "originTransitions": [
+        "NativePdf-\u003EOcr",
+        "Ocr-\u003ENativePdf",
+        "Ocr-\u003EOcr"
+      ],
+      "pages": [
+        {
+          "physicalPageNumber": 1,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 1,
+          "ocrRequestCount": 0,
+          "visualElementCount": 1,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 0,
+          "textFlowElementCount": 0,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 2,
+          "mode": "NativePdf",
+          "nativeWordCount": 3,
+          "nativeBlockCount": 1,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 1,
+          "textFlowElementCount": 1,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 3,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 1,
+          "ocrRequestCount": 0,
+          "visualElementCount": 1,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 0,
+          "textFlowElementCount": 0,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 4,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 6,
+          "ocrRequestCount": 5,
+          "visualElementCount": 1,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 5,
+          "textFlowElementCount": 5,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 5,
+          "mode": "NativePdf",
+          "nativeWordCount": 381,
+          "nativeBlockCount": 9,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 9,
+          "textFlowElementCount": 9,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 6,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 4,
+          "ocrRequestCount": 3,
+          "visualElementCount": 0,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 3,
+          "textFlowElementCount": 3,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 7,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 4,
+          "ocrRequestCount": 3,
+          "visualElementCount": 0,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 3,
+          "textFlowElementCount": 3,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 8,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 12,
+          "ocrRequestCount": 10,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 10,
+          "textFlowElementCount": 10,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 9,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 12,
+          "ocrRequestCount": 10,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 10,
+          "textFlowElementCount": 10,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 10,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 13,
+          "ocrRequestCount": 11,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 11,
+          "textFlowElementCount": 11,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        }
+      ],
+      "gates": {
+        "tenPhysicalPagesPreserved": true,
+        "containsNativeAndOcrPages": true,
+        "copyrightPage5UsesNativeEvidence": true,
+        "contentsPages6To10RecoverText": true,
+        "noUnresolvedText": true,
+        "figuresNeverBecomeOcrTargets": true,
+        "segmentationProduced": true
+      },
+      "overallPass": true
+    },
+    {
+      "name": "ehrman-raster-toc-pages-14-20",
+      "pageCount": 7,
+      "nativePageCount": 0,
+      "ocrLayoutPageCount": 7,
+      "layoutRequestCount": 7,
+      "ocrRequestCount": 13,
+      "visualElementCount": 0,
+      "deferredElementCount": 6,
+      "unresolvedTextElementCount": 0,
+      "textFlowElementCount": 13,
+      "segmentCount": 8,
+      "crossPageSegmentCount": 0,
+      "mixedTextOriginSegmentCount": 0,
+      "mixedCrossPageSegmentCount": 0,
+      "originTransitions": [
+        "Ocr-\u003EOcr"
+      ],
+      "pages": [
+        {
+          "physicalPageNumber": 14,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 1,
+          "visualElementCount": 0,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 1,
+          "textFlowElementCount": 1,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 15,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 2,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 2,
+          "textFlowElementCount": 2,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 16,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 3,
+          "ocrRequestCount": 1,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 1,
+          "textFlowElementCount": 1,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 17,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 2,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 2,
+          "textFlowElementCount": 2,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 18,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 1,
+          "visualElementCount": 0,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 1,
+          "textFlowElementCount": 1,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 19,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 2,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 2,
+          "textFlowElementCount": 2,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 20,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 6,
+          "ocrRequestCount": 4,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 4,
+          "textFlowElementCount": 4,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        }
+      ],
+      "gates": {
+        "sevenPhysicalPagesPreserved": true,
+        "allPagesUseOcr": true,
+        "everyTocPageRecoversText": true,
+        "tableFallbackRecoversPreviouslyEmptyPages14_16_18": true,
+        "allAuthoritativeOriginsAreOcr": true,
+        "noUnresolvedText": true,
+        "figuresNeverBecomeOcrTargets": true,
+        "ocrToOcrPageTransitionObserved": true,
+        "segmentationProduced": true
+      },
+      "overallPass": true
+    },
+    {
+      "name": "ehrman-mixed-narrative-pages-33-40",
+      "pageCount": 8,
+      "nativePageCount": 6,
+      "ocrLayoutPageCount": 2,
+      "layoutRequestCount": 2,
+      "ocrRequestCount": 15,
+      "visualElementCount": 1,
+      "deferredElementCount": 4,
+      "unresolvedTextElementCount": 0,
+      "textFlowElementCount": 55,
+      "segmentCount": 9,
+      "crossPageSegmentCount": 4,
+      "mixedTextOriginSegmentCount": 2,
+      "mixedCrossPageSegmentCount": 2,
+      "originTransitions": [
+        "NativePdf-\u003ENativePdf",
+        "NativePdf-\u003EOcr",
+        "Ocr-\u003ENativePdf"
+      ],
+      "pages": [
+        {
+          "physicalPageNumber": 33,
+          "mode": "NativePdf",
+          "nativeWordCount": 790,
+          "nativeBlockCount": 6,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 6,
+          "textFlowElementCount": 5,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 34,
+          "mode": "NativePdf",
+          "nativeWordCount": 301,
+          "nativeBlockCount": 8,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 8,
+          "textFlowElementCount": 7,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 35,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 9,
+          "ocrRequestCount": 7,
+          "visualElementCount": 1,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 7,
+          "textFlowElementCount": 7,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 36,
+          "mode": "NativePdf",
+          "nativeWordCount": 688,
+          "nativeBlockCount": 11,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 11,
+          "textFlowElementCount": 10,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 37,
+          "mode": "NativePdf",
+          "nativeWordCount": 767,
+          "nativeBlockCount": 9,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 9,
+          "textFlowElementCount": 8,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 38,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 11,
+          "ocrRequestCount": 8,
+          "visualElementCount": 0,
+          "deferredElementCount": 3,
+          "authoritativeTextElementCount": 8,
+          "textFlowElementCount": 8,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 39,
+          "mode": "NativePdf",
+          "nativeWordCount": 816,
+          "nativeBlockCount": 6,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 6,
+          "textFlowElementCount": 5,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 40,
+          "mode": "NativePdf",
+          "nativeWordCount": 796,
+          "nativeBlockCount": 6,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 6,
+          "textFlowElementCount": 5,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        }
+      ],
+      "gates": {
+        "eightPhysicalPagesPreserved": true,
+        "observedNativeOcrPatternMatchesCorpus": true,
+        "everyNarrativeRangePageHasTextFlow": true,
+        "noUnresolvedText": true,
+        "nativeToNativeObserved": true,
+        "nativeToOcrObserved": true,
+        "ocrToNativeObserved": true,
+        "realMixedOriginCrossPageSegmentObserved": true,
+        "figuresNeverBecomeOcrTargets": true
+      },
+      "overallPass": true
+    },
+    {
+      "name": "ehrman-mixed-content-page-233",
+      "pageCount": 1,
+      "nativePageCount": 0,
+      "ocrLayoutPageCount": 1,
+      "layoutRequestCount": 1,
+      "ocrRequestCount": 7,
+      "visualElementCount": 1,
+      "deferredElementCount": 2,
+      "unresolvedTextElementCount": 0,
+      "textFlowElementCount": 7,
+      "segmentCount": 1,
+      "crossPageSegmentCount": 0,
+      "mixedTextOriginSegmentCount": 0,
+      "mixedCrossPageSegmentCount": 0,
+      "originTransitions": [],
+      "pages": [
+        {
+          "physicalPageNumber": 233,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 10,
+          "ocrRequestCount": 7,
+          "visualElementCount": 1,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 7,
+          "textFlowElementCount": 7,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        }
+      ],
+      "gates": {
+        "physicalPageIs233": true,
+        "nativeTextRemainsMissing": true,
+        "tenLayoutObservations": true,
+        "sevenRealOcrRequests": true,
+        "sevenAuthoritativeTextElements": true,
+        "onePreservedVisual": true,
+        "twoDeferredElements": true,
+        "noUnresolvedText": true,
+        "allAuthoritativeTextOriginsAreOcr": true,
+        "figureNeverBecomesOcrTarget": true,
+        "normalizationRetainsTextFlow": true,
+        "segmentationProduced": true
+      },
+      "overallPass": true
+    }
+  ],
+  "deDecretis": {
+    "pageCount": 50,
+    "nativeWordCount": 29044,
+    "nativeBlockCount": 269,
+    "segmentCount": 50,
+    "crossPageSegmentCount": 0,
+    "gates": {
+      "all50PagesHaveNativeBlocks": true,
+      "allTextOriginsAreNativePdf": true,
+      "noUnresolvedEvidence": true,
+      "segmentCountMatchesBornDigitalControl": true,
+      "noMixedTextOriginSegments": true
+    },
+    "overallPass": true
+  },
+  "transitionGates": {
+    "nativeToNative": true,
+    "ocrToOcr": true,
+    "nativeToOcr": true,
+    "ocrToNative": true
+  },
+  "layoutAndOcrNeverConcurrent": true,
+  "modelContainerMemoryLimit": "12g",
+  "rawOcrTextCommitted": false,
+  "rawRasterOrCropBytesCommitted": false,
+  "genericIngestionOrchestratorClaimed": false,
+  "documentIngestionResultClaimed": false,
+  "overallPass": true
+}
