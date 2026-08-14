@@ -2,11 +2,12 @@
 
 ## Status
 
-Production boundary increment.
+Production boundary series.
 
-This increment is the first production code derived from the OCR/layout
-evaluation series. It intentionally stops before live model execution and OCR
-routing.
+This document records the production code derived from the OCR/layout
+evaluation series. Live PP-StructureV3 execution has now been validated against
+the pinned Ehrman mixed-content page. Targeted OCR and figure persistence remain
+outside the current boundary.
 
 ## Established evidence
 
@@ -146,8 +147,9 @@ quality gates
 GPU execution
 ```
 
-There is no live analyzer implementation yet, so introducing a generic
-`ILayoutAnalyzer` abstraction in this increment would be premature.
+At that increment there was no live analyzer implementation. The later concrete
+PP-StructureV3 serving client remains the only selected backend, so introducing
+a generic `ILayoutAnalyzer` abstraction is still premature.
 
 ## Deterministic treatment policy
 
@@ -243,6 +245,42 @@ configuration and application lifetime remain with the hosting application.
 No generic `ILayoutAnalyzer` is introduced yet: there is still one selected
 layout backend and one concrete execution boundary.
 
-The next production step should validate this HTTP boundary against a real
-self-hosted PP-StructureV3 service on the pinned Ehrman page 233 before adding
-targeted OCR or figure persistence.
+## Live service integration validation
+
+Phase B / 14B validated this HTTP boundary on 2026-08-14 against a real
+self-hosted PP-StructureV3 service using the pinned Ehrman physical page 233.
+
+The production `PpStructureV3ServingClient` successfully called
+`POST /layout-parsing`, produced 10 neutral observations, and satisfied every
+existing mixed-content acceptance gate. The representative sequence was:
+
+```text
+Heading -> RecognizeText
+Text    -> RecognizeText
+Figure  -> PreserveVisualWithoutOcr
+Caption -> RecognizeText
+Text    -> RecognizeText
+```
+
+The papyrus facsimile matched `Figure` with IoU 0.923 and remained subject to
+`PreserveVisualWithoutOcr`. No text/content property exists on the neutral
+`LayoutObservation`, so backend OCR-like `block_content` remains outside the
+layout evidence boundary.
+
+The observed request duration for this CPU integration run was approximately
+8.66 seconds. This is recorded as an observation only, not as a performance
+target or SLA.
+
+Detailed evidence is recorded in:
+
+```text
+docs/evaluation/layout-ppstructurev3-live-integration-v1.md
+docs/evaluation/layout-ppstructurev3-live-integration-v1.json
+```
+
+Phase B / 14B is therefore complete.
+
+The next production increment is Phase B / 15: targeted OCR for regions whose
+deterministic treatment is `RecognizeText`. Figure persistence, native/OCR
+reconciliation and end-to-end hybrid regression remain separate later
+increments.

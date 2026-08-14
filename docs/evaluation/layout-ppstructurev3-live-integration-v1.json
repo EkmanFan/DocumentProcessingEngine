@@ -1,0 +1,297 @@
+{
+  "schemaVersion": "document-processing-ppstructurev3-live-integration-v1",
+  "generatedAtUtc": "2026-08-14T10:45:13.1689284+00:00",
+  "decision": {
+    "overallPass": true,
+    "interpretation": "PASS proves the production .NET serving client can call a real self-hosted PP-StructureV3 basic-serving endpoint on the pinned Ehrman page 233 and produce neutral layout evidence that satisfies the existing mixed-content spatial oracle and deterministic region-treatment invariants. It is not a general production-quality or latency claim."
+  },
+  "endpoint": "http://127.0.0.1:18080/layout-parsing",
+  "pageNumber": 233,
+  "raster": {
+    "fileName": "page-0233.png",
+    "width": 2556,
+    "height": 3305
+  },
+  "backendId": "pp-structurev3",
+  "requestElapsedMilliseconds": 8661.8422,
+  "observationCount": 10,
+  "gates": {
+    "backendIsPpStructureV3": true,
+    "physicalPageIs233": true,
+    "observationsProduced": true,
+    "figureDetectedAsNonNarrative": true,
+    "noNarrativeTextBlockCenteredInsideFacsimile": true,
+    "captionSeparated": true,
+    "sectionTitleSeparated": true,
+    "leftModernTextDetected": true,
+    "rightModernTextDetected": true,
+    "modernTextReadingOrderUsable": true,
+    "figureCaptionSpatialRelationPlausible": true,
+    "representativeOrderHeadingTextFigureCaptionText": true,
+    "facsimileTreatmentPreservesVisualWithoutOcr": true,
+    "textualTreatmentsRecognizeText": true,
+    "deterministicPolicyConsistentForAllObservations": true,
+    "neutralObservationCarriesNoTextOrContent": true
+  },
+  "matches": {
+    "sectionTitle": {
+      "score": 0.8196543209876545,
+      "overlap": {
+        "iou": 0.8196543209876545,
+        "expectedCoverage": 0.8196543209876543,
+        "predictedCoverage": 1
+      },
+      "observation": {
+        "sequence": 2,
+        "readingOrder": 2,
+        "kind": "Heading",
+        "rawLabel": "paragraph_title",
+        "bounds": {
+          "left": 0.24139280125195617,
+          "top": 0.24478063540090772,
+          "right": 0.5434272300469484,
+          "bottom": 0.2968229954614221
+        },
+        "treatment": "RecognizeText"
+      }
+    },
+    "leftBody": {
+      "score": 0.8601818181818186,
+      "overlap": {
+        "iou": 0.8601818181818186,
+        "expectedCoverage": 0.8601818181818186,
+        "predictedCoverage": 1
+      },
+      "observation": {
+        "sequence": 3,
+        "readingOrder": 3,
+        "kind": "Text",
+        "rawLabel": "text",
+        "bounds": {
+          "left": 0.23982785602503912,
+          "top": 0.31588502269288954,
+          "right": 0.5743348982785602,
+          "bottom": 0.416338880484115
+        },
+        "treatment": "RecognizeText"
+      }
+    },
+    "facsimile": {
+      "score": 0.9225659133709982,
+      "overlap": {
+        "iou": 0.9225659133709982,
+        "expectedCoverage": 0.922565913370998,
+        "predictedCoverage": 1
+      },
+      "observation": {
+        "sequence": 4,
+        "readingOrder": 4,
+        "kind": "Figure",
+        "rawLabel": "image",
+        "bounds": {
+          "left": 0.24256651017214398,
+          "top": 0.43630862329803327,
+          "right": 0.5715962441314554,
+          "bottom": 0.859304084720121
+        },
+        "treatment": "PreserveVisualWithoutOcr"
+      }
+    },
+    "caption": {
+      "score": 0.765758426966293,
+      "overlap": {
+        "iou": 0.765758426966293,
+        "expectedCoverage": 0.765758426966293,
+        "predictedCoverage": 1
+      },
+      "observation": {
+        "sequence": 5,
+        "readingOrder": 5,
+        "kind": "Caption",
+        "rawLabel": "figure_title",
+        "bounds": {
+          "left": 0.2378716744913928,
+          "top": 0.8714069591527988,
+          "right": 0.5582942097026604,
+          "bottom": 0.9419062027231467
+        },
+        "treatment": "RecognizeText"
+      }
+    },
+    "rightOpening": {
+      "score": 0.9014370370370368,
+      "overlap": {
+        "iou": 0.9014370370370368,
+        "expectedCoverage": 0.9014370370370368,
+        "predictedCoverage": 1
+      },
+      "observation": {
+        "sequence": 6,
+        "readingOrder": 6,
+        "kind": "Text",
+        "rawLabel": "text",
+        "bounds": {
+          "left": 0.5985915492957746,
+          "top": 0.23479576399394855,
+          "right": 0.9338810641627543,
+          "bottom": 0.40665658093797274
+        },
+        "treatment": "RecognizeText"
+      }
+    }
+  },
+  "readingOrder": {
+    "title": 2,
+    "leftBody": 3,
+    "facsimile": 4,
+    "caption": 5,
+    "rightOpening": 6
+  },
+  "figureCaptionRelation": {
+    "xOverlapRatio": 0.9853479853479853,
+    "verticalGap": 0.012102874432677768
+  },
+  "facsimile": {
+    "textLikeObservationsCenteredInside": []
+  },
+  "neutralObservationPublicProperties": [
+    "Bounds",
+    "Kind",
+    "ObservationSequence",
+    "PhysicalPageNumber",
+    "RawLabel",
+    "ReadingOrder"
+  ],
+  "observations": [
+    {
+      "sequence": 0,
+      "readingOrder": 0,
+      "kind": "Unknown",
+      "rawLabel": "number",
+      "bounds": {
+        "left": 0.21439749608763695,
+        "top": 0.21089258698941,
+        "right": 0.24061032863849766,
+        "bottom": 0.22148260211800302
+      },
+      "treatment": "Deferred"
+    },
+    {
+      "sequence": 1,
+      "readingOrder": 1,
+      "kind": "Unknown",
+      "rawLabel": "header",
+      "bounds": {
+        "left": 0.26134585289514867,
+        "top": 0.21089258698941,
+        "right": 0.5629890453834115,
+        "bottom": 0.22208774583963692
+      },
+      "treatment": "Deferred"
+    },
+    {
+      "sequence": 2,
+      "readingOrder": 2,
+      "kind": "Heading",
+      "rawLabel": "paragraph_title",
+      "bounds": {
+        "left": 0.24139280125195617,
+        "top": 0.24478063540090772,
+        "right": 0.5434272300469484,
+        "bottom": 0.2968229954614221
+      },
+      "treatment": "RecognizeText"
+    },
+    {
+      "sequence": 3,
+      "readingOrder": 3,
+      "kind": "Text",
+      "rawLabel": "text",
+      "bounds": {
+        "left": 0.23982785602503912,
+        "top": 0.31588502269288954,
+        "right": 0.5743348982785602,
+        "bottom": 0.416338880484115
+      },
+      "treatment": "RecognizeText"
+    },
+    {
+      "sequence": 4,
+      "readingOrder": 4,
+      "kind": "Figure",
+      "rawLabel": "image",
+      "bounds": {
+        "left": 0.24256651017214398,
+        "top": 0.43630862329803327,
+        "right": 0.5715962441314554,
+        "bottom": 0.859304084720121
+      },
+      "treatment": "PreserveVisualWithoutOcr"
+    },
+    {
+      "sequence": 5,
+      "readingOrder": 5,
+      "kind": "Caption",
+      "rawLabel": "figure_title",
+      "bounds": {
+        "left": 0.2378716744913928,
+        "top": 0.8714069591527988,
+        "right": 0.5582942097026604,
+        "bottom": 0.9419062027231467
+      },
+      "treatment": "RecognizeText"
+    },
+    {
+      "sequence": 6,
+      "readingOrder": 6,
+      "kind": "Text",
+      "rawLabel": "text",
+      "bounds": {
+        "left": 0.5985915492957746,
+        "top": 0.23479576399394855,
+        "right": 0.9338810641627543,
+        "bottom": 0.40665658093797274
+      },
+      "treatment": "RecognizeText"
+    },
+    {
+      "sequence": 7,
+      "readingOrder": 7,
+      "kind": "Text",
+      "rawLabel": "text",
+      "bounds": {
+        "left": 0.5978090766823161,
+        "top": 0.4087745839636914,
+        "right": 0.9330985915492958,
+        "bottom": 0.6384266263237519
+      },
+      "treatment": "RecognizeText"
+    },
+    {
+      "sequence": 8,
+      "readingOrder": 8,
+      "kind": "Text",
+      "rawLabel": "text",
+      "bounds": {
+        "left": 0.5966353677621283,
+        "top": 0.6408472012102875,
+        "right": 0.931924882629108,
+        "bottom": 0.8692889561270802
+      },
+      "treatment": "RecognizeText"
+    },
+    {
+      "sequence": 9,
+      "readingOrder": 9,
+      "kind": "Text",
+      "rawLabel": "text",
+      "bounds": {
+        "left": 0.5958528951486698,
+        "top": 0.8723146747352496,
+        "right": 0.9307511737089202,
+        "bottom": 0.9428139183055976
+      },
+      "treatment": "RecognizeText"
+    }
+  ]
+}
