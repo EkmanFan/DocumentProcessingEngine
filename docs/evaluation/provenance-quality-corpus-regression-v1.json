@@ -1,0 +1,1519 @@
+{
+  "schemaVersion": "document-processing-phase19-provenance-quality-corpus-regression-v1",
+  "validatedBaseline": "a199030c4dc24b1fa50523273598cabaa6a0a439",
+  "ehrmanSourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+  "deDecretisSourceSha256": "de5e95573b7910292b4b07c02b5cfd834fe63dd5daf4056e9a947c96cb81bc75",
+  "provenanceProfileId": "custody-complete-provenance-projection-v1",
+  "qualityProfileId": "deterministic-document-quality-observations-v1",
+  "layoutBackendId": "pp-structurev3",
+  "ocrBackendId": "paddleocr-general-ocr",
+  "ocrProfileId": "paddleocr-3.7.0-ppocrv6-medium-cpu-v1",
+  "ehrmanScenarios": [
+    {
+      "name": "ehrman-front-matter-pages-1-10",
+      "pageCount": 10,
+      "nativePageCount": 2,
+      "ocrLayoutPageCount": 8,
+      "layoutRequestCount": 8,
+      "ocrRequestCount": 42,
+      "visualElementCount": 3,
+      "deferredElementCount": 8,
+      "unresolvedTextElementCount": 0,
+      "textFlowElementCount": 52,
+      "segmentCount": 10,
+      "crossPageSegmentCount": 6,
+      "mixedTextOriginSegmentCount": 1,
+      "mixedCrossPageSegmentCount": 1,
+      "originTransitions": [
+        "NativePdf-\u003EOcr",
+        "Ocr-\u003ENativePdf",
+        "Ocr-\u003EOcr"
+      ],
+      "pages": [
+        {
+          "physicalPageNumber": 1,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 1,
+          "ocrRequestCount": 0,
+          "visualElementCount": 1,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 0,
+          "textFlowElementCount": 0,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 2,
+          "mode": "NativePdf",
+          "nativeWordCount": 3,
+          "nativeBlockCount": 1,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 1,
+          "textFlowElementCount": 1,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 3,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 1,
+          "ocrRequestCount": 0,
+          "visualElementCount": 1,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 0,
+          "textFlowElementCount": 0,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 4,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 6,
+          "ocrRequestCount": 5,
+          "visualElementCount": 1,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 5,
+          "textFlowElementCount": 5,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 5,
+          "mode": "NativePdf",
+          "nativeWordCount": 381,
+          "nativeBlockCount": 9,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 9,
+          "textFlowElementCount": 9,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 6,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 4,
+          "ocrRequestCount": 3,
+          "visualElementCount": 0,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 3,
+          "textFlowElementCount": 3,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 7,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 4,
+          "ocrRequestCount": 3,
+          "visualElementCount": 0,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 3,
+          "textFlowElementCount": 3,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 8,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 12,
+          "ocrRequestCount": 10,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 10,
+          "textFlowElementCount": 10,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 9,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 12,
+          "ocrRequestCount": 10,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 10,
+          "textFlowElementCount": 10,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 10,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 13,
+          "ocrRequestCount": 11,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 11,
+          "textFlowElementCount": 11,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        }
+      ],
+      "custodyQuality": {
+        "elementCount": 63,
+        "segmentCount": 10,
+        "authoritativeTextElementCount": 52,
+        "nativeTextElementCount": 10,
+        "ocrTextElementCount": 42,
+        "visualElementCount": 3,
+        "deferredElementCount": 8,
+        "unresolvedTextElementCount": 0,
+        "excludedElementCount": 0,
+        "reconciliationDivergenceElementCount": 0,
+        "normalizationChangedTextElementCount": 8,
+        "ocrEvidenceElementCount": 42,
+        "ocrEvidenceWithConfidenceElementCount": 42,
+        "ocrEvidenceWithoutConfidenceElementCount": 0,
+        "mixedTextOriginSegmentCount": 1,
+        "segmentsWithUnresolvedEvidenceCount": 4,
+        "visualContentSha256s": [
+          "2b6d7dd60f6627a2a69b59f19ed17a53092d5e7c81a944a39d705c1aaf1c55e5",
+          "4d8a1fbe5e58d423c91bed60ed0631c3926417379c0402e4420228e6104c4d03",
+          "7e662187a01b5e118c451a52089f65c34b0f9a73c5eda5c77453a8af4eb6e5f5"
+        ],
+        "ocrConfidence": [
+          {
+            "elementId": "p000004-e000001",
+            "observationCount": 2,
+            "minimum": 0.9982358813285828,
+            "arithmeticMean": 0.9983615279197693,
+            "maximum": 0.9984871745109558
+          },
+          {
+            "elementId": "p000004-e000002",
+            "observationCount": 3,
+            "minimum": 0.9820848107337952,
+            "arithmeticMean": 0.9927531083424886,
+            "maximum": 0.9996286630630493
+          },
+          {
+            "elementId": "p000004-e000003",
+            "observationCount": 1,
+            "minimum": 0.9999930262565613,
+            "arithmeticMean": 0.9999930262565613,
+            "maximum": 0.9999930262565613
+          },
+          {
+            "elementId": "p000004-e000004",
+            "observationCount": 3,
+            "minimum": 0.9983672499656677,
+            "arithmeticMean": 0.9993401169776917,
+            "maximum": 0.9998748898506165
+          },
+          {
+            "elementId": "p000004-e000005",
+            "observationCount": 2,
+            "minimum": 0.9995982050895691,
+            "arithmeticMean": 0.9997736513614655,
+            "maximum": 0.9999490976333618
+          },
+          {
+            "elementId": "p000006-e000000",
+            "observationCount": 1,
+            "minimum": 0.2559354901313782,
+            "arithmeticMean": 0.2559354901313782,
+            "maximum": 0.2559354901313782
+          },
+          {
+            "elementId": "p000006-e000001",
+            "observationCount": 1,
+            "minimum": 0.9994750618934631,
+            "arithmeticMean": 0.9994750618934631,
+            "maximum": 0.9994750618934631
+          },
+          {
+            "elementId": "p000006-e000002",
+            "observationCount": 20,
+            "minimum": 0.9806175231933594,
+            "arithmeticMean": 0.9917931705713272,
+            "maximum": 0.9999228119850159
+          },
+          {
+            "elementId": "p000007-e000001",
+            "observationCount": 1,
+            "minimum": 0.999467670917511,
+            "arithmeticMean": 0.999467670917511,
+            "maximum": 0.999467670917511
+          },
+          {
+            "elementId": "p000007-e000002",
+            "observationCount": 26,
+            "minimum": 0.9461702704429626,
+            "arithmeticMean": 0.9866538666761838,
+            "maximum": 0.9999964833259583
+          },
+          {
+            "elementId": "p000007-e000003",
+            "observationCount": 2,
+            "minimum": 0.9708081483840942,
+            "arithmeticMean": 0.979713499546051,
+            "maximum": 0.9886188507080078
+          },
+          {
+            "elementId": "p000008-e000001",
+            "observationCount": 6,
+            "minimum": 0.9167055487632751,
+            "arithmeticMean": 0.9572650194168091,
+            "maximum": 0.9895792007446289
+          },
+          {
+            "elementId": "p000008-e000002",
+            "observationCount": 2,
+            "minimum": 0.9987279772758484,
+            "arithmeticMean": 0.998990535736084,
+            "maximum": 0.9992530941963196
+          },
+          {
+            "elementId": "p000008-e000003",
+            "observationCount": 7,
+            "minimum": 0.9490057826042175,
+            "arithmeticMean": 0.9865903088024685,
+            "maximum": 0.9999865293502808
+          },
+          {
+            "elementId": "p000008-e000004",
+            "observationCount": 3,
+            "minimum": 0.9238444566726685,
+            "arithmeticMean": 0.9733735720316569,
+            "maximum": 0.9994231462478638
+          },
+          {
+            "elementId": "p000008-e000005",
+            "observationCount": 2,
+            "minimum": 0.9513360261917114,
+            "arithmeticMean": 0.9578746855258942,
+            "maximum": 0.9644133448600769
+          },
+          {
+            "elementId": "p000008-e000006",
+            "observationCount": 8,
+            "minimum": 0.9483709931373596,
+            "arithmeticMean": 0.9749314561486244,
+            "maximum": 0.9987421631813049
+          },
+          {
+            "elementId": "p000008-e000007",
+            "observationCount": 4,
+            "minimum": 0.9780694842338562,
+            "arithmeticMean": 0.9882708191871643,
+            "maximum": 0.9999703764915466
+          },
+          {
+            "elementId": "p000008-e000008",
+            "observationCount": 8,
+            "minimum": 0.9534381628036499,
+            "arithmeticMean": 0.9893724545836449,
+            "maximum": 0.9999456405639648
+          },
+          {
+            "elementId": "p000008-e000009",
+            "observationCount": 7,
+            "minimum": 0.954208493232727,
+            "arithmeticMean": 0.9826309425490243,
+            "maximum": 0.9984773397445679
+          },
+          {
+            "elementId": "p000008-e000010",
+            "observationCount": 10,
+            "minimum": 0.9783822298049927,
+            "arithmeticMean": 0.9948869943618774,
+            "maximum": 0.9999719262123108
+          },
+          {
+            "elementId": "p000009-e000002",
+            "observationCount": 3,
+            "minimum": 0.8950862884521484,
+            "arithmeticMean": 0.9649396340052286,
+            "maximum": 0.9999750852584839
+          },
+          {
+            "elementId": "p000009-e000003",
+            "observationCount": 16,
+            "minimum": 0.9734096527099609,
+            "arithmeticMean": 0.9926408492028713,
+            "maximum": 0.999981701374054
+          },
+          {
+            "elementId": "p000009-e000004",
+            "observationCount": 3,
+            "minimum": 0.9916359782218933,
+            "arithmeticMean": 0.9972072243690491,
+            "maximum": 0.9999940395355225
+          },
+          {
+            "elementId": "p000009-e000005",
+            "observationCount": 5,
+            "minimum": 0.923297643661499,
+            "arithmeticMean": 0.9699824452400208,
+            "maximum": 0.9988110661506653
+          },
+          {
+            "elementId": "p000009-e000006",
+            "observationCount": 16,
+            "minimum": 0.9319983720779419,
+            "arithmeticMean": 0.9853014349937439,
+            "maximum": 0.9999957084655762
+          },
+          {
+            "elementId": "p000009-e000007",
+            "observationCount": 16,
+            "minimum": 0.9205946922302246,
+            "arithmeticMean": 0.9773662090301514,
+            "maximum": 0.9999914169311523
+          },
+          {
+            "elementId": "p000009-e000008",
+            "observationCount": 2,
+            "minimum": 0.9999842643737793,
+            "arithmeticMean": 0.999984622001648,
+            "maximum": 0.9999849796295166
+          },
+          {
+            "elementId": "p000009-e000009",
+            "observationCount": 9,
+            "minimum": 0.9690809845924377,
+            "arithmeticMean": 0.9897802670796713,
+            "maximum": 0.999992311000824
+          },
+          {
+            "elementId": "p000009-e000010",
+            "observationCount": 2,
+            "minimum": 0.9738191366195679,
+            "arithmeticMean": 0.986858069896698,
+            "maximum": 0.9998970031738281
+          },
+          {
+            "elementId": "p000009-e000011",
+            "observationCount": 16,
+            "minimum": 0.9594324231147766,
+            "arithmeticMean": 0.9884928315877914,
+            "maximum": 0.9999874234199524
+          },
+          {
+            "elementId": "p000010-e000002",
+            "observationCount": 13,
+            "minimum": 0.9707197546958923,
+            "arithmeticMean": 0.9942149703319256,
+            "maximum": 0.9999969601631165
+          },
+          {
+            "elementId": "p000010-e000003",
+            "observationCount": 2,
+            "minimum": 0.9901688098907471,
+            "arithmeticMean": 0.995078831911087,
+            "maximum": 0.999988853931427
+          },
+          {
+            "elementId": "p000010-e000004",
+            "observationCount": 9,
+            "minimum": 0.9705584645271301,
+            "arithmeticMean": 0.9842063718371921,
+            "maximum": 0.9970450401306152
+          },
+          {
+            "elementId": "p000010-e000005",
+            "observationCount": 2,
+            "minimum": 0.9704263806343079,
+            "arithmeticMean": 0.9852035939693451,
+            "maximum": 0.9999808073043823
+          },
+          {
+            "elementId": "p000010-e000006",
+            "observationCount": 8,
+            "minimum": 0.9802113175392151,
+            "arithmeticMean": 0.9887024313211441,
+            "maximum": 0.9999765157699585
+          },
+          {
+            "elementId": "p000010-e000007",
+            "observationCount": 7,
+            "minimum": 0.971367359161377,
+            "arithmeticMean": 0.9903000593185425,
+            "maximum": 0.99998939037323
+          },
+          {
+            "elementId": "p000010-e000008",
+            "observationCount": 10,
+            "minimum": 0.9632239937782288,
+            "arithmeticMean": 0.9898392796516419,
+            "maximum": 0.9999962449073792
+          },
+          {
+            "elementId": "p000010-e000009",
+            "observationCount": 3,
+            "minimum": 0.986629068851471,
+            "arithmeticMean": 0.991249700387319,
+            "maximum": 0.9999880194664001
+          },
+          {
+            "elementId": "p000010-e000010",
+            "observationCount": 11,
+            "minimum": 0.9570620059967041,
+            "arithmeticMean": 0.9859917705709283,
+            "maximum": 0.999980092048645
+          },
+          {
+            "elementId": "p000010-e000011",
+            "observationCount": 7,
+            "minimum": 0.9743869304656982,
+            "arithmeticMean": 0.9883355924061367,
+            "maximum": 0.9999983310699463
+          },
+          {
+            "elementId": "p000010-e000012",
+            "observationCount": 11,
+            "minimum": 0.9659475088119507,
+            "arithmeticMean": 0.9883294159715826,
+            "maximum": 0.9999943375587463
+          }
+        ],
+        "gates": {
+          "sourceShaIsCustodyRoot": true,
+          "allNormalizedElementsHaveProvenance": true,
+          "segmentCountsMatch": true,
+          "selectedSourceTextHashesVerify": true,
+          "normalizedTextHashesVerify": true,
+          "segmentTextHashesVerify": true,
+          "segmentMembershipRoundTrips": true,
+          "qualityElementCountsBalance": true,
+          "ocrConfidenceAccountingBalances": true,
+          "processingManifestMatchesObservedBoundaries": true
+        },
+        "overallPass": true
+      },
+      "gates": {
+        "tenPhysicalPagesPreserved": true,
+        "containsNativeAndOcrPages": true,
+        "copyrightPage5UsesNativeEvidence": true,
+        "contentsPages6To10RecoverText": true,
+        "noUnresolvedText": true,
+        "figuresNeverBecomeOcrTargets": true,
+        "segmentationProduced": true
+      },
+      "overallPass": true
+    },
+    {
+      "name": "ehrman-raster-toc-pages-14-20",
+      "pageCount": 7,
+      "nativePageCount": 0,
+      "ocrLayoutPageCount": 7,
+      "layoutRequestCount": 7,
+      "ocrRequestCount": 13,
+      "visualElementCount": 0,
+      "deferredElementCount": 6,
+      "unresolvedTextElementCount": 0,
+      "textFlowElementCount": 13,
+      "segmentCount": 8,
+      "crossPageSegmentCount": 0,
+      "mixedTextOriginSegmentCount": 0,
+      "mixedCrossPageSegmentCount": 0,
+      "originTransitions": [
+        "Ocr-\u003EOcr"
+      ],
+      "pages": [
+        {
+          "physicalPageNumber": 14,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 1,
+          "visualElementCount": 0,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 1,
+          "textFlowElementCount": 1,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 15,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 2,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 2,
+          "textFlowElementCount": 2,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 16,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 3,
+          "ocrRequestCount": 1,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 1,
+          "textFlowElementCount": 1,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 17,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 2,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 2,
+          "textFlowElementCount": 2,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 18,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 1,
+          "visualElementCount": 0,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 1,
+          "textFlowElementCount": 1,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 19,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 2,
+          "ocrRequestCount": 2,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 2,
+          "textFlowElementCount": 2,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 20,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 6,
+          "ocrRequestCount": 4,
+          "visualElementCount": 0,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 4,
+          "textFlowElementCount": 4,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        }
+      ],
+      "custodyQuality": {
+        "elementCount": 19,
+        "segmentCount": 8,
+        "authoritativeTextElementCount": 13,
+        "nativeTextElementCount": 0,
+        "ocrTextElementCount": 13,
+        "visualElementCount": 0,
+        "deferredElementCount": 6,
+        "unresolvedTextElementCount": 0,
+        "excludedElementCount": 0,
+        "reconciliationDivergenceElementCount": 0,
+        "normalizationChangedTextElementCount": 2,
+        "ocrEvidenceElementCount": 13,
+        "ocrEvidenceWithConfidenceElementCount": 13,
+        "ocrEvidenceWithoutConfidenceElementCount": 0,
+        "mixedTextOriginSegmentCount": 0,
+        "segmentsWithUnresolvedEvidenceCount": 4,
+        "visualContentSha256s": [],
+        "ocrConfidence": [
+          {
+            "elementId": "p000014-e000001",
+            "observationCount": 72,
+            "minimum": 0.9562558531761169,
+            "arithmeticMean": 0.9922825338111984,
+            "maximum": 0.9999950528144836
+          },
+          {
+            "elementId": "p000015-e000000",
+            "observationCount": 1,
+            "minimum": 0.9998561143875122,
+            "arithmeticMean": 0.9998561143875122,
+            "maximum": 0.9998561143875122
+          },
+          {
+            "elementId": "p000015-e000001",
+            "observationCount": 70,
+            "minimum": 0.9415742754936218,
+            "arithmeticMean": 0.9902303857462746,
+            "maximum": 0.9999983906745911
+          },
+          {
+            "elementId": "p000016-e000002",
+            "observationCount": 67,
+            "minimum": 0.950519859790802,
+            "arithmeticMean": 0.9901767444254747,
+            "maximum": 0.9997518062591553
+          },
+          {
+            "elementId": "p000017-e000000",
+            "observationCount": 1,
+            "minimum": 0.9993348121643066,
+            "arithmeticMean": 0.9993348121643066,
+            "maximum": 0.9993348121643066
+          },
+          {
+            "elementId": "p000017-e000001",
+            "observationCount": 70,
+            "minimum": 0.9705619215965271,
+            "arithmeticMean": 0.9924218714237213,
+            "maximum": 0.9999974370002747
+          },
+          {
+            "elementId": "p000018-e000001",
+            "observationCount": 73,
+            "minimum": 0.9327458143234253,
+            "arithmeticMean": 0.9912114323002018,
+            "maximum": 0.9999985694885254
+          },
+          {
+            "elementId": "p000019-e000000",
+            "observationCount": 1,
+            "minimum": 0.9993403553962708,
+            "arithmeticMean": 0.9993403553962708,
+            "maximum": 0.9993403553962708
+          },
+          {
+            "elementId": "p000019-e000001",
+            "observationCount": 40,
+            "minimum": 0.9467350840568542,
+            "arithmeticMean": 0.9897139310836792,
+            "maximum": 0.9999992251396179
+          },
+          {
+            "elementId": "p000020-e000001",
+            "observationCount": 1,
+            "minimum": 0.9999281167984009,
+            "arithmeticMean": 0.9999281167984009,
+            "maximum": 0.9999281167984009
+          },
+          {
+            "elementId": "p000020-e000002",
+            "observationCount": 23,
+            "minimum": 0.9662082195281982,
+            "arithmeticMean": 0.9913580262142679,
+            "maximum": 0.9998530745506287
+          },
+          {
+            "elementId": "p000020-e000003",
+            "observationCount": 1,
+            "minimum": 0.9996423125267029,
+            "arithmeticMean": 0.9996423125267029,
+            "maximum": 0.9996423125267029
+          },
+          {
+            "elementId": "p000020-e000004",
+            "observationCount": 11,
+            "minimum": 0.954344630241394,
+            "arithmeticMean": 0.9861598773436113,
+            "maximum": 0.9993394613265991
+          }
+        ],
+        "gates": {
+          "sourceShaIsCustodyRoot": true,
+          "allNormalizedElementsHaveProvenance": true,
+          "segmentCountsMatch": true,
+          "selectedSourceTextHashesVerify": true,
+          "normalizedTextHashesVerify": true,
+          "segmentTextHashesVerify": true,
+          "segmentMembershipRoundTrips": true,
+          "qualityElementCountsBalance": true,
+          "ocrConfidenceAccountingBalances": true,
+          "processingManifestMatchesObservedBoundaries": true
+        },
+        "overallPass": true
+      },
+      "gates": {
+        "sevenPhysicalPagesPreserved": true,
+        "allPagesUseOcr": true,
+        "everyTocPageRecoversText": true,
+        "tableFallbackRecoversPreviouslyEmptyPages14_16_18": true,
+        "allAuthoritativeOriginsAreOcr": true,
+        "noUnresolvedText": true,
+        "figuresNeverBecomeOcrTargets": true,
+        "ocrToOcrPageTransitionObserved": true,
+        "segmentationProduced": true
+      },
+      "overallPass": true
+    },
+    {
+      "name": "ehrman-mixed-narrative-pages-33-40",
+      "pageCount": 8,
+      "nativePageCount": 6,
+      "ocrLayoutPageCount": 2,
+      "layoutRequestCount": 2,
+      "ocrRequestCount": 15,
+      "visualElementCount": 1,
+      "deferredElementCount": 4,
+      "unresolvedTextElementCount": 0,
+      "textFlowElementCount": 55,
+      "segmentCount": 9,
+      "crossPageSegmentCount": 4,
+      "mixedTextOriginSegmentCount": 2,
+      "mixedCrossPageSegmentCount": 2,
+      "originTransitions": [
+        "NativePdf-\u003ENativePdf",
+        "NativePdf-\u003EOcr",
+        "Ocr-\u003ENativePdf"
+      ],
+      "pages": [
+        {
+          "physicalPageNumber": 33,
+          "mode": "NativePdf",
+          "nativeWordCount": 790,
+          "nativeBlockCount": 6,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 6,
+          "textFlowElementCount": 5,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 34,
+          "mode": "NativePdf",
+          "nativeWordCount": 301,
+          "nativeBlockCount": 8,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 8,
+          "textFlowElementCount": 7,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 35,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 9,
+          "ocrRequestCount": 7,
+          "visualElementCount": 1,
+          "deferredElementCount": 1,
+          "authoritativeTextElementCount": 7,
+          "textFlowElementCount": 7,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 36,
+          "mode": "NativePdf",
+          "nativeWordCount": 688,
+          "nativeBlockCount": 11,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 11,
+          "textFlowElementCount": 10,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 37,
+          "mode": "NativePdf",
+          "nativeWordCount": 767,
+          "nativeBlockCount": 9,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 9,
+          "textFlowElementCount": 8,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 38,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 11,
+          "ocrRequestCount": 8,
+          "visualElementCount": 0,
+          "deferredElementCount": 3,
+          "authoritativeTextElementCount": 8,
+          "textFlowElementCount": 8,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 1,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 39,
+          "mode": "NativePdf",
+          "nativeWordCount": 816,
+          "nativeBlockCount": 6,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 6,
+          "textFlowElementCount": 5,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        },
+        {
+          "physicalPageNumber": 40,
+          "mode": "NativePdf",
+          "nativeWordCount": 796,
+          "nativeBlockCount": 6,
+          "layoutObservationCount": 0,
+          "ocrRequestCount": 0,
+          "visualElementCount": 0,
+          "deferredElementCount": 0,
+          "authoritativeTextElementCount": 6,
+          "textFlowElementCount": 5,
+          "excludedTextElementCount": 1,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "NativePdf"
+          ],
+          "figureSequenceWasOcrTarget": false
+        }
+      ],
+      "custodyQuality": {
+        "elementCount": 66,
+        "segmentCount": 9,
+        "authoritativeTextElementCount": 61,
+        "nativeTextElementCount": 46,
+        "ocrTextElementCount": 15,
+        "visualElementCount": 1,
+        "deferredElementCount": 4,
+        "unresolvedTextElementCount": 0,
+        "excludedElementCount": 6,
+        "reconciliationDivergenceElementCount": 0,
+        "normalizationChangedTextElementCount": 30,
+        "ocrEvidenceElementCount": 15,
+        "ocrEvidenceWithConfidenceElementCount": 15,
+        "ocrEvidenceWithoutConfidenceElementCount": 0,
+        "mixedTextOriginSegmentCount": 2,
+        "segmentsWithUnresolvedEvidenceCount": 3,
+        "visualContentSha256s": [
+          "cf2abc4e253991131d22fc970ca7492a538948de386e4329064c41377509ebb7"
+        ],
+        "ocrConfidence": [
+          {
+            "elementId": "p000035-e000001",
+            "observationCount": 2,
+            "minimum": 0.9999875426292419,
+            "arithmeticMean": 0.9999890625476837,
+            "maximum": 0.9999905824661255
+          },
+          {
+            "elementId": "p000035-e000002",
+            "observationCount": 1,
+            "minimum": 0.998684823513031,
+            "arithmeticMean": 0.998684823513031,
+            "maximum": 0.998684823513031
+          },
+          {
+            "elementId": "p000035-e000003",
+            "observationCount": 7,
+            "minimum": 0.9887204170227051,
+            "arithmeticMean": 0.994722136429378,
+            "maximum": 0.9987680912017822
+          },
+          {
+            "elementId": "p000035-e000004",
+            "observationCount": 8,
+            "minimum": 0.9886606335639954,
+            "arithmeticMean": 0.9954695478081703,
+            "maximum": 0.9999936819076538
+          },
+          {
+            "elementId": "p000035-e000005",
+            "observationCount": 9,
+            "minimum": 0.9864199161529541,
+            "arithmeticMean": 0.9960355891121758,
+            "maximum": 0.9999885559082031
+          },
+          {
+            "elementId": "p000035-e000006",
+            "observationCount": 4,
+            "minimum": 0.990902304649353,
+            "arithmeticMean": 0.9976552426815033,
+            "maximum": 0.9999834895133972
+          },
+          {
+            "elementId": "p000035-e000007",
+            "observationCount": 4,
+            "minimum": 0.9942846298217773,
+            "arithmeticMean": 0.9979555308818817,
+            "maximum": 0.9999839067459106
+          },
+          {
+            "elementId": "p000038-e000002",
+            "observationCount": 1,
+            "minimum": 0.9993011355400085,
+            "arithmeticMean": 0.9993011355400085,
+            "maximum": 0.9993011355400085
+          },
+          {
+            "elementId": "p000038-e000003",
+            "observationCount": 1,
+            "minimum": 0.9813323616981506,
+            "arithmeticMean": 0.9813323616981506,
+            "maximum": 0.9813323616981506
+          },
+          {
+            "elementId": "p000038-e000004",
+            "observationCount": 8,
+            "minimum": 0.9648147821426392,
+            "arithmeticMean": 0.9897113665938377,
+            "maximum": 0.9999732375144958
+          },
+          {
+            "elementId": "p000038-e000005",
+            "observationCount": 8,
+            "minimum": 0.9857147336006165,
+            "arithmeticMean": 0.9959807023406029,
+            "maximum": 0.9999628067016602
+          },
+          {
+            "elementId": "p000038-e000006",
+            "observationCount": 3,
+            "minimum": 0.9732362627983093,
+            "arithmeticMean": 0.9834301273028055,
+            "maximum": 0.9945149421691895
+          },
+          {
+            "elementId": "p000038-e000007",
+            "observationCount": 6,
+            "minimum": 0.9752264022827148,
+            "arithmeticMean": 0.9901304344336191,
+            "maximum": 0.9997367858886719
+          },
+          {
+            "elementId": "p000038-e000008",
+            "observationCount": 13,
+            "minimum": 0.977073609828949,
+            "arithmeticMean": 0.9937591736133282,
+            "maximum": 0.9996641278266907
+          },
+          {
+            "elementId": "p000038-e000010",
+            "observationCount": 96,
+            "minimum": 0.9443506002426147,
+            "arithmeticMean": 0.9983490065981945,
+            "maximum": 0.9999982118606567
+          }
+        ],
+        "gates": {
+          "sourceShaIsCustodyRoot": true,
+          "allNormalizedElementsHaveProvenance": true,
+          "segmentCountsMatch": true,
+          "selectedSourceTextHashesVerify": true,
+          "normalizedTextHashesVerify": true,
+          "segmentTextHashesVerify": true,
+          "segmentMembershipRoundTrips": true,
+          "qualityElementCountsBalance": true,
+          "ocrConfidenceAccountingBalances": true,
+          "processingManifestMatchesObservedBoundaries": true
+        },
+        "overallPass": true
+      },
+      "gates": {
+        "eightPhysicalPagesPreserved": true,
+        "observedNativeOcrPatternMatchesCorpus": true,
+        "everyNarrativeRangePageHasTextFlow": true,
+        "noUnresolvedText": true,
+        "nativeToNativeObserved": true,
+        "nativeToOcrObserved": true,
+        "ocrToNativeObserved": true,
+        "realMixedOriginCrossPageSegmentObserved": true,
+        "figuresNeverBecomeOcrTargets": true
+      },
+      "overallPass": true
+    },
+    {
+      "name": "ehrman-mixed-content-page-233",
+      "pageCount": 1,
+      "nativePageCount": 0,
+      "ocrLayoutPageCount": 1,
+      "layoutRequestCount": 1,
+      "ocrRequestCount": 7,
+      "visualElementCount": 1,
+      "deferredElementCount": 2,
+      "unresolvedTextElementCount": 0,
+      "textFlowElementCount": 7,
+      "segmentCount": 1,
+      "crossPageSegmentCount": 0,
+      "mixedTextOriginSegmentCount": 0,
+      "mixedCrossPageSegmentCount": 0,
+      "originTransitions": [],
+      "pages": [
+        {
+          "physicalPageNumber": 233,
+          "mode": "Ocr",
+          "nativeWordCount": 0,
+          "nativeBlockCount": 0,
+          "layoutObservationCount": 10,
+          "ocrRequestCount": 7,
+          "visualElementCount": 1,
+          "deferredElementCount": 2,
+          "authoritativeTextElementCount": 7,
+          "textFlowElementCount": 7,
+          "excludedTextElementCount": 0,
+          "unresolvedTextElementCount": 0,
+          "tableTextElementCount": 0,
+          "textOrigins": [
+            "Ocr"
+          ],
+          "figureSequenceWasOcrTarget": false
+        }
+      ],
+      "custodyQuality": {
+        "elementCount": 10,
+        "segmentCount": 1,
+        "authoritativeTextElementCount": 7,
+        "nativeTextElementCount": 0,
+        "ocrTextElementCount": 7,
+        "visualElementCount": 1,
+        "deferredElementCount": 2,
+        "unresolvedTextElementCount": 0,
+        "excludedElementCount": 0,
+        "reconciliationDivergenceElementCount": 0,
+        "normalizationChangedTextElementCount": 4,
+        "ocrEvidenceElementCount": 7,
+        "ocrEvidenceWithConfidenceElementCount": 7,
+        "ocrEvidenceWithoutConfidenceElementCount": 0,
+        "mixedTextOriginSegmentCount": 0,
+        "segmentsWithUnresolvedEvidenceCount": 0,
+        "visualContentSha256s": [
+          "c4170e36da6d0bfdec419f8db199ba972baf3075887a264aa2e9e4d46e6e4e77"
+        ],
+        "ocrConfidence": [
+          {
+            "elementId": "p000233-e000002",
+            "observationCount": 3,
+            "minimum": 0.9975095391273499,
+            "arithmeticMean": 0.9988677899042765,
+            "maximum": 0.9999564290046692
+          },
+          {
+            "elementId": "p000233-e000003",
+            "observationCount": 7,
+            "minimum": 0.9875662326812744,
+            "arithmeticMean": 0.9951265709740775,
+            "maximum": 0.9999606013298035
+          },
+          {
+            "elementId": "p000233-e000005",
+            "observationCount": 6,
+            "minimum": 0.9797698855400085,
+            "arithmeticMean": 0.9951016704241434,
+            "maximum": 0.9999735355377197
+          },
+          {
+            "elementId": "p000233-e000006",
+            "observationCount": 12,
+            "minimum": 0.9836136698722839,
+            "arithmeticMean": 0.9951396584510803,
+            "maximum": 0.9999747276306152
+          },
+          {
+            "elementId": "p000233-e000007",
+            "observationCount": 16,
+            "minimum": 0.9766567945480347,
+            "arithmeticMean": 0.9966802187263966,
+            "maximum": 0.9999777674674988
+          },
+          {
+            "elementId": "p000233-e000008",
+            "observationCount": 16,
+            "minimum": 0.9752161502838135,
+            "arithmeticMean": 0.9963478967547417,
+            "maximum": 0.9999955296516418
+          },
+          {
+            "elementId": "p000233-e000009",
+            "observationCount": 5,
+            "minimum": 0.9958174228668213,
+            "arithmeticMean": 0.9979443907737732,
+            "maximum": 0.999882698059082
+          }
+        ],
+        "gates": {
+          "sourceShaIsCustodyRoot": true,
+          "allNormalizedElementsHaveProvenance": true,
+          "segmentCountsMatch": true,
+          "selectedSourceTextHashesVerify": true,
+          "normalizedTextHashesVerify": true,
+          "segmentTextHashesVerify": true,
+          "segmentMembershipRoundTrips": true,
+          "qualityElementCountsBalance": true,
+          "ocrConfidenceAccountingBalances": true,
+          "processingManifestMatchesObservedBoundaries": true
+        },
+        "overallPass": true
+      },
+      "gates": {
+        "physicalPageIs233": true,
+        "nativeTextRemainsMissing": true,
+        "tenLayoutObservations": true,
+        "sevenRealOcrRequests": true,
+        "sevenAuthoritativeTextElements": true,
+        "onePreservedVisual": true,
+        "twoDeferredElements": true,
+        "noUnresolvedText": true,
+        "allAuthoritativeTextOriginsAreOcr": true,
+        "figureNeverBecomesOcrTarget": true,
+        "normalizationRetainsTextFlow": true,
+        "segmentationProduced": true
+      },
+      "overallPass": true
+    }
+  ],
+  "reconciliationControls": [
+    {
+      "name": "ehrman-suspicious-reconciliation-page-380",
+      "physicalPageNumber": 380,
+      "layoutObservationSequence": 5,
+      "nativeBlockSourceSequence": 2,
+      "nativeTextStatus": "Suspicious",
+      "decision": "Conflict",
+      "selectedOrigin": "None",
+      "isResolved": false,
+      "hasDivergence": true,
+      "comparableExtentWordCount": 299,
+      "nativeBoundaryJoinCount": 5,
+      "ocrBoundaryJoinCount": 5,
+      "selectedTextLength": null,
+      "ocrTextLength": 1683,
+      "custodyQuality": {
+        "elementCount": 1,
+        "segmentCount": 0,
+        "authoritativeTextElementCount": 0,
+        "nativeTextElementCount": 0,
+        "ocrTextElementCount": 0,
+        "visualElementCount": 0,
+        "deferredElementCount": 0,
+        "unresolvedTextElementCount": 1,
+        "excludedElementCount": 0,
+        "reconciliationDivergenceElementCount": 1,
+        "normalizationChangedTextElementCount": 0,
+        "ocrEvidenceElementCount": 1,
+        "ocrEvidenceWithConfidenceElementCount": 1,
+        "ocrEvidenceWithoutConfidenceElementCount": 0,
+        "mixedTextOriginSegmentCount": 0,
+        "segmentsWithUnresolvedEvidenceCount": 0,
+        "visualContentSha256s": [],
+        "ocrConfidence": [
+          {
+            "elementId": "p000380-e000005",
+            "observationCount": 33,
+            "minimum": 0.98015296459198,
+            "arithmeticMean": 0.9961530331409338,
+            "maximum": 0.9999954104423523
+          }
+        ],
+        "gates": {
+          "sourceShaIsCustodyRoot": true,
+          "allNormalizedElementsHaveProvenance": true,
+          "segmentCountsMatch": true,
+          "selectedSourceTextHashesVerify": true,
+          "normalizedTextHashesVerify": true,
+          "segmentTextHashesVerify": true,
+          "segmentMembershipRoundTrips": true,
+          "qualityElementCountsBalance": true,
+          "ocrConfidenceAccountingBalances": true,
+          "processingManifestMatchesObservedBoundaries": true
+        },
+        "overallPass": true
+      },
+      "gates": {
+        "physicalPageMatchesPinnedControl": true,
+        "ocrEvidenceIsRetained": true,
+        "comparableExtentIsRetained": true,
+        "custodyQualityProjectionPass": true,
+        "expectedResolutionState": true,
+        "page380HistoricalConflictParity": true
+      },
+      "overallPass": true
+    },
+    {
+      "name": "ehrman-healthy-reconciliation-page-405",
+      "physicalPageNumber": 405,
+      "layoutObservationSequence": 9,
+      "nativeBlockSourceSequence": 6,
+      "nativeTextStatus": "Healthy",
+      "decision": "Agreement",
+      "selectedOrigin": "NativePdf",
+      "isResolved": true,
+      "hasDivergence": false,
+      "comparableExtentWordCount": 132,
+      "nativeBoundaryJoinCount": 4,
+      "ocrBoundaryJoinCount": 4,
+      "selectedTextLength": 720,
+      "ocrTextLength": 720,
+      "custodyQuality": {
+        "elementCount": 1,
+        "segmentCount": 1,
+        "authoritativeTextElementCount": 1,
+        "nativeTextElementCount": 1,
+        "ocrTextElementCount": 0,
+        "visualElementCount": 0,
+        "deferredElementCount": 0,
+        "unresolvedTextElementCount": 0,
+        "excludedElementCount": 0,
+        "reconciliationDivergenceElementCount": 0,
+        "normalizationChangedTextElementCount": 0,
+        "ocrEvidenceElementCount": 1,
+        "ocrEvidenceWithConfidenceElementCount": 1,
+        "ocrEvidenceWithoutConfidenceElementCount": 0,
+        "mixedTextOriginSegmentCount": 0,
+        "segmentsWithUnresolvedEvidenceCount": 0,
+        "visualContentSha256s": [],
+        "ocrConfidence": [
+          {
+            "elementId": "p000405-e000009",
+            "observationCount": 15,
+            "minimum": 0.9899353981018066,
+            "arithmeticMean": 0.9984602570533753,
+            "maximum": 0.9999740719795227
+          }
+        ],
+        "gates": {
+          "sourceShaIsCustodyRoot": true,
+          "allNormalizedElementsHaveProvenance": true,
+          "segmentCountsMatch": true,
+          "selectedSourceTextHashesVerify": true,
+          "normalizedTextHashesVerify": true,
+          "segmentTextHashesVerify": true,
+          "segmentMembershipRoundTrips": true,
+          "qualityElementCountsBalance": true,
+          "ocrConfidenceAccountingBalances": true,
+          "processingManifestMatchesObservedBoundaries": true
+        },
+        "overallPass": true
+      },
+      "gates": {
+        "physicalPageMatchesPinnedControl": true,
+        "ocrEvidenceIsRetained": true,
+        "comparableExtentIsRetained": true,
+        "custodyQualityProjectionPass": true,
+        "expectedResolutionState": true,
+        "page405HistoricalAgreementParity": true
+      },
+      "overallPass": true
+    }
+  ],
+  "deDecretis": {
+    "pageCount": 50,
+    "nativeWordCount": 29044,
+    "nativeBlockCount": 269,
+    "segmentCount": 50,
+    "crossPageSegmentCount": 0,
+    "custodyQuality": {
+      "elementCount": 269,
+      "segmentCount": 50,
+      "authoritativeTextElementCount": 269,
+      "nativeTextElementCount": 269,
+      "ocrTextElementCount": 0,
+      "visualElementCount": 0,
+      "deferredElementCount": 0,
+      "unresolvedTextElementCount": 0,
+      "excludedElementCount": 0,
+      "reconciliationDivergenceElementCount": 0,
+      "normalizationChangedTextElementCount": 118,
+      "ocrEvidenceElementCount": 0,
+      "ocrEvidenceWithConfidenceElementCount": 0,
+      "ocrEvidenceWithoutConfidenceElementCount": 0,
+      "mixedTextOriginSegmentCount": 0,
+      "segmentsWithUnresolvedEvidenceCount": 0,
+      "visualContentSha256s": [],
+      "ocrConfidence": [],
+      "gates": {
+        "sourceShaIsCustodyRoot": true,
+        "allNormalizedElementsHaveProvenance": true,
+        "segmentCountsMatch": true,
+        "selectedSourceTextHashesVerify": true,
+        "normalizedTextHashesVerify": true,
+        "segmentTextHashesVerify": true,
+        "segmentMembershipRoundTrips": true,
+        "qualityElementCountsBalance": true,
+        "ocrConfidenceAccountingBalances": true,
+        "processingManifestMatchesObservedBoundaries": true
+      },
+      "overallPass": true
+    },
+    "gates": {
+      "all50PagesHaveNativeBlocks": true,
+      "allTextOriginsAreNativePdf": true,
+      "noUnresolvedEvidence": true,
+      "segmentCountMatchesBornDigitalControl": true,
+      "noMixedTextOriginSegments": true,
+      "custodyAndQualityProjectionPass": true,
+      "nativeControlHasNoOcrQualitySignal": true,
+      "nativeControlHasNoLayoutOrReconciliationManifest": true
+    },
+    "overallPass": true
+  },
+  "transitionGates": {
+    "nativeToNative": true,
+    "ocrToOcr": true,
+    "nativeToOcr": true,
+    "ocrToNative": true
+  },
+  "layoutAndOcrNeverConcurrent": true,
+  "modelContainerMemoryLimit": "12g",
+  "rawOcrTextCommitted": false,
+  "rawRasterOrCropBytesCommitted": false,
+  "genericIngestionOrchestratorClaimed": false,
+  "documentIngestionResultClaimed": false,
+  "overallPass": true
+}
