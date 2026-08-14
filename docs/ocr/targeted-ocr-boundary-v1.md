@@ -2,18 +2,20 @@
 
 ## Status
 
-Phase B / 15A production-boundary increment.
+Phase B / 15 targeted OCR is complete.
 
-This increment establishes the neutral OCR evidence model, deterministic OCR
-target planning, crop geometry, and the concrete PaddleOCR General OCR serving
-client.
-
-It intentionally stops before claiming live targeted OCR on the real corpus.
+The production boundary establishes the neutral OCR evidence model,
+deterministic OCR target planning, crop geometry, and the concrete PaddleOCR
+General OCR serving client. Phase 15B then validated that boundary against real
+self-hosted PP-StructureV3 and PaddleOCR services on the pinned Ehrman
+mixed-content page.
 
 ```text
 15 Targeted OCR
-   15A neutral model + planner + serving client  THIS INCREMENT
-   15B real targeted OCR integration             NEXT
+   15A neutral model + planner + serving client  DONE
+   15B real targeted OCR integration             DONE
+
+16 Figure preservation                           NEXT
 ```
 
 ## Architectural rule
@@ -146,25 +148,59 @@ materialize those crops in the evaluation harness without forcing a general
 image library into the production engine before the rasterization boundary is
 designed.
 
-## Next step — Phase 15B
+## Live targeted OCR validation
 
-Validate the production path against the pinned Ehrman physical page 233 and a
-real self-hosted PaddleOCR 3.7 General OCR service.
+Phase B / 15B validated the production path on 2026-08-14 against the pinned
+Ehrman physical page 233 using real self-hosted PP-StructureV3 and PaddleOCR
+services.
 
-Acceptance must include:
+The live layout produced 10 neutral observations. The deterministic planner
+authorized exactly seven OCR regions:
 
 ```text
-Heading -> OCR
-Text    -> OCR
-Figure  -> NO OCR
-Caption -> OCR
-Text    -> OCR
+2, 3, 5, 6, 7, 8, 9
 ```
 
-The papyrus Figure is the critical negative control: no OCR request may be
-issued for layout observation sequence 4.
+The papyrus remained observation sequence 4:
 
-Representative modern-text sentinels should be recovered from the authorized
-regions, while OCR evidence retains page/region/profile/confidence provenance.
+```text
+Figure -> PreserveVisualWithoutOcr
+```
 
-Only after this real integration proof should Phase 15 be marked DONE.
+and therefore produced no OCR crop, no OCR HTTP request, and no OCR evidence.
+
+Exactly seven real PaddleOCR `/ocr` requests were issued. Every authorized
+region produced OCR evidence, and the curated modern-text sentinels for the
+heading, left body, caption, and right opening were recovered.
+
+Detailed evidence is recorded in:
+
+```text
+docs/evaluation/targeted-ocr-live-integration-v1.md
+docs/evaluation/targeted-ocr-live-integration-v1.json
+```
+
+The raw OCR text and raster crops remain local evaluation artifacts and are not
+committed.
+
+Phase B / 15 is therefore complete.
+
+## Next step — Phase 16
+
+Implement neutral figure preservation.
+
+The first increment should preserve enough evidence to identify and audit a
+visual asset:
+
+```text
+source document identity
+physical page number
+normalized bbox
+pixel crop dimensions
+content hash
+extraction/raster profile
+source layout observation association
+```
+
+Do not add ApologiaStudio semantics, generic visual taxonomies, native/OCR
+reconciliation, or end-to-end hybrid orchestration in the same increment.

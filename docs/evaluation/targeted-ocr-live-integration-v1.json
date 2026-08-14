@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "document-processing-targeted-ocr-live-integration-v1",
+  "generatedAtUtc": "2026-08-14T11:18:07.3323484+00:00",
+  "decision": {
+    "overallPass": true,
+    "interpretation": "PASS proves the committed production layout client, deterministic targeted OCR planner, crop geometry, and PaddleOCR serving client can execute the pinned Ehrman page 233 through real self-hosted services while excluding the papyrus Figure from OCR. It is an integration proof, not a general OCR quality or latency claim."
+  },
+  "pageNumber": 233,
+  "raster": {
+    "width": 2556,
+    "height": 3305
+  },
+  "layout": {
+    "backendId": "pp-structurev3",
+    "layoutRequestElapsedMilliseconds": 8493.5569,
+    "observationCount": 10
+  },
+  "ocr": {
+    "endpoint": "http://127.0.0.1:18081/ocr",
+    "backendId": "paddleocr-general-ocr",
+    "profileId": "paddleocr-3.7.0-ppocrv6-medium-cpu-v1",
+    "targetCount": 7,
+    "httpRequestCount": 7,
+    "totalElapsedMilliseconds": 2836.2575,
+    "sourceSequences": [
+      2,
+      3,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  "gates": {
+    "layoutBackendIsPpStructureV3": true,
+    "pageIdentityIsPinnedEhrman233": true,
+    "targetPlanIsExactlyExpected": true,
+    "figureSequence4ExcludedFromPlan": true,
+    "unknownSequences0And1ExcludedFromPlan": true,
+    "exactlySevenOcrHttpRequestsIssued": true,
+    "everyTargetProducedOcrEvidence": true,
+    "noOcrEvidenceAssociatedWithFigureSequence4": true,
+    "headingSentinelRecovered": true,
+    "leftBodyImagineRecovered": true,
+    "captionSentinelsRecovered": true,
+    "rightOpeningForExampleRecovered": true,
+    "remainingRightColumnRegionsProducedEvidence": true,
+    "allEvidenceRetainsPage233": true
+  },
+  "regions": [
+    {
+      "sourceSequence": 2,
+      "kind": "Heading",
+      "textObservationCount": 3,
+      "averageConfidence": 0.9988677899042765,
+      "requestElapsedMilliseconds": 201.8282
+    },
+    {
+      "sourceSequence": 3,
+      "kind": "Text",
+      "textObservationCount": 7,
+      "averageConfidence": 0.9951265709740775,
+      "requestElapsedMilliseconds": 315.7032
+    },
+    {
+      "sourceSequence": 5,
+      "kind": "Caption",
+      "textObservationCount": 6,
+      "averageConfidence": 0.9951016704241434,
+      "requestElapsedMilliseconds": 274.0478
+    },
+    {
+      "sourceSequence": 6,
+      "kind": "Text",
+      "textObservationCount": 12,
+      "averageConfidence": 0.9951396584510803,
+      "requestElapsedMilliseconds": 492.844
+    },
+    {
+      "sourceSequence": 7,
+      "kind": "Text",
+      "textObservationCount": 16,
+      "averageConfidence": 0.9966802187263966,
+      "requestElapsedMilliseconds": 677.8565
+    },
+    {
+      "sourceSequence": 8,
+      "kind": "Text",
+      "textObservationCount": 16,
+      "averageConfidence": 0.9963478967547417,
+      "requestElapsedMilliseconds": 610.5312
+    },
+    {
+      "sourceSequence": 9,
+      "kind": "Text",
+      "textObservationCount": 5,
+      "averageConfidence": 0.9979443907737732,
+      "requestElapsedMilliseconds": 258.0587
+    }
+  ],
+  "rawTextEvidenceCommitted": false,
+  "rawTextEvidenceRetention": "Raw OCR text remains a local evaluation artifact under scripts/tmp; the repository records only derived integration evidence."
+}
