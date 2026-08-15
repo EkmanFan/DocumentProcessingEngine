@@ -423,3 +423,135 @@ The processing component coordinates.
 The specialized components do the actual work.
 
 No layer should silently absorb all three responsibilities.
+
+---
+
+## Phase 21B evidence correction — `Unverified` native text
+
+This section supersedes the earlier V1 assumption that page-level deterministic
+native evidence can always classify native text directly as either `Healthy` or
+`Suspicious`.
+
+The Phase 21B real-corpus diagnostic established:
+
+```text
+Ehrman:
+  617 total pages
+  331 pages with native text
+  286 pages without native text
+
+all 331 native-text pages:
+  dominant raster >= 0.60
+
+historical control p380:
+  native words present
+  dominant raster 0.671
+  no intrinsic structural/Unicode suspicion
+  later OCR reconciliation result = Conflict
+
+historical control p405:
+  native words present
+  dominant raster 0.672
+  no intrinsic structural/Unicode suspicion
+  later OCR reconciliation result = Agreement
+```
+
+Therefore:
+
+```text
+dominant raster + native text
+```
+
+is **not** evidence that the native text is corrupt.
+
+It is evidence that the visible page is image-backed and that native extraction
+alone cannot establish whether the hidden/native text layer faithfully
+represents what is visible.
+
+The native status vocabulary is therefore corrected to:
+
+```text
+Missing
+Healthy
+Suspicious
+Unverified
+```
+
+Semantics:
+
+```text
+Missing
+    no usable native text exists
+
+Healthy
+    native text exists and current deterministic evidence is sufficient to use
+    it without secondary verification
+
+Suspicious
+    explicit deterministic evidence indicates corruption/inconsistency
+
+Unverified
+    native text exists, but current native evidence cannot establish visual
+    fidelity; lack of proof must not be mislabeled as evidence of corruption
+```
+
+The default routing mapping is correspondingly:
+
+```text
+Healthy
+    -> NativeOnly
+
+Missing
+    -> LayoutWithTargetedOcrRecovery
+
+Suspicious
+    -> LayoutWithTargetedOcrReconciliation
+
+Unverified
+    -> LayoutWithTargetedOcrReconciliation
+```
+
+`Unverified` and `Suspicious` currently select the same execution route, but they
+remain semantically distinct because their evidence means different things.
+
+For the two Ehrman controls this means:
+
+```text
+before secondary verification:
+  p380 -> Unverified
+  p405 -> Unverified
+
+after deterministic native/OCR reconciliation:
+  p380 -> Conflict
+  p405 -> Agreement
+```
+
+The distinction between those pages therefore belongs to reconciliation
+evidence, not to a fabricated native-only heuristic.
+
+### Phase 21B implementation boundary
+
+Phase 21B introduces a production:
+
+```text
+DocumentPageProcessingPlanner
+    ↓
+IPageProcessingAssessor
+    ↓
+IPageProcessingPolicy
+```
+
+but deliberately does **not** modify `DocumentProcessor`.
+
+Reason:
+
+Phase 21A's public processor can execute only `NativeOnly`. Wiring page planning
+into it during 21B would create a temporary production behavior that plans a
+valid hybrid route and then immediately throws because that route is not yet
+executable.
+
+Phase 21C should integrate the planner into `DocumentProcessor` at the same time
+that the hybrid execution capabilities become real.
+
+This preserves the already-proven Phase 21A vertical while keeping Phase 21B
+strictly about evidence classification and deterministic route selection.
