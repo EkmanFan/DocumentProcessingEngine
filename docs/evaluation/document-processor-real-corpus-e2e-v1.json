@@ -1,0 +1,310 @@
+{
+  "schemaVersion": "document-processing-phase21d-public-e2e-proof-v1",
+  "baselineCommit": "5532f8e6d55ab5904fef385c659bb8dce09f4cb1",
+  "publicEntryPoint": "DocumentProcessor.ProcessAsync",
+  "modelResidencyPolicy": "sequential-never-concurrent",
+  "corpusControls": {
+    "deDecretis": {
+      "originalSourceSha256": "de5e95573b7910292b4b07c02b5cfd834fe63dd5daf4056e9a947c96cb81bc75",
+      "originalPhysicalPageRange": [
+        512,
+        561
+      ],
+      "fixtureSha256": "df59caf251af005b74a9741cbe3066d9a354419e201decdb1aea915d92cc2b67",
+      "fixtureByteLength": 35686317,
+      "pageCount": 50,
+      "wordCount": 29044,
+      "blockCount": 269,
+      "healthyNativeOnlyCount": 50,
+      "resultElementCount": 269,
+      "resultStructuralSegmentCount": 50,
+      "sourceTextParity": true,
+      "sentinelFound": true,
+      "hybridManifestAbsent": true,
+      "overallPass": true
+    },
+    "ehrman": [
+      {
+        "originalSourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+        "originalPhysicalPageNumber": 233,
+        "fixtureSha256": "a6368979a0eef3f4d4fde617b7aac5c7ead76856d54743271bfc4d460a530257",
+        "fixtureByteLength": 994885,
+        "nativeTextStatus": "Missing",
+        "route": "LayoutWithTargetedOcrRecovery",
+        "layout": {
+          "backendId": "pp-structurev3",
+          "observationCount": 10,
+          "recognizeTextCount": 7,
+          "figureCount": 1,
+          "recognizeTextSequences": [
+            2,
+            3,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "figureSequences": [
+            4
+          ]
+        },
+        "pairing": null,
+        "publicResult": {
+          "decision": "OcrOnly",
+          "selectedOrigin": "Ocr",
+          "isResolved": true,
+          "hasDivergence": false,
+          "controlLayoutObservationSequence": null,
+          "controlNativeBlockSourceSequence": null,
+          "figurePreserved": true,
+          "figureObservationSequence": 4,
+          "figureCustodyHashMatches": true
+        },
+        "realOcrRequestCount": 7,
+        "ocrCalls": [
+          {
+            "observationSequence": 2,
+            "kind": "Heading"
+          },
+          {
+            "observationSequence": 3,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 5,
+            "kind": "Caption"
+          },
+          {
+            "observationSequence": 6,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 7,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 8,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 9,
+            "kind": "Text"
+          }
+        ],
+        "resultElementCount": 10,
+        "resultStructuralSegmentCount": 1,
+        "manifest": {
+          "engineVersion": "git-5532f8e",
+          "native": "pdfpig/pdfpig-0.1.15-native-extraction-v1",
+          "raster": "pdftoppm/pdftoppm-300dpi-rgb-png-direct-crop-v1",
+          "layout": "pp-structurev3/pp-doclayout-plus-l-3.7.0-cpu-v1",
+          "ocr": [
+            "paddleocr-general-ocr/paddleocr-3.7.0-ppocrv6-medium-cpu-v1"
+          ],
+          "reconciliation": "native-ocr-text-reconciler/native-ocr-reconciliation-v1",
+          "visualPreservationProfileIds": [
+            "pdftoppm-300dpi-rgb-png-direct-crop-v1"
+          ]
+        },
+        "anyFigureOcrRequest": false,
+        "overallPass": true
+      },
+      {
+        "originalSourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+        "originalPhysicalPageNumber": 380,
+        "fixtureSha256": "3d11d705e7802c82e6347ee5982c7dd949b3c7dc6f05d6641a94551bfe6cd432",
+        "fixtureByteLength": 1967294,
+        "nativeTextStatus": "Unverified",
+        "route": "LayoutWithTargetedOcrReconciliation",
+        "layout": {
+          "backendId": "pp-structurev3",
+          "observationCount": 11,
+          "recognizeTextCount": 9,
+          "figureCount": 0,
+          "recognizeTextSequences": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "figureSequences": []
+        },
+        "pairing": {
+          "layoutObservationSequence": 5,
+          "nativeSourceBlockSequence": 2,
+          "comparableWordCount": 299,
+          "pairingStatus": "Comparable"
+        },
+        "publicResult": {
+          "decision": "Conflict",
+          "selectedOrigin": "None",
+          "isResolved": false,
+          "hasDivergence": true,
+          "controlLayoutObservationSequence": 5,
+          "controlNativeBlockSourceSequence": 2,
+          "figurePreserved": false,
+          "figureObservationSequence": null,
+          "figureCustodyHashMatches": false
+        },
+        "realOcrRequestCount": 9,
+        "ocrCalls": [
+          {
+            "observationSequence": 2,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 3,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 4,
+            "kind": "Heading"
+          },
+          {
+            "observationSequence": 5,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 6,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 7,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 8,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 9,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 10,
+            "kind": "Text"
+          }
+        ],
+        "resultElementCount": 11,
+        "resultStructuralSegmentCount": 2,
+        "manifest": {
+          "engineVersion": "git-5532f8e",
+          "native": "pdfpig/pdfpig-0.1.15-native-extraction-v1",
+          "raster": "pdftoppm/pdftoppm-300dpi-rgb-png-direct-crop-v1",
+          "layout": "pp-structurev3/pp-doclayout-plus-l-3.7.0-cpu-v1",
+          "ocr": [
+            "paddleocr-general-ocr/paddleocr-3.7.0-ppocrv6-medium-cpu-v1"
+          ],
+          "reconciliation": "native-ocr-text-reconciler/native-ocr-reconciliation-v1",
+          "visualPreservationProfileIds": []
+        },
+        "anyFigureOcrRequest": false,
+        "overallPass": true
+      },
+      {
+        "originalSourceSha256": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+        "originalPhysicalPageNumber": 405,
+        "fixtureSha256": "66fc70f3b190e7315a329d76319b78acd11e1ab2403a86cca86125475100c232",
+        "fixtureByteLength": 1598359,
+        "nativeTextStatus": "Unverified",
+        "route": "LayoutWithTargetedOcrReconciliation",
+        "layout": {
+          "backendId": "pp-structurev3",
+          "observationCount": 11,
+          "recognizeTextCount": 8,
+          "figureCount": 1,
+          "recognizeTextSequences": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "figureSequences": [
+            2
+          ]
+        },
+        "pairing": {
+          "layoutObservationSequence": 9,
+          "nativeSourceBlockSequence": 6,
+          "comparableWordCount": 132,
+          "pairingStatus": "Comparable"
+        },
+        "publicResult": {
+          "decision": "Agreement",
+          "selectedOrigin": "NativePdf",
+          "isResolved": true,
+          "hasDivergence": false,
+          "controlLayoutObservationSequence": 9,
+          "controlNativeBlockSourceSequence": 6,
+          "figurePreserved": true,
+          "figureObservationSequence": null,
+          "figureCustodyHashMatches": false
+        },
+        "realOcrRequestCount": 8,
+        "ocrCalls": [
+          {
+            "observationSequence": 3,
+            "kind": "Heading"
+          },
+          {
+            "observationSequence": 4,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 5,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 6,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 7,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 8,
+            "kind": "Heading"
+          },
+          {
+            "observationSequence": 9,
+            "kind": "Text"
+          },
+          {
+            "observationSequence": 10,
+            "kind": "Text"
+          }
+        ],
+        "resultElementCount": 11,
+        "resultStructuralSegmentCount": 2,
+        "manifest": {
+          "engineVersion": "git-5532f8e",
+          "native": "pdfpig/pdfpig-0.1.15-native-extraction-v1",
+          "raster": "pdftoppm/pdftoppm-300dpi-rgb-png-direct-crop-v1",
+          "layout": "pp-structurev3/pp-doclayout-plus-l-3.7.0-cpu-v1",
+          "ocr": [
+            "paddleocr-general-ocr/paddleocr-3.7.0-ppocrv6-medium-cpu-v1"
+          ],
+          "reconciliation": "native-ocr-text-reconciler/native-ocr-reconciliation-v1",
+          "visualPreservationProfileIds": [
+            "pdftoppm-300dpi-rgb-png-direct-crop-v1"
+          ]
+        },
+        "anyFigureOcrRequest": false,
+        "overallPass": true
+      }
+    ]
+  },
+  "totalRealOcrRequests": 24,
+  "overallPass": true
+}
