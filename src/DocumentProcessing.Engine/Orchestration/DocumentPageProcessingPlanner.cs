@@ -6,10 +6,10 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// <summary>
 /// Production composition of deterministic page assessment and routing policy.
 ///
-/// Phase 21B intentionally stops at planning. The end-to-end
-/// <see cref="DocumentProcessor"/> remains unchanged until Phase 21C can execute
-/// the non-native routes instead of temporarily planning them and immediately
-/// throwing.
+/// Phase 21C.3 consumes this planner from <see cref="DocumentProcessor"/> before
+/// any page route is executed. The planner remains side-effect free: it
+/// classifies extracted evidence and selects routes, while the processor owns
+/// execution of those already-defined routes.
 /// </summary>
 public sealed class DocumentPageProcessingPlanner
 {

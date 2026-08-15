@@ -2,8 +2,12 @@ using System.Buffers;
 using System.Security.Cryptography;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
+using DocumentProcessing.Core.Hybrid;
+using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Preflight;
 using DocumentProcessing.Core.Provenance;
+using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Hybrid.Normalization;
@@ -13,39 +17,101 @@ using DocumentProcessing.Engine.Results;
 namespace DocumentProcessing.Engine.Orchestration;
 
 /// <summary>
-/// Public end-to-end document-processing entry point.
+/// Public end-to-end deterministic document-processing entry point.
 ///
-/// Phase 21A intentionally implements only the proven native-only vertical:
+/// Phase 21C.3 connects the already-proven page planner to all currently
+/// supported V1 execution routes:
 ///
 /// source
 ///   -> type detection
 ///   -> native extraction
 ///   -> preflight
-///   -> native hybrid elements
-///   -> assembly
+///   -> deterministic page assessment / route planning
+///   -> per-page NativeOnly / missing-native recovery / native-present
+///      reconciliation execution
+///   -> common hybrid assembly
 ///   -> normalization
 ///   -> segmentation
-///   -> provenance context
+///   -> provenance / quality projection
 ///   -> DocumentIngestionResult
 ///
-/// Hybrid/raster documents are rejected explicitly rather than silently
-/// returning an incomplete result. Phase 21B/21C will extend the execution
-/// decision boundary through the already-defined page-processing policy.
+/// The processor orchestrates existing components. It does not reproduce
+/// layout, OCR, pairing, reconciliation, normalization, or segmentation logic.
 /// </summary>
 public sealed class DocumentProcessor
 {
+    #region Dependencies and construction
+
     private readonly IDocumentTypeDetector _documentTypeDetector;
     private readonly IDocumentExtractor _nativeExtractor;
     private readonly IDocumentPreflightAnalyzer _preflightAnalyzer;
+    private readonly DocumentPageProcessingPlanner _pageProcessingPlanner;
+    private readonly DocumentHybridExecutionDependencies? _hybridExecution;
     private readonly string _engineVersion;
     private readonly ProcessingComponentIdentity _nativeExtractionIdentity;
 
+    /// <summary>
+    /// Backward-compatible native-capable composition.
+    ///
+    /// Page planning still occurs. If a real document selects a hybrid route,
+    /// processing fails explicitly because no hybrid execution dependencies
+    /// were configured.
+    /// </summary>
     public DocumentProcessor(
         IDocumentTypeDetector documentTypeDetector,
         IDocumentExtractor nativeExtractor,
         IDocumentPreflightAnalyzer preflightAnalyzer,
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity)
+        : this(
+            documentTypeDetector,
+            nativeExtractor,
+            preflightAnalyzer,
+            DocumentPageProcessingPlanner.CreateDefault(),
+            hybridExecution:
+                null,
+            engineVersion,
+            nativeExtractionIdentity,
+            requireHybridExecution:
+                false)
+    {
+    }
+
+    /// <summary>
+    /// Full V1 hybrid composition with an explicit deterministic planner.
+    /// </summary>
+    public DocumentProcessor(
+        IDocumentTypeDetector documentTypeDetector,
+        IDocumentExtractor nativeExtractor,
+        IDocumentPreflightAnalyzer preflightAnalyzer,
+        DocumentPageProcessingPlanner pageProcessingPlanner,
+        DocumentHybridExecutionDependencies hybridExecution,
+        string engineVersion,
+        ProcessingComponentIdentity nativeExtractionIdentity)
+        : this(
+            documentTypeDetector,
+            nativeExtractor,
+            preflightAnalyzer,
+            pageProcessingPlanner,
+            hybridExecution ??
+                throw new ArgumentNullException(
+                    nameof(hybridExecution)),
+            engineVersion,
+            nativeExtractionIdentity,
+            requireHybridExecution:
+                true)
+    {
+    }
+
+    private DocumentProcessor(
+        IDocumentTypeDetector documentTypeDetector,
+        IDocumentExtractor nativeExtractor,
+        IDocumentPreflightAnalyzer preflightAnalyzer,
+        DocumentPageProcessingPlanner pageProcessingPlanner,
+        DocumentHybridExecutionDependencies? hybridExecution,
+        string engineVersion,
+        ProcessingComponentIdentity nativeExtractionIdentity,
+        bool requireHybridExecution = false)
     {
         _documentTypeDetector =
             documentTypeDetector ??
@@ -61,6 +127,21 @@ public sealed class DocumentProcessor
             preflightAnalyzer ??
             throw new ArgumentNullException(
                 nameof(preflightAnalyzer));
+
+        _pageProcessingPlanner =
+            pageProcessingPlanner ??
+            throw new ArgumentNullException(
+                nameof(pageProcessingPlanner));
+
+        if (requireHybridExecution &&
+            hybridExecution is null)
+        {
+            throw new ArgumentNullException(
+                nameof(hybridExecution));
+        }
+
+        _hybridExecution =
+            hybridExecution;
 
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -79,9 +160,46 @@ public sealed class DocumentProcessor
                 nameof(nativeExtractionIdentity));
     }
 
-    public async Task<DocumentIngestionResult> ProcessAsync(
+    #endregion
+
+    #region Public processing
+
+    public Task<DocumentIngestionResult> ProcessAsync(
         DocumentSource source,
+        CancellationToken cancellationToken = default) =>
+        ProcessCoreAsync(
+            source,
+            openVisualDestinationAsync:
+                null,
+            cancellationToken);
+
+    /// <summary>
+    /// Processes a document while allowing the caller to provide destinations
+    /// for Figure evidence selected by deterministic layout policy.
+    ///
+    /// The engine writes preserved visual bytes to the returned stream but does
+    /// not choose or own the caller's storage system.
+    /// </summary>
+    public Task<DocumentIngestionResult> ProcessAsync(
+        DocumentSource source,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>
+            openVisualDestinationAsync,
         CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            openVisualDestinationAsync);
+
+        return ProcessCoreAsync(
+            source,
+            openVisualDestinationAsync,
+            cancellationToken);
+    }
+
+    private async Task<DocumentIngestionResult> ProcessCoreAsync(
+        DocumentSource source,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(
             source);
@@ -153,45 +271,98 @@ public sealed class DocumentProcessor
             extraction,
             preflight);
 
-        if (preflight.Classification !=
-            DocumentPreflightClassification.HealthyBornDigital)
-        {
-            throw new NotSupportedException(
-                $"Phase 21A native-only processing requires '{DocumentPreflightClassification.HealthyBornDigital}' preflight classification; " +
-                $"observed '{preflight.Classification}'. Hybrid/raster routing is introduced in later Phase 21 increments.");
-        }
+        var decisions =
+            _pageProcessingPlanner
+                .Plan(
+                    extraction);
+
+        ValidatePageDecisions(
+            extraction,
+            preflight,
+            decisions);
+
+        var requiresHybridExecution =
+            decisions.Any(
+                decision =>
+                    decision.Plan.Route !=
+                    PageProcessingRoute.NativeOnly);
+
+        var hybridExecution =
+            ResolveHybridExecution(
+                format,
+                decisions,
+                requiresHybridExecution);
 
         var assembledPages =
-            new List<Core.Hybrid.HybridDocumentPage>(
+            new List<HybridDocumentPage>(
                 extraction.Pages.Count);
 
-        foreach (var page in
-                 extraction.Pages)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
+        IDocumentRasterizationSession? rasterSession =
+            null;
 
-            if (page.Blocks.Count ==
-                0)
+        ProcessingComponentIdentity? rasterizationIdentity =
+            null;
+
+        try
+        {
+            if (requiresHybridExecution)
             {
-                throw new InvalidDataException(
-                    $"Healthy born-digital page {page.PhysicalPageNumber} contains native words but no native text blocks.");
+                prepared.ResetForRead();
+
+                rasterSession =
+                    await hybridExecution!
+                        .DocumentRasterizer
+                        .OpenAsync(
+                            prepared.Source,
+                            format,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+
+                if (rasterSession is null)
+                {
+                    throw new InvalidDataException(
+                        "Configured document rasterizer returned no rasterization session.");
+                }
+
+                rasterizationIdentity =
+                    new ProcessingComponentIdentity(
+                        rasterSession.BackendId,
+                        rasterSession.ProfileId);
             }
 
-            var elements =
-                page.Blocks
-                    .Select(
-                        block =>
-                            HybridDocumentElementFactory
-                                .FromNative(
-                                    page.PhysicalPageNumber,
-                                    block))
-                    .ToArray();
+            for (var index = 0;
+                 index <
+                 extraction.Pages.Count;
+                 index++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-            assembledPages.Add(
-                HybridDocumentAssembler
-                    .AssemblePage(
-                        page,
-                        elements));
+                var page =
+                    extraction.Pages[index];
+
+                var decision =
+                    decisions[index];
+
+                assembledPages.Add(
+                    await ExecutePageAsync(
+                            page,
+                            decision,
+                            rasterSession,
+                            hybridExecution,
+                            prepared.Sha256,
+                            openVisualDestinationAsync,
+                            cancellationToken)
+                        .ConfigureAwait(false));
+            }
+        }
+        finally
+        {
+            if (rasterSession is not null)
+            {
+                await rasterSession
+                    .DisposeAsync()
+                    .ConfigureAwait(false);
+            }
         }
 
         var assembly =
@@ -211,6 +382,15 @@ public sealed class DocumentProcessor
                     normalization,
                     cancellationToken);
 
+        var hasReconciliationEvidence =
+            assembledPages
+                .SelectMany(
+                    page =>
+                        page.Elements)
+                .Any(
+                    element =>
+                        element.Reconciliation is not null);
+
         var provenanceContext =
             new DocumentProcessingProvenanceContext(
                 new DocumentSourceIdentity(
@@ -221,13 +401,218 @@ public sealed class DocumentProcessor
                     source.FileName,
                     source.DeclaredMediaType),
                 _engineVersion,
-                _nativeExtractionIdentity);
+                _nativeExtractionIdentity,
+                rasterization:
+                    requiresHybridExecution
+                        ? rasterizationIdentity
+                        : null,
+                layoutAnalysis:
+                    requiresHybridExecution
+                        ? hybridExecution!
+                            .LayoutAnalysisIdentity
+                        : null,
+                reconciliation:
+                    hasReconciliationEvidence
+                        ? hybridExecution!
+                            .ReconciliationIdentity
+                        : null);
 
         return DocumentIngestionResultBuilder
             .Build(
                 segmentation,
                 provenanceContext);
     }
+
+    #endregion
+
+    #region Page planning and route execution
+
+    private DocumentHybridExecutionDependencies? ResolveHybridExecution(
+        DocumentFormatId format,
+        IReadOnlyList<PageProcessingDecision> decisions,
+        bool requiresHybridExecution)
+    {
+        if (!requiresHybridExecution)
+        {
+            return _hybridExecution;
+        }
+
+        if (_hybridExecution is null)
+        {
+            var firstHybrid =
+                decisions.First(
+                    decision =>
+                        decision.Plan.Route !=
+                        PageProcessingRoute.NativeOnly);
+
+            throw new NotSupportedException(
+                $"Physical page {firstHybrid.PhysicalPageNumber} selected route " +
+                $"'{firstHybrid.Plan.Route}' for native status " +
+                $"'{firstHybrid.Assessment.NativeTextStatus}', but this " +
+                "DocumentProcessor was constructed without hybrid execution dependencies.");
+        }
+
+        if (!_hybridExecution
+                .DocumentRasterizer
+                .CanRasterize(
+                    format))
+        {
+            throw new NotSupportedException(
+                $"The configured document rasterizer cannot process format '{format}'.");
+        }
+
+        return _hybridExecution;
+    }
+
+    private static async ValueTask<HybridDocumentPage> ExecutePageAsync(
+        DocumentExtractionPage page,
+        PageProcessingDecision decision,
+        IDocumentRasterizationSession? rasterSession,
+        DocumentHybridExecutionDependencies? hybridExecution,
+        string sourceDocumentSha256,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync,
+        CancellationToken cancellationToken)
+    {
+        if (decision.PhysicalPageNumber !=
+            page.PhysicalPageNumber)
+        {
+            throw new InvalidDataException(
+                $"Page decision {decision.PhysicalPageNumber} does not match " +
+                $"extraction page {page.PhysicalPageNumber}.");
+        }
+
+        return decision.Plan.Route switch
+        {
+            PageProcessingRoute.NativeOnly =>
+                AssembleNativePage(
+                    page),
+
+            PageProcessingRoute.LayoutWithTargetedOcrRecovery =>
+                await RequireHybridExecution(
+                        hybridExecution,
+                        rasterSession)
+                    .MissingNativeExecutor
+                    .ExecuteAsync(
+                        page,
+                        decision,
+                        rasterSession!,
+                        sourceDocumentSha256,
+                        openVisualDestinationAsync,
+                        cancellationToken)
+                    .ConfigureAwait(false),
+
+            PageProcessingRoute.LayoutWithTargetedOcrReconciliation =>
+                await RequireHybridExecution(
+                        hybridExecution,
+                        rasterSession)
+                    .NativePresentExecutor
+                    .ExecuteAsync(
+                        page,
+                        decision,
+                        rasterSession!,
+                        sourceDocumentSha256,
+                        openVisualDestinationAsync,
+                        cancellationToken)
+                    .ConfigureAwait(false),
+
+            _ =>
+                throw new InvalidOperationException(
+                    $"Unsupported page-processing route '{decision.Plan.Route}'.")
+        };
+    }
+
+    private static HybridDocumentPage AssembleNativePage(
+        DocumentExtractionPage page)
+    {
+        if (page.Blocks.Count ==
+            0)
+        {
+            throw new InvalidDataException(
+                $"Native-only page {page.PhysicalPageNumber} contains no native text blocks.");
+        }
+
+        var elements =
+            page.Blocks
+                .Select(
+                    block =>
+                        HybridDocumentElementFactory
+                            .FromNative(
+                                page.PhysicalPageNumber,
+                                block))
+                .ToArray();
+
+        return HybridDocumentAssembler
+            .AssemblePage(
+                page,
+                elements);
+    }
+
+    private static DocumentHybridExecutionDependencies RequireHybridExecution(
+        DocumentHybridExecutionDependencies? hybridExecution,
+        IDocumentRasterizationSession? rasterSession)
+    {
+        if (hybridExecution is null ||
+            rasterSession is null)
+        {
+            throw new InvalidOperationException(
+                "Hybrid page route reached execution without a configured document-scoped raster runtime.");
+        }
+
+        return hybridExecution;
+    }
+
+    private static void ValidatePageDecisions(
+        DocumentExtractionResult extraction,
+        DocumentPreflightResult preflight,
+        IReadOnlyList<PageProcessingDecision> decisions)
+    {
+        ArgumentNullException.ThrowIfNull(
+            decisions);
+
+        if (decisions.Count !=
+            extraction.Pages.Count)
+        {
+            throw new InvalidDataException(
+                $"Page planner returned {decisions.Count} decisions for " +
+                $"{extraction.Pages.Count} extracted pages.");
+        }
+
+        for (var index = 0;
+             index <
+             decisions.Count;
+             index++)
+        {
+            var page =
+                extraction.Pages[index];
+
+            var decision =
+                decisions[index];
+
+            if (decision.PhysicalPageNumber !=
+                page.PhysicalPageNumber)
+            {
+                throw new InvalidDataException(
+                    $"Page planner returned physical page " +
+                    $"{decision.PhysicalPageNumber} at index {index}; " +
+                    $"expected page {page.PhysicalPageNumber}.");
+            }
+        }
+
+        if (preflight.Classification !=
+                DocumentPreflightClassification.HealthyBornDigital &&
+            decisions.All(
+                decision =>
+                    decision.Plan.Route ==
+                    PageProcessingRoute.NativeOnly))
+        {
+            throw new InvalidDataException(
+                $"Document preflight classification '{preflight.Classification}' " +
+                "conflicts with page-level routing because every page selected NativeOnly.");
+        }
+    }
+
+    #endregion
 
     private static void ValidateExtraction(
         DocumentFormatId detectedFormat,

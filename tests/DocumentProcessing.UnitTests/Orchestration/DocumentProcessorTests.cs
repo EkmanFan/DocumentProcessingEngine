@@ -392,7 +392,7 @@ public sealed class DocumentProcessorTests
         DocumentPreflightClassification.RasterOrScanned)]
     [InlineData(
         DocumentPreflightClassification.Problematic)]
-    public async Task ProcessAsync_NonNativeOnlyPreflight_RejectsRatherThanReturningPartialResult(
+    public async Task ProcessAsync_NonHealthyPreflightWithAllNativeRoutes_RejectsEvidenceDisagreement(
         DocumentPreflightClassification classification)
     {
         var processor =
@@ -412,14 +412,14 @@ public sealed class DocumentProcessorTests
             CreateSourceStream();
 
         var exception =
-            await Assert.ThrowsAsync<NotSupportedException>(
+            await Assert.ThrowsAsync<InvalidDataException>(
                 () =>
                     processor.ProcessAsync(
                         new DocumentSource(
                             stream)));
 
         Assert.Contains(
-            nameof(DocumentPreflightClassification.HealthyBornDigital),
+            "conflicts with page-level routing",
             exception.Message,
             StringComparison.Ordinal);
     }
