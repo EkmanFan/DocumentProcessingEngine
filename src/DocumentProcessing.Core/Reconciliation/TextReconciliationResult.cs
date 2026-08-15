@@ -1,10 +1,11 @@
+using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Normalization;
 
 namespace DocumentProcessing.Core.Reconciliation;
 
 /// <summary>
-/// Neutral reconciliation result that retains both source evidence objects and
-/// makes selection, divergence, and unresolved states explicit.
+/// Neutral reconciliation result that retains source evidence and makes
+/// selection, divergence, and unresolved states explicit.
 /// </summary>
 public sealed class TextReconciliationResult
 {
@@ -17,27 +18,35 @@ public sealed class TextReconciliationResult
         bool? textsEquivalent,
         ComparableNativeTextExtent? comparableNativeExtent = null,
         TextDehyphenationResult? nativeTextPreparation = null,
-        TextDehyphenationResult? ocrTextPreparation = null)
+        TextDehyphenationResult? ocrTextPreparation = null,
+        ComparableNativeTextEvidence? comparableNativeEvidence = null)
     {
-        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(
+            input);
 
-        if (!Enum.IsDefined(decision))
+        if (!Enum.IsDefined(
+                decision))
         {
-            throw new ArgumentOutOfRangeException(nameof(decision));
+            throw new ArgumentOutOfRangeException(
+                nameof(decision));
         }
 
-        if (!Enum.IsDefined(selectedOrigin))
+        if (!Enum.IsDefined(
+                selectedOrigin))
         {
-            throw new ArgumentOutOfRangeException(nameof(selectedOrigin));
+            throw new ArgumentOutOfRangeException(
+                nameof(selectedOrigin));
         }
 
         var normalizedSelectedText =
-            string.IsNullOrWhiteSpace(selectedText)
+            string.IsNullOrWhiteSpace(
+                selectedText)
                 ? null
                 : selectedText.Trim();
 
         var normalizedOcrText =
-            string.IsNullOrWhiteSpace(ocrText)
+            string.IsNullOrWhiteSpace(
+                ocrText)
                 ? null
                 : ocrText.Trim();
 
@@ -49,7 +58,7 @@ public sealed class TextReconciliationResult
         }
 
         if (selectedOrigin == TextSelectionOrigin.NativePdf &&
-            input.NativeBlock is null)
+            !input.HasNativeEvidence)
         {
             throw new ArgumentException(
                 "NativePdf selection requires native evidence.",
@@ -65,7 +74,8 @@ public sealed class TextReconciliationResult
         }
 
         if (textsEquivalent is not null &&
-            (input.NativeBlock is null || normalizedOcrText is null))
+            (!input.HasNativeEvidence ||
+             normalizedOcrText is null))
         {
             throw new ArgumentException(
                 "Text equivalence can only be reported when both native and OCR text exist.",
@@ -101,11 +111,53 @@ public sealed class TextReconciliationResult
             }
         }
 
+        if (comparableNativeEvidence is not null)
+        {
+            if (input.ComparableNativeEvidence is null ||
+                input.OcrRegion is null)
+            {
+                throw new ArgumentException(
+                    "Comparable native evidence requires target-centric input native/OCR evidence.",
+                    nameof(comparableNativeEvidence));
+            }
+
+            if (!ReferenceEquals(
+                    comparableNativeEvidence,
+                    input.ComparableNativeEvidence))
+            {
+                throw new ArgumentException(
+                    "Comparable native evidence must be the exact input evidence object.",
+                    nameof(comparableNativeEvidence));
+            }
+
+            if (!ReferenceEquals(
+                    comparableNativeEvidence.SourceLayoutObservation,
+                    input.OcrRegion.SourceLayoutObservation))
+            {
+                throw new ArgumentException(
+                    "Comparable native evidence must originate from the input OCR layout observation.",
+                    nameof(comparableNativeEvidence));
+            }
+
+            if (comparableNativeExtent is not null &&
+                !comparableNativeEvidence.Extents.Any(
+                    extent =>
+                        ReferenceEquals(
+                            extent,
+                            comparableNativeExtent)))
+            {
+                throw new ArgumentException(
+                    "Legacy comparable extent must belong to the aggregate native evidence.",
+                    nameof(comparableNativeExtent));
+            }
+        }
+
         if (nativeTextPreparation is not null &&
-            comparableNativeExtent is null)
+            comparableNativeExtent is null &&
+            comparableNativeEvidence is null)
         {
             throw new ArgumentException(
-                "Prepared native reconciliation text requires a comparable native extent.",
+                "Prepared native reconciliation text requires comparable native evidence.",
                 nameof(nativeTextPreparation));
         }
 
@@ -137,6 +189,9 @@ public sealed class TextReconciliationResult
 
         ComparableNativeExtent =
             comparableNativeExtent;
+
+        ComparableNativeEvidence =
+            comparableNativeEvidence;
 
         NativeTextPreparation =
             nativeTextPreparation;
@@ -170,27 +225,41 @@ public sealed class TextReconciliationResult
     public bool? TextsEquivalent { get; }
 
     /// <summary>
-    /// Spatially comparable native extent used by the explicit comparable
-    /// reconciliation path. Null for raw block-level reconciliation.
+    /// Legacy single-source-block comparable extent. Target-centric aggregate
+    /// reconciliation exposes this when the aggregate contains exactly one
+    /// extent.
     /// </summary>
     public ComparableNativeTextExtent? ComparableNativeExtent { get; }
 
     /// <summary>
-    /// Deterministically prepared native comparison text when comparable
-    /// reconciliation was used.
+    /// Complete target-centric native evidence used for reconciliation.
     /// </summary>
+    public ComparableNativeTextEvidence? ComparableNativeEvidence { get; }
+
+    public IReadOnlyList<DocumentTextBlock> NativeSourceBlocks
+    {
+        get
+        {
+            if (ComparableNativeEvidence is not null)
+            {
+                return ComparableNativeEvidence.SourceBlocks;
+            }
+
+            return Input.NativeBlock is null
+                ? []
+                : [Input.NativeBlock];
+        }
+    }
+
     public TextDehyphenationResult? NativeTextPreparation { get; }
 
-    /// <summary>
-    /// Deterministically prepared OCR comparison text when comparable
-    /// reconciliation was used.
-    /// </summary>
     public TextDehyphenationResult? OcrTextPreparation { get; }
 
     public bool IsResolved =>
         SelectedText is not null;
 
     public bool HasDivergence =>
-        Decision is TextReconciliationDecision.HealthyNativePreferred or
+        Decision is
+            TextReconciliationDecision.HealthyNativePreferred or
             TextReconciliationDecision.Conflict;
 }

@@ -10,48 +10,50 @@ namespace DocumentProcessing.Engine.Reconciliation;
 /// Policy:
 /// - healthy native text is preferred;
 /// - missing native text may be recovered by OCR;
-/// - suspicious native text requires OCR agreement before becoming selected;
-/// - disagreement involving suspicious native evidence remains unresolved;
-/// - no confidence threshold, fuzzy similarity score, or LLM arbitration is used.
+/// - suspicious/unverified native text requires OCR agreement before becoming
+///   selected;
+/// - disagreement involving suspicious/unverified native evidence remains
+///   unresolved;
+/// - no confidence threshold, fuzzy similarity score, or LLM arbitration is
+///   used.
 /// </summary>
 public static class NativeOcrTextReconciler
 {
     /// <summary>
     /// Raw block-level reconciliation retained for Phase 17A compatibility.
-    ///
-    /// When native and OCR evidence have been spatially paired, callers should
-    /// obtain a ComparableNativeTextExtent and use ReconcileComparable so the
-    /// policy compares equivalent textual extent.
     /// </summary>
     public static TextReconciliationResult Reconcile(
         TextReconciliationInput input)
     {
-        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(
+            input);
 
         return ReconcileCore(
             input,
             input.NativeBlock?.Text,
-            ComposeOcrText(input),
+            ComposeOcrText(
+                input),
             comparableNativeExtent: null,
+            comparableNativeEvidence: null,
             nativeTextPreparation: null,
             ocrTextPreparation: null);
     }
 
     /// <summary>
-    /// Reconciles one caller-supplied native/OCR pair after deterministic
-    /// comparable-extent projection and source-aware dehyphenation.
-    ///
-    /// This method does not perform automatic pairing and does not use fuzzy
-    /// similarity. It applies the same V1 authority policy as Reconcile.
+    /// Legacy single-source-block comparable reconciliation.
     /// </summary>
     public static TextReconciliationResult ReconcileComparable(
         TextReconciliationInput input,
         ComparableNativeTextExtent comparableNativeExtent)
     {
-        ArgumentNullException.ThrowIfNull(input);
-        ArgumentNullException.ThrowIfNull(comparableNativeExtent);
+        ArgumentNullException.ThrowIfNull(
+            input);
 
-        if (input.NativeStatus == NativeTextStatus.Missing ||
+        ArgumentNullException.ThrowIfNull(
+            comparableNativeExtent);
+
+        if (input.NativeStatus ==
+                NativeTextStatus.Missing ||
             input.NativeBlock is null)
         {
             throw new ArgumentException(
@@ -102,6 +104,85 @@ public static class NativeOcrTextReconciler
                 ? null
                 : ocrTextPreparation.Text,
             comparableNativeExtent,
+            comparableNativeEvidence: null,
+            nativeTextPreparation,
+            ocrTextPreparation);
+    }
+
+    /// <summary>
+    /// Reconciles one target-centric native aggregate against OCR evidence for
+    /// the exact same layout target.
+    /// </summary>
+    public static TextReconciliationResult ReconcileComparable(
+        TextReconciliationInput input,
+        ComparableNativeTextEvidence comparableNativeEvidence)
+    {
+        ArgumentNullException.ThrowIfNull(
+            input);
+
+        ArgumentNullException.ThrowIfNull(
+            comparableNativeEvidence);
+
+        if (input.NativeStatus ==
+                NativeTextStatus.Missing ||
+            !input.HasNativeEvidence)
+        {
+            throw new ArgumentException(
+                "Target-centric comparable reconciliation requires native evidence.",
+                nameof(input));
+        }
+
+        if (input.OcrRegion is null)
+        {
+            throw new ArgumentException(
+                "Target-centric comparable reconciliation requires OCR evidence.",
+                nameof(input));
+        }
+
+        if (!ReferenceEquals(
+                input.ComparableNativeEvidence,
+                comparableNativeEvidence))
+        {
+            throw new ArgumentException(
+                "Comparable native evidence must be the exact evidence attached " +
+                "to the reconciliation input.",
+                nameof(comparableNativeEvidence));
+        }
+
+        if (!ReferenceEquals(
+                comparableNativeEvidence.SourceLayoutObservation,
+                input.OcrRegion.SourceLayoutObservation))
+        {
+            throw new ArgumentException(
+                "Comparable native evidence must originate from the input OCR layout observation.",
+                nameof(comparableNativeEvidence));
+        }
+
+        var nativeTextPreparation =
+            ReconciliationTextDehyphenator
+                .DehyphenateNative(
+                    comparableNativeEvidence);
+
+        var ocrTextPreparation =
+            ReconciliationTextDehyphenator
+                .DehyphenateOcr(
+                    input.OcrRegion);
+
+        var legacySingleExtent =
+            comparableNativeEvidence.ExtentCount ==
+                    1
+                ? comparableNativeEvidence.Extents[0]
+                : null;
+
+        return ReconcileCore(
+            input,
+            nativeTextPreparation.Text,
+            string.IsNullOrWhiteSpace(
+                ocrTextPreparation.Text)
+                ? null
+                : ocrTextPreparation.Text,
+            legacySingleExtent,
+            comparableNativeEvidence,
             nativeTextPreparation,
             ocrTextPreparation);
     }
@@ -111,6 +192,7 @@ public static class NativeOcrTextReconciler
         string? nativeText,
         string? ocrText,
         ComparableNativeTextExtent? comparableNativeExtent,
+        ComparableNativeTextEvidence? comparableNativeEvidence,
         TextDehyphenationResult? nativeTextPreparation,
         TextDehyphenationResult? ocrTextPreparation)
     {
@@ -118,7 +200,8 @@ public static class NativeOcrTextReconciler
             !string.IsNullOrWhiteSpace(
                 ocrText);
 
-        if (input.NativeStatus == NativeTextStatus.Missing)
+        if (input.NativeStatus ==
+            NativeTextStatus.Missing)
         {
             return hasOcrText
                 ? Result(
@@ -129,6 +212,7 @@ public static class NativeOcrTextReconciler
                     ocrText,
                     textsEquivalent: null,
                     comparableNativeExtent,
+                    comparableNativeEvidence,
                     nativeTextPreparation,
                     ocrTextPreparation)
                 : Result(
@@ -139,13 +223,15 @@ public static class NativeOcrTextReconciler
                     ocrText: null,
                     textsEquivalent: null,
                     comparableNativeExtent,
+                    comparableNativeEvidence,
                     nativeTextPreparation,
                     ocrTextPreparation);
         }
 
         if (!hasOcrText)
         {
-            return input.NativeStatus == NativeTextStatus.Healthy
+            return input.NativeStatus ==
+                   NativeTextStatus.Healthy
                 ? Result(
                     input,
                     TextReconciliationDecision.NativeOnly,
@@ -154,6 +240,7 @@ public static class NativeOcrTextReconciler
                     ocrText: null,
                     textsEquivalent: null,
                     comparableNativeExtent,
+                    comparableNativeEvidence,
                     nativeTextPreparation,
                     ocrTextPreparation)
                 : Result(
@@ -164,6 +251,7 @@ public static class NativeOcrTextReconciler
                     ocrText: null,
                     textsEquivalent: null,
                     comparableNativeExtent,
+                    comparableNativeEvidence,
                     nativeTextPreparation,
                     ocrTextPreparation);
         }
@@ -183,11 +271,13 @@ public static class NativeOcrTextReconciler
                 ocrText,
                 textsEquivalent: true,
                 comparableNativeExtent,
+                comparableNativeEvidence,
                 nativeTextPreparation,
                 ocrTextPreparation);
         }
 
-        if (input.NativeStatus == NativeTextStatus.Healthy)
+        if (input.NativeStatus ==
+            NativeTextStatus.Healthy)
         {
             return Result(
                 input,
@@ -197,6 +287,7 @@ public static class NativeOcrTextReconciler
                 ocrText,
                 textsEquivalent: false,
                 comparableNativeExtent,
+                comparableNativeEvidence,
                 nativeTextPreparation,
                 ocrTextPreparation);
         }
@@ -209,26 +300,26 @@ public static class NativeOcrTextReconciler
             ocrText,
             textsEquivalent: false,
             comparableNativeExtent,
+            comparableNativeEvidence,
             nativeTextPreparation,
             ocrTextPreparation);
     }
 
-    /// <summary>
-    /// V1 intentionally uses conservative equality, not fuzzy matching.
-    /// Unicode compatibility normalization, discretionary soft-hyphen removal,
-    /// and whitespace collapsing are allowed; case and punctuation differences
-    /// remain meaningful disagreements until real evaluation justifies more.
-    /// </summary>
     public static bool AreConservativelyEquivalent(
         string left,
         string right)
     {
-        ArgumentNullException.ThrowIfNull(left);
-        ArgumentNullException.ThrowIfNull(right);
+        ArgumentNullException.ThrowIfNull(
+            left);
+
+        ArgumentNullException.ThrowIfNull(
+            right);
 
         return string.Equals(
-            NormalizeForComparison(left),
-            NormalizeForComparison(right),
+            NormalizeForComparison(
+                left),
+            NormalizeForComparison(
+                right),
             StringComparison.Ordinal);
     }
 
@@ -240,6 +331,7 @@ public static class NativeOcrTextReconciler
         string? ocrText,
         bool? textsEquivalent,
         ComparableNativeTextExtent? comparableNativeExtent = null,
+        ComparableNativeTextEvidence? comparableNativeEvidence = null,
         TextDehyphenationResult? nativeTextPreparation = null,
         TextDehyphenationResult? ocrTextPreparation = null) =>
         new(
@@ -251,19 +343,22 @@ public static class NativeOcrTextReconciler
             textsEquivalent,
             comparableNativeExtent,
             nativeTextPreparation,
-            ocrTextPreparation);
+            ocrTextPreparation,
+            comparableNativeEvidence);
 
     private static string? ComposeOcrText(
         TextReconciliationInput input)
     {
         if (input.OcrRegion is null ||
-            input.OcrRegion.TextObservations.Count == 0)
+            input.OcrRegion.TextObservations.Count ==
+            0)
         {
             return null;
         }
 
         var fragments =
-            input.OcrRegion.TextObservations
+            input.OcrRegion
+                .TextObservations
                 .OrderBy(
                     observation =>
                         observation.ObservationSequence)
@@ -272,10 +367,12 @@ public static class NativeOcrTextReconciler
                         observation.Text.Trim())
                 .Where(
                     text =>
-                        text.Length > 0)
+                        text.Length >
+                        0)
                 .ToArray();
 
-        return fragments.Length == 0
+        return fragments.Length ==
+               0
             ? null
             : string.Join(
                 " ",
@@ -298,14 +395,17 @@ public static class NativeOcrTextReconciler
 
         foreach (var character in normalized)
         {
-            if (character == '\u00AD')
+            if (character ==
+                '\u00AD')
             {
                 continue;
             }
 
-            if (char.IsWhiteSpace(character))
+            if (char.IsWhiteSpace(
+                    character))
             {
-                if (builder.Length > 0)
+                if (builder.Length >
+                    0)
                 {
                     pendingWhitespace =
                         true;
@@ -316,7 +416,9 @@ public static class NativeOcrTextReconciler
 
             if (pendingWhitespace)
             {
-                builder.Append(' ');
+                builder.Append(
+                    ' ');
+
                 pendingWhitespace =
                     false;
             }

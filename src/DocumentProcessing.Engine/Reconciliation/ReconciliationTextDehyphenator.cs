@@ -42,6 +42,24 @@ public static class ReconciliationTextDehyphenator
             BoundaryEvidence.NativeWord);
     }
 
+    public static TextDehyphenationResult DehyphenateNative(
+        ComparableNativeTextEvidence evidence)
+    {
+        ArgumentNullException.ThrowIfNull(
+            evidence);
+
+        var fragments =
+            evidence.Words
+                .Select(
+                    word =>
+                        word.Text)
+                .ToArray();
+
+        return Compose(
+            fragments,
+            BoundaryEvidence.NativeWord);
+    }
+
     public static TextDehyphenationResult DehyphenateOcr(
         OcrRegionResult region)
     {

@@ -169,40 +169,48 @@ public static class HybridDocumentAssembler
     private static void RejectUnsafeNativeDuplication(
         IReadOnlyList<HybridDocumentElement> elements)
     {
-        var groups =
+        var usages =
             elements
-                .Where(
+                .SelectMany(
                     element =>
-                        element.NativeBlock is not null)
+                        NativeSourceBlocks(
+                                element)
+                            .Select(
+                                block =>
+                                    new NativeUsage(
+                                        element,
+                                        block)))
                 .GroupBy(
-                    element =>
-                        element.NativeBlock!
-                            .SourceSequence);
+                    usage =>
+                        usage.Block.SourceSequence);
 
-        foreach (var group in groups)
+        foreach (var group in usages)
         {
             var candidates =
                 group.ToArray();
 
-            if (candidates.Length <= 1)
+            if (candidates.Length <=
+                1)
             {
                 continue;
             }
 
             if (candidates.Any(
                     candidate =>
-                        candidate.Reconciliation is null))
+                        candidate.Element.Reconciliation is null))
             {
                 throw new InvalidOperationException(
-                    $"Native block {group.Key} cannot appear both as standalone text and as reconciled text.");
+                    $"Native block {group.Key} cannot appear both as standalone text " +
+                    "and as reconciled text.");
             }
 
             var extents =
                 candidates
                     .Select(
                         candidate =>
-                            candidate.Reconciliation!
-                                .ComparableNativeExtent)
+                            ResolveComparableExtent(
+                                candidate.Element.Reconciliation!,
+                                candidate.Block))
                     .ToArray();
 
             if (extents.Any(
@@ -210,15 +218,18 @@ public static class HybridDocumentAssembler
                         extent is null))
             {
                 throw new InvalidOperationException(
-                    $"Native block {group.Key} participates in multiple reconciliations without explicit comparable extents.");
+                    $"Native block {group.Key} participates in multiple reconciliations " +
+                    "without explicit comparable extents.");
             }
 
             for (var leftIndex = 0;
                  leftIndex < extents.Length;
                  leftIndex++)
             {
-                for (var rightIndex = leftIndex + 1;
-                     rightIndex < extents.Length;
+                for (var rightIndex =
+                         leftIndex + 1;
+                     rightIndex <
+                         extents.Length;
                      rightIndex++)
                 {
                     var left =
@@ -234,12 +245,65 @@ public static class HybridDocumentAssembler
                             right.LastWordIndex))
                     {
                         throw new InvalidOperationException(
-                            $"Native block {group.Key} has overlapping comparable extents in the hybrid stream.");
+                            $"Native block {group.Key} has overlapping comparable extents " +
+                            "in the hybrid stream.");
                     }
                 }
             }
         }
     }
+
+    private static IReadOnlyList<DocumentTextBlock> NativeSourceBlocks(
+        HybridDocumentElement element)
+    {
+        if (element.Reconciliation?.ComparableNativeEvidence is
+            { } aggregate)
+        {
+            return aggregate.SourceBlocks;
+        }
+
+        if (element.NativeBlock is not null)
+        {
+            return
+            [
+                element.NativeBlock
+            ];
+        }
+
+        return [];
+    }
+
+    private static DocumentProcessing.Core.Reconciliation
+        .ComparableNativeTextExtent? ResolveComparableExtent(
+            DocumentProcessing.Core.Reconciliation
+                .TextReconciliationResult reconciliation,
+            DocumentTextBlock sourceBlock)
+    {
+        if (reconciliation.ComparableNativeEvidence is
+            { } aggregate)
+        {
+            return aggregate.Extents
+                .SingleOrDefault(
+                    extent =>
+                        ReferenceEquals(
+                            extent.SourceBlock,
+                            sourceBlock));
+        }
+
+        var extent =
+            reconciliation.ComparableNativeExtent;
+
+        return extent is not null &&
+               ReferenceEquals(
+                   extent.SourceBlock,
+                   sourceBlock)
+            ? extent
+            : null;
+    }
+
+    private sealed record NativeUsage(
+        HybridDocumentElement Element,
+        DocumentTextBlock Block);
 
     private static bool RangesOverlap(
         int firstLeft,
