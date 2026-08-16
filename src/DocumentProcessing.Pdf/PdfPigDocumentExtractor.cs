@@ -13,6 +13,19 @@ namespace DocumentProcessing.Pdf;
 
 public sealed class PdfPigDocumentExtractor : IDocumentExtractor
 {
+    // PdfPig 0.1.15 appends orientation buckets to a shared result list in parallel.
+    // SourceSequence is provenance, so this stage must preserve deterministic bucket order.
+    private static readonly NearestNeighbourWordExtractor DeterministicWordExtractor =
+        new(
+            new NearestNeighbourWordExtractor
+                .NearestNeighbourWordExtractorOptions
+            {
+                MaxDegreeOfParallelism =
+                    1,
+                GroupByOrientation =
+                    true
+            });
+
     public bool CanExtract(
         DocumentFormatId format) =>
         format ==
@@ -98,7 +111,7 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
 
                 var sourceWords = page
                     .GetWords(
-                        NearestNeighbourWordExtractor.Instance)
+                        DeterministicWordExtractor)
                     .Where(word =>
                         !string.IsNullOrWhiteSpace(
                             word.Text))

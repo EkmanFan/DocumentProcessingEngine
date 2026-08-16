@@ -1,8 +1,10 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Pdf;
+using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
+using UglyToad.PdfPig.Graphics.Operations.SpecialGraphicsState;
 using UglyToad.PdfPig.Writer;
 
 namespace DocumentProcessing.IntegrationTests.Pdf;
@@ -254,6 +256,80 @@ public sealed class PdfPigDocumentExtractorTests
     }
 
     [Fact]
+    public async Task ExtractAsync_UsesDeterministicWordOrderForMixedOrientations()
+    {
+        var pdfBytes =
+            CreateMixedOrientationFixturePdf();
+
+        using (var fixture =
+               PdfDocument.Open(
+                   pdfBytes))
+        {
+            var letters =
+                fixture
+                    .GetPage(1)
+                    .Letters;
+
+            Assert.Contains(
+                letters,
+                letter =>
+                    letter.TextOrientation ==
+                    TextOrientation.Horizontal);
+
+            Assert.Contains(
+                letters,
+                letter =>
+                    letter.TextOrientation ==
+                    TextOrientation.Other);
+        }
+
+        var sequences =
+            new List<string>();
+
+        for (var iteration = 0;
+             iteration < 24;
+             iteration++)
+        {
+            await using var stream =
+                new MemoryStream(
+                    pdfBytes);
+
+            var page =
+                Assert.Single(
+                    (await new PdfPigDocumentExtractor()
+                        .ExtractAsync(
+                            new DocumentSource(
+                                stream,
+                                "mixed-orientation-fixture.pdf",
+                                "application/pdf"),
+                            DocumentFormatId.Pdf))
+                    .Pages);
+
+            sequences.Add(
+                string.Join(
+                    "\u001F",
+                    page.Words.Select(word =>
+                        word.Text)));
+        }
+
+        var sequence =
+            Assert.Single(
+                sequences
+                    .Distinct(
+                        StringComparer.Ordinal));
+
+        Assert.StartsWith(
+            "HORIZONTAL\u001FALPHA",
+            sequence,
+            StringComparison.Ordinal);
+
+        Assert.EndsWith(
+            "DIAGONAL",
+            sequence,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ExtractAsync_RestoresSeekableCallerStreamPosition()
     {
         var pdfBytes =
@@ -360,4 +436,57 @@ public sealed class PdfPigDocumentExtractorTests
 
         return builder.Build();
     }
+    private static byte[] CreateMixedOrientationFixturePdf()
+    {
+        var builder =
+            new PdfDocumentBuilder();
+
+        var font =
+            builder.AddStandard14Font(
+                Standard14Font.Helvetica);
+
+        var page =
+            builder.AddPage(
+                PageSize.A4);
+
+        page.AddText(
+            "HORIZONTAL ALPHA",
+            12,
+            new PdfPoint(
+                72,
+                720),
+            font);
+
+        page.CurrentStream.Operations.Add(
+            Push.Value);
+
+        const double angle =
+            Math.PI /
+            4.0;
+
+        page.CurrentStream.Operations.Add(
+            new ModifyCurrentTransformationMatrix(
+                [
+                    Math.Cos(angle),
+                    Math.Sin(angle),
+                    -Math.Sin(angle),
+                    Math.Cos(angle),
+                    0,
+                    0
+                ]));
+
+        page.AddText(
+            "DIAGONAL",
+            12,
+            new PdfPoint(
+                260,
+                260),
+            font);
+
+        page.CurrentStream.Operations.Add(
+            Pop.Value);
+
+        return builder.Build();
+    }
+
 }
