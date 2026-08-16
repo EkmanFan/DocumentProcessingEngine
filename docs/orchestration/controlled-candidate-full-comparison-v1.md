@@ -9,7 +9,9 @@ H.4D.3B    DONE
 H.4D.4     ACTIVE
 
 H.4D.4A    ACCEPTED
-H.4D.4B    NEXT
+H.4D.4B    ACTIVE
+H.4D.4B.1  ACCEPTED
+H.4D.4B.2  NEXT
 ```
 
 H.4D.4 is deliberately split into two bounded increments.

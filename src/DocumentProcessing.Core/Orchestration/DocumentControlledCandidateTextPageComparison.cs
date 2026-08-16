@@ -1,3 +1,5 @@
+using DocumentProcessing.Core.Hybrid;
+
 namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
@@ -21,7 +23,8 @@ public sealed record DocumentControlledCandidateTextPageComparison
         int? authoritativeTextElementCount = null,
         int? candidateTextElementCount = null,
         int? authoritativeReconciliationEvidenceCount = null,
-        int? candidateReconciliationEvidenceCount = null)
+        int? candidateReconciliationEvidenceCount = null,
+        HybridDocumentPage? candidatePage = null)
     {
         if (physicalPageNumber <= 0)
         {
@@ -191,6 +194,27 @@ public sealed record DocumentControlledCandidateTextPageComparison
 
         CandidateReconciliationEvidenceCount =
             candidateReconciliationEvidenceCount;
+
+        if (candidatePage is not null &&
+            candidatePage.PhysicalPageNumber !=
+                physicalPageNumber)
+        {
+            throw new ArgumentException(
+                "Retained candidate page must belong to the comparison page.",
+                nameof(candidatePage));
+        }
+
+        if (status ==
+                DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode &&
+            candidatePage is not null)
+        {
+            throw new ArgumentException(
+                "Deferred candidate text execution cannot retain an executed page.",
+                nameof(candidatePage));
+        }
+
+        CandidatePage =
+            candidatePage;
     }
 
     public int PhysicalPageNumber { get; }
@@ -225,6 +249,12 @@ public sealed record DocumentControlledCandidateTextPageComparison
     public int? AuthoritativeReconciliationEvidenceCount { get; }
 
     public int? CandidateReconciliationEvidenceCount { get; }
+
+    /// <summary>
+    /// Actual executed candidate page retained for H.4D.4B projection.
+    /// Null remains valid for deferred/manual legacy comparison evidence.
+    /// </summary>
+    public HybridDocumentPage? CandidatePage { get; }
 
     private static void ValidateNonNegative(
         int value,

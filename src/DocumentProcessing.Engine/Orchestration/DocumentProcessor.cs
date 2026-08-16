@@ -55,6 +55,8 @@ public sealed class DocumentProcessor
         _controlledCandidateVisualExecutionRunner;
     private readonly DocumentControlledCandidateComparisonRunner?
         _controlledCandidateComparisonRunner;
+    private readonly DocumentControlledCandidatePortableProjectionRunner?
+        _controlledCandidatePortableProjectionRunner;
     private readonly string _engineVersion;
     private readonly ProcessingComponentIdentity _nativeExtractionIdentity;
 
@@ -77,7 +79,9 @@ public sealed class DocumentProcessor
         DocumentControlledCandidateVisualExecutionDependencies?
             controlledCandidateVisualExecution = null,
         DocumentControlledCandidateComparisonDependencies?
-            controlledCandidateComparison = null)
+            controlledCandidateComparison = null,
+        DocumentControlledCandidatePortableProjectionDependencies?
+            controlledCandidatePortableProjection = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -92,7 +96,8 @@ public sealed class DocumentProcessor
             shadowPlanning,
             controlledCandidateTextExecution,
             controlledCandidateVisualExecution,
-            controlledCandidateComparison)
+            controlledCandidateComparison,
+            controlledCandidatePortableProjection)
     {
     }
 
@@ -113,7 +118,9 @@ public sealed class DocumentProcessor
         DocumentControlledCandidateVisualExecutionDependencies?
             controlledCandidateVisualExecution = null,
         DocumentControlledCandidateComparisonDependencies?
-            controlledCandidateComparison = null)
+            controlledCandidateComparison = null,
+        DocumentControlledCandidatePortableProjectionDependencies?
+            controlledCandidatePortableProjection = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -129,7 +136,8 @@ public sealed class DocumentProcessor
             shadowPlanning,
             controlledCandidateTextExecution,
             controlledCandidateVisualExecution,
-            controlledCandidateComparison)
+            controlledCandidateComparison,
+            controlledCandidatePortableProjection)
     {
     }
 
@@ -148,7 +156,9 @@ public sealed class DocumentProcessor
         DocumentControlledCandidateVisualExecutionDependencies?
             controlledCandidateVisualExecution = null,
         DocumentControlledCandidateComparisonDependencies?
-            controlledCandidateComparison = null)
+            controlledCandidateComparison = null,
+        DocumentControlledCandidatePortableProjectionDependencies?
+            controlledCandidatePortableProjection = null)
     {
         _documentTypeDetector =
             documentTypeDetector ??
@@ -233,6 +243,24 @@ public sealed class DocumentProcessor
                 ? null
                 : new DocumentControlledCandidateComparisonRunner(
                     controlledCandidateComparison);
+
+        if (controlledCandidatePortableProjection is not null &&
+            (shadowPlanning is null ||
+             controlledCandidateTextExecution is null ||
+             controlledCandidateVisualExecution is null ||
+             controlledCandidateComparison is null))
+        {
+            throw new ArgumentException(
+                "Controlled candidate portable projection requires H.4C planning, " +
+                "both controlled execution axes, and H.4D.4A comparison.",
+                nameof(controlledCandidatePortableProjection));
+        }
+
+        _controlledCandidatePortableProjectionRunner =
+            controlledCandidatePortableProjection is null
+                ? null
+                : new DocumentControlledCandidatePortableProjectionRunner(
+                    controlledCandidatePortableProjection);
 
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -681,6 +709,27 @@ public sealed class DocumentProcessor
                     shadowPlanningReport,
                     controlledCandidateTextExecutionReport,
                     controlledCandidateVisualExecutionReport,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        if (_controlledCandidatePortableProjectionRunner is not null)
+        {
+            if (controlledCandidateTextExecutionReport is null ||
+                controlledCandidateVisualExecutionReport is null)
+            {
+                throw new InvalidOperationException(
+                    "Controlled candidate portable projection was configured without " +
+                    "complete text/visual execution evidence.");
+            }
+
+            await _controlledCandidatePortableProjectionRunner
+                .RunAsync(
+                    authoritativeResult,
+                    controlledCandidateTextExecutionReport,
+                    controlledCandidateVisualExecutionReport,
+                    _engineVersion,
+                    _nativeExtractionIdentity,
                     cancellationToken)
                 .ConfigureAwait(false);
         }

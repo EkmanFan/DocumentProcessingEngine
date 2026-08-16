@@ -412,7 +412,9 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                     element.Reconciliation is not null),
             candidateText.Count(
                 element =>
-                    element.Reconciliation is not null));
+                    element.Reconciliation is not null),
+            candidatePage:
+                candidatePage);
     }
 
     private static DocumentControlledCandidateTextPageStatus ExecutedStatus(
