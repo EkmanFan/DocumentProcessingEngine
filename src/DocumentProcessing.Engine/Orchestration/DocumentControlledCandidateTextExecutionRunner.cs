@@ -15,7 +15,8 @@ namespace DocumentProcessing.Engine.Orchestration;
 ///
 /// H.4D.2B can additionally execute TargetedOcrRecovery,
 /// TargetedOcrVerification, and TargetedOcrReconciliation through a separate
-/// candidate raster/layout/OCR runtime. Independent visual work remains pending.
+/// candidate raster/layout/OCR runtime. Independent visual work is owned by the
+/// separate H.4D.3B controlled visual runtime.
 ///
 /// The legacy page list is already complete before this runner is invoked. No
 /// candidate result is returned to authoritative orchestration.
