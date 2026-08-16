@@ -49,6 +49,8 @@ public sealed class DocumentProcessor
     private readonly DocumentHybridExecutionDependencies? _hybridExecution;
     private readonly DocumentShadowPlanningDependencies? _shadowPlanningDependencies;
     private readonly DocumentShadowPlanningRunner? _shadowPlanningRunner;
+    private readonly DocumentControlledCandidateTextExecutionRunner?
+        _controlledCandidateTextExecutionRunner;
     private readonly string _engineVersion;
     private readonly ProcessingComponentIdentity _nativeExtractionIdentity;
 
@@ -65,7 +67,9 @@ public sealed class DocumentProcessor
         IDocumentPreflightAnalyzer preflightAnalyzer,
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity,
-        DocumentShadowPlanningDependencies? shadowPlanning = null)
+        DocumentShadowPlanningDependencies? shadowPlanning = null,
+        DocumentControlledCandidateTextExecutionDependencies?
+            controlledCandidateTextExecution = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -77,7 +81,8 @@ public sealed class DocumentProcessor
             nativeExtractionIdentity,
             requireHybridExecution:
                 false,
-            shadowPlanning)
+            shadowPlanning,
+            controlledCandidateTextExecution)
     {
     }
 
@@ -92,7 +97,9 @@ public sealed class DocumentProcessor
         DocumentHybridExecutionDependencies hybridExecution,
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity,
-        DocumentShadowPlanningDependencies? shadowPlanning = null)
+        DocumentShadowPlanningDependencies? shadowPlanning = null,
+        DocumentControlledCandidateTextExecutionDependencies?
+            controlledCandidateTextExecution = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -105,7 +112,8 @@ public sealed class DocumentProcessor
             nativeExtractionIdentity,
             requireHybridExecution:
                 true,
-            shadowPlanning)
+            shadowPlanning,
+            controlledCandidateTextExecution)
     {
     }
 
@@ -118,7 +126,9 @@ public sealed class DocumentProcessor
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity,
         bool requireHybridExecution = false,
-        DocumentShadowPlanningDependencies? shadowPlanning = null)
+        DocumentShadowPlanningDependencies? shadowPlanning = null,
+        DocumentControlledCandidateTextExecutionDependencies?
+            controlledCandidateTextExecution = null)
     {
         _documentTypeDetector =
             documentTypeDetector ??
@@ -158,6 +168,20 @@ public sealed class DocumentProcessor
                 ? null
                 : new DocumentShadowPlanningRunner(
                     shadowPlanning);
+
+        if (controlledCandidateTextExecution is not null &&
+            shadowPlanning is null)
+        {
+            throw new ArgumentException(
+                "Controlled candidate execution requires H.4C shadow planning.",
+                nameof(controlledCandidateTextExecution));
+        }
+
+        _controlledCandidateTextExecutionRunner =
+            controlledCandidateTextExecution is null
+                ? null
+                : new DocumentControlledCandidateTextExecutionRunner(
+                    controlledCandidateTextExecution);
 
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -342,13 +366,17 @@ public sealed class DocumentProcessor
                 decisions,
                 requiresHybridExecution);
 
+        DocumentShadowPlanningReport? shadowPlanningReport =
+            null;
+
         if (_shadowPlanningRunner is not null)
         {
             prepared.ResetForRead();
 
             try
             {
-                await _shadowPlanningRunner
+                shadowPlanningReport =
+                    await _shadowPlanningRunner
                     .RunAsync(
                         prepared.Source,
                         format,
@@ -491,10 +519,31 @@ public sealed class DocumentProcessor
                             .ReconciliationIdentity
                         : null);
 
-        return DocumentIngestionResultBuilder
-            .Build(
-                segmentation,
-                provenanceContext);
+        var authoritativeResult =
+            DocumentIngestionResultBuilder
+                .Build(
+                    segmentation,
+                    provenanceContext);
+
+        if (_controlledCandidateTextExecutionRunner is not null)
+        {
+            if (shadowPlanningReport is null)
+            {
+                throw new InvalidOperationException(
+                    "Controlled candidate execution was configured without a shadow-planning report.");
+            }
+
+            await _controlledCandidateTextExecutionRunner
+                .RunAsync(
+                    extraction,
+                    assembledPages,
+                    shadowPlanningReport,
+                    prepared.Sha256,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return authoritativeResult;
     }
 
     #endregion
@@ -559,8 +608,9 @@ public sealed class DocumentProcessor
         return decision.Plan.Route switch
         {
             PageProcessingRoute.NativeOnly =>
-                AssembleNativePage(
-                    page),
+                NativeHybridPageAssembler
+                    .Assemble(
+                        page),
 
             PageProcessingRoute.LayoutWithTargetedOcrRecovery =>
                 await RequireHybridExecution(
@@ -594,32 +644,6 @@ public sealed class DocumentProcessor
                 throw new InvalidOperationException(
                     $"Unsupported page-processing route '{decision.Plan.Route}'.")
         };
-    }
-
-    private static HybridDocumentPage AssembleNativePage(
-        DocumentExtractionPage page)
-    {
-        if (page.Blocks.Count ==
-            0)
-        {
-            throw new InvalidDataException(
-                $"Native-only page {page.PhysicalPageNumber} contains no native text blocks.");
-        }
-
-        var elements =
-            page.Blocks
-                .Select(
-                    block =>
-                        HybridDocumentElementFactory
-                            .FromNative(
-                                page.PhysicalPageNumber,
-                                block))
-                .ToArray();
-
-        return HybridDocumentAssembler
-            .AssemblePage(
-                page,
-                elements);
     }
 
     private static DocumentHybridExecutionDependencies RequireHybridExecution(
