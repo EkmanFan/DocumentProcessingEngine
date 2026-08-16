@@ -1,11 +1,10 @@
 namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
-/// Non-authoritative evidence produced by H.4D.1 controlled candidate text
-/// execution.
+/// Non-authoritative evidence produced by controlled candidate text execution.
 ///
-/// The report can be observed and evaluated but is not an input to authoritative
-/// result selection.
+/// The report can be observed and evaluated but is never consumed to select the
+/// authoritative document-processing result.
 /// </summary>
 public sealed record DocumentControlledCandidateTextExecutionReport
 {
@@ -140,6 +139,32 @@ public sealed record DocumentControlledCandidateTextExecutionReport
                 page.Status ==
                 DocumentControlledCandidateTextPageStatus.ExecutedNativeText);
 
+    public int ExecutedTargetedOcrRecoveryPageCount =>
+        Pages.Count(
+            page =>
+                page.Status ==
+                DocumentControlledCandidateTextPageStatus
+                    .ExecutedTargetedOcrRecovery);
+
+    public int ExecutedTargetedOcrVerificationPageCount =>
+        Pages.Count(
+            page =>
+                page.Status ==
+                DocumentControlledCandidateTextPageStatus
+                    .ExecutedTargetedOcrVerification);
+
+    public int ExecutedTargetedOcrReconciliationPageCount =>
+        Pages.Count(
+            page =>
+                page.Status ==
+                DocumentControlledCandidateTextPageStatus
+                    .ExecutedTargetedOcrReconciliation);
+
+    public int ExecutedOcrBackedTextPageCount =>
+        ExecutedTargetedOcrRecoveryPageCount +
+        ExecutedTargetedOcrVerificationPageCount +
+        ExecutedTargetedOcrReconciliationPageCount;
+
     public int DeferredNonNativeTextPageCount =>
         Pages.Count(
             page =>
@@ -149,8 +174,8 @@ public sealed record DocumentControlledCandidateTextExecutionReport
     public int ExecutedCandidateRemovesLegacyTextMlCount =>
         Pages.Count(
             page =>
-                page.Status ==
-                    DocumentControlledCandidateTextPageStatus.ExecutedNativeText &&
+                page.Status !=
+                    DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode &&
                 page.CandidateRemovesLegacyTextMl);
 
     public int ExecutedSelectedTextAgreementCount =>

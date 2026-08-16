@@ -1,24 +1,32 @@
+using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
 using DocumentProcessing.Core.Orchestration;
+using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Hybrid;
 
 namespace DocumentProcessing.Engine.Orchestration;
 
 /// <summary>
-/// H.4D.1 controlled candidate execution.
+/// Controlled non-authoritative candidate text execution.
 ///
-/// Only candidate <see cref="TextExecutionMode.NativeText"/> is executed. All
-/// OCR-backed text modes and every visual action remain explicitly deferred.
+/// H.4D.1 executes NativeText and defers OCR-backed modes unless OCR capability
+/// is explicitly composed.
 ///
-/// The legacy page list is already complete before this runner is invoked. This
-/// runner produces comparison evidence only and cannot replace authoritative
-/// output.
+/// H.4D.2B can additionally execute TargetedOcrRecovery,
+/// TargetedOcrVerification, and TargetedOcrReconciliation through a separate
+/// candidate raster/layout/OCR runtime. Independent visual work remains pending.
+///
+/// The legacy page list is already complete before this runner is invoked. No
+/// candidate result is returned to authoritative orchestration.
 /// </summary>
 public sealed class DocumentControlledCandidateTextExecutionRunner
 {
     private readonly DocumentControlledCandidateTextExecutionDependencies
         _dependencies;
+
+    private readonly DocumentControlledCandidateOcrTextPageExecutor?
+        _ocrTextPageExecutor;
 
     public DocumentControlledCandidateTextExecutionRunner(
         DocumentControlledCandidateTextExecutionDependencies dependencies)
@@ -27,15 +35,76 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             dependencies ??
             throw new ArgumentNullException(
                 nameof(dependencies));
+
+        _ocrTextPageExecutor =
+            dependencies.CanExecuteOcrBackedText
+                ? new DocumentControlledCandidateOcrTextPageExecutor(
+                    dependencies.LayoutAnalyzer!,
+                    dependencies.TextRecognizer!)
+                : null;
     }
 
-    public async ValueTask<DocumentControlledCandidateTextExecutionReport>
+    internal bool CanExecuteOcrBackedText =>
+        _ocrTextPageExecutor is not null;
+
+    /// <summary>
+    /// Backward-compatible H.4D.1 entry point. OCR-backed modes remain deferred
+    /// when only NativeText execution was composed.
+    /// </summary>
+    public ValueTask<DocumentControlledCandidateTextExecutionReport>
         RunAsync(
             DocumentExtractionResult extraction,
             IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
             DocumentShadowPlanningReport shadowPlanning,
             string sourceDocumentSha256,
+            CancellationToken cancellationToken = default) =>
+        RunCoreAsync(
+            source:
+                null,
+            format:
+                null,
+            extraction,
+            authoritativeLegacyPages,
+            shadowPlanning,
+            sourceDocumentSha256,
+            cancellationToken);
+
+    /// <summary>
+    /// H.4D.2B entry point. The document source is used only by the explicitly
+    /// configured controlled candidate rasterizer.
+    /// </summary>
+    public ValueTask<DocumentControlledCandidateTextExecutionReport>
+        RunAsync(
+            DocumentSource source,
+            DocumentFormatId format,
+            DocumentExtractionResult extraction,
+            IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
+            DocumentShadowPlanningReport shadowPlanning,
+            string sourceDocumentSha256,
             CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            source);
+
+        return RunCoreAsync(
+            source,
+            format,
+            extraction,
+            authoritativeLegacyPages,
+            shadowPlanning,
+            sourceDocumentSha256,
+            cancellationToken);
+    }
+
+    private async ValueTask<DocumentControlledCandidateTextExecutionReport>
+        RunCoreAsync(
+            DocumentSource? source,
+            DocumentFormatId? format,
+            DocumentExtractionResult extraction,
+            IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
+            DocumentShadowPlanningReport shadowPlanning,
+            string sourceDocumentSha256,
+            CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(
             extraction);
@@ -85,98 +154,179 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                     new List<DocumentControlledCandidateTextPageComparison>(
                         extraction.Pages.Count);
 
-                for (var index = 0;
-                     index <
-                     extraction.Pages.Count;
-                     index++)
+                IDocumentRasterizationSession? rasterSession =
+                    null;
+
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    var firstExecutableOcrPage =
+                        _ocrTextPageExecutor is null
+                            ? null
+                            : shadowPlanning.Pages
+                                .FirstOrDefault(
+                                    page =>
+                                        page
+                                            .Shadow
+                                            .Candidate
+                                            .Plan
+                                            .TextMode !=
+                                        TextExecutionMode.NativeText);
 
-                    var extractionPage =
-                        extraction.Pages[index];
-
-                    var authoritativePage =
-                        authoritativeLegacyPages[index];
-
-                    var shadowPage =
-                        shadowPlanning.Pages[index];
-
-                    currentPhysicalPageNumber =
-                        extractionPage.PhysicalPageNumber;
-
-                    var candidatePlan =
-                        shadowPage
-                            .Shadow
-                            .Candidate
-                            .Plan;
-
-                    if (candidatePlan.TextMode !=
-                        TextExecutionMode.NativeText)
+                    if (firstExecutableOcrPage is not null)
                     {
-                        comparisons.Add(
-                            new DocumentControlledCandidateTextPageComparison(
-                                extractionPage.PhysicalPageNumber,
-                                shadowPage
-                                    .AuthoritativeLegacy
-                                    .Plan
-                                    .Route,
-                                candidatePlan.TextMode,
-                                DocumentControlledCandidateTextPageStatus
-                                    .DeferredNonNativeTextMode,
-                                candidateRemovesLegacyTextMl:
-                                    false,
-                                candidateHasIndependentVisualWork:
-                                    shadowPage
-                                        .Shadow
-                                        .CandidateHasIndependentVisualWork));
+                        currentPhysicalPageNumber =
+                            firstExecutableOcrPage.PhysicalPageNumber;
 
-                        continue;
+                        if (source is null ||
+                            format is null)
+                        {
+                            throw new InvalidOperationException(
+                                "Controlled OCR-backed candidate execution requires " +
+                                "the prepared document source and detected format.");
+                        }
+
+                        if (shadowPlanning.Format !=
+                            format.Value)
+                        {
+                            throw new InvalidDataException(
+                                $"Controlled candidate format '{format.Value}' does not " +
+                                $"match shadow-planning format '{shadowPlanning.Format}'.");
+                        }
+
+                        var rasterizer =
+                            _dependencies.DocumentRasterizer ??
+                            throw new InvalidOperationException(
+                                "Controlled OCR-backed candidate execution has no rasterizer.");
+
+                        if (!rasterizer.CanRasterize(
+                                format.Value))
+                        {
+                            throw new NotSupportedException(
+                                $"The controlled candidate rasterizer cannot process " +
+                                $"format '{format.Value}'.");
+                        }
+
+                        rasterSession =
+                            await rasterizer
+                                .OpenAsync(
+                                    source,
+                                    format.Value,
+                                    cancellationToken)
+                                .ConfigureAwait(false);
+
+                        if (rasterSession is null)
+                        {
+                            throw new InvalidDataException(
+                                "Controlled candidate rasterizer returned no session.");
+                        }
                     }
 
-                    var candidatePage =
-                        NativeHybridPageAssembler
-                            .Assemble(
-                                extractionPage);
+                    for (var index = 0;
+                         index <
+                         extraction.Pages.Count;
+                         index++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
 
-                    var authoritativeText =
-                        authoritativePage
-                            .AuthoritativeTextElements;
+                        var extractionPage =
+                            extraction.Pages[index];
 
-                    var candidateText =
-                        candidatePage
-                            .AuthoritativeTextElements;
+                        var authoritativePage =
+                            authoritativeLegacyPages[index];
 
-                    comparisons.Add(
-                        new DocumentControlledCandidateTextPageComparison(
-                            extractionPage.PhysicalPageNumber,
+                        var shadowPage =
+                            shadowPlanning.Pages[index];
+
+                        currentPhysicalPageNumber =
+                            extractionPage.PhysicalPageNumber;
+
+                        var candidatePlan =
                             shadowPage
-                                .AuthoritativeLegacy
-                                .Plan
-                                .Route,
-                            candidatePlan.TextMode,
-                            DocumentControlledCandidateTextPageStatus
-                                .ExecutedNativeText,
-                            candidateRemovesLegacyTextMl:
-                                shadowPage
-                                    .CandidateRemovesLegacyTextMl,
-                            candidateHasIndependentVisualWork:
-                                shadowPage
-                                    .Shadow
-                                    .CandidateHasIndependentVisualWork,
-                            SelectedTextSequenceExact(
-                                authoritativeText,
-                                candidateText),
-                            TextProjectionExact(
-                                authoritativeText,
-                                candidateText),
-                            authoritativeText.Count,
-                            candidateText.Count,
-                            authoritativeText.Count(
-                                element =>
-                                    element.Reconciliation is not null),
-                            candidateText.Count(
-                                element =>
-                                    element.Reconciliation is not null)));
+                                .Shadow
+                                .Candidate
+                                .Plan;
+
+                        HybridDocumentPage candidatePage;
+
+                        DocumentControlledCandidateTextPageStatus pageStatus;
+
+                        if (candidatePlan.TextMode ==
+                            TextExecutionMode.NativeText)
+                        {
+                            candidatePage =
+                                NativeHybridPageAssembler
+                                    .Assemble(
+                                        extractionPage);
+
+                            pageStatus =
+                                DocumentControlledCandidateTextPageStatus
+                                    .ExecutedNativeText;
+                        }
+                        else if (_ocrTextPageExecutor is null)
+                        {
+                            comparisons.Add(
+                                new DocumentControlledCandidateTextPageComparison(
+                                    extractionPage.PhysicalPageNumber,
+                                    shadowPage
+                                        .AuthoritativeLegacy
+                                        .Plan
+                                        .Route,
+                                    candidatePlan.TextMode,
+                                    DocumentControlledCandidateTextPageStatus
+                                        .DeferredNonNativeTextMode,
+                                    candidateRemovesLegacyTextMl:
+                                        false,
+                                    candidateHasIndependentVisualWork:
+                                        shadowPage
+                                            .Shadow
+                                            .CandidateHasIndependentVisualWork));
+
+                            continue;
+                        }
+                        else
+                        {
+                            if (rasterSession is null)
+                            {
+                                throw new InvalidOperationException(
+                                    "Controlled OCR-backed candidate page reached " +
+                                    "execution without a document-scoped raster session.");
+                            }
+
+                            candidatePage =
+                                await _ocrTextPageExecutor
+                                    .ExecuteAsync(
+                                        extractionPage,
+                                        shadowPage
+                                            .Shadow
+                                            .Candidate
+                                            .NativeAssessment
+                                            .NativeTextStatus,
+                                        candidatePlan.TextMode,
+                                        rasterSession,
+                                        cancellationToken)
+                                    .ConfigureAwait(false);
+
+                            pageStatus =
+                                ExecutedStatus(
+                                    candidatePlan.TextMode);
+                        }
+
+                        comparisons.Add(
+                            Compare(
+                                authoritativePage,
+                                candidatePage,
+                                shadowPage,
+                                pageStatus));
+                    }
+                }
+                finally
+                {
+                    if (rasterSession is not null)
+                    {
+                        await rasterSession
+                            .DisposeAsync()
+                            .ConfigureAwait(false);
+                    }
                 }
 
                 report =
@@ -214,6 +364,76 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
         return report;
     }
+
+    private static DocumentControlledCandidateTextPageComparison Compare(
+        HybridDocumentPage authoritativePage,
+        HybridDocumentPage candidatePage,
+        DocumentShadowPageComparison shadowPage,
+        DocumentControlledCandidateTextPageStatus status)
+    {
+        var authoritativeText =
+            authoritativePage
+                .AuthoritativeTextElements;
+
+        var candidateText =
+            candidatePage
+                .AuthoritativeTextElements;
+
+        return new DocumentControlledCandidateTextPageComparison(
+            shadowPage.PhysicalPageNumber,
+            shadowPage
+                .AuthoritativeLegacy
+                .Plan
+                .Route,
+            shadowPage
+                .Shadow
+                .Candidate
+                .Plan
+                .TextMode,
+            status,
+            candidateRemovesLegacyTextMl:
+                shadowPage
+                    .CandidateRemovesLegacyTextMl,
+            candidateHasIndependentVisualWork:
+                shadowPage
+                    .Shadow
+                    .CandidateHasIndependentVisualWork,
+            SelectedTextSequenceExact(
+                authoritativeText,
+                candidateText),
+            TextProjectionExact(
+                authoritativeText,
+                candidateText),
+            authoritativeText.Count,
+            candidateText.Count,
+            authoritativeText.Count(
+                element =>
+                    element.Reconciliation is not null),
+            candidateText.Count(
+                element =>
+                    element.Reconciliation is not null));
+    }
+
+    private static DocumentControlledCandidateTextPageStatus ExecutedStatus(
+        TextExecutionMode textMode) =>
+        textMode switch
+        {
+            TextExecutionMode.TargetedOcrRecovery =>
+                DocumentControlledCandidateTextPageStatus
+                    .ExecutedTargetedOcrRecovery,
+
+            TextExecutionMode.TargetedOcrVerification =>
+                DocumentControlledCandidateTextPageStatus
+                    .ExecutedTargetedOcrVerification,
+
+            TextExecutionMode.TargetedOcrReconciliation =>
+                DocumentControlledCandidateTextPageStatus
+                    .ExecutedTargetedOcrReconciliation,
+
+            _ =>
+                throw new InvalidOperationException(
+                    $"Text mode '{textMode}' is not an OCR-backed controlled mode.")
+        };
 
     private static void ValidateCoverage(
         DocumentExtractionResult extraction,
@@ -370,7 +590,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
         catch (Exception exception)
             when (exception is not OutOfMemoryException)
         {
-            // Candidate-execution telemetry is non-authoritative.
+            // Controlled candidate telemetry is non-authoritative.
         }
     }
 }

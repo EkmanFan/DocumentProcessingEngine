@@ -533,14 +533,42 @@ public sealed class DocumentProcessor
                     "Controlled candidate execution was configured without a shadow-planning report.");
             }
 
-            await _controlledCandidateTextExecutionRunner
-                .RunAsync(
-                    extraction,
-                    assembledPages,
-                    shadowPlanningReport,
-                    prepared.Sha256,
-                    cancellationToken)
-                .ConfigureAwait(false);
+            if (_controlledCandidateTextExecutionRunner
+                .CanExecuteOcrBackedText)
+            {
+                prepared.ResetForRead();
+
+                try
+                {
+                    await _controlledCandidateTextExecutionRunner
+                        .RunAsync(
+                            prepared.Source,
+                            format,
+                            extraction,
+                            assembledPages,
+                            shadowPlanningReport,
+                            prepared.Sha256,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                finally
+                {
+                    // Controlled candidate source access must not leak stream
+                    // position into caller-visible source custody.
+                    prepared.ResetForRead();
+                }
+            }
+            else
+            {
+                await _controlledCandidateTextExecutionRunner
+                    .RunAsync(
+                        extraction,
+                        assembledPages,
+                        shadowPlanningReport,
+                        prepared.Sha256,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
 
         return authoritativeResult;

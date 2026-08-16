@@ -1,11 +1,11 @@
 namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
-/// Comparison evidence for one physical page in H.4D.1.
+/// Non-authoritative comparison evidence for one physical page.
 ///
-/// Only NativeText candidate pages carry execution/comparison metrics.
-/// OCR-backed candidate modes remain explicitly deferred. Visual work is an
-/// independent axis and is only reported as pending in this increment.
+/// H.4D.1 executes NativeText. H.4D.2B additionally permits controlled
+/// OCR-backed text execution when explicitly composed. Independent visual work
+/// remains outside this report's execution authority.
 /// </summary>
 public sealed record DocumentControlledCandidateTextPageComparison
 {
@@ -66,66 +66,94 @@ public sealed record DocumentControlledCandidateTextPageComparison
             authoritativeReconciliationEvidenceCount.HasValue ||
             candidateReconciliationEvidenceCount.HasValue;
 
-        switch (status)
+        TextExecutionMode? expectedMode =
+            status switch
+            {
+                DocumentControlledCandidateTextPageStatus.ExecutedNativeText =>
+                    TextExecutionMode.NativeText,
+
+                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrRecovery =>
+                    TextExecutionMode.TargetedOcrRecovery,
+
+                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrVerification =>
+                    TextExecutionMode.TargetedOcrVerification,
+
+                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrReconciliation =>
+                    TextExecutionMode.TargetedOcrReconciliation,
+
+                DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode =>
+                    null,
+
+                _ =>
+                    throw new ArgumentOutOfRangeException(
+                        nameof(status))
+            };
+
+        if (status ==
+            DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode)
         {
-            case DocumentControlledCandidateTextPageStatus.ExecutedNativeText:
-                if (candidateTextMode !=
-                    TextExecutionMode.NativeText)
-                {
-                    throw new ArgumentException(
-                        "ExecutedNativeText requires candidate NativeText mode.",
-                        nameof(candidateTextMode));
-                }
+            if (candidateTextMode ==
+                TextExecutionMode.NativeText)
+            {
+                throw new ArgumentException(
+                    "NativeText must be executed rather than deferred.",
+                    nameof(candidateTextMode));
+            }
 
-                if (!hasAllExecutionMetrics)
-                {
-                    throw new ArgumentException(
-                        "ExecutedNativeText requires complete comparison metrics.");
-                }
+            if (hasAnyExecutionMetric)
+            {
+                throw new ArgumentException(
+                    "Deferred candidate text modes cannot carry execution metrics.");
+            }
 
-                ValidateNonNegative(
-                    authoritativeTextElementCount!.Value,
-                    nameof(authoritativeTextElementCount));
+            if (candidateRemovesLegacyTextMl)
+            {
+                throw new ArgumentException(
+                    "A deferred non-native text mode cannot remove legacy text ML.",
+                    nameof(candidateRemovesLegacyTextMl));
+            }
+        }
+        else
+        {
+            if (candidateTextMode !=
+                expectedMode)
+            {
+                throw new ArgumentException(
+                    $"Controlled status '{status}' requires candidate text mode " +
+                    $"'{expectedMode}', observed '{candidateTextMode}'.",
+                    nameof(candidateTextMode));
+            }
 
-                ValidateNonNegative(
-                    candidateTextElementCount!.Value,
-                    nameof(candidateTextElementCount));
+            if (!hasAllExecutionMetrics)
+            {
+                throw new ArgumentException(
+                    "Executed candidate text modes require complete comparison metrics.");
+            }
 
-                ValidateNonNegative(
-                    authoritativeReconciliationEvidenceCount!.Value,
-                    nameof(authoritativeReconciliationEvidenceCount));
+            ValidateNonNegative(
+                authoritativeTextElementCount!.Value,
+                nameof(authoritativeTextElementCount));
 
-                ValidateNonNegative(
-                    candidateReconciliationEvidenceCount!.Value,
-                    nameof(candidateReconciliationEvidenceCount));
-                break;
+            ValidateNonNegative(
+                candidateTextElementCount!.Value,
+                nameof(candidateTextElementCount));
 
-            case DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode:
-                if (candidateTextMode ==
-                    TextExecutionMode.NativeText)
-                {
-                    throw new ArgumentException(
-                        "NativeText must be executed rather than deferred in H.4D.1.",
-                        nameof(candidateTextMode));
-                }
+            ValidateNonNegative(
+                authoritativeReconciliationEvidenceCount!.Value,
+                nameof(authoritativeReconciliationEvidenceCount));
 
-                if (hasAnyExecutionMetric)
-                {
-                    throw new ArgumentException(
-                        "Deferred candidate text modes cannot carry execution metrics.");
-                }
+            ValidateNonNegative(
+                candidateReconciliationEvidenceCount!.Value,
+                nameof(candidateReconciliationEvidenceCount));
 
-                if (candidateRemovesLegacyTextMl)
-                {
-                    throw new ArgumentException(
-                        "A deferred non-native text mode cannot remove legacy text ML.",
-                        nameof(candidateRemovesLegacyTextMl));
-                }
-                break;
-
-            default:
-                throw new ArgumentOutOfRangeException(
-                    nameof(status));
+            if (status !=
+                    DocumentControlledCandidateTextPageStatus.ExecutedNativeText &&
+                candidateRemovesLegacyTextMl)
+            {
+                throw new ArgumentException(
+                    "Only an executed NativeText candidate can remove legacy text ML.",
+                    nameof(candidateRemovesLegacyTextMl));
+            }
         }
 
         PhysicalPageNumber =
@@ -177,7 +205,7 @@ public sealed record DocumentControlledCandidateTextPageComparison
 
     /// <summary>
     /// True means H.3C selected visual analysis and/or meaningful visual
-    /// preservation. H.4D.1 does not execute that visual work.
+    /// preservation. H.4D.2B still does not execute that visual work.
     /// </summary>
     public bool CandidateHasIndependentVisualWork { get; }
 

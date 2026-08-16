@@ -1,12 +1,18 @@
+using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Orchestration;
+using DocumentProcessing.Core.Raster;
 
 namespace DocumentProcessing.Engine.Orchestration;
 
 /// <summary>
-/// Explicit opt-in composition for H.4D.1 controlled candidate text execution.
+/// Explicit opt-in composition for controlled candidate text execution.
 ///
-/// This increment intentionally contains no raster, layout, OCR, reconciliation,
-/// or visual-preservation dependency.
+/// The one-argument constructor preserves H.4D.1 NativeText-only behavior.
+/// The four-argument constructor additionally enables H.4D.2B OCR-backed
+/// candidate text execution.
+///
+/// Visual execution is intentionally absent from both compositions.
 /// </summary>
 public sealed class DocumentControlledCandidateTextExecutionDependencies
 {
@@ -19,5 +25,40 @@ public sealed class DocumentControlledCandidateTextExecutionDependencies
                 nameof(observer));
     }
 
+    public DocumentControlledCandidateTextExecutionDependencies(
+        IDocumentControlledCandidateTextExecutionObserver observer,
+        IDocumentRasterizer documentRasterizer,
+        IPageLayoutAnalyzer layoutAnalyzer,
+        IRegionTextRecognizer textRecognizer)
+        : this(
+            observer)
+    {
+        DocumentRasterizer =
+            documentRasterizer ??
+            throw new ArgumentNullException(
+                nameof(documentRasterizer));
+
+        LayoutAnalyzer =
+            layoutAnalyzer ??
+            throw new ArgumentNullException(
+                nameof(layoutAnalyzer));
+
+        TextRecognizer =
+            textRecognizer ??
+            throw new ArgumentNullException(
+                nameof(textRecognizer));
+    }
+
     public IDocumentControlledCandidateTextExecutionObserver Observer { get; }
+
+    internal IDocumentRasterizer? DocumentRasterizer { get; }
+
+    internal IPageLayoutAnalyzer? LayoutAnalyzer { get; }
+
+    internal IRegionTextRecognizer? TextRecognizer { get; }
+
+    internal bool CanExecuteOcrBackedText =>
+        DocumentRasterizer is not null &&
+        LayoutAnalyzer is not null &&
+        TextRecognizer is not null;
 }
