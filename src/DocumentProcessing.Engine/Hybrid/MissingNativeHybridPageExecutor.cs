@@ -6,8 +6,6 @@ using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Engine.Layout;
-using DocumentProcessing.Engine.Ocr;
-using DocumentProcessing.Engine.Reconciliation;
 using DocumentProcessing.Engine.Visual;
 
 namespace DocumentProcessing.Engine.Hybrid;
@@ -32,7 +30,7 @@ namespace DocumentProcessing.Engine.Hybrid;
 public sealed class MissingNativeHybridPageExecutor
 {
     private readonly IPageLayoutAnalyzer _layoutAnalyzer;
-    private readonly IRegionTextRecognizer _textRecognizer;
+    private readonly TargetedHybridTextExecutor _textExecutor;
     private readonly VisualAssetPreserver _visualAssetPreserver;
 
     #region Construction
@@ -47,10 +45,9 @@ public sealed class MissingNativeHybridPageExecutor
             throw new ArgumentNullException(
                 nameof(layoutAnalyzer));
 
-        _textRecognizer =
-            textRecognizer ??
-            throw new ArgumentNullException(
-                nameof(textRecognizer));
+        _textExecutor =
+            new TargetedHybridTextExecutor(
+                textRecognizer);
 
         _visualAssetPreserver =
             visualAssetPreserver ??
@@ -112,16 +109,10 @@ public sealed class MissingNativeHybridPageExecutor
             layout);
 
         var ocrTargets =
-            TargetedOcrPlanner
-                .Create(
+            _textExecutor
+                .CreateOcrTargets(
                     layout,
-                    pageRaster.OutputPixelWidth,
-                    pageRaster.OutputPixelHeight)
-                .ToDictionary(
-                    target =>
-                        target
-                            .SourceLayoutObservation
-                            .ObservationSequence);
+                    pageRaster);
 
         var visualTargets =
             VisualPreservationPlanner
@@ -165,7 +156,8 @@ public sealed class MissingNativeHybridPageExecutor
             {
                 case LayoutTreatment.RecognizeText:
                     elements.Add(
-                        await ExecuteOcrRegionAsync(
+                        await _textExecutor
+                            .ExecuteMissingAsync(
                                 sourcePage,
                                 rasterSession,
                                 pageRaster,
@@ -210,84 +202,6 @@ public sealed class MissingNativeHybridPageExecutor
             .AssemblePage(
                 sourcePage,
                 elements);
-    }
-
-    #endregion
-
-    #region Targeted OCR execution
-
-    private async ValueTask<HybridDocumentElement> ExecuteOcrRegionAsync(
-        DocumentExtractionPage sourcePage,
-        IDocumentRasterizationSession rasterSession,
-        RasterRenderResult pageRaster,
-        LayoutObservation observation,
-        IReadOnlyDictionary<int, TargetedOcrRegion> ocrTargets,
-        CancellationToken cancellationToken)
-    {
-        if (!ocrTargets.TryGetValue(
-                observation.ObservationSequence,
-                out var target))
-        {
-            throw new InvalidDataException(
-                $"OCR-authorized layout observation " +
-                $"{observation.ObservationSequence} has no targeted OCR plan.");
-        }
-
-        await using var cropBytes =
-            new MemoryStream();
-
-        var cropRaster =
-            await rasterSession
-                .RenderRegionAsync(
-                    sourcePage.PhysicalPageNumber,
-                    pageRaster.OutputPixelWidth,
-                    pageRaster.OutputPixelHeight,
-                    target.Crop,
-                    cropBytes,
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-        ValidateCropRaster(
-            sourcePage,
-            pageRaster,
-            target.Crop,
-            cropRaster);
-
-        Rewind(
-            cropBytes);
-
-        var ocr =
-            await _textRecognizer
-                .RecognizeAsync(
-                    cropBytes,
-                    observation,
-                    target.Crop,
-                    pageRaster.OutputPixelWidth,
-                    pageRaster.OutputPixelHeight,
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-        if (!ReferenceEquals(
-                ocr.SourceLayoutObservation,
-                observation))
-        {
-            throw new InvalidDataException(
-                "OCR result must retain the exact source layout observation.");
-        }
-
-        var reconciliation =
-            NativeOcrTextReconciler
-                .Reconcile(
-                    new TextReconciliationInput(
-                        sourcePage.PhysicalPageNumber,
-                        NativeTextStatus.Missing,
-                        nativeBlock:
-                            null,
-                        ocr));
-
-        return HybridDocumentElementFactory
-            .FromReconciliation(
-                reconciliation);
     }
 
     #endregion
