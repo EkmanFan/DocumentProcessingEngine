@@ -91,130 +91,12 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
 
                 physicalPageNumber++;
 
-                var coordinateSpace =
-                    PdfPageCoordinateSpace.Create(
-                        page);
-
-                var sourceWidth =
-                    coordinateSpace.Width;
-
-                var sourceHeight =
-                    coordinateSpace.Height;
-
-                if (sourceWidth <= 0 ||
-                    sourceHeight <= 0)
-                {
-                    throw new InvalidDataException(
-                        $"PDF page {physicalPageNumber} has invalid dimensions " +
-                        $"{sourceWidth} x {sourceHeight}.");
-                }
-
-                var sourceWords = page
-                    .GetWords(
-                        DeterministicWordExtractor)
-                    .Where(word =>
-                        !string.IsNullOrWhiteSpace(
-                            word.Text))
-                    .ToArray();
-
-                var documentWords =
-                    sourceWords
-                        .Select(
-                            (word, sourceSequence) =>
-                                ToDocumentWord(
-                                    word,
-                                    sourceSequence,
-                                    coordinateSpace))
-                        .ToArray();
-
-                var documentWordBySourceWord =
-                    new Dictionary<
-                        Word,
-                        DocumentWord>(
-                        ReferenceEqualityComparer.Instance);
-
-                for (var index = 0;
-                     index < sourceWords.Length;
-                     index++)
-                {
-                    documentWordBySourceWord.Add(
-                        sourceWords[index],
-                        documentWords[index]);
-                }
-
-                var sourceBlocks =
-                    DocstrumBoundingBoxes.Instance
-                        .GetBlocks(sourceWords);
-
-                var blockSourceSequence =
-                    new Dictionary<
-                        TextBlock,
-                        int>(
-                        ReferenceEqualityComparer.Instance);
-
-                for (var index = 0;
-                     index < sourceBlocks.Count;
-                     index++)
-                {
-                    blockSourceSequence.Add(
-                        sourceBlocks[index],
-                        index);
-                }
-
-                var orderedBlocks =
-                    UnsupervisedReadingOrderDetector.Instance
-                        .Get(sourceBlocks)
-                        .ToArray();
-
-                var documentBlocks =
-                    orderedBlocks
-                        .Select(block =>
-                            ToDocumentTextBlock(
-                                block,
-                                blockSourceSequence[block],
-                                documentWordBySourceWord,
-                                coordinateSpace))
-                        .ToArray();
-
-                var images =
-                    page.GetImages()
-                        .ToArray();
-
-                var pageArea =
-                    sourceWidth *
-                    sourceHeight;
-
-                var largestRasterImageAreaRatio =
-                    images
-                        .Select(image =>
-                            Convert.ToDouble(
-                                image.BoundingBox.Width) *
-                            Convert.ToDouble(
-                                image.BoundingBox.Height) /
-                            pageArea)
-                        .DefaultIfEmpty(0)
-                        .Max();
-
                 pages.Add(
-                    new DocumentExtractionPage(
+                    ExtractPage(
+                        page,
                         physicalPageNumber,
-                        ContentOrderTextExtractor.GetText(
-                            page),
-                        coordinateSpace.ContentViewport,
-                        wordCount:
-                            documentWords.Length,
-                        rasterImageCount:
-                            images.Length,
-                        largestRasterImageAreaRatio:
-                            largestRasterImageAreaRatio,
-                        sourceWidth:
-                            sourceWidth,
-                        sourceHeight:
-                            sourceHeight,
-                        words:
-                            documentWords,
-                        blocks:
-                            documentBlocks));
+                        out _,
+                        out _));
             }
 
             return new DocumentExtractionResult(
@@ -231,6 +113,147 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
                     originalPosition.Value;
             }
         }
+    }
+
+    internal static DocumentExtractionPage ExtractPage(
+        Page page,
+        int physicalPageNumber,
+        out PdfPageCoordinateSpace coordinateSpace,
+        out IPdfImage[] images)
+    {
+        ArgumentNullException.ThrowIfNull(
+            page);
+
+        coordinateSpace =
+            PdfPageCoordinateSpace.Create(
+                page);
+
+        var resolvedCoordinateSpace =
+            coordinateSpace;
+
+        var sourceWidth =
+            resolvedCoordinateSpace.Width;
+
+        var sourceHeight =
+            resolvedCoordinateSpace.Height;
+
+        if (sourceWidth <= 0 ||
+            sourceHeight <= 0)
+        {
+            throw new InvalidDataException(
+                $"PDF page {physicalPageNumber} has invalid dimensions " +
+                $"{sourceWidth} x {sourceHeight}.");
+        }
+
+        var sourceWords =
+            page
+                .GetWords(
+                    DeterministicWordExtractor)
+                .Where(word =>
+                    !string.IsNullOrWhiteSpace(
+                        word.Text))
+                .ToArray();
+
+        var documentWords =
+            sourceWords
+                .Select(
+                    (word, sourceSequence) =>
+                        ToDocumentWord(
+                            word,
+                            sourceSequence,
+                            resolvedCoordinateSpace))
+                .ToArray();
+
+        var documentWordBySourceWord =
+            new Dictionary<
+                Word,
+                DocumentWord>(
+                ReferenceEqualityComparer.Instance);
+
+        for (var index = 0;
+             index < sourceWords.Length;
+             index++)
+        {
+            documentWordBySourceWord.Add(
+                sourceWords[index],
+                documentWords[index]);
+        }
+
+        var sourceBlocks =
+            DocstrumBoundingBoxes.Instance
+                .GetBlocks(
+                    sourceWords);
+
+        var blockSourceSequence =
+            new Dictionary<
+                TextBlock,
+                int>(
+                ReferenceEqualityComparer.Instance);
+
+        for (var index = 0;
+             index < sourceBlocks.Count;
+             index++)
+        {
+            blockSourceSequence.Add(
+                sourceBlocks[index],
+                index);
+        }
+
+        var orderedBlocks =
+            UnsupervisedReadingOrderDetector.Instance
+                .Get(
+                    sourceBlocks)
+                .ToArray();
+
+        var documentBlocks =
+            orderedBlocks
+                .Select(block =>
+                    ToDocumentTextBlock(
+                        block,
+                        blockSourceSequence[block],
+                        documentWordBySourceWord,
+                        resolvedCoordinateSpace))
+                .ToArray();
+
+        images =
+            page.GetImages()
+                .ToArray();
+
+        var pageArea =
+            sourceWidth *
+            sourceHeight;
+
+        var largestRasterImageAreaRatio =
+            images
+                .Select(image =>
+                    Convert.ToDouble(
+                        image.BoundingBox.Width) *
+                    Convert.ToDouble(
+                        image.BoundingBox.Height) /
+                    pageArea)
+                .DefaultIfEmpty(
+                    0)
+                .Max();
+
+        return new DocumentExtractionPage(
+            physicalPageNumber,
+            ContentOrderTextExtractor.GetText(
+                page),
+            resolvedCoordinateSpace.ContentViewport,
+            wordCount:
+                documentWords.Length,
+            rasterImageCount:
+                images.Length,
+            largestRasterImageAreaRatio:
+                largestRasterImageAreaRatio,
+            sourceWidth:
+                sourceWidth,
+            sourceHeight:
+                sourceHeight,
+            words:
+                documentWords,
+            blocks:
+                documentBlocks);
     }
 
     private static DocumentWord ToDocumentWord(

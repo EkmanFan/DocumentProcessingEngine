@@ -150,15 +150,6 @@ public sealed class PdfPigVisualRasterObservationSource
                         physicalPageNumber -
                         1];
 
-                if (extractionPage.PhysicalPageNumber !=
-                    physicalPageNumber)
-                {
-                    throw new InvalidDataException(
-                        $"Extraction page at index {physicalPageNumber - 1} reports " +
-                        $"physical page {extractionPage.PhysicalPageNumber}; expected " +
-                        $"{physicalPageNumber}.");
-                }
-
                 var coordinateSpace =
                     PdfPageCoordinateSpace.Create(
                         page);
@@ -167,39 +158,13 @@ public sealed class PdfPigVisualRasterObservationSource
                     page.GetImages()
                         .ToArray();
 
-                if (images.Length !=
-                    extractionPage.RasterImageCount)
-                {
-                    throw new InvalidDataException(
-                        $"Physical page {physicalPageNumber} exposes {images.Length} " +
-                        $"PDF image occurrence(s), but extraction recorded " +
-                        $"{extractionPage.RasterImageCount}.");
-                }
-
-                var observations =
-                    new VisualRasterObservation[
-                        images.Length];
-
-                for (var imageIndex = 0;
-                     imageIndex <
-                     images.Length;
-                     imageIndex++)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    observations[imageIndex] =
-                        ObserveImage(
-                            imageIndex,
-                            images[imageIndex],
-                            coordinateSpace,
-                            extractionPage.Words,
-                            cancellationToken);
-                }
-
                 pages.Add(
-                    new PageVisualRasterObservations(
+                    ObservePage(
                         physicalPageNumber,
-                        observations));
+                        coordinateSpace,
+                        images,
+                        extractionPage,
+                        cancellationToken));
             }
 
             return pages;
@@ -214,6 +179,64 @@ public sealed class PdfPigVisualRasterObservationSource
                     originalPosition.Value;
             }
         }
+    }
+
+    internal PageVisualRasterObservations ObservePage(
+        int physicalPageNumber,
+        PdfPageCoordinateSpace coordinateSpace,
+        IReadOnlyList<IPdfImage> images,
+        DocumentExtractionPage extractionPage,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            images);
+
+        ArgumentNullException.ThrowIfNull(
+            extractionPage);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (extractionPage.PhysicalPageNumber !=
+            physicalPageNumber)
+        {
+            throw new InvalidDataException(
+                $"Extraction page reports physical page " +
+                $"{extractionPage.PhysicalPageNumber}; expected " +
+                $"{physicalPageNumber}.");
+        }
+
+        if (images.Count !=
+            extractionPage.RasterImageCount)
+        {
+            throw new InvalidDataException(
+                $"Physical page {physicalPageNumber} exposes {images.Count} " +
+                $"PDF image occurrence(s), but extraction recorded " +
+                $"{extractionPage.RasterImageCount}.");
+        }
+
+        var observations =
+            new VisualRasterObservation[
+                images.Count];
+
+        for (var imageIndex = 0;
+             imageIndex <
+             images.Count;
+             imageIndex++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            observations[imageIndex] =
+                ObserveImage(
+                    imageIndex,
+                    images[imageIndex],
+                    coordinateSpace,
+                    extractionPage.Words,
+                    cancellationToken);
+        }
+
+        return new PageVisualRasterObservations(
+            physicalPageNumber,
+            observations);
     }
 
     private VisualRasterObservation ObserveImage(

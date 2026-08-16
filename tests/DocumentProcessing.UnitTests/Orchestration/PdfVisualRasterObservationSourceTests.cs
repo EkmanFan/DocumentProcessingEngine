@@ -2,6 +2,7 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Pdf;
+using UglyToad.PdfPig;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Writer;
 
@@ -420,6 +421,66 @@ public sealed class PdfVisualRasterObservationSourceTests
 
         Assert.NotNull(
             observation.EffectiveVisualBounds);
+    }
+
+    [Fact]
+    public void SharedPagePrimitives_ReuseOneMaterializedPdfPigPage()
+    {
+        var pdfBytes =
+            BuildPdfWithEmbeddedPng();
+
+        using var document =
+            PdfDocument.Open(
+                pdfBytes);
+
+        var sourcePage =
+            document.GetPage(
+                1);
+
+        var extractionPage =
+            PdfPigDocumentExtractor
+                .ExtractPage(
+                    sourcePage,
+                    physicalPageNumber:
+                        1,
+                    out var coordinateSpace,
+                    out var images);
+
+        var observationPage =
+            new PdfPigVisualRasterObservationSource()
+                .ObservePage(
+                    physicalPageNumber:
+                        1,
+                    coordinateSpace,
+                    images,
+                    extractionPage);
+
+        Assert.Equal(
+            1,
+            extractionPage.PhysicalPageNumber);
+
+        Assert.Equal(
+            1,
+            extractionPage.RasterImageCount);
+
+        Assert.Single(
+            images);
+
+        Assert.Equal(
+            1,
+            observationPage.PhysicalPageNumber);
+
+        var observation =
+            Assert.Single(
+                observationPage.VisualElements);
+
+        Assert.NotEqual(
+            VisualRasterDecodeSource.Unavailable,
+            observation.DecodeSource);
+
+        Assert.Equal(
+            VisualForegroundState.Measured,
+            observation.ForegroundState);
     }
 
     [Fact]
