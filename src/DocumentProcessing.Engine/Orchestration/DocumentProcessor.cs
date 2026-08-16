@@ -47,6 +47,7 @@ public sealed class DocumentProcessor
     private readonly IDocumentPreflightAnalyzer _preflightAnalyzer;
     private readonly DocumentPageProcessingPlanner _pageProcessingPlanner;
     private readonly DocumentHybridExecutionDependencies? _hybridExecution;
+    private readonly DocumentShadowPlanningDependencies? _shadowPlanningDependencies;
     private readonly DocumentShadowPlanningRunner? _shadowPlanningRunner;
     private readonly string _engineVersion;
     private readonly ProcessingComponentIdentity _nativeExtractionIdentity;
@@ -148,6 +149,9 @@ public sealed class DocumentProcessor
 
         _hybridExecution =
             hybridExecution;
+
+        _shadowPlanningDependencies =
+            shadowPlanning;
 
         _shadowPlanningRunner =
             shadowPlanning is null
@@ -260,15 +264,48 @@ public sealed class DocumentProcessor
                 $"The configured preflight analyzer cannot process format '{format}'.");
         }
 
+        DocumentExtractionWithRasterObservationsResult?
+            coordinatedExtraction =
+                null;
+
+        DocumentExtractionResult extraction;
+
         prepared.ResetForRead();
 
-        var extraction =
-            await _nativeExtractor
-                .ExtractAsync(
-                    prepared.Source,
+        if (_shadowPlanningDependencies is not null &&
+            _nativeExtractor is
+                IDocumentExtractorWithRasterObservations
+                    coordinatedExtractor &&
+            coordinatedExtractor
+                .CanExtractWithRasterObservations(
                     format,
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    _shadowPlanningDependencies
+                        .VisualRasterObservationSource))
+        {
+            coordinatedExtraction =
+                await coordinatedExtractor
+                    .ExtractWithRasterObservationsAsync(
+                        prepared.Source,
+                        format,
+                        _shadowPlanningDependencies
+                            .VisualRasterObservationSource,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            extraction =
+                coordinatedExtraction
+                    .Extraction;
+        }
+        else
+        {
+            extraction =
+                await _nativeExtractor
+                    .ExtractAsync(
+                        prepared.Source,
+                        format,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+        }
 
         ValidateExtraction(
             format,
@@ -318,6 +355,7 @@ public sealed class DocumentProcessor
                         extraction,
                         decisions,
                         prepared.Sha256,
+                        coordinatedExtraction,
                         cancellationToken)
                     .ConfigureAwait(false);
             }

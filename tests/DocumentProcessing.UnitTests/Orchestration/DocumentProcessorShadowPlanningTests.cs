@@ -231,6 +231,266 @@ public sealed class DocumentProcessorShadowPlanningTests
     }
 
     [Fact]
+    public async Task ProcessAsync_CoordinatedShadow_UsesPrecomputedRasterObservations()
+    {
+        var extraction =
+            Extraction(
+                Page(
+                    physicalPageNumber:
+                        1,
+                    "Alpha stable native text.",
+                    rasterImageCount:
+                        0,
+                    largestRasterImageAreaRatio:
+                        0));
+
+        var observer =
+            new RecordingObserver();
+
+        var visualSource =
+            new StubVisualSource(
+                [
+                    new PageVisualRasterObservations(
+                        1,
+                        [])
+                ]);
+
+        var coordinatedExtractor =
+            CoordinatedStubExtractor.Success(
+                extraction,
+                [
+                    new PageVisualRasterObservations(
+                        1,
+                        [])
+                ]);
+
+        var result =
+            await ProcessNativeAsync(
+                coordinatedExtractor,
+                Shadow(
+                    visualSource,
+                    observer));
+
+        Assert.Single(
+            result.Pages);
+
+        Assert.Equal(
+            1,
+            coordinatedExtractor
+                .CoordinatedExtractCallCount);
+
+        Assert.Equal(
+            0,
+            coordinatedExtractor
+                .FallbackExtractCallCount);
+
+        Assert.Equal(
+            0,
+            visualSource.ObserveCallCount);
+
+        var report =
+            Assert.Single(
+                observer.Reports);
+
+        Assert.Equal(
+            DocumentShadowPlanningStatus.Completed,
+            report.Status);
+
+        Assert.True(
+            report.LegacyPlanningAgreementExact);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_CoordinatedRasterFailure_IsolatedFromLegacyResult()
+    {
+        var extraction =
+            Extraction(
+                Page(
+                    physicalPageNumber:
+                        1,
+                    "Alpha stable native text.",
+                    rasterImageCount:
+                        0,
+                    largestRasterImageAreaRatio:
+                        0));
+
+        var observer =
+            new RecordingObserver();
+
+        var visualSource =
+            new StubVisualSource(
+                [
+                    new PageVisualRasterObservations(
+                        1,
+                        [])
+                ]);
+
+        var coordinatedExtractor =
+            CoordinatedStubExtractor.FailedRasterObservation(
+                extraction,
+                new RasterObservationAcquisitionFailure(
+                    typeof(InvalidOperationException)
+                        .FullName!,
+                    "synthetic coordinated shadow failure"));
+
+        var result =
+            await ProcessNativeAsync(
+                coordinatedExtractor,
+                Shadow(
+                    visualSource,
+                    observer));
+
+        Assert.Single(
+            result.Pages);
+
+        Assert.Equal(
+            0,
+            visualSource.ObserveCallCount);
+
+        var report =
+            Assert.Single(
+                observer.Reports);
+
+        Assert.Equal(
+            DocumentShadowPlanningStatus.Failed,
+            report.Status);
+
+        var failure =
+            Assert.IsType<DocumentShadowPlanningFailure>(
+                report.Failure);
+
+        Assert.Equal(
+            DocumentShadowPlanningFailureStage.RasterObservation,
+            failure.Stage);
+
+        Assert.Contains(
+            "synthetic coordinated shadow failure",
+            failure.Message,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_CoordinatedExtractionFailure_RemainsAuthoritative()
+    {
+        var extraction =
+            Extraction(
+                Page(
+                    physicalPageNumber:
+                        1,
+                    "Alpha stable native text.",
+                    rasterImageCount:
+                        0,
+                    largestRasterImageAreaRatio:
+                        0));
+
+        var observer =
+            new RecordingObserver();
+
+        var exception =
+            await Assert.ThrowsAsync<InvalidDataException>(
+                () =>
+                    ProcessNativeAsync(
+                        new FaultingCoordinatedExtractor(
+                            extraction,
+                            _ =>
+                                throw new InvalidDataException(
+                                    "synthetic authoritative extraction failure")),
+                        Shadow(
+                            new StubVisualSource(
+                                [
+                                    new PageVisualRasterObservations(
+                                        1,
+                                        [])
+                                ]),
+                            observer)));
+
+        Assert.Contains(
+            "authoritative extraction failure",
+            exception.Message,
+            StringComparison.Ordinal);
+
+        Assert.Empty(
+            observer.Reports);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_CoordinatedCallerCancellation_Propagates()
+    {
+        var extraction =
+            Extraction(
+                Page(
+                    physicalPageNumber:
+                        1,
+                    "Alpha stable native text.",
+                    rasterImageCount:
+                        0,
+                    largestRasterImageAreaRatio:
+                        0));
+
+        using var cancellation =
+            new CancellationTokenSource();
+
+        var extractor =
+            new FaultingCoordinatedExtractor(
+                extraction,
+                cancellationToken =>
+                {
+                    cancellation.Cancel();
+                    cancellationToken
+                        .ThrowIfCancellationRequested();
+
+                    throw new InvalidOperationException(
+                        "unreachable");
+                });
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () =>
+                ProcessNativeAsync(
+                    extractor,
+                    Shadow(
+                        new StubVisualSource(
+                            [
+                                new PageVisualRasterObservations(
+                                    1,
+                                    [])
+                            ]),
+                        new RecordingObserver()),
+                    cancellation.Token));
+    }
+
+    [Fact]
+    public async Task ProcessAsync_CoordinatedOutOfMemory_Propagates()
+    {
+        var extraction =
+            Extraction(
+                Page(
+                    physicalPageNumber:
+                        1,
+                    "Alpha stable native text.",
+                    rasterImageCount:
+                        0,
+                    largestRasterImageAreaRatio:
+                        0));
+
+        await Assert.ThrowsAsync<OutOfMemoryException>(
+            () =>
+                ProcessNativeAsync(
+                    new FaultingCoordinatedExtractor(
+                        extraction,
+                        _ =>
+                            throw new OutOfMemoryException(
+                                "synthetic fatal allocation failure")),
+                    Shadow(
+                        new StubVisualSource(
+                            [
+                                new PageVisualRasterObservations(
+                                    1,
+                                    [])
+                            ]),
+                        new RecordingObserver())));
+    }
+
+    [Fact]
     public async Task Runner_UnverifiedPresentationOnlyVisual_ReportsLegacyMlRemovalWithoutAuthority()
     {
         var extraction =
@@ -450,16 +710,27 @@ public sealed class DocumentProcessorShadowPlanningTests
             source,
             observer);
 
-    private static async Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
+    private static Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
         ProcessNativeAsync(
             DocumentExtractionResult extraction,
-            DocumentShadowPlanningDependencies? shadow)
+            DocumentShadowPlanningDependencies? shadow,
+            CancellationToken cancellationToken = default) =>
+        ProcessNativeAsync(
+            new StubExtractor(
+                extraction),
+            shadow,
+            cancellationToken);
+
+    private static async Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
+        ProcessNativeAsync(
+            IDocumentExtractor extractor,
+            DocumentShadowPlanningDependencies? shadow,
+            CancellationToken cancellationToken = default)
     {
         var processor =
             new DocumentProcessor(
                 new StubDetector(),
-                new StubExtractor(
-                    extraction),
+                extractor,
                 new StubPreflightAnalyzer(),
                 "test-engine-shadow-v1",
                 NativeIdentity,
@@ -475,7 +746,8 @@ public sealed class DocumentProcessorShadowPlanningTests
             new DocumentSource(
                 stream,
                 "shadow.pdf",
-                "application/pdf"));
+                "application/pdf"),
+            cancellationToken);
     }
 
     private static void AssertEquivalentNativeResult(
@@ -694,6 +966,140 @@ public sealed class DocumentProcessorShadowPlanningTests
 
             return ValueTask.FromResult(
                 extraction);
+        }
+    }
+
+    private sealed class CoordinatedStubExtractor
+        : IDocumentExtractorWithRasterObservations
+    {
+        private readonly DocumentExtractionResult _extraction;
+        private readonly IReadOnlyList<PageVisualRasterObservations>?
+            _rasterObservations;
+        private readonly RasterObservationAcquisitionFailure?
+            _rasterObservationFailure;
+
+        private CoordinatedStubExtractor(
+            DocumentExtractionResult extraction,
+            IReadOnlyList<PageVisualRasterObservations>? rasterObservations,
+            RasterObservationAcquisitionFailure? rasterObservationFailure)
+        {
+            _extraction =
+                extraction;
+
+            _rasterObservations =
+                rasterObservations;
+
+            _rasterObservationFailure =
+                rasterObservationFailure;
+        }
+
+        public int FallbackExtractCallCount { get; private set; }
+
+        public int CoordinatedExtractCallCount { get; private set; }
+
+        public static CoordinatedStubExtractor Success(
+            DocumentExtractionResult extraction,
+            IReadOnlyList<PageVisualRasterObservations> rasterObservations) =>
+            new(
+                extraction,
+                rasterObservations,
+                rasterObservationFailure:
+                    null);
+
+        public static CoordinatedStubExtractor FailedRasterObservation(
+            DocumentExtractionResult extraction,
+            RasterObservationAcquisitionFailure failure) =>
+            new(
+                extraction,
+                rasterObservations:
+                    null,
+                rasterObservationFailure:
+                    failure);
+
+        public bool CanExtract(
+            DocumentFormatId format) =>
+            format ==
+            DocumentFormatId.Pdf;
+
+        public bool CanExtractWithRasterObservations(
+            DocumentFormatId format,
+            IVisualRasterObservationSource rasterObservationSource) =>
+            CanExtract(
+                format) &&
+            rasterObservationSource.CanObserve(
+                format);
+
+        public ValueTask<DocumentExtractionResult> ExtractAsync(
+            DocumentSource source,
+            DocumentFormatId format,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            FallbackExtractCallCount++;
+
+            return ValueTask.FromResult(
+                _extraction);
+        }
+
+        public ValueTask<DocumentExtractionWithRasterObservationsResult>
+            ExtractWithRasterObservationsAsync(
+                DocumentSource source,
+                DocumentFormatId format,
+                IVisualRasterObservationSource rasterObservationSource,
+                CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            CoordinatedExtractCallCount++;
+
+            return ValueTask.FromResult(
+                new DocumentExtractionWithRasterObservationsResult(
+                    _extraction,
+                    _rasterObservations,
+                    _rasterObservationFailure));
+        }
+    }
+
+    private sealed class FaultingCoordinatedExtractor(
+        DocumentExtractionResult extraction,
+        Func<CancellationToken, DocumentExtractionWithRasterObservationsResult>
+            fault)
+        : IDocumentExtractorWithRasterObservations
+    {
+        public bool CanExtract(
+            DocumentFormatId format) =>
+            format ==
+            DocumentFormatId.Pdf;
+
+        public bool CanExtractWithRasterObservations(
+            DocumentFormatId format,
+            IVisualRasterObservationSource rasterObservationSource) =>
+            CanExtract(
+                format) &&
+            rasterObservationSource.CanObserve(
+                format);
+
+        public ValueTask<DocumentExtractionResult> ExtractAsync(
+            DocumentSource source,
+            DocumentFormatId format,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException(
+                "Fallback extraction must not run for this coordinated test.");
+
+        public ValueTask<DocumentExtractionWithRasterObservationsResult>
+            ExtractWithRasterObservationsAsync(
+                DocumentSource source,
+                DocumentFormatId format,
+                IVisualRasterObservationSource rasterObservationSource,
+                CancellationToken cancellationToken = default)
+        {
+            _ =
+                extraction;
+
+            return ValueTask.FromResult(
+                fault(
+                    cancellationToken));
         }
     }
 

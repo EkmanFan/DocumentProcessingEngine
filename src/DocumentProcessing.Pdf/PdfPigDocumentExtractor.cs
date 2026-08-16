@@ -1,5 +1,6 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
+using DocumentProcessing.Core.Orchestration;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
@@ -11,7 +12,8 @@ using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
 namespace DocumentProcessing.Pdf;
 
-public sealed class PdfPigDocumentExtractor : IDocumentExtractor
+public sealed class PdfPigDocumentExtractor
+    : IDocumentExtractorWithRasterObservations
 {
     // PdfPig 0.1.15 appends orientation buckets to a shared result list in parallel.
     // SourceSequence is provenance, so this stage must preserve deterministic bucket order.
@@ -102,6 +104,182 @@ public sealed class PdfPigDocumentExtractor : IDocumentExtractor
             return new DocumentExtractionResult(
                 DocumentFormatId.Pdf,
                 pages);
+        }
+        finally
+        {
+            bufferedInput?.Dispose();
+
+            if (originalPosition.HasValue)
+            {
+                source.Content.Position =
+                    originalPosition.Value;
+            }
+        }
+    }
+
+    public bool CanExtractWithRasterObservations(
+        DocumentFormatId format,
+        IVisualRasterObservationSource rasterObservationSource)
+    {
+        ArgumentNullException.ThrowIfNull(
+            rasterObservationSource);
+
+        return CanExtract(
+                   format) &&
+               rasterObservationSource is
+                   PdfPigVisualRasterObservationSource;
+    }
+
+    public async ValueTask<DocumentExtractionWithRasterObservationsResult>
+        ExtractWithRasterObservationsAsync(
+            DocumentSource source,
+            DocumentFormatId format,
+            IVisualRasterObservationSource rasterObservationSource,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            source);
+
+        ArgumentNullException.ThrowIfNull(
+            rasterObservationSource);
+
+        if (!CanExtractWithRasterObservations(
+                format,
+                rasterObservationSource))
+        {
+            throw new NotSupportedException(
+                $"The configured PDF extractor and raster-observation source " +
+                $"cannot coordinate format '{format}'.");
+        }
+
+        var pdfRasterObservationSource =
+            (PdfPigVisualRasterObservationSource)
+            rasterObservationSource;
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var input =
+            source.Content;
+
+        MemoryStream? bufferedInput =
+            null;
+
+        long? originalPosition =
+            null;
+
+        try
+        {
+            if (input.CanSeek)
+            {
+                originalPosition =
+                    input.Position;
+
+                input.Position =
+                    0;
+            }
+            else
+            {
+                bufferedInput =
+                    new MemoryStream();
+
+                await input
+                    .CopyToAsync(
+                        bufferedInput,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+                bufferedInput.Position =
+                    0;
+
+                input =
+                    bufferedInput;
+            }
+
+            using var document =
+                PdfDocument.Open(
+                    input);
+
+            var pages =
+                new List<DocumentExtractionPage>(
+                    document.NumberOfPages);
+
+            var rasterObservations =
+                new List<PageVisualRasterObservations>(
+                    document.NumberOfPages);
+
+            RasterObservationAcquisitionFailure?
+                rasterObservationFailure =
+                    null;
+
+            var physicalPageNumber =
+                0;
+
+            foreach (var page in
+                     document.GetPages())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                physicalPageNumber++;
+
+                var extractionPage =
+                    ExtractPage(
+                        page,
+                        physicalPageNumber,
+                        out var coordinateSpace,
+                        out var images);
+
+                pages.Add(
+                    extractionPage);
+
+                if (rasterObservationFailure is not null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    rasterObservations.Add(
+                        pdfRasterObservationSource
+                            .ObservePage(
+                                physicalPageNumber,
+                                coordinateSpace,
+                                images,
+                                extractionPage,
+                                cancellationToken));
+                }
+                catch (OperationCanceledException)
+                    when (cancellationToken
+                        .IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception exception)
+                    when (exception is not
+                          OutOfMemoryException)
+                {
+                    rasterObservationFailure =
+                        new RasterObservationAcquisitionFailure(
+                            exception.GetType().FullName ??
+                            exception.GetType().Name,
+                            exception.Message);
+
+                    // Partial shadow evidence must never masquerade as
+                    // complete document coverage.
+                    rasterObservations.Clear();
+                }
+            }
+
+            var extraction =
+                new DocumentExtractionResult(
+                    DocumentFormatId.Pdf,
+                    pages);
+
+            return new DocumentExtractionWithRasterObservationsResult(
+                extraction,
+                rasterObservationFailure is null
+                    ? rasterObservations
+                    : null,
+                rasterObservationFailure);
         }
         finally
         {

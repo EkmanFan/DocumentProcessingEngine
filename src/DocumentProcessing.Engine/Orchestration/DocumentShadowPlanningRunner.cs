@@ -25,12 +25,31 @@ public sealed class DocumentShadowPlanningRunner
                 nameof(dependencies));
     }
 
-    public async ValueTask<DocumentShadowPlanningReport> RunAsync(
+    public ValueTask<DocumentShadowPlanningReport> RunAsync(
         DocumentSource source,
         DocumentFormatId format,
         DocumentExtractionResult extraction,
         IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions,
         string sourceDocumentSha256,
+        CancellationToken cancellationToken = default) =>
+        RunAsync(
+            source,
+            format,
+            extraction,
+            authoritativeLegacyDecisions,
+            sourceDocumentSha256,
+            coordinatedExtraction:
+                null,
+            cancellationToken:
+                cancellationToken);
+
+    internal async ValueTask<DocumentShadowPlanningReport> RunAsync(
+        DocumentSource source,
+        DocumentFormatId format,
+        DocumentExtractionResult extraction,
+        IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions,
+        string sourceDocumentSha256,
+        DocumentExtractionWithRasterObservationsResult? coordinatedExtraction,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
@@ -89,50 +108,81 @@ public sealed class DocumentShadowPlanningRunner
             stage =
                 DocumentShadowPlanningFailureStage.RasterObservation;
 
-            var rasterObservations =
-                await _dependencies
-                    .VisualRasterObservationSource
-                    .ObserveAsync(
-                        source,
+            if (coordinatedExtraction?
+                    .RasterObservationFailure is { } rasterFailure)
+            {
+                report =
+                    new DocumentShadowPlanningReport(
+                        sourceDocumentSha256,
                         format,
+                        DocumentShadowPlanningStatus.Failed,
+                        pages:
+                            [],
+                        new DocumentShadowPlanningFailure(
+                            DocumentShadowPlanningFailureStage
+                                .RasterObservation,
+                            rasterFailure.ExceptionType,
+                            rasterFailure.Message));
+            }
+            else
+            {
+                IReadOnlyList<PageVisualRasterObservations>
+                    rasterObservations;
+
+                if (coordinatedExtraction?
+                        .RasterObservations is { } precomputed)
+                {
+                    rasterObservations =
+                        precomputed;
+                }
+                else
+                {
+                    rasterObservations =
+                        await _dependencies
+                            .VisualRasterObservationSource
+                            .ObserveAsync(
+                                source,
+                                format,
+                                extraction,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                }
+
+                stage =
+                    DocumentShadowPlanningFailureStage.StructuralEnrichment;
+
+                var visualObservations =
+                    _dependencies
+                        .StructuralEvidenceEnricher
+                        .Enrich(
+                            extraction,
+                            normalization,
+                            rasterObservations,
+                            cancellationToken);
+
+                stage =
+                    DocumentShadowPlanningFailureStage.CandidatePlanning;
+
+                var shadowDecisions =
+                    _dependencies
+                        .GuardedPlanner
+                        .Plan(
+                            extraction,
+                            visualObservations);
+
+                var comparisons =
+                    BuildComparisons(
                         extraction,
-                        cancellationToken)
-                    .ConfigureAwait(false);
+                        authoritativeLegacyDecisions,
+                        shadowDecisions);
 
-            stage =
-                DocumentShadowPlanningFailureStage.StructuralEnrichment;
-
-            var visualObservations =
-                _dependencies
-                    .StructuralEvidenceEnricher
-                    .Enrich(
-                        extraction,
-                        normalization,
-                        rasterObservations,
-                        cancellationToken);
-
-            stage =
-                DocumentShadowPlanningFailureStage.CandidatePlanning;
-
-            var shadowDecisions =
-                _dependencies
-                    .GuardedPlanner
-                    .Plan(
-                        extraction,
-                        visualObservations);
-
-            var comparisons =
-                BuildComparisons(
-                    extraction,
-                    authoritativeLegacyDecisions,
-                    shadowDecisions);
-
-            report =
-                new DocumentShadowPlanningReport(
-                    sourceDocumentSha256,
-                    format,
-                    DocumentShadowPlanningStatus.Completed,
-                    comparisons);
+                report =
+                    new DocumentShadowPlanningReport(
+                        sourceDocumentSha256,
+                        format,
+                        DocumentShadowPlanningStatus.Completed,
+                        comparisons);
+            }
         }
         catch (OperationCanceledException)
             when (cancellationToken.IsCancellationRequested)
