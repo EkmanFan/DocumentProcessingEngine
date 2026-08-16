@@ -47,6 +47,7 @@ public sealed class DocumentProcessor
     private readonly IDocumentPreflightAnalyzer _preflightAnalyzer;
     private readonly DocumentPageProcessingPlanner _pageProcessingPlanner;
     private readonly DocumentHybridExecutionDependencies? _hybridExecution;
+    private readonly DocumentShadowPlanningRunner? _shadowPlanningRunner;
     private readonly string _engineVersion;
     private readonly ProcessingComponentIdentity _nativeExtractionIdentity;
 
@@ -62,7 +63,8 @@ public sealed class DocumentProcessor
         IDocumentExtractor nativeExtractor,
         IDocumentPreflightAnalyzer preflightAnalyzer,
         string engineVersion,
-        ProcessingComponentIdentity nativeExtractionIdentity)
+        ProcessingComponentIdentity nativeExtractionIdentity,
+        DocumentShadowPlanningDependencies? shadowPlanning = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -73,7 +75,8 @@ public sealed class DocumentProcessor
             engineVersion,
             nativeExtractionIdentity,
             requireHybridExecution:
-                false)
+                false,
+            shadowPlanning)
     {
     }
 
@@ -87,7 +90,8 @@ public sealed class DocumentProcessor
         DocumentPageProcessingPlanner pageProcessingPlanner,
         DocumentHybridExecutionDependencies hybridExecution,
         string engineVersion,
-        ProcessingComponentIdentity nativeExtractionIdentity)
+        ProcessingComponentIdentity nativeExtractionIdentity,
+        DocumentShadowPlanningDependencies? shadowPlanning = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -99,7 +103,8 @@ public sealed class DocumentProcessor
             engineVersion,
             nativeExtractionIdentity,
             requireHybridExecution:
-                true)
+                true,
+            shadowPlanning)
     {
     }
 
@@ -111,7 +116,8 @@ public sealed class DocumentProcessor
         DocumentHybridExecutionDependencies? hybridExecution,
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity,
-        bool requireHybridExecution = false)
+        bool requireHybridExecution = false,
+        DocumentShadowPlanningDependencies? shadowPlanning = null)
     {
         _documentTypeDetector =
             documentTypeDetector ??
@@ -142,6 +148,12 @@ public sealed class DocumentProcessor
 
         _hybridExecution =
             hybridExecution;
+
+        _shadowPlanningRunner =
+            shadowPlanning is null
+                ? null
+                : new DocumentShadowPlanningRunner(
+                    shadowPlanning);
 
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -292,6 +304,30 @@ public sealed class DocumentProcessor
                 format,
                 decisions,
                 requiresHybridExecution);
+
+        if (_shadowPlanningRunner is not null)
+        {
+            prepared.ResetForRead();
+
+            try
+            {
+                await _shadowPlanningRunner
+                    .RunAsync(
+                        prepared.Source,
+                        format,
+                        extraction,
+                        decisions,
+                        prepared.Sha256,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                // Shadow evidence acquisition must not leak source-position
+                // state into the authoritative legacy execution path.
+                prepared.ResetForRead();
+            }
+        }
 
         var assembledPages =
             new List<HybridDocumentPage>(

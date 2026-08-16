@@ -12,8 +12,9 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// visual occurrence. It produces both the legacy decision and the candidate
 /// execution plan, then enforces text-safety invariants before returning.
 ///
-/// Phase 21E.1H.3C does not wire this planner into
-/// <see cref="DocumentProcessor"/>. Runtime execution therefore remains legacy.
+/// Phase 21E.1H.4C wires this planner into <see cref="DocumentProcessor"/>
+/// only through non-authoritative shadow planning. Runtime execution remains
+/// driven exclusively by the legacy planner.
 /// </summary>
 public sealed class GuardedDocumentPageExecutionPlanner
 {
