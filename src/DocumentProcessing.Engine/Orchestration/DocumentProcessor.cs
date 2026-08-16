@@ -53,6 +53,8 @@ public sealed class DocumentProcessor
         _controlledCandidateTextExecutionRunner;
     private readonly DocumentControlledCandidateVisualExecutionRunner?
         _controlledCandidateVisualExecutionRunner;
+    private readonly DocumentControlledCandidateComparisonRunner?
+        _controlledCandidateComparisonRunner;
     private readonly string _engineVersion;
     private readonly ProcessingComponentIdentity _nativeExtractionIdentity;
 
@@ -73,7 +75,9 @@ public sealed class DocumentProcessor
         DocumentControlledCandidateTextExecutionDependencies?
             controlledCandidateTextExecution = null,
         DocumentControlledCandidateVisualExecutionDependencies?
-            controlledCandidateVisualExecution = null)
+            controlledCandidateVisualExecution = null,
+        DocumentControlledCandidateComparisonDependencies?
+            controlledCandidateComparison = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -87,7 +91,8 @@ public sealed class DocumentProcessor
                 false,
             shadowPlanning,
             controlledCandidateTextExecution,
-            controlledCandidateVisualExecution)
+            controlledCandidateVisualExecution,
+            controlledCandidateComparison)
     {
     }
 
@@ -106,7 +111,9 @@ public sealed class DocumentProcessor
         DocumentControlledCandidateTextExecutionDependencies?
             controlledCandidateTextExecution = null,
         DocumentControlledCandidateVisualExecutionDependencies?
-            controlledCandidateVisualExecution = null)
+            controlledCandidateVisualExecution = null,
+        DocumentControlledCandidateComparisonDependencies?
+            controlledCandidateComparison = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -121,7 +128,8 @@ public sealed class DocumentProcessor
                 true,
             shadowPlanning,
             controlledCandidateTextExecution,
-            controlledCandidateVisualExecution)
+            controlledCandidateVisualExecution,
+            controlledCandidateComparison)
     {
     }
 
@@ -138,7 +146,9 @@ public sealed class DocumentProcessor
         DocumentControlledCandidateTextExecutionDependencies?
             controlledCandidateTextExecution = null,
         DocumentControlledCandidateVisualExecutionDependencies?
-            controlledCandidateVisualExecution = null)
+            controlledCandidateVisualExecution = null,
+        DocumentControlledCandidateComparisonDependencies?
+            controlledCandidateComparison = null)
     {
         _documentTypeDetector =
             documentTypeDetector ??
@@ -206,6 +216,23 @@ public sealed class DocumentProcessor
                 ? null
                 : new DocumentControlledCandidateVisualExecutionRunner(
                     controlledCandidateVisualExecution);
+
+        if (controlledCandidateComparison is not null &&
+            (shadowPlanning is null ||
+             controlledCandidateTextExecution is null ||
+             controlledCandidateVisualExecution is null))
+        {
+            throw new ArgumentException(
+                "Controlled candidate comparison requires H.4C shadow planning " +
+                "plus both controlled text and controlled visual execution.",
+                nameof(controlledCandidateComparison));
+        }
+
+        _controlledCandidateComparisonRunner =
+            controlledCandidateComparison is null
+                ? null
+                : new DocumentControlledCandidateComparisonRunner(
+                    controlledCandidateComparison);
 
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -549,6 +576,10 @@ public sealed class DocumentProcessor
                     segmentation,
                     provenanceContext);
 
+        DocumentControlledCandidateTextExecutionReport?
+            controlledCandidateTextExecutionReport =
+                null;
+
         if (_controlledCandidateTextExecutionRunner is not null)
         {
             if (shadowPlanningReport is null)
@@ -564,8 +595,9 @@ public sealed class DocumentProcessor
 
                 try
                 {
-                    await _controlledCandidateTextExecutionRunner
-                        .RunAsync(
+                    controlledCandidateTextExecutionReport =
+                        await _controlledCandidateTextExecutionRunner
+                            .RunAsync(
                             prepared.Source,
                             format,
                             extraction,
@@ -584,8 +616,9 @@ public sealed class DocumentProcessor
             }
             else
             {
-                await _controlledCandidateTextExecutionRunner
-                    .RunAsync(
+                controlledCandidateTextExecutionReport =
+                    await _controlledCandidateTextExecutionRunner
+                        .RunAsync(
                         extraction,
                         assembledPages,
                         shadowPlanningReport,
@@ -594,6 +627,10 @@ public sealed class DocumentProcessor
                     .ConfigureAwait(false);
             }
         }
+
+        DocumentControlledCandidateVisualExecutionReport?
+            controlledCandidateVisualExecutionReport =
+                null;
 
         if (_controlledCandidateVisualExecutionRunner is not null)
         {
@@ -608,8 +645,9 @@ public sealed class DocumentProcessor
 
             try
             {
-                await _controlledCandidateVisualExecutionRunner
-                    .RunAsync(
+                controlledCandidateVisualExecutionReport =
+                    await _controlledCandidateVisualExecutionRunner
+                        .RunAsync(
                         prepared.Source,
                         format,
                         extraction,
@@ -624,6 +662,27 @@ public sealed class DocumentProcessor
                 // position into caller-visible source custody.
                 prepared.ResetForRead();
             }
+        }
+
+        if (_controlledCandidateComparisonRunner is not null)
+        {
+            if (shadowPlanningReport is null ||
+                controlledCandidateTextExecutionReport is null ||
+                controlledCandidateVisualExecutionReport is null)
+            {
+                throw new InvalidOperationException(
+                    "Controlled candidate comparison was configured without complete " +
+                    "planning/text/visual evidence.");
+            }
+
+            await _controlledCandidateComparisonRunner
+                .RunAsync(
+                    authoritativeResult,
+                    shadowPlanningReport,
+                    controlledCandidateTextExecutionReport,
+                    controlledCandidateVisualExecutionReport,
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
 
         return authoritativeResult;
