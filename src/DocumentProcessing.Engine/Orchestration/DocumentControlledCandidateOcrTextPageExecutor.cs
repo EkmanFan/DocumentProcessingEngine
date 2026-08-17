@@ -37,7 +37,7 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
 
     public async ValueTask<(
         HybridDocumentPage Page,
-        IReadOnlyList<LayoutObservation> LayoutVisualObservations)> ExecuteAsync(
+        IReadOnlyList<LayoutVisualEvidence> LayoutVisualEvidence)> ExecuteAsync(
         DocumentExtractionPage sourcePage,
         NativeTextStatus nativeTextStatus,
         TextExecutionMode textMode,
@@ -122,17 +122,14 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
                     sourcePage,
                     elements);
 
-        var layoutVisualObservations =
-            layout.Observations
-                .Where(
-                    observation =>
-                        observation.Kind ==
-                        LayoutObservationKind.Figure)
-                .ToArray();
+        var layoutVisualEvidence =
+            new DefaultLayoutVisualEvidenceAssessor()
+                .Assess(
+                    layout);
 
         return (
             candidatePage,
-            layoutVisualObservations);
+            layoutVisualEvidence);
     }
 
     private async ValueTask<IReadOnlyList<HybridDocumentElement>>

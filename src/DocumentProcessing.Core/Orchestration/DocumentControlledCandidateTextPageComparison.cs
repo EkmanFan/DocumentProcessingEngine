@@ -1,7 +1,5 @@
 using DocumentProcessing.Core.Hybrid;
 
-using DocumentProcessing.Core.Layout;
-
 namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
@@ -27,8 +25,8 @@ public sealed record DocumentControlledCandidateTextPageComparison
         int? authoritativeReconciliationEvidenceCount = null,
         int? candidateReconciliationEvidenceCount = null,
         HybridDocumentPage? candidatePage = null,
-        IEnumerable<LayoutObservation>?
-            candidateLayoutVisualObservations = null)
+        IEnumerable<LayoutVisualEvidence>?
+            candidateLayoutVisualEvidence = null)
     {
         if (physicalPageNumber <= 0)
         {
@@ -217,46 +215,44 @@ public sealed record DocumentControlledCandidateTextPageComparison
                 nameof(candidatePage));
         }
 
-        var visualObservations =
-            candidateLayoutVisualObservations?.ToArray() ??
+        var visualEvidence =
+            candidateLayoutVisualEvidence?.ToArray() ??
             [];
 
-        if (visualObservations.Any(
-                observation =>
-                    observation is null))
+        if (visualEvidence.Any(
+                evidence =>
+                    evidence is null))
         {
             throw new ArgumentException(
-                "Candidate layout visual observations cannot contain null values.",
-                nameof(candidateLayoutVisualObservations));
+                "Candidate layout visual evidence cannot contain null values.",
+                nameof(candidateLayoutVisualEvidence));
         }
 
-        if (visualObservations.Any(
-                observation =>
-                    observation.PhysicalPageNumber !=
-                        physicalPageNumber ||
-                    observation.Kind !=
-                        LayoutObservationKind.Figure))
+        if (visualEvidence.Any(
+                evidence =>
+                    evidence.Observation.PhysicalPageNumber !=
+                    physicalPageNumber))
         {
             throw new ArgumentException(
-                "Candidate layout visual observations must be same-page Figure evidence.",
-                nameof(candidateLayoutVisualObservations));
+                "Candidate layout visual evidence must belong to the comparison page.",
+                nameof(candidateLayoutVisualEvidence));
         }
 
-        if (visualObservations
+        if (visualEvidence
             .GroupBy(
-                observation =>
-                    observation.ObservationSequence)
+                evidence =>
+                    evidence.Observation.ObservationSequence)
             .Any(
                 group =>
                     group.Count() >
                     1))
         {
             throw new ArgumentException(
-                "Candidate layout visual observations cannot duplicate observation sequence.",
-                nameof(candidateLayoutVisualObservations));
+                "Candidate layout visual evidence cannot duplicate observation sequence.",
+                nameof(candidateLayoutVisualEvidence));
         }
 
-        if (visualObservations.Length >
+        if (visualEvidence.Length >
                 0 &&
             status is not (
                 DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrRecovery or
@@ -264,16 +260,16 @@ public sealed record DocumentControlledCandidateTextPageComparison
                 DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrReconciliation))
         {
             throw new ArgumentException(
-                "Only executed OCR-backed text pages can carry candidate layout visual observations.",
-                nameof(candidateLayoutVisualObservations));
+                "Only executed OCR-backed text pages can carry candidate layout visual evidence.",
+                nameof(candidateLayoutVisualEvidence));
         }
 
         CandidatePage =
             candidatePage;
 
-        CandidateLayoutVisualObservations =
+        CandidateLayoutVisualEvidence =
             Array.AsReadOnly(
-                visualObservations);
+                visualEvidence);
     }
 
     public int PhysicalPageNumber { get; }
@@ -315,8 +311,8 @@ public sealed record DocumentControlledCandidateTextPageComparison
     /// </summary>
     public HybridDocumentPage? CandidatePage { get; }
 
-    public IReadOnlyList<LayoutObservation>
-        CandidateLayoutVisualObservations { get; }
+    public IReadOnlyList<LayoutVisualEvidence>
+        CandidateLayoutVisualEvidence { get; }
 
     private static void ValidateNonNegative(
         int value,

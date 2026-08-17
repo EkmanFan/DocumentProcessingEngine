@@ -443,7 +443,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
     }
 
     [Fact]
-    public async Task Runner_NativePresentCandidate_RetainsDeferredAndNeutralFigureEvidence()
+    public async Task Runner_NativePresentCandidate_RetainsDeferredAndNeutralFigureEvidenceClassification()
     {
         var page =
             NativePage(
@@ -586,17 +586,17 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 element.LayoutObservation?.Kind ==
                 LayoutObservationKind.Figure);
 
-        var visualObservation =
+        var visualEvidence =
             Assert.Single(
-                comparison.CandidateLayoutVisualObservations);
+                comparison.CandidateLayoutVisualEvidence);
 
         Assert.Equal(
             figureObservation,
-            visualObservation);
+            visualEvidence.Observation);
 
         Assert.Equal(
-            LayoutObservationKind.Figure,
-            visualObservation.Kind);
+            VisualEvidenceKind.Unknown,
+            visualEvidence.Kind);
 
         Assert.DoesNotContain(
             LayoutObservationKind.Figure,

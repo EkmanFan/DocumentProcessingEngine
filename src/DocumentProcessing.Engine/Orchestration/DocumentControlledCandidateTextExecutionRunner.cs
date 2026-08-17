@@ -1,7 +1,6 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
-using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Hybrid;
@@ -250,8 +249,8 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
                         HybridDocumentPage candidatePage;
 
-                        IReadOnlyList<LayoutObservation>
-                            layoutVisualObservations =
+                        IReadOnlyList<LayoutVisualEvidence>
+                            layoutVisualEvidence =
                                 [];
 
                         DocumentControlledCandidateTextPageStatus pageStatus;
@@ -315,8 +314,8 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                             candidatePage =
                                 ocrExecution.Page;
 
-                            layoutVisualObservations =
-                                ocrExecution.LayoutVisualObservations;
+                            layoutVisualEvidence =
+                                ocrExecution.LayoutVisualEvidence;
 
                             pageStatus =
                                 ExecutedStatus(
@@ -329,7 +328,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                 candidatePage,
                                 shadowPage,
                                 pageStatus,
-                                layoutVisualObservations));
+                                layoutVisualEvidence));
                     }
                 }
                 finally
@@ -383,8 +382,8 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
         HybridDocumentPage candidatePage,
         DocumentShadowPageComparison shadowPage,
         DocumentControlledCandidateTextPageStatus status,
-        IReadOnlyList<LayoutObservation>
-            layoutVisualObservations)
+        IReadOnlyList<LayoutVisualEvidence>
+            layoutVisualEvidence)
     {
         var authoritativeText =
             authoritativePage
@@ -429,8 +428,8 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                     element.Reconciliation is not null),
             candidatePage:
                 candidatePage,
-            candidateLayoutVisualObservations:
-                layoutVisualObservations);
+            candidateLayoutVisualEvidence:
+                layoutVisualEvidence);
     }
 
     private static DocumentControlledCandidateTextPageStatus ExecutedStatus(
