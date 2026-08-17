@@ -51,8 +51,6 @@ public sealed class DocumentProcessor
     private readonly DocumentShadowPlanningRunner? _shadowPlanningRunner;
     private readonly DocumentControlledCandidateTextExecutionRunner?
         _controlledCandidateTextExecutionRunner;
-    private readonly DocumentControlledCandidateVisualExecutionRunner?
-        _controlledCandidateVisualExecutionRunner;
     private readonly string _engineVersion;
     private readonly ProcessingComponentIdentity _nativeExtractionIdentity;
 
@@ -71,9 +69,7 @@ public sealed class DocumentProcessor
         ProcessingComponentIdentity nativeExtractionIdentity,
         DocumentShadowPlanningDependencies? shadowPlanning = null,
         DocumentControlledCandidateTextExecutionDependencies?
-            controlledCandidateTextExecution = null,
-        DocumentControlledCandidateVisualExecutionDependencies?
-            controlledCandidateVisualExecution = null)
+            controlledCandidateTextExecution = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -86,8 +82,7 @@ public sealed class DocumentProcessor
             requireHybridExecution:
                 false,
             shadowPlanning,
-            controlledCandidateTextExecution,
-            controlledCandidateVisualExecution)
+            controlledCandidateTextExecution)
     {
     }
 
@@ -104,9 +99,7 @@ public sealed class DocumentProcessor
         ProcessingComponentIdentity nativeExtractionIdentity,
         DocumentShadowPlanningDependencies? shadowPlanning = null,
         DocumentControlledCandidateTextExecutionDependencies?
-            controlledCandidateTextExecution = null,
-        DocumentControlledCandidateVisualExecutionDependencies?
-            controlledCandidateVisualExecution = null)
+            controlledCandidateTextExecution = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -120,8 +113,7 @@ public sealed class DocumentProcessor
             requireHybridExecution:
                 true,
             shadowPlanning,
-            controlledCandidateTextExecution,
-            controlledCandidateVisualExecution)
+            controlledCandidateTextExecution)
     {
     }
 
@@ -136,9 +128,7 @@ public sealed class DocumentProcessor
         bool requireHybridExecution = false,
         DocumentShadowPlanningDependencies? shadowPlanning = null,
         DocumentControlledCandidateTextExecutionDependencies?
-            controlledCandidateTextExecution = null,
-        DocumentControlledCandidateVisualExecutionDependencies?
-            controlledCandidateVisualExecution = null)
+            controlledCandidateTextExecution = null)
     {
         _documentTypeDetector =
             documentTypeDetector ??
@@ -192,20 +182,6 @@ public sealed class DocumentProcessor
                 ? null
                 : new DocumentControlledCandidateTextExecutionRunner(
                     controlledCandidateTextExecution);
-
-        if (controlledCandidateVisualExecution is not null &&
-            shadowPlanning is null)
-        {
-            throw new ArgumentException(
-                "Controlled candidate visual execution requires H.4C shadow planning.",
-                nameof(controlledCandidateVisualExecution));
-        }
-
-        _controlledCandidateVisualExecutionRunner =
-            controlledCandidateVisualExecution is null
-                ? null
-                : new DocumentControlledCandidateVisualExecutionRunner(
-                    controlledCandidateVisualExecution);
 
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -598,42 +574,6 @@ public sealed class DocumentProcessor
                         prepared.Sha256,
                         cancellationToken)
                     .ConfigureAwait(false);
-            }
-        }
-
-        DocumentControlledCandidateVisualExecutionReport?
-            controlledCandidateVisualExecutionReport =
-                null;
-
-        if (_controlledCandidateVisualExecutionRunner is not null)
-        {
-            if (shadowPlanningReport is null)
-            {
-                throw new InvalidOperationException(
-                    "Controlled candidate visual execution was configured without " +
-                    "a shadow-planning report.");
-            }
-
-            prepared.ResetForRead();
-
-            try
-            {
-                controlledCandidateVisualExecutionReport =
-                    await _controlledCandidateVisualExecutionRunner
-                        .RunAsync(
-                        prepared.Source,
-                        format,
-                        extraction,
-                        shadowPlanningReport,
-                        prepared.Sha256,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            finally
-            {
-                // Controlled candidate visual source access must not leak stream
-                // position into caller-visible source custody.
-                prepared.ResetForRead();
             }
         }
 
