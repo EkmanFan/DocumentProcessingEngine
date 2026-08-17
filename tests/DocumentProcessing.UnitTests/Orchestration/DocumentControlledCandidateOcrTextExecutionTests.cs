@@ -607,6 +607,129 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
     }
 
     [Fact]
+    public async Task Runner_MissingNativeFutureLayoutKind_RetainsDeferredEvidenceAndNeverOcrsIt()
+    {
+        var page =
+            MissingPage(
+                1);
+
+        var textObservation =
+            LayoutFor(
+                page);
+
+        var futureKind =
+            (LayoutObservationKind)int.MaxValue;
+
+        var futureObservation =
+            new LayoutObservation(
+                1,
+                observationSequence:
+                    1,
+                readingOrder:
+                    1,
+                futureKind,
+                new NormalizedRectangle(
+                    0.10,
+                    0.35,
+                    0.90,
+                    0.45),
+                "future_backend_kind");
+
+        var authoritative =
+            await ExecuteLegacyAsync(
+                page,
+                NativeTextStatus.Missing,
+                new FakePageLayoutAnalyzer(
+                    [
+                        textObservation
+                    ]),
+                new FakeRegionTextRecognizer(
+                    "Recovered by OCR."));
+
+        var candidateRecognizer =
+            new FakeRegionTextRecognizer(
+                "Recovered by OCR.");
+
+        var runner =
+            new DocumentControlledCandidateTextExecutionRunner(
+                new DocumentControlledCandidateTextExecutionDependencies(
+                    new RecordingCandidateObserver(),
+                    new FakeDocumentRasterizer(),
+                    new FakePageLayoutAnalyzer(
+                        [
+                            textObservation,
+                            futureObservation
+                        ]),
+                    candidateRecognizer));
+
+        await using var sourceBytes =
+            new MemoryStream(
+                "%PDF-controlled-future-layout-kind"u8.ToArray(),
+                writable:
+                    false);
+
+        var report =
+            await runner.RunAsync(
+                new DocumentSource(
+                    sourceBytes,
+                    "controlled.pdf",
+                    "application/pdf"),
+                DocumentFormatId.Pdf,
+                new DocumentExtractionResult(
+                    DocumentFormatId.Pdf,
+                    [
+                        page
+                    ]),
+                [
+                    authoritative
+                ],
+                Shadow(
+                    NativeTextStatus.Missing,
+                    TextExecutionMode.TargetedOcrRecovery),
+                SourceSha);
+
+        Assert.Equal(
+            DocumentControlledCandidateTextExecutionStatus.Completed,
+            report.Status);
+
+        var comparison =
+            Assert.Single(
+                report.Pages);
+
+        var candidatePage =
+            Assert.IsType<HybridDocumentPage>(
+                comparison.CandidatePage);
+
+        var deferred =
+            Assert.Single(
+                candidatePage.Elements,
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Deferred);
+
+        Assert.NotNull(
+            deferred.LayoutObservation);
+
+        Assert.Equal(
+            futureKind,
+            deferred.LayoutObservation!.Kind);
+
+        Assert.Equal(
+            futureObservation,
+            deferred.LayoutObservation);
+
+        Assert.DoesNotContain(
+            futureKind,
+            candidateRecognizer.ObservedKinds);
+
+        Assert.Empty(
+            comparison.CandidateLayoutVisualEvidence);
+
+        Assert.Empty(
+            comparison.CandidatePreservedLayoutVisuals);
+    }
+
+    [Fact]
     public async Task Runner_MissingNativeCaptionedFigure_RetainsPreservedLayoutVisualAndNeverOcrsFigure()
     {
         var page =

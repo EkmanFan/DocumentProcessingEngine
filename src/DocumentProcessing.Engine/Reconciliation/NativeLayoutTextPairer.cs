@@ -89,9 +89,8 @@ public static class NativeLayoutTextPairer
 
         foreach (var target in targetLayoutObservations)
         {
-            if (LayoutTreatmentPolicy.Decide(
-                    target.Kind) !=
-                LayoutTreatment.RecognizeText)
+            if (!LayoutTextPolicy.IsTextRecognitionCandidate(
+                    target.Kind))
             {
                 throw new InvalidOperationException(
                     $"Layout kind {target.Kind} is not authorized for native/text pairing.");

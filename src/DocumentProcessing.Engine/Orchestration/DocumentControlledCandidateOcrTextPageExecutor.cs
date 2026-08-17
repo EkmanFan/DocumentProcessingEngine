@@ -310,9 +310,10 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
             layout.Observations
                 .Where(
                     observation =>
-                        LayoutTreatmentPolicy.Decide(
-                            observation.Kind) ==
-                        LayoutTreatment.Deferred)
+                        !LayoutTextPolicy.IsTextRecognitionCandidate(
+                            observation.Kind) &&
+                        observation.Kind !=
+                        LayoutObservationKind.Figure)
                 .Select(
                     HybridDocumentElementFactory.FromDeferred)
                 .ToArray();
@@ -334,9 +335,8 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
         layout.Observations
             .Where(
                 observation =>
-                    LayoutTreatmentPolicy.Decide(
-                        observation.Kind) ==
-                    LayoutTreatment.RecognizeText)
+                    LayoutTextPolicy.IsTextRecognitionCandidate(
+                        observation.Kind))
             .OrderBy(
                 observation =>
                     observation.ReadingOrder ??

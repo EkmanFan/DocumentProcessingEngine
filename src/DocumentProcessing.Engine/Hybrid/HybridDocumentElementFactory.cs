@@ -187,9 +187,8 @@ public static class HybridDocumentElementFactory
     private static HybridDocumentElementKind MapTextualKind(
         LayoutObservationKind kind)
     {
-        if (LayoutTreatmentPolicy.Decide(
-                kind) !=
-            LayoutTreatment.RecognizeText)
+        if (!LayoutTextPolicy.IsTextRecognitionCandidate(
+                kind))
         {
             throw new InvalidOperationException(
                 $"Layout kind {kind} is not authorized as textual hybrid content.");

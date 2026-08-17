@@ -82,19 +82,16 @@ public sealed class TableTextFallbackTests
             table,
             target.SourceLayoutObservation);
 
-        Assert.Equal(
-            LayoutTreatment.RecognizeText,
-            LayoutTreatmentPolicy.Decide(
+        Assert.True(
+            LayoutTextPolicy.IsTextRecognitionCandidate(
                 LayoutObservationKind.Table));
 
-        Assert.Equal(
-            LayoutTreatment.Deferred,
-            LayoutTreatmentPolicy.Decide(
+        Assert.False(
+            LayoutTextPolicy.IsTextRecognitionCandidate(
                 LayoutObservationKind.Unknown));
 
-        Assert.Equal(
-            LayoutTreatment.PreserveVisualWithoutOcr,
-            LayoutTreatmentPolicy.Decide(
+        Assert.False(
+            LayoutTextPolicy.IsTextRecognitionCandidate(
                 LayoutObservationKind.Figure));
     }
 

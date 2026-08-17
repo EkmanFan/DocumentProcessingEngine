@@ -22,9 +22,8 @@ public static class NativeTextExtentProjector
         ArgumentNullException.ThrowIfNull(sourceBlock);
         ArgumentNullException.ThrowIfNull(sourceLayoutObservation);
 
-        if (LayoutTreatmentPolicy.Decide(
-                sourceLayoutObservation.Kind) !=
-            LayoutTreatment.RecognizeText)
+        if (!LayoutTextPolicy.IsTextRecognitionCandidate(
+                sourceLayoutObservation.Kind))
         {
             throw new InvalidOperationException(
                 $"Layout kind {sourceLayoutObservation.Kind} is not authorized " +

@@ -133,12 +133,16 @@ public sealed class VisualAssetPreserverTests
     }
 
     [Fact]
-    public async Task PreserveAsync_TextRegion_FailsClosedBeforeWriting()
+    public async Task PreserveAsync_TextRegion_DoesNotApplySemanticAuthorization()
     {
+        var bytes =
+            new byte[] { 1, 2, 3 };
+
         await using var source =
             new MemoryStream(
-                new byte[] { 1, 2, 3 },
+                bytes,
                 writable: false);
+
         await using var destination =
             new MemoryStream();
 
@@ -161,23 +165,26 @@ public sealed class VisualAssetPreserverTests
                 1000,
                 2000);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            async () =>
-                await new VisualAssetPreserver()
-                    .PreserveAsync(
-                        source,
-                        destination,
-                        SourceDocumentSha256,
-                        ProfileId,
-                        "image/png",
-                        text,
-                        crop,
-                        1000,
-                        2000)
-                    .AsTask());
+        var result =
+            await new VisualAssetPreserver()
+                .PreserveAsync(
+                    source,
+                    destination,
+                    SourceDocumentSha256,
+                    ProfileId,
+                    "image/png",
+                    text,
+                    crop,
+                    1000,
+                    2000);
 
-        Assert.Empty(
+        Assert.Equal(
+            bytes,
             destination.ToArray());
+
+        Assert.Same(
+            text,
+            result.SourceLayoutObservation);
     }
 
     [Fact]

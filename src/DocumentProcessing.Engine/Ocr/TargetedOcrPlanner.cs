@@ -7,10 +7,10 @@ namespace DocumentProcessing.Engine.Ocr;
 /// <summary>
 /// Converts neutral layout evidence into a deterministic OCR work plan.
 ///
-/// Only regions whose LayoutTreatment is RecognizeText are returned.
-/// Text, Heading, Caption, and Table are OCR-authorized by the current
-/// deterministic policy. Figure, Unknown, and future unrecognized kinds remain
-/// excluded unless the policy is deliberately changed.
+/// Only regions authorized by <see cref="LayoutTextPolicy"/> are returned.
+/// Text, Heading, Caption, and Table are OCR-authorized. Figure, Unknown, and
+/// future unrecognized kinds remain excluded unless the text policy is
+/// deliberately changed.
 /// </summary>
 public static class TargetedOcrPlanner
 {
@@ -36,8 +36,8 @@ public static class TargetedOcrPlanner
 
         foreach (var observation in layoutResult.Observations)
         {
-            if (LayoutTreatmentPolicy.Decide(observation.Kind) !=
-                LayoutTreatment.RecognizeText)
+            if (!LayoutTextPolicy.IsTextRecognitionCandidate(
+                    observation.Kind))
             {
                 continue;
             }

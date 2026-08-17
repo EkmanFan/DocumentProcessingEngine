@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Visual;
-using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Raster;
 
 namespace DocumentProcessing.Engine.Visual;
@@ -14,6 +13,9 @@ namespace DocumentProcessing.Engine.Visual;
 /// The engine deliberately does not choose a filesystem, database, object
 /// store, or other persistence backend. The destination stream is the storage
 /// boundary.
+///
+/// Semantic authorization is intentionally upstream. This component validates
+/// custody, geometry, size, integrity, and rollback only.
 /// </summary>
 public sealed class VisualAssetPreserver
 {
@@ -83,15 +85,6 @@ public sealed class VisualAssetPreserver
             throw new ArgumentOutOfRangeException(nameof(pagePixelHeight));
         }
 
-        if (LayoutTreatmentPolicy.Decide(sourceLayoutObservation.Kind) !=
-            LayoutTreatment.PreserveVisualWithoutOcr)
-        {
-            throw new InvalidOperationException(
-                $"Layout region {sourceLayoutObservation.ObservationSequence} " +
-                $"of kind {sourceLayoutObservation.Kind} is not authorized " +
-                "for visual preservation by deterministic layout treatment " +
-                "policy.");
-        }
 
         var expectedCrop =
             RasterCropGeometry.FromNormalized(

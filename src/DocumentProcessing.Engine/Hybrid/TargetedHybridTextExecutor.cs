@@ -70,9 +70,8 @@ internal sealed class TargetedHybridTextExecutor
             layout.Observations
                 .Where(
                     observation =>
-                        LayoutTreatmentPolicy.Decide(
-                            observation.Kind) ==
-                        LayoutTreatment.RecognizeText)
+                        LayoutTextPolicy.IsTextRecognitionCandidate(
+                            observation.Kind))
                 .ToArray();
 
         var pairings =
