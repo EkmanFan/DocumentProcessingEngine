@@ -235,7 +235,7 @@ public sealed class MissingNativeHybridPageExecutorTests
     }
 
     [Fact]
-    public async Task RecoveryRoute_WithFigureButNoDestinationFactory_FailsBeforeAnyRegionExecution()
+    public async Task RecoveryRoute_WithCaptionedFigureButNoDestinationFactory_FailsBeforeAnyRegionExecution()
     {
         var layout =
             new LayoutAnalysisResult(
@@ -259,7 +259,16 @@ public sealed class MissingNativeHybridPageExecutorTests
                             0.10,
                             0.40,
                             0.90,
-                            0.80))
+                            0.80)),
+                    Layout(
+                        2,
+                        2,
+                        LayoutObservationKind.Caption,
+                        new NormalizedRectangle(
+                            0.12,
+                            0.82,
+                            0.88,
+                            0.88))
                 ]);
 
         var raster =

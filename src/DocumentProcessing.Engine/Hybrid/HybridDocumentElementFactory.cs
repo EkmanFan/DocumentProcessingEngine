@@ -105,12 +105,11 @@ public static class HybridDocumentElementFactory
         var layout =
             preservedVisual.SourceLayoutObservation;
 
-        if (LayoutTreatmentPolicy.Decide(
-                layout.Kind) !=
-            LayoutTreatment.PreserveVisualWithoutOcr)
+        if (layout.Kind !=
+            LayoutObservationKind.Figure)
         {
             throw new InvalidOperationException(
-                $"Layout kind {layout.Kind} is not authorized for visual preservation.");
+                $"Layout kind {layout.Kind} cannot back a visual hybrid element.");
         }
 
         if (layout.ReadingOrder is null)
@@ -138,12 +137,11 @@ public static class HybridDocumentElementFactory
         ArgumentNullException.ThrowIfNull(
             layoutObservation);
 
-        if (LayoutTreatmentPolicy.Decide(
-                layoutObservation.Kind) !=
-            LayoutTreatment.Deferred)
+        if (LayoutTextPolicy.IsTextRecognitionCandidate(
+                layoutObservation.Kind))
         {
             throw new InvalidOperationException(
-                $"Layout kind {layoutObservation.Kind} is not a deferred V1 kind.");
+                $"Layout kind {layoutObservation.Kind} is text-authorized and cannot be deferred.");
         }
 
         if (layoutObservation.ReadingOrder is null)

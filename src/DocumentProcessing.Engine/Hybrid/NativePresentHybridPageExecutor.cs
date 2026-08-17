@@ -15,9 +15,9 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// deterministic preflight evidence does not permit trusting it directly.
 ///
 /// Route:
-/// page raster -> layout -> deterministic region policy -> target-centric
-/// native/layout pairing -> targeted OCR -> native/OCR reconciliation -> hybrid
-/// page.
+/// page raster -> layout -> independent text/visual policies -> target-centric
+/// native/layout pairing -> targeted OCR -> native/OCR reconciliation plus
+/// semantic visual execution -> hybrid page.
 ///
 /// No fuzzy matcher, OCR-confidence authority threshold, max-overlap winner, or
 /// LLM arbitration is introduced here.
@@ -26,7 +26,7 @@ public sealed class NativePresentHybridPageExecutor
 {
     private readonly IPageLayoutAnalyzer _layoutAnalyzer;
     private readonly TargetedHybridTextExecutor _textExecutor;
-    private readonly VisualAssetPreserver _visualAssetPreserver;
+    private readonly HybridLayoutVisualExecutor _visualExecutor;
 
     #region Construction
 
@@ -44,10 +44,9 @@ public sealed class NativePresentHybridPageExecutor
             new TargetedHybridTextExecutor(
                 textRecognizer);
 
-        _visualAssetPreserver =
-            visualAssetPreserver ??
-            throw new ArgumentNullException(
-                nameof(visualAssetPreserver));
+        _visualExecutor =
+            new HybridLayoutVisualExecutor(
+                visualAssetPreserver);
     }
 
     #endregion
@@ -118,25 +117,19 @@ public sealed class NativePresentHybridPageExecutor
                     layout,
                     pageRaster);
 
-        var visualTargets =
-            VisualPreservationPlanner
-                .Create(
-                    layout,
-                    pageRaster.OutputPixelWidth,
-                    pageRaster.OutputPixelHeight)
-                .ToDictionary(
-                    target =>
-                        target
-                            .SourceLayoutObservation
-                            .ObservationSequence);
+        var visualEvidence =
+            _visualExecutor
+                .Assess(
+                    layout);
 
-        if (visualTargets.Count >
-                0 &&
+        if (HybridLayoutVisualExecutor
+                .RequiresPreservationDestination(
+                    visualEvidence.Values) &&
             openVisualDestinationAsync is null)
         {
             throw new InvalidOperationException(
                 "Hybrid reconciliation requires a caller-owned visual destination " +
-                "for every Figure region.");
+                "for every semantically meaningful Figure region.");
         }
 
         var elements =
@@ -156,153 +149,80 @@ public sealed class NativePresentHybridPageExecutor
             cancellationToken
                 .ThrowIfCancellationRequested();
 
-            switch (LayoutTreatmentPolicy.Decide(
-                        observation.Kind))
+            if (LayoutTextPolicy.IsTextRecognitionCandidate(
+                    observation.Kind))
             {
-                case LayoutTreatment.RecognizeText:
-                    if (!pairings.TryGetValue(
-                            observation.ObservationSequence,
-                            out var pairing))
-                    {
-                        throw new InvalidDataException(
-                            $"OCR-authorized layout observation " +
-                            $"{observation.ObservationSequence} has no native/layout " +
-                            "pairing result.");
-                    }
+                if (!pairings.TryGetValue(
+                        observation.ObservationSequence,
+                        out var pairing))
+                {
+                    throw new InvalidDataException(
+                        $"OCR-authorized layout observation " +
+                        $"{observation.ObservationSequence} has no native/layout " +
+                        "pairing result.");
+                }
 
-                    elements.Add(
-                        await _textExecutor
-                            .ExecuteNativePresentAsync(
-                                sourcePage,
-                                decision.Assessment.NativeTextStatus,
-                                rasterSession,
-                                pageRaster,
-                                observation,
-                                pairing,
-                                ocrTargets,
-                                cancellationToken)
-                            .ConfigureAwait(
-                                false));
+                elements.Add(
+                    await _textExecutor
+                        .ExecuteNativePresentAsync(
+                            sourcePage,
+                            decision.Assessment.NativeTextStatus,
+                            rasterSession,
+                            pageRaster,
+                            observation,
+                            pairing,
+                            ocrTargets,
+                            cancellationToken)
+                        .ConfigureAwait(
+                            false));
 
-                    break;
-
-                case LayoutTreatment.PreserveVisualWithoutOcr:
-                    elements.Add(
-                        await ExecuteVisualRegionAsync(
-                                sourcePage,
-                                rasterSession,
-                                pageRaster,
-                                sourceDocumentSha256,
-                                observation,
-                                visualTargets,
-                                openVisualDestinationAsync!,
-                                cancellationToken)
-                            .ConfigureAwait(
-                                false));
-
-                    break;
-
-                case LayoutTreatment.Deferred:
-                    elements.Add(
-                        HybridDocumentElementFactory
-                            .FromDeferred(
-                                observation));
-
-                    break;
-
-                default:
-                    throw new InvalidOperationException(
-                        $"Unsupported layout treatment " +
-                        $"{LayoutTreatmentPolicy.Decide(observation.Kind)}.");
+                continue;
             }
+
+            if (observation.Kind ==
+                LayoutObservationKind.Figure)
+            {
+                if (!visualEvidence.TryGetValue(
+                        observation.ObservationSequence,
+                        out var evidence))
+                {
+                    throw new InvalidDataException(
+                        $"Figure layout observation " +
+                        $"{observation.ObservationSequence} has no semantic " +
+                        "visual evidence.");
+                }
+
+                var visualElement =
+                    await _visualExecutor
+                        .ExecuteAsync(
+                            evidence,
+                            rasterSession,
+                            pageRaster,
+                            sourceDocumentSha256,
+                            openVisualDestinationAsync,
+                            cancellationToken)
+                        .ConfigureAwait(
+                            false);
+
+                if (visualElement is not null)
+                {
+                    elements.Add(
+                        visualElement);
+                }
+
+                continue;
+            }
+
+            elements.Add(
+                HybridDocumentElementFactory
+                    .FromDeferred(
+                        observation));
         }
 
         return HybridDocumentAssembler
             .AssemblePage(
                 sourcePage,
                 elements);
-    }
-
-    #endregion
-
-    #region Visual preservation execution
-
-    private async ValueTask<HybridDocumentElement> ExecuteVisualRegionAsync(
-        DocumentExtractionPage sourcePage,
-        IDocumentRasterizationSession rasterSession,
-        RasterRenderResult pageRaster,
-        string sourceDocumentSha256,
-        LayoutObservation observation,
-        IReadOnlyDictionary<int, VisualPreservationTarget> visualTargets,
-        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>
-            openVisualDestinationAsync,
-        CancellationToken cancellationToken)
-    {
-        if (!visualTargets.TryGetValue(
-                observation.ObservationSequence,
-                out var target))
-        {
-            throw new InvalidDataException(
-                $"Visual-preservation layout observation " +
-                $"{observation.ObservationSequence} has no preservation plan.");
-        }
-
-        await using var cropBytes =
-            new MemoryStream();
-
-        var cropRaster =
-            await rasterSession
-                .RenderRegionAsync(
-                    sourcePage.PhysicalPageNumber,
-                    pageRaster.OutputPixelWidth,
-                    pageRaster.OutputPixelHeight,
-                    target.Crop,
-                    cropBytes,
-                    cancellationToken)
-                .ConfigureAwait(
-                    false);
-
-        ValidateCropRaster(
-            sourcePage,
-            pageRaster,
-            target.Crop,
-            cropRaster);
-
-        Rewind(
-            cropBytes);
-
-        var destination =
-            await openVisualDestinationAsync(
-                    observation,
-                    cancellationToken)
-                .ConfigureAwait(
-                    false);
-
-        if (destination is null)
-        {
-            throw new InvalidOperationException(
-                "Visual destination factory returned null.");
-        }
-
-        var preserved =
-            await _visualAssetPreserver
-                .PreserveAsync(
-                    cropBytes,
-                    destination,
-                    sourceDocumentSha256,
-                    cropRaster.ProfileId,
-                    cropRaster.MediaType,
-                    observation,
-                    target.Crop,
-                    pageRaster.OutputPixelWidth,
-                    pageRaster.OutputPixelHeight,
-                    cancellationToken)
-                .ConfigureAwait(
-                    false);
-
-        return HybridDocumentElementFactory
-            .FromPreservedVisual(
-                preserved);
     }
 
     #endregion
@@ -412,36 +332,6 @@ public sealed class NativePresentHybridPageExecutor
         {
             throw new InvalidDataException(
                 "Layout result belongs to a different physical page.");
-        }
-    }
-
-    private static void ValidateCropRaster(
-        DocumentExtractionPage sourcePage,
-        RasterRenderResult pageRaster,
-        PixelRectangle expectedCrop,
-        RasterRenderResult cropRaster)
-    {
-        if (cropRaster.PhysicalPageNumber !=
-            sourcePage.PhysicalPageNumber)
-        {
-            throw new InvalidDataException(
-                "Region raster belongs to a different physical page.");
-        }
-
-        if (cropRaster.Crop !=
-            expectedCrop)
-        {
-            throw new InvalidDataException(
-                "Region raster does not match the deterministic planned crop.");
-        }
-
-        if (cropRaster.SourcePagePixelWidth !=
-                pageRaster.OutputPixelWidth ||
-            cropRaster.SourcePagePixelHeight !=
-                pageRaster.OutputPixelHeight)
-        {
-            throw new InvalidDataException(
-                "Region raster source dimensions do not match the page raster.");
         }
     }
 

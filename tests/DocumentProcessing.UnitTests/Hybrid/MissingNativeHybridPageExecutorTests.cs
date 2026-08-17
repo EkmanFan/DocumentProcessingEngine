@@ -107,6 +107,351 @@ public sealed class MissingNativeHybridPageExecutorTests
             recognizer.CallCount);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_CaptionedFigure_PreservesSemanticVisualAndNeverOcrsFigure()
+    {
+        var figure =
+            new LayoutObservation(
+                233,
+                observationSequence:
+                    0,
+                readingOrder:
+                    0,
+                LayoutObservationKind.Figure,
+                new NormalizedRectangle(
+                    0.10,
+                    0.10,
+                    0.60,
+                    0.50),
+                "image");
+
+        var caption =
+            new LayoutObservation(
+                233,
+                observationSequence:
+                    1,
+                readingOrder:
+                    1,
+                LayoutObservationKind.Caption,
+                new NormalizedRectangle(
+                    0.12,
+                    0.52,
+                    0.58,
+                    0.58),
+                "figure_title");
+
+        var recognizer =
+            new FakeRegionTextRecognizer(
+                "Recovered caption.");
+
+        var executor =
+            new MissingNativeHybridPageExecutor(
+                new FakePageLayoutAnalyzer(
+                    [
+                        figure,
+                        caption
+                    ]),
+                recognizer,
+                new VisualAssetPreserver());
+
+        await using var raster =
+            new FakeRasterizationSession();
+
+        await using var destination =
+            new MemoryStream();
+
+        var destinationCalls =
+            0;
+
+        var page =
+            await executor.ExecuteAsync(
+                MissingPage(
+                    233),
+                MissingDecision(
+                    233),
+                raster,
+                SourceSha256,
+                (observation, cancellationToken) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    destinationCalls++;
+                    Assert.Same(
+                        figure,
+                        observation);
+
+                    return ValueTask.FromResult<Stream>(
+                        destination);
+                });
+
+        Assert.Equal(
+            2,
+            page.Elements.Count);
+
+        var visual =
+            Assert.Single(
+                page.Elements,
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Visual);
+
+        Assert.Same(
+            figure,
+            visual.LayoutObservation);
+
+        Assert.NotNull(
+            visual.PreservedVisual);
+
+        Assert.Equal(
+            new byte[] { 2 },
+            destination.ToArray());
+
+        var recoveredCaption =
+            Assert.Single(
+                page.Elements,
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Caption);
+
+        Assert.Equal(
+            "Recovered caption.",
+            recoveredCaption.Text);
+
+        Assert.Equal(
+            1,
+            destinationCalls);
+
+        Assert.Equal(
+            1,
+            recognizer.CallCount);
+
+        Assert.Equal(
+            [
+                LayoutObservationKind.Caption
+            ],
+            recognizer.ObservedKinds);
+
+        Assert.DoesNotContain(
+            LayoutObservationKind.Figure,
+            recognizer.ObservedKinds);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_UncaptionedFigure_IsDeferredWithoutDestinationAndNeverOcrsFigure()
+    {
+        var figure =
+            new LayoutObservation(
+                233,
+                observationSequence:
+                    0,
+                readingOrder:
+                    0,
+                LayoutObservationKind.Figure,
+                new NormalizedRectangle(
+                    0.10,
+                    0.10,
+                    0.60,
+                    0.50),
+                "image");
+
+        var recognizer =
+            new FakeRegionTextRecognizer(
+                "must-not-be-used");
+
+        var executor =
+            new MissingNativeHybridPageExecutor(
+                new FakePageLayoutAnalyzer(
+                    [
+                        figure
+                    ]),
+                recognizer,
+                new VisualAssetPreserver());
+
+        await using var raster =
+            new FakeRasterizationSession();
+
+        var page =
+            await executor.ExecuteAsync(
+                MissingPage(
+                    233),
+                MissingDecision(
+                    233),
+                raster,
+                SourceSha256);
+
+        var deferred =
+            Assert.Single(
+                page.Elements);
+
+        Assert.Equal(
+            HybridDocumentElementKind.Deferred,
+            deferred.Kind);
+
+        Assert.Same(
+            figure,
+            deferred.LayoutObservation);
+
+        Assert.Equal(
+            0,
+            recognizer.CallCount);
+
+        Assert.Empty(
+            recognizer.ObservedKinds);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CaptionedFigureWithoutDestination_FailsBeforeOcr()
+    {
+        var figure =
+            new LayoutObservation(
+                233,
+                observationSequence:
+                    0,
+                readingOrder:
+                    0,
+                LayoutObservationKind.Figure,
+                new NormalizedRectangle(
+                    0.10,
+                    0.10,
+                    0.60,
+                    0.50),
+                "image");
+
+        var caption =
+            new LayoutObservation(
+                233,
+                observationSequence:
+                    1,
+                readingOrder:
+                    1,
+                LayoutObservationKind.Caption,
+                new NormalizedRectangle(
+                    0.12,
+                    0.52,
+                    0.58,
+                    0.58),
+                "figure_title");
+
+        var recognizer =
+            new FakeRegionTextRecognizer(
+                "must-not-be-used");
+
+        var executor =
+            new MissingNativeHybridPageExecutor(
+                new FakePageLayoutAnalyzer(
+                    [
+                        figure,
+                        caption
+                    ]),
+                recognizer,
+                new VisualAssetPreserver());
+
+        await using var raster =
+            new FakeRasterizationSession();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            async () =>
+                await executor.ExecuteAsync(
+                    MissingPage(
+                        233),
+                    MissingDecision(
+                        233),
+                    raster,
+                    SourceSha256));
+
+        Assert.Equal(
+            0,
+            recognizer.CallCount);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_FutureNonTextKind_IsDeferred()
+    {
+        var futureKind =
+            (LayoutObservationKind)int.MaxValue;
+
+        var observation =
+            new LayoutObservation(
+                233,
+                observationSequence:
+                    0,
+                readingOrder:
+                    0,
+                futureKind,
+                new NormalizedRectangle(
+                    0.10,
+                    0.10,
+                    0.60,
+                    0.20),
+                "future_kind");
+
+        var recognizer =
+            new FakeRegionTextRecognizer(
+                "must-not-be-used");
+
+        var executor =
+            new MissingNativeHybridPageExecutor(
+                new FakePageLayoutAnalyzer(
+                    [
+                        observation
+                    ]),
+                recognizer,
+                new VisualAssetPreserver());
+
+        await using var raster =
+            new FakeRasterizationSession();
+
+        var page =
+            await executor.ExecuteAsync(
+                MissingPage(
+                    233),
+                MissingDecision(
+                    233),
+                raster,
+                SourceSha256);
+
+        var deferred =
+            Assert.Single(
+                page.Elements);
+
+        Assert.Equal(
+            HybridDocumentElementKind.Deferred,
+            deferred.Kind);
+
+        Assert.Same(
+            observation,
+            deferred.LayoutObservation);
+
+        Assert.Equal(
+            0,
+            recognizer.CallCount);
+    }
+
+    private static DocumentExtractionPage MissingPage(
+        int physicalPageNumber) =>
+        new(
+            physicalPageNumber,
+            sourceText:
+                string.Empty,
+            wordCount:
+                0,
+            sourceWidth:
+                1000,
+            sourceHeight:
+                1000,
+            words:
+                [],
+            blocks:
+                []);
+
+    private static PageProcessingDecision MissingDecision(
+        int physicalPageNumber) =>
+        new(
+            new PageProcessingAssessment(
+                physicalPageNumber,
+                NativeTextStatus.Missing),
+            new PageProcessingPlan(
+                PageProcessingRoute.LayoutWithTargetedOcrRecovery));
+
     private sealed class FakePageLayoutAnalyzer(
         IReadOnlyList<LayoutObservation> observations)
         : IPageLayoutAnalyzer
@@ -134,6 +479,9 @@ public sealed class MissingNativeHybridPageExecutorTests
     {
         public int CallCount { get; private set; }
 
+        public List<LayoutObservationKind> ObservedKinds { get; } =
+            [];
+
         public ValueTask<OcrRegionResult> RecognizeAsync(
             Stream rasterRegion,
             LayoutObservation sourceLayoutObservation,
@@ -145,6 +493,8 @@ public sealed class MissingNativeHybridPageExecutorTests
             cancellationToken.ThrowIfCancellationRequested();
 
             CallCount++;
+            ObservedKinds.Add(
+                sourceLayoutObservation.Kind);
 
             return ValueTask.FromResult(
                 new OcrRegionResult(

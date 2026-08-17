@@ -66,7 +66,16 @@ public sealed class DocumentProcessorHybridRoutingTests
                             0.60,
                             0.10,
                             0.90,
-                            0.40)
+                            0.40),
+                        Layout(
+                            2,
+                            2,
+                            2,
+                            LayoutObservationKind.Caption,
+                            0.62,
+                            0.42,
+                            0.88,
+                            0.47)
                     ],
                     [3] =
                     [
@@ -88,6 +97,8 @@ public sealed class DocumentProcessorHybridRoutingTests
                 {
                     [(2, 0)] =
                         "Recovered page two.",
+                    [(2, 2)] =
+                        "Recovered caption.",
                     [(3, 0)] =
                         "Verified beta."
                 });
@@ -122,7 +133,7 @@ public sealed class DocumentProcessorHybridRoutingTests
             result.Pages.Count);
 
         Assert.Equal(
-            4,
+            5,
             result.Elements.Count);
 
         var page1 =
@@ -145,8 +156,8 @@ public sealed class DocumentProcessorHybridRoutingTests
                 element =>
                     element.PhysicalPageNumber ==
                         2 &&
-                    element.TextOrigin ==
-                        TextSelectionOrigin.Ocr);
+                    element.Kind ==
+                        HybridDocumentElementKind.Text);
 
         Assert.Equal(
             TextReconciliationDecision.OcrOnly,
@@ -170,6 +181,23 @@ public sealed class DocumentProcessorHybridRoutingTests
 
         Assert.Null(
             page2Visual.NormalizedText);
+
+        var page2Caption =
+            Assert.Single(
+                result.Elements,
+                element =>
+                    element.PhysicalPageNumber ==
+                        2 &&
+                    element.Kind ==
+                        HybridDocumentElementKind.Caption);
+
+        Assert.Equal(
+            TextSelectionOrigin.Ocr,
+            page2Caption.TextOrigin);
+
+        Assert.Equal(
+            "Recovered caption.",
+            page2Caption.NormalizedText);
 
         var page3 =
             Assert.Single(
@@ -202,11 +230,11 @@ public sealed class DocumentProcessorHybridRoutingTests
             session.FullPageRenderCount);
 
         Assert.Equal(
-            3,
+            4,
             session.RegionRenderCount);
 
         Assert.Equal(
-            2,
+            3,
             recognizer.CallCount);
 
         Assert.Equal(
@@ -344,7 +372,7 @@ public sealed class DocumentProcessorHybridRoutingTests
     }
 
     [Fact]
-    public async Task ProcessAsync_FigureWithoutDestination_FailsBeforeRegionOcr()
+    public async Task ProcessAsync_CaptionedFigureWithoutDestination_FailsBeforeRegionOcr()
     {
         var extraction =
             new DocumentExtractionResult(
@@ -362,7 +390,101 @@ public sealed class DocumentProcessorHybridRoutingTests
                 new Dictionary<(int Page, int Sequence), string>
                 {
                     [(1, 0)] =
-                        "Would be OCR"
+                        "Would be OCR",
+                    [(1, 2)] =
+                        "Would be caption OCR"
+                });
+
+        var processor =
+            CreateHybridProcessor(
+                extraction,
+                DocumentPreflightClassification.RasterOrScanned,
+                rasterizer,
+                new FakePageLayoutAnalyzer(
+                    new Dictionary<int, IReadOnlyList<LayoutObservation>>
+                    {
+                        [1] =
+                        [
+                            Layout(
+                                1,
+                                0,
+                                0,
+                                LayoutObservationKind.Text,
+                                0.10,
+                                0.10,
+                                0.50,
+                                0.25),
+                            Layout(
+                                1,
+                                1,
+                                1,
+                                LayoutObservationKind.Figure,
+                                0.60,
+                                0.10,
+                                0.90,
+                                0.40),
+                            Layout(
+                                1,
+                                2,
+                                2,
+                                LayoutObservationKind.Caption,
+                                0.62,
+                                0.42,
+                                0.88,
+                                0.47)
+                        ]
+                    }),
+                recognizer);
+
+        await using var sourceStream =
+            new MemoryStream(
+                "%PDF-no-visual-destination"u8.ToArray(),
+                writable:
+                    false);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () =>
+                processor.ProcessAsync(
+                    new DocumentSource(
+                        sourceStream)));
+
+        Assert.Equal(
+            0,
+            recognizer.CallCount);
+
+        var session =
+            Assert.Single(
+                rasterizer.OpenedSessions);
+
+        Assert.Equal(
+            1,
+            session.FullPageRenderCount);
+
+        Assert.Equal(
+            0,
+            session.RegionRenderCount);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_UncaptionedFigureWithoutDestination_IsDeferredAndTextStillOcrs()
+    {
+        var extraction =
+            new DocumentExtractionResult(
+                DocumentFormatId.Pdf,
+                [
+                    MissingPage(
+                        1)
+                ]);
+
+        var rasterizer =
+            new FakeDocumentRasterizer();
+
+        var recognizer =
+            new FakeRegionTextRecognizer(
+                new Dictionary<(int Page, int Sequence), string>
+                {
+                    [(1, 0)] =
+                        "Recovered text."
                 });
 
         var processor =
@@ -399,19 +521,70 @@ public sealed class DocumentProcessorHybridRoutingTests
 
         await using var sourceStream =
             new MemoryStream(
-                "%PDF-no-visual-destination"u8.ToArray(),
+                "%PDF-unresolved-visual-no-destination"u8.ToArray(),
                 writable:
                     false);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () =>
-                processor.ProcessAsync(
-                    new DocumentSource(
-                        sourceStream)));
+        var result =
+            await processor.ProcessAsync(
+                new DocumentSource(
+                    sourceStream));
 
         Assert.Equal(
-            0,
+            2,
+            result.Elements.Count);
+
+        var text =
+            Assert.Single(
+                result.Elements,
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Text);
+
+        Assert.Equal(
+            "Recovered text.",
+            text.NormalizedText);
+
+        Assert.Equal(
+            TextSelectionOrigin.Ocr,
+            text.TextOrigin);
+
+        var deferred =
+            Assert.Single(
+                result.Elements,
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Deferred);
+
+        Assert.Equal(
+            LayoutObservationKind.Figure,
+            deferred.LayoutKind);
+
+        Assert.False(
+            deferred.IsResolved);
+
+        Assert.Null(
+            deferred.PreservedVisual);
+
+        Assert.Equal(
+            1,
             recognizer.CallCount);
+
+        var session =
+            Assert.Single(
+                rasterizer.OpenedSessions);
+
+        Assert.Equal(
+            1,
+            session.FullPageRenderCount);
+
+        Assert.Equal(
+            1,
+            session.RegionRenderCount);
+
+        Assert.Empty(
+            result.ProcessingManifest
+                .VisualPreservationProfileIds);
     }
 
     #endregion

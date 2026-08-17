@@ -300,6 +300,234 @@ public sealed class NativePresentHybridPageExecutorTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_CaptionedFigure_PreservesSemanticVisualAndNeverOcrsFigure()
+    {
+        var textLayout =
+            Layout(
+                70,
+                0,
+                0,
+                LayoutObservationKind.Text,
+                0.10,
+                0.10,
+                0.50,
+                0.20);
+
+        var figure =
+            Layout(
+                70,
+                1,
+                1,
+                LayoutObservationKind.Figure,
+                0.10,
+                0.30,
+                0.60,
+                0.70);
+
+        var caption =
+            Layout(
+                70,
+                2,
+                2,
+                LayoutObservationKind.Caption,
+                0.12,
+                0.72,
+                0.58,
+                0.78);
+
+        var block =
+            Block(
+                0,
+                0,
+                Word(
+                    0,
+                    "native",
+                    0.12,
+                    0.12,
+                    0.22,
+                    0.16));
+
+        var executor =
+            Executor(
+                new[]
+                {
+                    textLayout,
+                    figure,
+                    caption
+                },
+                new Dictionary<int, string>
+                {
+                    [0] =
+                        "native",
+                    [2] =
+                        "Recovered caption."
+                },
+                out var recognizer);
+
+        await using var raster =
+            new FakeRasterizationSession();
+
+        await using var destination =
+            new MemoryStream();
+
+        var destinationCalls =
+            0;
+
+        var page =
+            await executor.ExecuteAsync(
+                Page(
+                    70,
+                    block),
+                Decision(
+                    70,
+                    NativeTextStatus.Unverified),
+                raster,
+                SourceSha256,
+                (observation, cancellationToken) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    destinationCalls++;
+                    Assert.Same(
+                        figure,
+                        observation);
+
+                    return ValueTask.FromResult<Stream>(
+                        destination);
+                });
+
+        Assert.Equal(
+            3,
+            page.Elements.Count);
+
+        var visual =
+            Assert.Single(
+                page.Elements,
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Visual);
+
+        Assert.Same(
+            figure,
+            visual.LayoutObservation);
+
+        Assert.NotNull(
+            visual.PreservedVisual);
+
+        Assert.Equal(
+            new byte[] { 2 },
+            destination.ToArray());
+
+        Assert.Equal(
+            1,
+            destinationCalls);
+
+        Assert.Equal(
+            2,
+            recognizer.CallCount);
+
+        Assert.Contains(
+            LayoutObservationKind.Text,
+            recognizer.ObservedKinds);
+
+        Assert.Contains(
+            LayoutObservationKind.Caption,
+            recognizer.ObservedKinds);
+
+        Assert.DoesNotContain(
+            LayoutObservationKind.Figure,
+            recognizer.ObservedKinds);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_UncaptionedFigure_IsDeferredWithoutDestinationAndNeverOcrsFigure()
+    {
+        var textLayout =
+            Layout(
+                70,
+                0,
+                0,
+                LayoutObservationKind.Text,
+                0.10,
+                0.10,
+                0.50,
+                0.20);
+
+        var figure =
+            Layout(
+                70,
+                1,
+                1,
+                LayoutObservationKind.Figure,
+                0.10,
+                0.30,
+                0.60,
+                0.70);
+
+        var block =
+            Block(
+                0,
+                0,
+                Word(
+                    0,
+                    "native",
+                    0.12,
+                    0.12,
+                    0.22,
+                    0.16));
+
+        var executor =
+            Executor(
+                new[]
+                {
+                    textLayout,
+                    figure
+                },
+                new Dictionary<int, string>
+                {
+                    [0] =
+                        "native"
+                },
+                out var recognizer);
+
+        await using var raster =
+            new FakeRasterizationSession();
+
+        var page =
+            await executor.ExecuteAsync(
+                Page(
+                    70,
+                    block),
+                Decision(
+                    70,
+                    NativeTextStatus.Unverified),
+                raster,
+                SourceSha256);
+
+        Assert.Equal(
+            2,
+            page.Elements.Count);
+
+        var deferred =
+            Assert.Single(
+                page.Elements,
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Deferred);
+
+        Assert.Same(
+            figure,
+            deferred.LayoutObservation);
+
+        Assert.Equal(
+            1,
+            recognizer.CallCount);
+
+        Assert.DoesNotContain(
+            LayoutObservationKind.Figure,
+            recognizer.ObservedKinds);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_RejectsHealthyNativeRoute()
     {
         var layout =
@@ -508,6 +736,9 @@ public sealed class NativePresentHybridPageExecutorTests
 
         public int CallCount { get; private set; }
 
+        public List<LayoutObservationKind> ObservedKinds { get; } =
+            [];
+
         public ValueTask<OcrRegionResult> RecognizeAsync(
             Stream rasterRegion,
             LayoutObservation sourceLayoutObservation,
@@ -520,6 +751,8 @@ public sealed class NativePresentHybridPageExecutorTests
                 .ThrowIfCancellationRequested();
 
             CallCount++;
+            ObservedKinds.Add(
+                sourceLayoutObservation.Kind);
 
             if (!_ocrText.TryGetValue(
                     sourceLayoutObservation.ObservationSequence,
