@@ -4,17 +4,20 @@ using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
+using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Layout;
+using DocumentProcessing.Engine.Visual;
 
 namespace DocumentProcessing.Engine.Orchestration;
 
 /// <summary>
-/// Executes only the OCR-backed candidate text axis.
+/// Executes the OCR-backed controlled candidate page path.
 ///
 /// It reuses <see cref="TargetedHybridTextExecutor"/> for OCR planning,
-/// target-centric pairing, recognition, and reconciliation. It deliberately
-/// ignores non-text layout observations and owns no visual preservation.
+/// target-centric pairing, recognition, and reconciliation. Neutral layout
+/// visual evidence is assessed independently, and only semantically authorized
+/// regions are materialized as non-authoritative preservation evidence.
 /// </summary>
 internal sealed class DocumentControlledCandidateOcrTextPageExecutor
 {
@@ -37,11 +40,13 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
 
     public async ValueTask<(
         HybridDocumentPage Page,
-        IReadOnlyList<LayoutVisualEvidence> LayoutVisualEvidence)> ExecuteAsync(
+        IReadOnlyList<LayoutVisualEvidence> LayoutVisualEvidence,
+        IReadOnlyList<PreservedVisualEvidence> PreservedLayoutVisuals)> ExecuteAsync(
         DocumentExtractionPage sourcePage,
         NativeTextStatus nativeTextStatus,
         TextExecutionMode textMode,
         IDocumentRasterizationSession rasterSession,
+        string sourceDocumentSha256,
         CancellationToken cancellationToken = default)
     {
         ValidateRequest(
@@ -49,6 +54,14 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
             nativeTextStatus,
             textMode,
             rasterSession);
+
+        if (string.IsNullOrWhiteSpace(
+                sourceDocumentSha256))
+        {
+            throw new ArgumentException(
+                "Source document SHA-256 cannot be empty.",
+                nameof(sourceDocumentSha256));
+        }
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -127,9 +140,68 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
                 .Assess(
                     layout);
 
+        var preservedLayoutVisuals =
+            await PreserveLayoutVisualsAsync(
+                    layoutVisualEvidence,
+                    rasterSession,
+                    pageRaster,
+                    sourceDocumentSha256,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
         return (
             candidatePage,
-            layoutVisualEvidence);
+            layoutVisualEvidence,
+            preservedLayoutVisuals);
+    }
+
+    private static async ValueTask<IReadOnlyList<PreservedVisualEvidence>>
+        PreserveLayoutVisualsAsync(
+            IReadOnlyList<LayoutVisualEvidence> layoutVisualEvidence,
+            IDocumentRasterizationSession rasterSession,
+            RasterRenderResult pageRaster,
+            string sourceDocumentSha256,
+            CancellationToken cancellationToken)
+    {
+        var meaningful =
+            layoutVisualEvidence
+                .Where(
+                    evidence =>
+                        VisualEvidenceDispositionPolicy.Decide(
+                            evidence.Kind) ==
+                        VisualDisposition.PreserveMeaningfulVisual)
+                .ToArray();
+
+        if (meaningful.Length ==
+            0)
+        {
+            return [];
+        }
+
+        var preserver =
+            new LayoutVisualRegionPreserver();
+
+        var preserved =
+            new List<PreservedVisualEvidence>(
+                meaningful.Length);
+
+        foreach (var evidence in meaningful)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            preserved.Add(
+                await preserver
+                    .PreserveAsync(
+                        evidence,
+                        rasterSession,
+                        pageRaster,
+                        sourceDocumentSha256,
+                        Stream.Null,
+                        cancellationToken)
+                    .ConfigureAwait(false));
+        }
+
+        return preserved;
     }
 
     private async ValueTask<IReadOnlyList<HybridDocumentElement>>

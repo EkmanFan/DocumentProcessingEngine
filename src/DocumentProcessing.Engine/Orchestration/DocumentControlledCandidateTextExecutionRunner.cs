@@ -3,6 +3,7 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
+using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Hybrid;
 
 namespace DocumentProcessing.Engine.Orchestration;
@@ -13,10 +14,10 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// H.4D.1 executes NativeText and defers OCR-backed modes unless OCR capability
 /// is explicitly composed.
 ///
-/// H.4D.2B can additionally execute TargetedOcrRecovery,
-/// TargetedOcrVerification, and TargetedOcrReconciliation through a separate
-/// candidate raster/layout/OCR runtime. Independent visual work is owned by the
-/// separate H.4D.3B controlled visual runtime.
+/// OCR-backed modes execute through the controlled candidate
+/// raster/layout/OCR runtime. The same page execution may materialize
+/// semantically authorized layout visual regions, but those preserved values
+/// remain non-authoritative comparison evidence.
 ///
 /// The legacy page list is already complete before this runner is invoked. No
 /// candidate result is returned to authoritative orchestration.
@@ -253,6 +254,10 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                             layoutVisualEvidence =
                                 [];
 
+                        IReadOnlyList<PreservedVisualEvidence>
+                            preservedLayoutVisuals =
+                                [];
+
                         DocumentControlledCandidateTextPageStatus pageStatus;
 
                         if (candidatePlan.TextMode ==
@@ -308,6 +313,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                             .NativeTextStatus,
                                         candidatePlan.TextMode,
                                         rasterSession,
+                                        sourceDocumentSha256,
                                         cancellationToken)
                                     .ConfigureAwait(false);
 
@@ -316,6 +322,9 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
                             layoutVisualEvidence =
                                 ocrExecution.LayoutVisualEvidence;
+
+                            preservedLayoutVisuals =
+                                ocrExecution.PreservedLayoutVisuals;
 
                             pageStatus =
                                 ExecutedStatus(
@@ -328,7 +337,8 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                 candidatePage,
                                 shadowPage,
                                 pageStatus,
-                                layoutVisualEvidence));
+                                layoutVisualEvidence,
+                                preservedLayoutVisuals));
                     }
                 }
                 finally
@@ -383,7 +393,9 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
         DocumentShadowPageComparison shadowPage,
         DocumentControlledCandidateTextPageStatus status,
         IReadOnlyList<LayoutVisualEvidence>
-            layoutVisualEvidence)
+            layoutVisualEvidence,
+        IReadOnlyList<PreservedVisualEvidence>
+            preservedLayoutVisuals)
     {
         var authoritativeText =
             authoritativePage
@@ -429,7 +441,9 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             candidatePage:
                 candidatePage,
             candidateLayoutVisualEvidence:
-                layoutVisualEvidence);
+                layoutVisualEvidence,
+            candidatePreservedLayoutVisuals:
+                preservedLayoutVisuals);
     }
 
     private static DocumentControlledCandidateTextPageStatus ExecutedStatus(

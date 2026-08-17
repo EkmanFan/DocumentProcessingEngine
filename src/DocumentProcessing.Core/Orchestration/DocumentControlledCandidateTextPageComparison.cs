@@ -1,4 +1,5 @@
 using DocumentProcessing.Core.Hybrid;
+using DocumentProcessing.Core.Visual;
 
 namespace DocumentProcessing.Core.Orchestration;
 
@@ -26,7 +27,9 @@ public sealed record DocumentControlledCandidateTextPageComparison
         int? candidateReconciliationEvidenceCount = null,
         HybridDocumentPage? candidatePage = null,
         IEnumerable<LayoutVisualEvidence>?
-            candidateLayoutVisualEvidence = null)
+            candidateLayoutVisualEvidence = null,
+        IEnumerable<PreservedVisualEvidence>?
+            candidatePreservedLayoutVisuals = null)
     {
         if (physicalPageNumber <= 0)
         {
@@ -264,12 +267,77 @@ public sealed record DocumentControlledCandidateTextPageComparison
                 nameof(candidateLayoutVisualEvidence));
         }
 
+        var preservedLayoutVisuals =
+            candidatePreservedLayoutVisuals?.ToArray() ??
+            [];
+
+        if (preservedLayoutVisuals.Any(
+                visual =>
+                    visual is null))
+        {
+            throw new ArgumentException(
+                "Candidate preserved layout visuals cannot contain null values.",
+                nameof(candidatePreservedLayoutVisuals));
+        }
+
+        if (preservedLayoutVisuals.Any(
+                visual =>
+                    visual.SourceLayoutObservation.PhysicalPageNumber !=
+                    physicalPageNumber))
+        {
+            throw new ArgumentException(
+                "Candidate preserved layout visuals must belong to the comparison page.",
+                nameof(candidatePreservedLayoutVisuals));
+        }
+
+        if (preservedLayoutVisuals
+            .GroupBy(
+                visual =>
+                    visual.SourceLayoutObservation.ObservationSequence)
+            .Any(
+                group =>
+                    group.Count() >
+                    1))
+        {
+            throw new ArgumentException(
+                "Candidate preserved layout visuals cannot duplicate observation sequence.",
+                nameof(candidatePreservedLayoutVisuals));
+        }
+
+        if (preservedLayoutVisuals.Any(
+                visual =>
+                    !visualEvidence.Any(
+                        evidence =>
+                            evidence.Observation.Equals(
+                                visual.SourceLayoutObservation))))
+        {
+            throw new ArgumentException(
+                "Every preserved layout visual must retain matching candidate layout visual evidence.",
+                nameof(candidatePreservedLayoutVisuals));
+        }
+
+        if (preservedLayoutVisuals.Length >
+                0 &&
+            status is not (
+                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrRecovery or
+                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrVerification or
+                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrReconciliation))
+        {
+            throw new ArgumentException(
+                "Only executed OCR-backed candidate pages can carry preserved layout visuals.",
+                nameof(candidatePreservedLayoutVisuals));
+        }
+
         CandidatePage =
             candidatePage;
 
         CandidateLayoutVisualEvidence =
             Array.AsReadOnly(
                 visualEvidence);
+
+        CandidatePreservedLayoutVisuals =
+            Array.AsReadOnly(
+                preservedLayoutVisuals);
     }
 
     public int PhysicalPageNumber { get; }
@@ -313,6 +381,14 @@ public sealed record DocumentControlledCandidateTextPageComparison
 
     public IReadOnlyList<LayoutVisualEvidence>
         CandidateLayoutVisualEvidence { get; }
+
+    /// <summary>
+    /// Non-authoritative regional visual materialization retained from the
+    /// controlled OCR-backed candidate path. These values are evidence only;
+    /// they do not transfer document authority or choose persistence.
+    /// </summary>
+    public IReadOnlyList<PreservedVisualEvidence>
+        CandidatePreservedLayoutVisuals { get; }
 
     private static void ValidateNonNegative(
         int value,

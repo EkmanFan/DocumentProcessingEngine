@@ -598,6 +598,151 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
             VisualEvidenceKind.Unknown,
             visualEvidence.Kind);
 
+        Assert.Empty(
+            comparison.CandidatePreservedLayoutVisuals);
+
+        Assert.DoesNotContain(
+            LayoutObservationKind.Figure,
+            candidateRecognizer.ObservedKinds);
+    }
+
+    [Fact]
+    public async Task Runner_MissingNativeCaptionedFigure_RetainsPreservedLayoutVisualAndNeverOcrsFigure()
+    {
+        var page =
+            MissingPage(
+                1);
+
+        var textObservation =
+            LayoutFor(
+                page);
+
+        var figureObservation =
+            new LayoutObservation(
+                1,
+                observationSequence:
+                    1,
+                readingOrder:
+                    1,
+                LayoutObservationKind.Figure,
+                new NormalizedRectangle(
+                    0.20,
+                    0.35,
+                    0.80,
+                    0.70),
+                "image");
+
+        var captionObservation =
+            new LayoutObservation(
+                1,
+                observationSequence:
+                    2,
+                readingOrder:
+                    2,
+                LayoutObservationKind.Caption,
+                new NormalizedRectangle(
+                    0.20,
+                    0.71,
+                    0.80,
+                    0.76),
+                "figure_title");
+
+        var authoritativeLayoutAnalyzer =
+            new FakePageLayoutAnalyzer(
+                [
+                    textObservation
+                ]);
+
+        var candidateLayoutAnalyzer =
+            new FakePageLayoutAnalyzer(
+                [
+                    textObservation,
+                    figureObservation,
+                    captionObservation
+                ]);
+
+        var authoritative =
+            await ExecuteLegacyAsync(
+                page,
+                NativeTextStatus.Missing,
+                authoritativeLayoutAnalyzer,
+                new FakeRegionTextRecognizer(
+                    "Recovered by OCR."));
+
+        var candidateRecognizer =
+            new FakeRegionTextRecognizer(
+                "Recovered by OCR.");
+
+        var runner =
+            new DocumentControlledCandidateTextExecutionRunner(
+                new DocumentControlledCandidateTextExecutionDependencies(
+                    new RecordingCandidateObserver(),
+                    new FakeDocumentRasterizer(),
+                    candidateLayoutAnalyzer,
+                    candidateRecognizer));
+
+        await using var sourceBytes =
+            new MemoryStream(
+                "%PDF-controlled-captioned-layout-visual"u8.ToArray(),
+                writable:
+                    false);
+
+        var report =
+            await runner.RunAsync(
+                new DocumentSource(
+                    sourceBytes,
+                    "controlled.pdf",
+                    "application/pdf"),
+                DocumentFormatId.Pdf,
+                new DocumentExtractionResult(
+                    DocumentFormatId.Pdf,
+                    [
+                        page
+                    ]),
+                [
+                    authoritative
+                ],
+                Shadow(
+                    NativeTextStatus.Missing,
+                    TextExecutionMode.TargetedOcrRecovery),
+                SourceSha);
+
+        Assert.Equal(
+            DocumentControlledCandidateTextExecutionStatus.Completed,
+            report.Status);
+
+        var comparison =
+            Assert.Single(
+                report.Pages);
+
+        var layoutEvidence =
+            Assert.Single(
+                comparison.CandidateLayoutVisualEvidence);
+
+        Assert.Equal(
+            figureObservation,
+            layoutEvidence.Observation);
+
+        Assert.Equal(
+            VisualEvidenceKind.CaptionedMeaningfulVisual,
+            layoutEvidence.Kind);
+
+        var preserved =
+            Assert.Single(
+                comparison.CandidatePreservedLayoutVisuals);
+
+        Assert.Equal(
+            figureObservation,
+            preserved.SourceLayoutObservation);
+
+        Assert.True(
+            preserved.ContentLength >
+            0);
+
+        Assert.Matches(
+            "^[0-9a-f]{64}$",
+            preserved.ContentSha256);
+
         Assert.DoesNotContain(
             LayoutObservationKind.Figure,
             candidateRecognizer.ObservedKinds);
