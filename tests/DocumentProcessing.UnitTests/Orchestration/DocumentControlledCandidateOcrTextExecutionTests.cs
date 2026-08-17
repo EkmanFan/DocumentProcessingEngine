@@ -386,6 +386,10 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 new FakeRegionTextRecognizer(
                     "Recovered by OCR."));
 
+        var candidateRecognizer =
+            new FakeRegionTextRecognizer(
+                "Recovered by OCR.");
+
         var runner =
             new DocumentControlledCandidateTextExecutionRunner(
                 new DocumentControlledCandidateTextExecutionDependencies(
@@ -396,8 +400,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                             textObservation,
                             figureObservation
                         ]),
-                    new FakeRegionTextRecognizer(
-                        "Recovered by OCR.")));
+                    candidateRecognizer));
 
         await using var sourceBytes =
             new MemoryStream(
@@ -440,10 +443,38 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
 
         Assert.True(
             comparison.CandidateHasIndependentVisualWork);
+
+        var visualEvidence =
+            Assert.Single(
+                comparison.CandidateLayoutVisualEvidence);
+
+        Assert.Equal(
+            figureObservation,
+            visualEvidence.Observation);
+
+        Assert.Equal(
+            VisualEvidenceKind.LargeIndependentVisual,
+            visualEvidence.Kind);
+
+        var preserved =
+            Assert.Single(
+                comparison.CandidatePreservedLayoutVisuals);
+
+        Assert.Equal(
+            figureObservation,
+            preserved.SourceLayoutObservation);
+
+        Assert.True(
+            preserved.ContentLength >
+            0);
+
+        Assert.DoesNotContain(
+            LayoutObservationKind.Figure,
+            candidateRecognizer.ObservedKinds);
     }
 
     [Fact]
-    public async Task Runner_NativePresentCandidate_RetainsDeferredAndNeutralFigureEvidenceClassification()
+    public async Task Runner_NativePresentCandidate_RetainsDeferredAndSmallNeutralFigureEvidenceClassification()
     {
         var page =
             NativePage(
@@ -481,7 +512,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                     0.10,
                     0.50,
                     0.90,
-                    0.90),
+                    0.70),
                 "Figure");
 
         var authoritative =

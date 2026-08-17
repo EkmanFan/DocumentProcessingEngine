@@ -52,7 +52,7 @@ public sealed class DefaultLayoutVisualEvidenceAssessorTests
     }
 
     [Fact]
-    public void Assess_FigureWithoutCaption_FailsClosedToUnknown()
+    public void Assess_SmallFigureWithoutCaption_FailsClosedToUnknown()
     {
         var figure =
             Figure(
@@ -63,8 +63,142 @@ public sealed class DefaultLayoutVisualEvidenceAssessorTests
                 new NormalizedRectangle(
                     0.10,
                     0.40,
+                    0.60,
+                    0.70));
+
+        var evidence =
+            Assert.Single(
+                new DefaultLayoutVisualEvidenceAssessor()
+                    .Assess(
+                        Layout(
+                            figure)));
+
+        Assert.Equal(
+            VisualEvidenceKind.Unknown,
+            evidence.Kind);
+    }
+
+    [Fact]
+    public void Assess_LargeFigureWithoutCaption_ClassifiesLargeIndependentVisual()
+    {
+        var figure =
+            Figure(
+                sequence:
+                    2,
+                readingOrder:
+                    2,
+                new NormalizedRectangle(
+                    0.10,
+                    0.10,
                     0.90,
-                    0.80));
+                    0.45));
+
+        var evidence =
+            Assert.Single(
+                new DefaultLayoutVisualEvidenceAssessor()
+                    .Assess(
+                        Layout(
+                            figure)));
+
+        Assert.Equal(
+            VisualEvidenceKind.LargeIndependentVisual,
+            evidence.Kind);
+    }
+
+    [Fact]
+    public void Assess_LargeFigureSeparatedFromBodyText_ClassifiesLargeIndependentVisual()
+    {
+        var figure =
+            Figure(
+                sequence:
+                    0,
+                readingOrder:
+                    0,
+                new NormalizedRectangle(
+                    0.05,
+                    0.05,
+                    0.95,
+                    0.45));
+
+        var body =
+            Text(
+                sequence:
+                    1,
+                readingOrder:
+                    1,
+                new NormalizedRectangle(
+                    0.10,
+                    0.55,
+                    0.90,
+                    0.90));
+
+        var evidence =
+            Assert.Single(
+                new DefaultLayoutVisualEvidenceAssessor()
+                    .Assess(
+                        Layout(
+                            figure,
+                            body)));
+
+        Assert.Equal(
+            VisualEvidenceKind.LargeIndependentVisual,
+            evidence.Kind);
+    }
+
+    [Fact]
+    public void Assess_LargeFigureIntersectingBodyText_FailsClosedToUnknown()
+    {
+        var figure =
+            Figure(
+                sequence:
+                    0,
+                readingOrder:
+                    0,
+                new NormalizedRectangle(
+                    0.10,
+                    0.10,
+                    0.90,
+                    0.60));
+
+        var body =
+            Text(
+                sequence:
+                    1,
+                readingOrder:
+                    1,
+                new NormalizedRectangle(
+                    0.20,
+                    0.50,
+                    0.80,
+                    0.70));
+
+        var evidence =
+            Assert.Single(
+                new DefaultLayoutVisualEvidenceAssessor()
+                    .Assess(
+                        Layout(
+                            figure,
+                            body)));
+
+        Assert.Equal(
+            VisualEvidenceKind.Unknown,
+            evidence.Kind);
+    }
+
+    [Fact]
+    public void Assess_OutOfPageFigureUsesVisibleAreaAndFailsClosedToUnknown()
+    {
+        var figure =
+            Figure(
+                sequence:
+                    2,
+                readingOrder:
+                    2,
+                new NormalizedRectangle(
+                    -10.0,
+                    -10.0,
+                    0.20,
+                    0.20));
 
         var evidence =
             Assert.Single(
@@ -113,9 +247,9 @@ public sealed class DefaultLayoutVisualEvidenceAssessorTests
                 readingOrder:
                     2,
                 new NormalizedRectangle(
+                    0.10,
                     0.20,
-                    0.30,
-                    0.80,
+                    0.90,
                     0.70));
 
         var firstCaption =
@@ -166,10 +300,10 @@ public sealed class DefaultLayoutVisualEvidenceAssessorTests
                 readingOrder:
                     2,
                 new NormalizedRectangle(
-                    0.20,
-                    0.20,
-                    0.80,
-                    0.50));
+                    0.10,
+                    0.10,
+                    0.90,
+                    0.55));
 
         var caption =
             Caption(
@@ -240,6 +374,18 @@ public sealed class DefaultLayoutVisualEvidenceAssessorTests
             LayoutObservationKind.Figure,
             bounds,
             "image");
+
+    private static LayoutObservation Text(
+        int sequence,
+        int? readingOrder,
+        NormalizedRectangle bounds) =>
+        new(
+            1,
+            sequence,
+            readingOrder,
+            LayoutObservationKind.Text,
+            bounds,
+            "text");
 
     private static LayoutObservation Caption(
         int sequence,
