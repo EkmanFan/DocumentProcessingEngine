@@ -1,5 +1,7 @@
 using DocumentProcessing.Core.Hybrid;
 
+using DocumentProcessing.Core.Layout;
+
 namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
@@ -24,7 +26,9 @@ public sealed record DocumentControlledCandidateTextPageComparison
         int? candidateTextElementCount = null,
         int? authoritativeReconciliationEvidenceCount = null,
         int? candidateReconciliationEvidenceCount = null,
-        HybridDocumentPage? candidatePage = null)
+        HybridDocumentPage? candidatePage = null,
+        IEnumerable<LayoutObservation>?
+            candidateLayoutVisualObservations = null)
     {
         if (physicalPageNumber <= 0)
         {
@@ -213,8 +217,63 @@ public sealed record DocumentControlledCandidateTextPageComparison
                 nameof(candidatePage));
         }
 
+        var visualObservations =
+            candidateLayoutVisualObservations?.ToArray() ??
+            [];
+
+        if (visualObservations.Any(
+                observation =>
+                    observation is null))
+        {
+            throw new ArgumentException(
+                "Candidate layout visual observations cannot contain null values.",
+                nameof(candidateLayoutVisualObservations));
+        }
+
+        if (visualObservations.Any(
+                observation =>
+                    observation.PhysicalPageNumber !=
+                        physicalPageNumber ||
+                    observation.Kind !=
+                        LayoutObservationKind.Figure))
+        {
+            throw new ArgumentException(
+                "Candidate layout visual observations must be same-page Figure evidence.",
+                nameof(candidateLayoutVisualObservations));
+        }
+
+        if (visualObservations
+            .GroupBy(
+                observation =>
+                    observation.ObservationSequence)
+            .Any(
+                group =>
+                    group.Count() >
+                    1))
+        {
+            throw new ArgumentException(
+                "Candidate layout visual observations cannot duplicate observation sequence.",
+                nameof(candidateLayoutVisualObservations));
+        }
+
+        if (visualObservations.Length >
+                0 &&
+            status is not (
+                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrRecovery or
+                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrVerification or
+                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrReconciliation))
+        {
+            throw new ArgumentException(
+                "Only executed OCR-backed text pages can carry candidate layout visual observations.",
+                nameof(candidateLayoutVisualObservations));
+        }
+
         CandidatePage =
             candidatePage;
+
+        CandidateLayoutVisualObservations =
+            Array.AsReadOnly(
+                visualObservations);
     }
 
     public int PhysicalPageNumber { get; }
@@ -255,6 +314,9 @@ public sealed record DocumentControlledCandidateTextPageComparison
     /// Null remains valid for deferred/manual legacy comparison evidence.
     /// </summary>
     public HybridDocumentPage? CandidatePage { get; }
+
+    public IReadOnlyList<LayoutObservation>
+        CandidateLayoutVisualObservations { get; }
 
     private static void ValidateNonNegative(
         int value,

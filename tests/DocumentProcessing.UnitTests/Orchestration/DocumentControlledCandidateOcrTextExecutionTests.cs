@@ -442,6 +442,167 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
             comparison.CandidateHasIndependentVisualWork);
     }
 
+    [Fact]
+    public async Task Runner_NativePresentCandidate_RetainsDeferredAndNeutralFigureEvidence()
+    {
+        var page =
+            NativePage(
+                1,
+                "Candidate and legacy text agree.");
+
+        var textObservation =
+            LayoutFor(
+                page);
+
+        var deferredObservation =
+            new LayoutObservation(
+                1,
+                observationSequence:
+                    1,
+                readingOrder:
+                    1,
+                LayoutObservationKind.Unknown,
+                new NormalizedRectangle(
+                    0.10,
+                    0.35,
+                    0.90,
+                    0.45),
+                "Unknown");
+
+        var figureObservation =
+            new LayoutObservation(
+                1,
+                observationSequence:
+                    2,
+                readingOrder:
+                    2,
+                LayoutObservationKind.Figure,
+                new NormalizedRectangle(
+                    0.10,
+                    0.50,
+                    0.90,
+                    0.90),
+                "Figure");
+
+        var authoritative =
+            await ExecuteLegacyAsync(
+                page,
+                NativeTextStatus.Suspicious,
+                new FakePageLayoutAnalyzer(
+                    [
+                        textObservation
+                    ]),
+                new FakeRegionTextRecognizer(
+                    page.Blocks[0].Text));
+
+        var candidateRecognizer =
+            new FakeRegionTextRecognizer(
+                page.Blocks[0].Text);
+
+        var runner =
+            new DocumentControlledCandidateTextExecutionRunner(
+                new DocumentControlledCandidateTextExecutionDependencies(
+                    new RecordingCandidateObserver(),
+                    new FakeDocumentRasterizer(),
+                    new FakePageLayoutAnalyzer(
+                        [
+                            textObservation,
+                            deferredObservation,
+                            figureObservation
+                        ]),
+                    candidateRecognizer));
+
+        await using var sourceBytes =
+            new MemoryStream(
+                "%PDF-controlled-deferred-evidence"u8.ToArray(),
+                writable:
+                    false);
+
+        var report =
+            await runner.RunAsync(
+                new DocumentSource(
+                    sourceBytes,
+                    "controlled.pdf",
+                    "application/pdf"),
+                DocumentFormatId.Pdf,
+                new DocumentExtractionResult(
+                    DocumentFormatId.Pdf,
+                    [
+                        page
+                    ]),
+                [
+                    authoritative
+                ],
+                Shadow(
+                    NativeTextStatus.Suspicious,
+                    TextExecutionMode.TargetedOcrReconciliation,
+                    candidateHasIndependentVisualWork:
+                        true),
+                SourceSha);
+
+        Assert.Equal(
+            DocumentControlledCandidateTextExecutionStatus.Completed,
+            report.Status);
+
+        var comparison =
+            Assert.Single(
+                report.Pages);
+
+        Assert.True(
+            comparison.SelectedTextSequenceExact is true);
+
+        Assert.True(
+            comparison.TextProjectionExact is true);
+
+        var candidatePage =
+            Assert.IsType<HybridDocumentPage>(
+                comparison.CandidatePage);
+
+        Assert.Equal(
+            2,
+            candidatePage.Elements.Count);
+
+        var deferred =
+            Assert.Single(
+                candidatePage.Elements,
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Deferred);
+
+        Assert.NotNull(
+            deferred.LayoutObservation);
+
+        Assert.Equal(
+            LayoutObservationKind.Unknown,
+            deferred.LayoutObservation!.Kind);
+
+        Assert.Equal(
+            1,
+            deferred.LayoutObservation.ObservationSequence);
+
+        Assert.DoesNotContain(
+            candidatePage.Elements,
+            element =>
+                element.LayoutObservation?.Kind ==
+                LayoutObservationKind.Figure);
+
+        var visualObservation =
+            Assert.Single(
+                comparison.CandidateLayoutVisualObservations);
+
+        Assert.Equal(
+            figureObservation,
+            visualObservation);
+
+        Assert.Equal(
+            LayoutObservationKind.Figure,
+            visualObservation.Kind);
+
+        Assert.DoesNotContain(
+            LayoutObservationKind.Figure,
+            candidateRecognizer.ObservedKinds);
+    }
+
     private static async Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
         ProcessAsync(
             DocumentExtractionResult extraction,
@@ -940,6 +1101,9 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
         string text)
         : IRegionTextRecognizer
     {
+        public List<LayoutObservationKind> ObservedKinds { get; } =
+            [];
+
         public ValueTask<OcrRegionResult> RecognizeAsync(
             Stream rasterRegion,
             LayoutObservation sourceLayoutObservation,
@@ -949,6 +1113,9 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            ObservedKinds.Add(
+                sourceLayoutObservation.Kind);
 
             return ValueTask.FromResult(
                 new OcrRegionResult(

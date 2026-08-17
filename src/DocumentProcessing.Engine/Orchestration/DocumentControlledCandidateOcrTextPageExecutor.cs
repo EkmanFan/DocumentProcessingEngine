@@ -35,7 +35,9 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
                 textRecognizer);
     }
 
-    public async ValueTask<HybridDocumentPage> ExecuteAsync(
+    public async ValueTask<(
+        HybridDocumentPage Page,
+        IReadOnlyList<LayoutObservation> LayoutVisualObservations)> ExecuteAsync(
         DocumentExtractionPage sourcePage,
         NativeTextStatus nativeTextStatus,
         TextExecutionMode textMode,
@@ -109,10 +111,28 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
                     .ConfigureAwait(false);
         }
 
-        return HybridDocumentAssembler
-            .AssemblePage(
-                sourcePage,
-                elements);
+        elements =
+            RetainNeutralDeferredLayoutEvidence(
+                elements,
+                layout);
+
+        var candidatePage =
+            HybridDocumentAssembler
+                .AssemblePage(
+                    sourcePage,
+                    elements);
+
+        var layoutVisualObservations =
+            layout.Observations
+                .Where(
+                    observation =>
+                        observation.Kind ==
+                        LayoutObservationKind.Figure)
+                .ToArray();
+
+        return (
+            candidatePage,
+            layoutVisualObservations);
     }
 
     private async ValueTask<IReadOnlyList<HybridDocumentElement>>
@@ -210,6 +230,34 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
         }
 
         return elements;
+    }
+
+    private static IReadOnlyList<HybridDocumentElement>
+        RetainNeutralDeferredLayoutEvidence(
+            IReadOnlyList<HybridDocumentElement> textElements,
+            LayoutAnalysisResult layout)
+    {
+        var deferred =
+            layout.Observations
+                .Where(
+                    observation =>
+                        LayoutTreatmentPolicy.Decide(
+                            observation.Kind) ==
+                        LayoutTreatment.Deferred)
+                .Select(
+                    HybridDocumentElementFactory.FromDeferred)
+                .ToArray();
+
+        if (deferred.Length ==
+            0)
+        {
+            return textElements;
+        }
+
+        return textElements
+            .Concat(
+                deferred)
+            .ToArray();
     }
 
     private static IEnumerable<LayoutObservation> OrderedTextObservations(

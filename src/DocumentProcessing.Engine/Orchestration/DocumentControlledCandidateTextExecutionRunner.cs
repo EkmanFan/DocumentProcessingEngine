@@ -1,6 +1,7 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
+using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Hybrid;
@@ -249,6 +250,10 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
                         HybridDocumentPage candidatePage;
 
+                        IReadOnlyList<LayoutObservation>
+                            layoutVisualObservations =
+                                [];
+
                         DocumentControlledCandidateTextPageStatus pageStatus;
 
                         if (candidatePlan.TextMode ==
@@ -293,7 +298,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                     "execution without a document-scoped raster session.");
                             }
 
-                            candidatePage =
+                            var ocrExecution =
                                 await _ocrTextPageExecutor
                                     .ExecuteAsync(
                                         extractionPage,
@@ -307,6 +312,12 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                         cancellationToken)
                                     .ConfigureAwait(false);
 
+                            candidatePage =
+                                ocrExecution.Page;
+
+                            layoutVisualObservations =
+                                ocrExecution.LayoutVisualObservations;
+
                             pageStatus =
                                 ExecutedStatus(
                                     candidatePlan.TextMode);
@@ -317,7 +328,8 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                 authoritativePage,
                                 candidatePage,
                                 shadowPage,
-                                pageStatus));
+                                pageStatus,
+                                layoutVisualObservations));
                     }
                 }
                 finally
@@ -370,7 +382,9 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
         HybridDocumentPage authoritativePage,
         HybridDocumentPage candidatePage,
         DocumentShadowPageComparison shadowPage,
-        DocumentControlledCandidateTextPageStatus status)
+        DocumentControlledCandidateTextPageStatus status,
+        IReadOnlyList<LayoutObservation>
+            layoutVisualObservations)
     {
         var authoritativeText =
             authoritativePage
@@ -414,7 +428,9 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 element =>
                     element.Reconciliation is not null),
             candidatePage:
-                candidatePage);
+                candidatePage,
+            candidateLayoutVisualObservations:
+                layoutVisualObservations);
     }
 
     private static DocumentControlledCandidateTextPageStatus ExecutedStatus(
