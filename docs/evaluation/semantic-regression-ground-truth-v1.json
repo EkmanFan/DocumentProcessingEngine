@@ -1,0 +1,211 @@
+{
+  "schemaVersion": "document-processing-semantic-regression-ground-truth-v1",
+  "date": "2026-08-17",
+  "baselineObserved": "62fc51e",
+  "phase": "15.2",
+  "principles": {
+    "historicalParityIsGroundTruth": false,
+    "figureOcrAllowed": false,
+    "unknownFailsClosed": true,
+    "sourceVisualEqualsSemanticOccurrence": false
+  },
+  "controls": [
+    {
+      "id": "ehrman-p233",
+      "corpus": "Ehrman",
+      "originalPhysicalPage": 233,
+      "expected": {
+        "nativeStatus": "Missing",
+        "route": "LayoutWithTargetedOcrRecovery",
+        "figureOcrCount": 0,
+        "readingOrderSentinels": [
+          "Imagine",
+          "for example"
+        ],
+        "preservedVisual": {
+          "width": 841,
+          "height": 1398,
+          "bytes": 1505768,
+          "sha256": "c4170e36da6d0bfdec419f8db199ba972baf3075887a264aa2e9e4d46e6e4e77"
+        }
+      },
+      "baselineClassification": "PASS"
+    },
+    {
+      "id": "ehrman-p380",
+      "corpus": "Ehrman",
+      "originalPhysicalPage": 380,
+      "expected": {
+        "route": "LayoutWithTargetedOcrReconciliation",
+        "targetSequence": 5,
+        "reconciliationDecision": "Conflict",
+        "selectedOrigin": "None",
+        "resolved": false,
+        "divergence": true,
+        "nativeBlockSourceSequence": 2,
+        "figureOcrCount": 0
+      },
+      "baselineClassification": "PASS"
+    },
+    {
+      "id": "ehrman-p405",
+      "corpus": "Ehrman",
+      "originalPhysicalPage": 405,
+      "expected": {
+        "route": "LayoutWithTargetedOcrReconciliation",
+        "targetSequence": 9,
+        "reconciliationDecision": "Agreement",
+        "selectedOrigin": "NativePdf",
+        "resolved": true,
+        "divergence": false,
+        "nativeBlockSourceSequence": 6,
+        "figureOcrCount": 0
+      },
+      "baselineClassification": "PASS"
+    },
+    {
+      "id": "habermas-p34",
+      "corpus": "Habermas",
+      "originalPhysicalPage": 34,
+      "humanGroundTruth": {
+        "semanticVisual": "Meaningful",
+        "requiredAction": "PreserveMeaningfulVisual",
+        "flattenToNarrativeOcr": false,
+        "figureOcrCount": 0
+      },
+      "baselineObservation": {
+        "nativeWords": 0,
+        "figures": 1,
+        "semanticEvidence": "Unknown"
+      },
+      "baselineClassification": "FAIL"
+    },
+    {
+      "id": "habermas-p36",
+      "corpus": "Habermas",
+      "originalPhysicalPage": 36,
+      "humanGroundTruth": {
+        "semanticVisual": "Meaningful",
+        "requiredAction": "PreserveMeaningfulVisual",
+        "flattenToNarrativeOcr": false,
+        "figureOcrCount": 0
+      },
+      "baselineObservation": {
+        "nativeWords": 0,
+        "figures": 1,
+        "semanticEvidence": "Unknown"
+      },
+      "baselineClassification": "FAIL"
+    },
+    {
+      "id": "habermas-p38",
+      "corpus": "Habermas",
+      "originalPhysicalPage": 38,
+      "humanGroundTruth": {
+        "semanticVisual": "Meaningful",
+        "requiredAction": "PreserveMeaningfulVisual",
+        "flattenToNarrativeOcr": false,
+        "figureOcrCount": 0
+      },
+      "baselineObservation": {
+        "nativeWords": 0,
+        "figures": 1,
+        "semanticEvidence": "Unknown"
+      },
+      "baselineClassification": "FAIL"
+    },
+    {
+      "id": "habermas-p44",
+      "corpus": "Habermas",
+      "originalPhysicalPage": 44,
+      "humanGroundTruth": {
+        "semanticVisual": "Meaningful",
+        "requiredAction": "PreserveMeaningfulVisual",
+        "figureOcrCount": 0,
+        "retainNarrativeText": true
+      },
+      "baselineObservation": {
+        "nativeWords": 315,
+        "figures": 1,
+        "semanticEvidence": "Unknown",
+        "textCandidates": 7
+      },
+      "baselineClassification": "FAIL"
+    },
+    {
+      "id": "habermas-p40",
+      "corpus": "Habermas",
+      "originalPhysicalPage": 40,
+      "humanGroundTruth": {
+        "semanticVisual": "Meaningful",
+        "requiredAction": "PreserveMeaningfulVisual",
+        "figureOcrCount": 0
+      },
+      "expectedExactVisual": {
+        "width": 1678,
+        "height": 1928,
+        "bytes": 798598,
+        "sha256": "bffd8d7fd27462ab530f50c483aa39bad7849653c81960d15e8cf73c8c829f03"
+      },
+      "baselineClassification": "PASS"
+    },
+    {
+      "id": "habermas-p43",
+      "corpus": "Habermas",
+      "originalPhysicalPage": 43,
+      "humanGroundTruth": {
+        "semanticVisual": "Meaningful",
+        "requiredAction": "PreserveMeaningfulVisual",
+        "figureOcrCount": 0
+      },
+      "expectedExactVisual": {
+        "width": 1702,
+        "height": 1173,
+        "bytes": 878872,
+        "sha256": "bf20176970e097a3d20d1142db44488f7aba4e7ca8e76c5c8bf7b6b799b813f2"
+      },
+      "baselineClassification": "PASS"
+    },
+    {
+      "id": "native-controls",
+      "corpus": "Multi",
+      "expected": {
+        "habermasPages": [
+          70,
+          78,
+          79
+        ],
+        "habermasStatus": "Healthy",
+        "habermasRoute": "NativeOnly",
+        "deDecretisPages": "512-561",
+        "deDecretisCount": 50,
+        "deDecretisStatus": "Healthy",
+        "deDecretisRoute": "NativeOnly",
+        "deDecretisWords": 29044,
+        "deDecretisBlocks": 269
+      },
+      "baselineClassification": "PASS"
+    },
+    {
+      "id": "fixture-provenance",
+      "corpus": "Multi",
+      "expected": {
+        "fixtureCount": 67,
+        "ehrmanCount": 8,
+        "habermasCount": 9,
+        "deDecretisCount": 50,
+        "standaloneFixturePhysicalPage": 1,
+        "originalIdentityFrom": [
+          "fixture filename",
+          "fixtures-manifest.tsv"
+        ],
+        "sourceSha256ByCorpus": {
+          "Ehrman": "f4600ad840fea7e6edf68c74244f71fec07335e792e228db1265b1619da19bbe",
+          "Habermas": "f367a503f298337ec589eb1ad5ec5fe956999e49205a486d50798bfeee6d0399",
+          "DeDecretis": "de5e95573b7910292b4b07c02b5cfd834fe63dd5daf4056e9a947c96cb81bc75"
+        }
+      },
+      "baselineClassification": "PASS"
+    }
+  ]
+}

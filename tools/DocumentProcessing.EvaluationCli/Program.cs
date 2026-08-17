@@ -53,6 +53,33 @@ internal static class Program
 
             if (string.Equals(
                     args[0],
+                    "evaluate-semantic-layout-regression",
+                    StringComparison.Ordinal))
+            {
+                return await SemanticLayoutRegressionEvaluationCli.RunAsync(
+                    args[1..]);
+            }
+
+            if (string.Equals(
+                    args[0],
+                    "evaluate-semantic-native-regression",
+                    StringComparison.Ordinal))
+            {
+                return await SemanticNativeRegressionEvaluationCli.RunAsync(
+                    args[1..]);
+            }
+
+            if (string.Equals(
+                    args[0],
+                    "evaluate-semantic-ocr-regression",
+                    StringComparison.Ordinal))
+            {
+                return await SemanticOcrRegressionEvaluationCli.RunAsync(
+                    args[1..]);
+            }
+
+            if (string.Equals(
+                    args[0],
                     "analyze-outline-alignment-pdf",
                     StringComparison.Ordinal))
             {
@@ -126,8 +153,11 @@ internal static class Program
                     "'analyze-heading-boundaries-pdf', " +
                     "'analyze-counterfactual-segmentation-pdf', " +
                     "'analyze-outline-pdf', 'analyze-outline-alignment-pdf', " +
-                    "'verify-ocr-benchmark-corpus', 'evaluate-ocr-benchmark', or " +
-                    "'evaluate-ocr-ground-truth'.");
+                    "'verify-ocr-benchmark-corpus', 'evaluate-ocr-benchmark', " +
+                    "'evaluate-ocr-ground-truth', " +
+                    "'evaluate-semantic-layout-regression', " +
+                    "'evaluate-semantic-native-regression', or " +
+                    "'evaluate-semantic-ocr-regression'.");
             }
 
             var options = AnalysisOptions.Parse(args[1..]);
@@ -149,7 +179,9 @@ internal static class Program
                 or IOException
                 or UnauthorizedAccessException
                 or InvalidDataException
-                or NotSupportedException)
+                or NotSupportedException
+                or HttpRequestException
+                or TimeoutException)
         {
             Console.Error.WriteLine(
                 $"ERROR: {exception.Message}");
@@ -656,10 +688,15 @@ internal static class Program
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- verify-ocr-benchmark-corpus --manifest /absolute/path/manifest.json --source /absolute/path/document.pdf --report /absolute/path/report.json
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- evaluate-ocr-benchmark --manifest /absolute/path/manifest.json --input-index /absolute/path/input-index.json --result /absolute/path/engine-result.json --report /absolute/path/report.json
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- evaluate-ocr-ground-truth --ground-truth /absolute/path/ground-truth.json --result /absolute/path/engine-result.json --report /absolute/path/report.json
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- evaluate-semantic-layout-regression --ground-truth /absolute/path/semantic-regression-ground-truth-v1.json --fixtures /absolute/path/pdf-fixtures --layout-endpoint http://127.0.0.1:8080/layout-parsing --report /absolute/path/report.json --mode baseline|all-pass
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- evaluate-semantic-native-regression --ground-truth /absolute/path/semantic-regression-ground-truth-v1.json --fixtures /absolute/path/pdf-fixtures --manifest /absolute/path/fixtures-manifest.tsv --report /absolute/path/report.json
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- evaluate-semantic-ocr-regression --control ehrman-p233 --ground-truth /absolute/path/semantic-regression-ground-truth-v1.json --fixture /absolute/path/ehrman-p0233.pdf --layout-endpoint http://127.0.0.1:8080/layout-parsing --ocr-endpoint http://127.0.0.1:8081/ocr --ocr-profile paddleocr-3.7.0-ppocrv6-medium-cpu-v1 --layout-complete-marker /tmp/layout-complete --ocr-ready-marker /tmp/ocr-ready --report /absolute/path/report.json
 
-            These commands are evaluation-only. They do not modify the PDF,
-            persist document content, create retrieval chunks, or invoke an OCR
-            engine. OCR benchmark evaluation consumes externally produced JSON.
+            These commands are evaluation-only. They do not modify the source
+            document, persist retrieval content, or create retrieval chunks.
+            The semantic layout regression command calls the supplied
+            PP-StructureV3 endpoint but does not launch Docker or invoke OCR.
+            OCR benchmark evaluation consumes externally produced JSON.
             """);
     }
     private sealed record AnalysisOptions(
