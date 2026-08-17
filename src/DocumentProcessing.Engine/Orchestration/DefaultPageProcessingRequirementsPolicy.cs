@@ -46,28 +46,8 @@ public sealed class DefaultPageProcessingRequirementsPolicy
             evidence);
 
         var disposition =
-            evidence.Kind switch
-            {
-                VisualEvidenceKind.Unknown =>
-                    VisualDisposition.RequiresVisualAnalysis,
-
-                VisualEvidenceKind.BlankCanvas or
-                VisualEvidenceKind.TinyOrNoise or
-                VisualEvidenceKind.SmallHeadingAssociatedVisual or
-                VisualEvidenceKind.HeadingBackplateOrPresentation or
-                VisualEvidenceKind.NativeTextContainerOrFrame =>
-                    VisualDisposition.PresentationOnly,
-
-                VisualEvidenceKind.CaptionedMeaningfulVisual or
-                VisualEvidenceKind.LargeIndependentVisual =>
-                    VisualDisposition.PreserveMeaningfulVisual,
-
-                _ =>
-                    throw new ArgumentOutOfRangeException(
-                        nameof(evidence),
-                        evidence.Kind,
-                        "Unsupported visual evidence kind.")
-            };
+            VisualEvidenceDispositionPolicy.Decide(
+                evidence.Kind);
 
         return new VisualElementDisposition(
             evidence.SourceVisualIndex,
