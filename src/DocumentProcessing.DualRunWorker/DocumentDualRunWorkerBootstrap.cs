@@ -8,9 +8,9 @@ namespace DocumentProcessing.DualRunWorker;
 /// <summary>
 /// Process-side V1 bootstrap.
 ///
-/// This checkpoint validates the file-backed job boundary and emits a strict
-/// structured Planning failure after validation. Candidate planning/execution is
-/// intentionally not wired yet.
+/// The file-backed job boundary is validated before execution. PlanningOnly
+/// executes deterministic candidate planning. Full currently executes NativeText
+/// candidate pages and fails closed before OCR-backed runtime composition.
 /// </summary>
 internal static class DocumentDualRunWorkerBootstrap
 {
@@ -132,18 +132,35 @@ internal static class DocumentDualRunWorkerBootstrap
             }
             else
             {
-                result =
-                    new DocumentDualRunWorkerResult(
-                        request.JobId,
-                        request.ExecutionMode,
-                        WorkerEngineVersion(),
-                        request.SourceDocumentSha256,
-                        DocumentDualRunWorkerResultStatus.Failed,
-                        [],
-                        new DocumentDualRunWorkerFailure(
+                try
+                {
+                    var pages =
+                        await new DocumentDualRunFullExecutor()
+                            .ExecuteAsync(
+                                jobDirectoryPath,
+                                request)
+                            .ConfigureAwait(false);
+
+                    result =
+                        new DocumentDualRunWorkerResult(
+                            request.JobId,
+                            request.ExecutionMode,
+                            WorkerEngineVersion(),
+                            request.SourceDocumentSha256,
+                            DocumentDualRunWorkerResultStatus.Completed,
+                            pages);
+                }
+                catch (Exception exception)
+                    when (IsOrdinaryFailure(
+                        exception))
+                {
+                    return await WriteStructuredFailureAsync(
+                            jobDirectoryPath,
+                            request,
                             DocumentDualRunWorkerFailureStage.CandidateExecution,
-                            "FullExecutionNotImplemented",
-                            "Dual Run Full candidate execution is not wired at this checkpoint."));
+                            exception)
+                        .ConfigureAwait(false);
+                }
             }
 
             await WriteResultAsync(
