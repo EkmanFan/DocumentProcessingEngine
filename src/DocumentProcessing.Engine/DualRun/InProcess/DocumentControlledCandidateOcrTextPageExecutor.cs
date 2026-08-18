@@ -262,7 +262,7 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
             LayoutAnalysisResult layout,
             CancellationToken cancellationToken)
     {
-        // Keep the legacy fail-closed ordering: pairing/ambiguity is resolved
+        // Keep the existing fail-closed ordering: pairing/ambiguity is resolved
         // before OCR targets and before any recognition call.
         var pairings =
             _textExecutor

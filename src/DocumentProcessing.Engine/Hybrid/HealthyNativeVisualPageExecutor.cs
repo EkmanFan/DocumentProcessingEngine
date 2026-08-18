@@ -218,7 +218,7 @@ public sealed class HealthyNativeVisualPageExecutor
                 sourcePage.PhysicalPageNumber)
         {
             throw new ArgumentException(
-                "Legacy and candidate decisions must belong to the source page.");
+                "Authoritative and candidate decisions must belong to the source page.");
         }
 
         if (authoritativeDecision.Assessment.NativeTextStatus !=
@@ -232,7 +232,7 @@ public sealed class HealthyNativeVisualPageExecutor
             PageProcessingRoute.NativeOnly)
         {
             throw new InvalidOperationException(
-                "Healthy native visual execution accepts only legacy NativeOnly pages.");
+                "Healthy native visual execution accepts only authoritative NativeOnly pages.");
         }
 
         if (candidatePlan.TextMode !=

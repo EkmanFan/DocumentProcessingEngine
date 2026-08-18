@@ -118,14 +118,14 @@ public sealed class GuardedDocumentPageExecutionPlanner
                     $"{page.PhysicalPageNumber}.");
             }
 
-            var  authoritativePlan =
+            var authoritativePlan =
                 _authoritativePolicy.Decide(
                     nativeAssessment);
 
             var authoritativeDecision =
                 new PageProcessingDecision(
                     nativeAssessment,
-                     authoritativePlan);
+                    authoritativePlan);
 
             var visualEvidence =
                 pageVisualObservations

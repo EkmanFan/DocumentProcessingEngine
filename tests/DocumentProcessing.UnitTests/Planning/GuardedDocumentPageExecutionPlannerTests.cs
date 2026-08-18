@@ -37,7 +37,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
             decision.Candidate.Plan.RequiresTargetedOcr);
 
         Assert.False(
-            decision.CandidateRemovesLegacyTextMl);
+            decision.CandidateRemovesAuthoritativeTextMl);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
             decision.Candidate.Plan.RequiresNativeOcrReconciliation);
 
         Assert.False(
-            decision.CandidateRemovesLegacyTextMl);
+            decision.CandidateRemovesAuthoritativeTextMl);
     }
 
     [Fact]
@@ -104,7 +104,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
                 decision.Candidate.Plan.VisualElements).Action);
 
         Assert.True(
-            decision.CandidateRemovesLegacyTextMl);
+            decision.CandidateRemovesAuthoritativeTextMl);
 
         Assert.False(
             decision.Candidate.Plan.RequiresLayoutAnalysis);
@@ -147,7 +147,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
             decision.Candidate.Plan.RequiresVisualAnalysis);
 
         Assert.False(
-            decision.CandidateRemovesLegacyTextMl);
+            decision.CandidateRemovesAuthoritativeTextMl);
     }
 
     [Fact]

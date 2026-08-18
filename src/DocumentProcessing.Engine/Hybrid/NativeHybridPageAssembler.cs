@@ -4,8 +4,8 @@ using DocumentProcessing.Core.Hybrid;
 namespace DocumentProcessing.Engine.Hybrid;
 
 /// <summary>
-/// Existing deterministic native-page execution mechanism shared by the legacy
-/// NativeOnly route and the H.4D.1 candidate NativeText mode.
+/// Existing deterministic native-page execution mechanism shared by the authoritative
+/// NativeOnly route and the candidate NativeText execution mode.
 ///
 /// It performs no rasterization, layout analysis, OCR, reconciliation, or visual
 /// work.

@@ -19,7 +19,7 @@ namespace DocumentProcessing.Engine.DualRun.InProcess;
 /// semantically authorized layout visual regions, but those preserved values
 /// remain non-authoritative comparison evidence.
 ///
-/// The legacy page list is already complete before this runner is invoked. No
+/// The authoritative page list is already complete before this runner is invoked. No
 /// candidate result is returned to authoritative orchestration.
 /// </summary>
 public sealed class DocumentControlledCandidateTextExecutionRunner
@@ -90,7 +90,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             DocumentSource source,
             DocumentFormatId format,
             DocumentExtractionResult extraction,
-            IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
+            IReadOnlyList<HybridDocumentPage> authoritativePages,
             DocumentDualRunPlanningReport dualRunPlanning,
             string sourceDocumentSha256,
             CancellationToken cancellationToken = default)
@@ -102,7 +102,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             source,
             format,
             extraction,
-            authoritativeLegacyPages,
+            authoritativePages,
             dualRunPlanning,
             sourceDocumentSha256,
             cancellationToken);
@@ -113,7 +113,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             DocumentSource? source,
             DocumentFormatId? format,
             DocumentExtractionResult extraction,
-            IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
+            IReadOnlyList<HybridDocumentPage> authoritativePages,
             DocumentDualRunPlanningReport dualRunPlanning,
             string sourceDocumentSha256,
             CancellationToken cancellationToken)
@@ -122,7 +122,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             extraction);
 
         ArgumentNullException.ThrowIfNull(
-            authoritativeLegacyPages);
+            authoritativePages);
 
         ArgumentNullException.ThrowIfNull(
             dualRunPlanning);
@@ -158,7 +158,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             {
                 ValidateCoverage(
                     extraction,
-                    authoritativeLegacyPages,
+                    authoritativePages,
                     dualRunPlanning,
                     sourceDocumentSha256);
 
@@ -202,7 +202,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                         {
                             throw new InvalidDataException(
                                 $"Controlled candidate format '{format.Value}' does not " +
-                                $"match shadow-planning format '{dualRunPlanning.Format}'.");
+                                $"match Dual Run planning format '{dualRunPlanning.Format}'.");
                         }
 
                         var rasterizer =
@@ -244,7 +244,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                             extraction.Pages[index];
 
                         var authoritativePage =
-                            authoritativeLegacyPages[index];
+                            authoritativePages[index];
 
                         var dualRunPage =
                             dualRunPlanning.Pages[index];
@@ -433,7 +433,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             status,
             candidateRemovesAuthoritativeTextMl:
                 dualRunPage
-                    .candidateRemovesAuthoritativeTextMl,
+                    .CandidateRemovesAuthoritativeTextMl,
             candidateHasIndependentVisualWork:
                 dualRunPage
                     .DualRun
@@ -487,7 +487,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
     private static void ValidateCoverage(
         DocumentExtractionResult extraction,
-        IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
+        IReadOnlyList<HybridDocumentPage> authoritativePages,
         DocumentDualRunPlanningReport dualRunPlanning,
         string sourceDocumentSha256)
     {
@@ -497,14 +497,14 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 StringComparison.Ordinal))
         {
             throw new InvalidDataException(
-                "Controlled candidate source SHA-256 does not match shadow-planning evidence.");
+                "Controlled candidate source SHA-256 does not match Dual Run planning evidence.");
         }
 
-        if (authoritativeLegacyPages.Count !=
+        if (authoritativePages.Count !=
             extraction.Pages.Count)
         {
             throw new InvalidDataException(
-                $"Authoritative legacy page count {authoritativeLegacyPages.Count} " +
+                $"Authoritative page count {authoritativePages.Count} " +
                 $"does not match extraction page count {extraction.Pages.Count}.");
         }
 
@@ -512,7 +512,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             extraction.Pages.Count)
         {
             throw new InvalidDataException(
-                $"Shadow-planning page count {dualRunPlanning.Pages.Count} " +
+                $"Dual Run planning page count {dualRunPlanning.Pages.Count} " +
                 $"does not match extraction page count {extraction.Pages.Count}.");
         }
 
@@ -525,13 +525,13 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 extraction.Pages[index]
                     .PhysicalPageNumber;
 
-            if (authoritativeLegacyPages[index]
+            if (authoritativePages[index]
                     .PhysicalPageNumber !=
                 expected)
             {
                 throw new InvalidDataException(
-                    $"Authoritative legacy page at index {index} is " +
-                    $"{authoritativeLegacyPages[index].PhysicalPageNumber}; " +
+                    $"Authoritative page at index {index} is " +
+                    $"{authoritativePages[index].PhysicalPageNumber}; " +
                     $"expected {expected}.");
             }
 
@@ -540,7 +540,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 expected)
             {
                 throw new InvalidDataException(
-                    $"Shadow-planning page at index {index} is " +
+                    $"Dual Run planning page at index {index} is " +
                     $"{dualRunPlanning.Pages[index].PhysicalPageNumber}; " +
                     $"expected {expected}.");
             }

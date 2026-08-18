@@ -263,7 +263,7 @@ public sealed class PdfPigDocumentExtractor
                             exception.GetType().Name,
                             exception.Message);
 
-                    // Partial shadow evidence must never masquerade as
+                    // Partial raster-observation evidence must never masquerade as
                     // complete document coverage.
                     rasterObservations.Clear();
                 }

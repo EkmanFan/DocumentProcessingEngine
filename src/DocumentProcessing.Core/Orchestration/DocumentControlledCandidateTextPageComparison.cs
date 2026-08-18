@@ -117,7 +117,7 @@ public sealed record DocumentControlledCandidateTextPageComparison
             if (candidateRemovesAuthoritativeTextMl)
             {
                 throw new ArgumentException(
-                    "A deferred non-native text mode cannot remove legacy text ML.",
+                    "A deferred non-native text mode cannot remove authoritative text ML.",
                     nameof(candidateRemovesAuthoritativeTextMl));
             }
         }
@@ -159,7 +159,7 @@ public sealed record DocumentControlledCandidateTextPageComparison
                 candidateRemovesAuthoritativeTextMl)
             {
                 throw new ArgumentException(
-                    "Only an executed NativeText candidate can remove legacy text ML.",
+                    "Only an executed NativeText candidate can remove authoritative text ML.",
                     nameof(candidateRemovesAuthoritativeTextMl));
             }
         }
@@ -375,7 +375,7 @@ public sealed record DocumentControlledCandidateTextPageComparison
 
     /// <summary>
     /// Actual executed candidate page retained for H.4D.4B projection.
-    /// Null remains valid for deferred/manual legacy comparison evidence.
+    /// Null remains valid for deferred/manual authoritative comparison evidence.
     /// </summary>
     public HybridDocumentPage? CandidatePage { get; }
 

@@ -2,7 +2,7 @@ namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
 /// Side-by-side comparison of the decision that remains authoritative for
-/// runtime execution and the candidate guarded shadow decision.
+/// runtime execution and the candidate guarded Dual Run decision.
 /// </summary>
 public sealed record DocumentDualRunPageComparison
 {
@@ -24,7 +24,7 @@ public sealed record DocumentDualRunPageComparison
             DualRun.PhysicalPageNumber)
         {
             throw new ArgumentException(
-                "Authoritative and shadow decisions must refer to the same physical page.");
+                "Authoritative and Dual Run decisions must refer to the same physical page.");
         }
     }
 
@@ -42,22 +42,22 @@ public sealed record DocumentDualRunPageComparison
     public GuardedPagePlanningDecision DualRun { get; }
 
     /// <summary>
-    /// Verifies that the legacy branch recomputed inside the guarded planner
+    /// Verifies that the authoritative branch recomputed inside the guarded planner
     /// agrees with the already-authoritative planner used by DocumentProcessor.
     /// </summary>
-    public bool LegacyPlanningAgreement =>
+    public bool AuthoritativePlanningAgreement =>
         Authoritative.Assessment.NativeTextStatus ==
             DualRun.Authoritative.Assessment.NativeTextStatus &&
         Authoritative.Plan.Route ==
             DualRun.Authoritative.Plan.Route;
 
-    public bool candidateRemovesAuthoritativeTextMl =>
+    public bool CandidateRemovesAuthoritativeTextMl =>
         Authoritative.Plan.Route !=
             PageProcessingRoute.NativeOnly &&
         DualRun.Candidate.Plan.TextMode ==
             TextExecutionMode.NativeText;
 
-    public bool CandidateAddsIndependentVisualWorkToLegacyNativePage =>
+    public bool CandidateAddsIndependentVisualWorkToAuthoritativeNativePage =>
         Authoritative.Plan.Route ==
             PageProcessingRoute.NativeOnly &&
         DualRun.CandidateHasIndependentVisualWork;

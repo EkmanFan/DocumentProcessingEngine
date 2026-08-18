@@ -8,7 +8,7 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// Explicit runtime dependencies required when authoritative page execution
 /// needs raster/layout-backed hybrid work.
 ///
-/// Legacy OCR recovery/reconciliation remain unchanged. The optional
+/// Authoritative OCR recovery/reconciliation paths remain unchanged. The optional
 /// authoritative visual-planning pair enables only the independently proven
 /// Healthy + NativeText + resolved meaningful-visual preservation branch.
 /// </summary>
@@ -86,7 +86,7 @@ public sealed class DocumentHybridExecutionDependencies
 
     /// <summary>
     /// Optional authoritative deterministic source-visual evidence chain.
-    /// This is distinct from shadow planning: failures propagate.
+    /// This is distinct from Dual Run planning: failures propagate.
     /// </summary>
     public DocumentAuthoritativeVisualPlanningDependencies?
         AuthoritativeVisualPlanning { get; }

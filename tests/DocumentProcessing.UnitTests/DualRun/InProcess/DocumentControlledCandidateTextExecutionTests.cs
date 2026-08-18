@@ -124,7 +124,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                                 observer)));
 
         Assert.Contains(
-            "requires H.4C shadow planning",
+            "requires Dual Run planning",
             exception.Message,
             StringComparison.Ordinal);
     }
@@ -209,7 +209,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 dualRunPlanning.Pages);
 
         Assert.True(
-            dualRunPage.candidateRemovesAuthoritativeTextMl);
+            dualRunPage.CandidateRemovesAuthoritativeTextMl);
 
         Assert.Equal(
             PageProcessingRoute.LayoutWithTargetedOcrReconciliation,
@@ -284,7 +284,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     largestRasterImageAreaRatio:
                         0.67));
 
-        var shadow =
+        var dualRunPlanning =
             await BuildDualRunPlanningReportAsync(
                 extraction,
                 [
@@ -297,7 +297,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
 
         var candidateMode =
             Assert.Single(
-                shadow.Pages)
+                dualRunPlanning.Pages)
                 .DualRun
                 .Candidate
                 .Plan
@@ -320,7 +320,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                         Assert.Single(
                             extraction.Pages))
                 ],
-                shadow,
+                dualRunPlanning,
                 SourceSha);
 
         Assert.Equal(
@@ -363,7 +363,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     largestRasterImageAreaRatio:
                         0));
 
-        var shadow =
+        var dualRunPlanning =
             await BuildDualRunPlanningReportAsync(
                 validExtraction,
                 [
@@ -397,7 +397,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     new HybridDocumentPage(
                         1)
                 ],
-                shadow,
+                dualRunPlanning,
                 SourceSha);
 
         Assert.Equal(
@@ -437,7 +437,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     0,
                     0));
 
-        var shadow =
+        var dualRunPlanning =
             await BuildDualRunPlanningReportAsync(
                 extraction,
                 [
@@ -465,7 +465,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                                 Assert.Single(
                                     extraction.Pages))
                         ],
-                        shadow,
+                        dualRunPlanning,
                         SourceSha,
                         cancellation.Token)
                     .AsTask());
@@ -482,7 +482,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     0,
                     0));
 
-        var shadow =
+        var dualRunPlanning =
             await BuildDualRunPlanningReportAsync(
                 extraction,
                 [
@@ -505,7 +505,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                                 Assert.Single(
                                     extraction.Pages))
                         ],
-                        shadow,
+                        dualRunPlanning,
                         SourceSha)
                     .AsTask());
     }
@@ -521,7 +521,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     0,
                     0));
 
-        var shadow =
+        var dualRunPlanning =
             await BuildDualRunPlanningReportAsync(
                 extraction,
                 [
@@ -543,7 +543,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                         Assert.Single(
                             extraction.Pages))
                 ],
-                shadow,
+                dualRunPlanning,
                 SourceSha);
 
         Assert.Equal(
@@ -575,7 +575,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
 
         await using var stream =
             new MemoryStream(
-                "%PDF-h4d1-shadow"u8.ToArray(),
+                "%PDF-h4d1-dual-run"u8.ToArray(),
                 writable:
                     false);
 

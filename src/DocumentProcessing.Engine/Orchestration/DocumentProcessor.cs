@@ -188,7 +188,7 @@ public sealed class DocumentProcessor
             dualRunPlanning is null)
         {
             throw new ArgumentException(
-                "Controlled candidate execution requires H.4C shadow planning.",
+                "Controlled candidate execution requires Dual Run planning.",
                 nameof(controlledCandidateTextExecution));
         }
 
@@ -394,7 +394,7 @@ public sealed class DocumentProcessor
             finally
             {
                 // Authoritative source-visual evidence acquisition must not leak
-                // stream position into shadow or page execution.
+                // stream position into Dual Run or page execution.
                 prepared.ResetForRead();
             }
 
@@ -454,7 +454,7 @@ public sealed class DocumentProcessor
             }
             finally
             {
-                // Shadow evidence acquisition must not leak source-position
+                // Dual Run evidence acquisition must not leak source-position
                 // state into the current authoritative execution path.
                 prepared.ResetForRead();
             }
@@ -602,7 +602,7 @@ public sealed class DocumentProcessor
             if (dualRunPlanningReport is null)
             {
                 throw new InvalidOperationException(
-                    "Controlled candidate execution was configured without a shadow-planning report.");
+                    "Controlled candidate execution was configured without a Dual Run planning report.");
             }
 
             if (_controlledCandidateTextExecutionRunner
@@ -709,7 +709,7 @@ public sealed class DocumentProcessor
             throw new InvalidDataException(
                 $"Authoritative visual planning returned {guardedDecisions.Count} " +
                 $"decision(s) for {authoritativeDecisions.Count} authoritative " +
-                "legacy page decision(s).");
+                "page decision(s).");
         }
 
         for (var index = 0;
@@ -731,8 +731,8 @@ public sealed class DocumentProcessor
                     authoritative.Plan.Route)
             {
                 throw new InvalidDataException(
-                    $"Authoritative visual planning legacy decision at index {index} " +
-                    "does not agree with the already-selected authoritative legacy route.");
+                    $"Authoritative visual planning decision at index {index} " +
+                    "does not agree with the already-selected authoritative authoritative route.");
             }
         }
     }

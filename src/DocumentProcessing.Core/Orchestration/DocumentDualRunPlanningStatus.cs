@@ -1,7 +1,7 @@
 namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
-/// Outcome of the non-authoritative document shadow-planning path.
+/// Outcome of the non-authoritative document Dual Run planning path.
 /// </summary>
 public enum DocumentDualRunPlanningStatus
 {
@@ -12,13 +12,13 @@ public enum DocumentDualRunPlanningStatus
 
     /// <summary>
     /// No configured visual-observation source supports the detected format.
-    /// Legacy execution remains authoritative.
+    /// Authoritative execution remains unchanged.
     /// </summary>
     UnsupportedFormat,
 
     /// <summary>
-    /// Shadow evidence/planning failed without changing the authoritative
-    /// legacy execution path.
+    /// Dual Run evidence/planning failed without changing the authoritative
+    /// execution path.
     /// </summary>
     Failed
 }

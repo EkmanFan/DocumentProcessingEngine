@@ -3,8 +3,8 @@ namespace DocumentProcessing.Core.Orchestration;
 /// <summary>
 /// Immutable trace of the candidate two-axis planning chain for one page.
 ///
-/// The trace deliberately retains evidence and requirements so shadow
-/// validation can explain why an execution plan differs from the legacy route.
+/// The trace deliberately retains evidence and requirements so Dual Run
+/// validation can explain why an execution plan differs from the authoritative route.
 /// </summary>
 public sealed record PageExecutionPlanningDecision
 {

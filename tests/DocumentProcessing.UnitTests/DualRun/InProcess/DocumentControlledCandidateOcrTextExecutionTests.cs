@@ -51,7 +51,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                     1)
                 : NativePage(
                     1,
-                    "Candidate and legacy text agree.");
+                    "Candidate and authoritative text agree.");
 
         var layout =
             LayoutFor(
@@ -945,7 +945,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                     "fake-reconciliation",
                     "fake-reconciliation-v1"));
 
-        var shadow =
+        var dualRunPlanning =
             controlled is null
                 ? null
                 : new DocumentDualRunPlanningDependencies(
@@ -967,7 +967,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 hybrid,
                 "test-engine-h4d2b-v1",
                 NativeIdentity,
-                shadow,
+                dualRunPlanning,
                 controlled);
 
         await using var stream =

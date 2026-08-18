@@ -7,8 +7,8 @@ namespace DocumentProcessing.Core.Orchestration;
 /// booleans. Shared prerequisites such as rasterization and layout analysis are
 /// derived from those modes, preventing contradictory combinations.
 ///
-/// This V1 plan deliberately contains no legacy <see cref="PageProcessingRoute"/>
-/// and no legacy <see cref="PageProcessingPlan"/>.
+/// This V1 plan deliberately contains neither <see cref="PageProcessingRoute"/>
+/// nor <see cref="PageProcessingPlan"/> from the authoritative route-based planning model.
 /// </summary>
 public sealed record PageExecutionPlan
 {

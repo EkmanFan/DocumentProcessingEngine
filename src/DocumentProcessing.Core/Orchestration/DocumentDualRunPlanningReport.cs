@@ -3,7 +3,7 @@ using DocumentProcessing.Core.Documents;
 namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
-/// Immutable non-authoritative report emitted by true shadow planning.
+/// Immutable non-authoritative report emitted by Dual Run planning.
 ///
 /// This report is diagnostics/evaluation evidence. It is not consumed by
 /// DocumentProcessor to choose runtime execution.
@@ -31,7 +31,7 @@ public sealed record DocumentDualRunPlanningReport
             throw new ArgumentOutOfRangeException(
                 nameof(status),
                 status,
-                "Shadow-planning status must be defined.");
+                "Dual Run planning status must be defined.");
         }
 
         ArgumentNullException.ThrowIfNull(
@@ -48,7 +48,7 @@ public sealed record DocumentDualRunPlanningReport
             var page =
                 materialized[index] ??
                 throw new ArgumentException(
-                    "Shadow-planning pages cannot contain null values.",
+                    "Dual Run planning pages cannot contain null values.",
                     nameof(pages));
 
             var expectedPhysicalPageNumber =
@@ -59,7 +59,7 @@ public sealed record DocumentDualRunPlanningReport
                 expectedPhysicalPageNumber)
             {
                 throw new ArgumentException(
-                    $"Shadow-planning pages must be contiguous and one-based; " +
+                    $"Dual Run planning pages must be contiguous and one-based; " +
                     $"expected physical page {expectedPhysicalPageNumber}, observed " +
                     $"{page.PhysicalPageNumber}.",
                     nameof(pages));
@@ -71,7 +71,7 @@ public sealed record DocumentDualRunPlanningReport
             failure is not null)
         {
             throw new ArgumentException(
-                "Completed shadow planning cannot carry a failure.",
+                "Completed Dual Run planning cannot carry a failure.",
                 nameof(failure));
         }
 
@@ -80,7 +80,7 @@ public sealed record DocumentDualRunPlanningReport
             failure is not null)
         {
             throw new ArgumentException(
-                "Unsupported-format shadow planning is not a failure.",
+                "Unsupported-format Dual Run planning is not a failure.",
                 nameof(failure));
         }
 
@@ -89,7 +89,7 @@ public sealed record DocumentDualRunPlanningReport
             failure is null)
         {
             throw new ArgumentException(
-                "Failed shadow planning must carry failure evidence.",
+                "Failed Dual Run planning must carry failure evidence.",
                 nameof(failure));
         }
 
@@ -128,17 +128,17 @@ public sealed record DocumentDualRunPlanningReport
         IsCompleted &&
         Pages.All(
             page =>
-                page.LegacyPlanningAgreement);
+                page.AuthoritativePlanningAgreement);
 
     public int CandidateRemovesAuthoritativeTextMlCount =>
         Pages.Count(
             page =>
-                page.candidateRemovesAuthoritativeTextMl);
+                page.CandidateRemovesAuthoritativeTextMl);
 
     public int CandidateAddsIndependentVisualWorkToAuthoritativeNativePageCount =>
         Pages.Count(
             page =>
-                page.CandidateAddsIndependentVisualWorkToLegacyNativePage);
+                page.CandidateAddsIndependentVisualWorkToAuthoritativeNativePage);
 
     public int CandidateNativeTextPageCount =>
         Pages.Count(

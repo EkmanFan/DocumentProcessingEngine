@@ -50,7 +50,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
                         [])
                 ]);
 
-        var shadow =
+        var dualRunPlanning =
             DualRun(
                 visualSource,
                 observer);
@@ -58,7 +58,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
         var result =
             await ProcessNativeAsync(
                 extraction,
-                shadow);
+                dualRunPlanning);
 
         AssertEquivalentNativeResult(
             baseline,
@@ -136,7 +136,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
             failure.Stage);
 
         Assert.Contains(
-            "synthetic shadow failure",
+            "synthetic Dual Run failure",
             failure.Message,
             StringComparison.Ordinal);
     }
@@ -333,7 +333,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
                 new RasterObservationAcquisitionFailure(
                     typeof(InvalidOperationException)
                         .FullName!,
-                    "synthetic coordinated shadow failure"));
+                    "synthetic coordinated Dual Run failure"));
 
         var result =
             await ProcessNativeAsync(
@@ -366,7 +366,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
             failure.Stage);
 
         Assert.Contains(
-            "synthetic coordinated shadow failure",
+            "synthetic coordinated Dual Run failure",
             failure.Message,
             StringComparison.Ordinal);
     }
@@ -537,7 +537,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
 
         await using var stream =
             new MemoryStream(
-                "%PDF-shadow-runner"u8.ToArray(),
+                "%PDF-dual-run-runner"u8.ToArray(),
                 writable:
                     false);
 
@@ -545,7 +545,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
             await runner.RunAsync(
                 new DocumentSource(
                     stream,
-                    "shadow.pdf",
+                    "dual-run.pdf",
                     "application/pdf"),
                 DocumentFormatId.Pdf,
                 extraction,
@@ -614,7 +614,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
 
         await using var stream =
             new MemoryStream(
-                "%PDF-shadow-suspicious"u8.ToArray(),
+                "%PDF-dual-run-suspicious"u8.ToArray(),
                 writable:
                     false);
 
@@ -636,7 +636,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
             comparison.DualRun.Candidate.Plan.TextMode);
 
         Assert.False(
-            comparison.candidateRemovesAuthoritativeTextMl);
+            comparison.CandidateRemovesAuthoritativeTextMl);
     }
 
     [Fact]
@@ -674,7 +674,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
 
         await using var stream =
             new MemoryStream(
-                "%PDF-shadow-unknown"u8.ToArray(),
+                "%PDF-dual-run-unknown"u8.ToArray(),
                 writable:
                     false);
 
@@ -734,20 +734,20 @@ public sealed class DocumentProcessorDualRunPlanningTests
                 new StubDetector(),
                 extractor,
                 new StubPreflightAnalyzer(),
-                "test-engine-shadow-v1",
+                "test-engine-dual-run-v1",
                 NativeIdentity,
                 dualRun);
 
         await using var stream =
             new MemoryStream(
-                "%PDF-shadow-document"u8.ToArray(),
+                "%PDF-dual-run-document"u8.ToArray(),
                 writable:
                     false);
 
         return await processor.ProcessAsync(
             new DocumentSource(
                 stream,
-                "shadow.pdf",
+                "dual-run.pdf",
                 "application/pdf"),
             cancellationToken);
     }
@@ -1186,7 +1186,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
             DocumentExtractionResult extraction,
             CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException(
-                "synthetic shadow failure");
+                "synthetic Dual Run failure");
     }
 
     private sealed class RecordingObserver

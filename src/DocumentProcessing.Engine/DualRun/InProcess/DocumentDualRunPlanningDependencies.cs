@@ -5,7 +5,7 @@ using DocumentProcessing.Engine.Planning;
 namespace DocumentProcessing.Engine.DualRun.InProcess;
 
 /// <summary>
-/// Explicit opt-in dependencies for true shadow planning.
+/// Explicit opt-in dependencies for in-process Dual Run planning.
 ///
 /// The visual source is format-specific and injected through the Core
 /// capability boundary. All remaining default components are deterministic and

@@ -1,7 +1,7 @@
 namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
-/// Side-by-side legacy and candidate planning result for one physical page.
+/// Side-by-side authoritative and candidate planning result for one physical page.
 ///
 /// Runtime execution still consumes <see cref="Authoritative"/> during Phase
 /// 21E.1H.3C. The candidate plan exists for guarded comparison and future
@@ -27,7 +27,7 @@ public sealed record GuardedPagePlanningDecision
             Candidate.PhysicalPageNumber)
         {
             throw new ArgumentException(
-                "Legacy and candidate decisions must refer to the same physical page.");
+                "Authoritative and candidate decisions must refer to the same physical page.");
         }
     }
 
@@ -39,13 +39,13 @@ public sealed record GuardedPagePlanningDecision
     public PageExecutionPlanningDecision Candidate { get; }
 
     /// <summary>
-    /// True when the legacy route requests hybrid text processing but the
+    /// True when the authoritative route requests hybrid text processing but the
     /// candidate two-axis policy can safely consume native text.
     ///
     /// This is an intended optimization signal, not permission to cut over
     /// runtime execution during Phase 21E.1H.3C.
     /// </summary>
-    public bool CandidateRemovesLegacyTextMl =>
+    public bool CandidateRemovesAuthoritativeTextMl =>
         Authoritative.Plan.Route !=
             PageProcessingRoute.NativeOnly &&
         Candidate.Plan.TextMode ==

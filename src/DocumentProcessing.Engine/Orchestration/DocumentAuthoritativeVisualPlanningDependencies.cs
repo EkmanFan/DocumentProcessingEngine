@@ -7,7 +7,7 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// <summary>
 /// Explicit opt-in dependencies for authoritative source-visual planning.
 ///
-/// Unlike shadow planning, failures from this capability are authoritative and
+/// Unlike Dual Run planning, failures from this capability are authoritative and
 /// propagate to the caller. The source observer and structural enricher produce
 /// evidence only; the guarded planner remains the deterministic policy boundary.
 /// </summary>

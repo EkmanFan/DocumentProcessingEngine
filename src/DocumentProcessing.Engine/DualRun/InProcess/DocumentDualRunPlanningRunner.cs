@@ -5,10 +5,10 @@ using DocumentProcessing.Core.Orchestration;
 namespace DocumentProcessing.Engine.DualRun.InProcess;
 
 /// <summary>
-/// Executes the complete candidate planning chain as non-authoritative shadow
+/// Executes the complete candidate planning chain as non-authoritative Dual Run
 /// work.
 ///
-/// Non-cancellation operational failures are converted into a shadow report and
+/// Non-cancellation operational failures are converted into a Dual Run report and
 /// do not authorize or alter runtime execution. Fatal allocation failures are
 /// not swallowed.
 /// </summary>
@@ -249,8 +249,8 @@ public sealed class DocumentDualRunPlanningRunner
         catch (Exception exception)
             when (exception is not OutOfMemoryException)
         {
-            // The observer is diagnostics-only. Failure to export a shadow
-            // report cannot change the authoritative legacy execution path.
+            // The observer is diagnostics-only. Failure to export a Dual Run
+            // report cannot change the authoritative execution path.
         }
     }
 
@@ -260,14 +260,14 @@ public sealed class DocumentDualRunPlanningRunner
 
     private static void ValidateAuthoritativeCoverage(
         DocumentExtractionResult extraction,
-        IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions)
+        IReadOnlyList<PageProcessingDecision> authoritativeDecisions)
     {
-        if (authoritativeLegacyDecisions.Count !=
+        if (authoritativeDecisions.Count !=
             extraction.Pages.Count)
         {
             throw new InvalidDataException(
-                $"Authoritative legacy planning contains " +
-                $"{authoritativeLegacyDecisions.Count} page decision(s) for " +
+                $"Authoritative planning contains " +
+                $"{authoritativeDecisions.Count} page decision(s) for " +
                 $"{extraction.Pages.Count} extracted page(s).");
         }
 
@@ -281,14 +281,14 @@ public sealed class DocumentDualRunPlanningRunner
                     .PhysicalPageNumber;
 
             var actual =
-                authoritativeLegacyDecisions[index]
+                authoritativeDecisions[index]
                     .PhysicalPageNumber;
 
             if (actual !=
                 expected)
             {
                 throw new InvalidDataException(
-                    $"Authoritative legacy decision at index {index} refers to " +
+                    $"Authoritative decision at index {index} refers to " +
                     $"physical page {actual}; expected {expected}.");
             }
         }
@@ -296,14 +296,14 @@ public sealed class DocumentDualRunPlanningRunner
 
     private static IReadOnlyList<DocumentDualRunPageComparison> BuildComparisons(
         DocumentExtractionResult extraction,
-        IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions,
-        IReadOnlyList<GuardedPagePlanningDecision> shadowDecisions)
+        IReadOnlyList<PageProcessingDecision> authoritativeDecisions,
+        IReadOnlyList<GuardedPagePlanningDecision> dualRunDecisions)
     {
-        if (shadowDecisions.Count !=
+        if (dualRunDecisions.Count !=
             extraction.Pages.Count)
         {
             throw new InvalidDataException(
-                $"Guarded shadow planner returned {shadowDecisions.Count} decision(s) " +
+                $"Guarded Dual Run planner returned {dualRunDecisions.Count} decision(s) " +
                 $"for {extraction.Pages.Count} extracted page(s).");
         }
 
@@ -318,8 +318,8 @@ public sealed class DocumentDualRunPlanningRunner
         {
             comparisons[index] =
                 new DocumentDualRunPageComparison(
-                    authoritativeLegacyDecisions[index],
-                    shadowDecisions[index]);
+                    authoritativeDecisions[index],
+                    dualRunDecisions[index]);
         }
 
         return comparisons;

@@ -1,7 +1,7 @@
 namespace DocumentProcessing.Core.Orchestration;
 
 /// <summary>
-/// Sanitized deterministic description of a non-fatal shadow-planning failure.
+/// Sanitized deterministic description of a non-fatal Dual Run planning failure.
 /// </summary>
 public sealed record DocumentDualRunPlanningFailure
 {
@@ -16,7 +16,7 @@ public sealed record DocumentDualRunPlanningFailure
             throw new ArgumentOutOfRangeException(
                 nameof(stage),
                 stage,
-                "Shadow-planning failure stage must be defined.");
+                "Dual Run planning failure stage must be defined.");
         }
 
         if (string.IsNullOrWhiteSpace(
