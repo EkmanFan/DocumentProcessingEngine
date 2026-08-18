@@ -71,7 +71,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                     : page.Blocks[0].Text);
 
         var authoritative =
-            await ExecuteLegacyAsync(
+            await ExecuteAuthoritativeAsync(
                 page,
                 nativeStatus,
                 layoutAnalyzer,
@@ -88,8 +88,8 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                     layoutAnalyzer,
                     recognizer));
 
-        var shadow =
-            Shadow(
+        var dualRunPlanning =
+            DualRunPlanningReport(
                 nativeStatus,
                 textMode);
 
@@ -114,7 +114,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 [
                     authoritative
                 ],
-                shadow,
+                dualRunPlanning,
                 SourceSha);
 
         Assert.Equal(
@@ -152,7 +152,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
             comparison.CandidateReconciliationEvidenceCount);
 
         Assert.False(
-            comparison.CandidateRemovesLegacyTextMl);
+            comparison.CandidateRemovesAuthoritativeTextMl);
 
         Assert.Same(
             report,
@@ -207,7 +207,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                     new HybridDocumentPage(
                         1)
                 ],
-                Shadow(
+                DualRunPlanningReport(
                     NativeTextStatus.Missing,
                     TextExecutionMode.TargetedOcrRecovery),
                 SourceSha);
@@ -283,7 +283,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                             new HybridDocumentPage(
                                 1)
                         ],
-                        Shadow(
+                        DualRunPlanningReport(
                             NativeTextStatus.Missing,
                             TextExecutionMode.TargetedOcrRecovery),
                         SourceSha)
@@ -378,7 +378,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 "Figure");
 
         var authoritative =
-            await ExecuteLegacyAsync(
+            await ExecuteAuthoritativeAsync(
                 page,
                 NativeTextStatus.Missing,
                 new FakePageLayoutAnalyzer(
@@ -425,7 +425,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 [
                     authoritative
                 ],
-                Shadow(
+                DualRunPlanningReport(
                     NativeTextStatus.Missing,
                     TextExecutionMode.TargetedOcrRecovery,
                     candidateHasIndependentVisualWork:
@@ -481,7 +481,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
         var page =
             NativePage(
                 1,
-                "Candidate and legacy text agree.");
+                "Candidate and Authoritative text agree.");
 
         var textObservation =
             LayoutFor(
@@ -518,7 +518,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 "Figure");
 
         var authoritative =
-            await ExecuteLegacyAsync(
+            await ExecuteAuthoritativeAsync(
                 page,
                 NativeTextStatus.Suspicious,
                 new FakePageLayoutAnalyzer(
@@ -566,7 +566,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 [
                     authoritative
                 ],
-                Shadow(
+                DualRunPlanningReport(
                     NativeTextStatus.Suspicious,
                     TextExecutionMode.TargetedOcrReconciliation,
                     candidateHasIndependentVisualWork:
@@ -669,7 +669,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 "future_backend_kind");
 
         var authoritative =
-            await ExecuteLegacyAsync(
+            await ExecuteAuthoritativeAsync(
                 page,
                 NativeTextStatus.Missing,
                 new FakePageLayoutAnalyzer(
@@ -716,7 +716,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 [
                     authoritative
                 ],
-                Shadow(
+                DualRunPlanningReport(
                     NativeTextStatus.Missing,
                     TextExecutionMode.TargetedOcrRecovery),
                 SourceSha);
@@ -818,7 +818,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 ]);
 
         var authoritative =
-            await ExecuteLegacyAsync(
+            await ExecuteAuthoritativeAsync(
                 page,
                 NativeTextStatus.Missing,
                 authoritativeLayoutAnalyzer,
@@ -858,7 +858,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 [
                     authoritative
                 ],
-                Shadow(
+                DualRunPlanningReport(
                     NativeTextStatus.Missing,
                     TextExecutionMode.TargetedOcrRecovery),
                 SourceSha);
@@ -948,14 +948,14 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
         var shadow =
             controlled is null
                 ? null
-                : new DocumentShadowPlanningDependencies(
+                : new DocumentDualRunPlanningDependencies(
                     new FakeVisualRasterObservationSource(
                         [
                             new PageVisualRasterObservations(
                                 1,
                                 [])
                         ]),
-                    new NoOpShadowObserver());
+                    new NoOpDualRunObserver());
 
         var processor =
             new DocumentProcessor(
@@ -983,7 +983,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 "application/pdf"));
     }
 
-    private static async Task<HybridDocumentPage> ExecuteLegacyAsync(
+    private static async Task<HybridDocumentPage> ExecuteAuthoritativeAsync(
         DocumentExtractionPage page,
         NativeTextStatus nativeStatus,
         IPageLayoutAnalyzer layoutAnalyzer,
@@ -993,7 +993,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
             new FakeRasterizationSession();
 
         var decision =
-            LegacyDecision(
+            AuthoritativeDecision(
                 nativeStatus);
 
         if (nativeStatus ==
@@ -1021,7 +1021,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 SourceSha);
     }
 
-    private static PageProcessingDecision LegacyDecision(
+    private static PageProcessingDecision AuthoritativeDecision(
         NativeTextStatus nativeStatus) =>
         new(
             new PageProcessingAssessment(
@@ -1033,13 +1033,13 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                     ? PageProcessingRoute.LayoutWithTargetedOcrRecovery
                     : PageProcessingRoute.LayoutWithTargetedOcrReconciliation));
 
-    private static DocumentShadowPlanningReport Shadow(
+    private static DocumentDualRunPlanningReport DualRunPlanningReport(
         NativeTextStatus nativeStatus,
         TextExecutionMode textMode,
         bool candidateHasIndependentVisualWork = false)
     {
-        var legacy =
-            LegacyDecision(
+        var authoritative =
+            AuthoritativeDecision(
                 nativeStatus);
 
         var textAuthority =
@@ -1126,23 +1126,23 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
 
         var candidate =
             new PageExecutionPlanningDecision(
-                legacy.Assessment,
+                authoritative.Assessment,
                 evidence,
                 requirements,
                 plan);
 
         var guarded =
             new GuardedPagePlanningDecision(
-                legacy,
+                authoritative,
                 candidate);
 
-        return new DocumentShadowPlanningReport(
+        return new DocumentDualRunPlanningReport(
             SourceSha,
             DocumentFormatId.Pdf,
-            DocumentShadowPlanningStatus.Completed,
+            DocumentDualRunPlanningStatus.Completed,
             [
-                new DocumentShadowPageComparison(
-                    legacy,
+                new DocumentDualRunPageComparison(
+                    authoritative,
                     guarded)
             ]);
     }
@@ -1555,11 +1555,11 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
         }
     }
 
-    private sealed class NoOpShadowObserver
-        : IDocumentShadowPlanningObserver
+    private sealed class NoOpDualRunObserver
+        : IDocumentDualRunPlanningObserver
     {
         public ValueTask ObserveAsync(
-            DocumentShadowPlanningReport report,
+            DocumentDualRunPlanningReport report,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

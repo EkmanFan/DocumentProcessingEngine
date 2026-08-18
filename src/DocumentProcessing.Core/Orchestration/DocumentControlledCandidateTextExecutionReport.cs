@@ -171,12 +171,12 @@ public sealed record DocumentControlledCandidateTextExecutionReport
                 page.Status ==
                 DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode);
 
-    public int ExecutedCandidateRemovesLegacyTextMlCount =>
+    public int ExecutedCandidateRemovesAuthoritativeTextMlCount =>
         Pages.Count(
             page =>
                 page.Status !=
                     DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode &&
-                page.CandidateRemovesLegacyTextMl);
+                page.CandidateRemovesAuthoritativeTextMl);
 
     public int ExecutedSelectedTextAgreementCount =>
         Pages.Count(

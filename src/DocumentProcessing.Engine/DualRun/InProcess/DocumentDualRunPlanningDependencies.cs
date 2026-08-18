@@ -11,7 +11,7 @@ namespace DocumentProcessing.Engine.DualRun.InProcess;
 /// capability boundary. All remaining default components are deterministic and
 /// live in the Engine layer.
 /// </summary>
-public sealed class DocumentShadowPlanningDependencies
+public sealed class DocumentDualRunPlanningDependencies
 {
     #region Variables and Constants
 
@@ -19,9 +19,9 @@ public sealed class DocumentShadowPlanningDependencies
 
     #region ctor
 
-    public DocumentShadowPlanningDependencies(
+    public DocumentDualRunPlanningDependencies(
         IVisualRasterObservationSource visualRasterObservationSource,
-        IDocumentShadowPlanningObserver observer,
+        IDocumentDualRunPlanningObserver observer,
         DocumentTextNormalizer? nativeTextNormalizer = null,
         DefaultVisualStructuralEvidenceEnricher? structuralEvidenceEnricher = null,
         GuardedDocumentPageExecutionPlanner? guardedPlanner = null)
@@ -56,7 +56,7 @@ public sealed class DocumentShadowPlanningDependencies
 
     public IVisualRasterObservationSource VisualRasterObservationSource { get; }
 
-    public IDocumentShadowPlanningObserver Observer { get; }
+    public IDocumentDualRunPlanningObserver Observer { get; }
 
     public DocumentTextNormalizer NativeTextNormalizer { get; }
 

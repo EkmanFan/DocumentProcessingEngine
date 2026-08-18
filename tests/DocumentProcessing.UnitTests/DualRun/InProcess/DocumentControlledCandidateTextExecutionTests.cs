@@ -37,7 +37,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
         var baseline =
             await ProcessNativeAsync(
                 extraction,
-                shadow:
+                dualRun:
                     null,
                 controlled:
                     null);
@@ -48,7 +48,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
         var actual =
             await ProcessNativeAsync(
                 extraction,
-                Shadow(
+                DualRunPlanningDependencies(
                     new StubVisualSource(
                         [
                             new PageVisualRasterObservations(
@@ -97,7 +97,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
     }
 
     [Fact]
-    public void Constructor_ControlledExecutionWithoutShadowPlanning_FailsFast()
+    public void Constructor_ControlledExecutionWithoutDualRunPlanning_FailsFast()
     {
         var observer =
             new RecordingCandidateObserver();
@@ -117,7 +117,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                         new StubPreflightAnalyzer(),
                         "test-engine-h4d1-v1",
                         NativeIdentity,
-                        shadowPlanning:
+                        dualRunPlanning:
                             null,
                         controlledCandidateTextExecution:
                             new DocumentControlledCandidateTextExecutionDependencies(
@@ -130,7 +130,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_FailedShadowPlanning_SkipsControlledExecutionAndKeepsAuthority()
+    public async Task ProcessAsync_FailedDualRunPlanning_SkipsControlledExecutionAndKeepsAuthority()
     {
         var extraction =
             Extraction(
@@ -145,7 +145,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
         var baseline =
             await ProcessNativeAsync(
                 extraction,
-                shadow:
+                dualRun:
                     null,
                 controlled:
                     null);
@@ -156,7 +156,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
         var actual =
             await ProcessNativeAsync(
                 extraction,
-                Shadow(
+                DualRunPlanningDependencies(
                     new ThrowingVisualSource()),
                 new DocumentControlledCandidateTextExecutionDependencies(
                     candidateObserver));
@@ -181,7 +181,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
     }
 
     [Fact]
-    public async Task Runner_UnverifiedPresentationOnlyCandidate_ActuallyExecutesNativeTextAndRecordsLegacyMlRemoval()
+    public async Task Runner_UnverifiedPresentationOnlyCandidate_ActuallyExecutesNativeTextAndRecordsAuthoritativeMlRemoval()
     {
         var extraction =
             Extraction(
@@ -193,8 +193,8 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     largestRasterImageAreaRatio:
                         0.67));
 
-        var shadow =
-            await BuildShadowReportAsync(
+        var dualRunPlanning =
+            await BuildDualRunPlanningReportAsync(
                 extraction,
                 [
                     new PageVisualRasterObservations(
@@ -204,20 +204,20 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                         ])
                 ]);
 
-        var shadowPage =
+        var dualRunPage =
             Assert.Single(
-                shadow.Pages);
+                dualRunPlanning.Pages);
 
         Assert.True(
-            shadowPage.CandidateRemovesLegacyTextMl);
+            dualRunPage.candidateRemovesAuthoritativeTextMl);
 
         Assert.Equal(
             PageProcessingRoute.LayoutWithTargetedOcrReconciliation,
-            shadowPage.AuthoritativeLegacy.Plan.Route);
+            dualRunPage.Authoritative.Plan.Route);
 
         Assert.Equal(
             TextExecutionMode.NativeText,
-            shadowPage.Shadow.Candidate.Plan.TextMode);
+            dualRunPage.DualRun.Candidate.Plan.TextMode);
 
         var authoritative =
             AssembleNativeForTest(
@@ -238,7 +238,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 [
                     authoritative
                 ],
-                shadow,
+                dualRunPlanning,
                 SourceSha);
 
         Assert.Equal(
@@ -247,7 +247,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
 
         Assert.Equal(
             1,
-            report.ExecutedCandidateRemovesLegacyTextMlCount);
+            report.ExecutedCandidateRemovesAuthoritativeTextMlCount);
 
         var comparison =
             Assert.Single(
@@ -258,7 +258,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
             comparison.Status);
 
         Assert.True(
-            comparison.CandidateRemovesLegacyTextMl);
+            comparison.CandidateRemovesAuthoritativeTextMl);
 
         Assert.True(
             comparison.SelectedTextSequenceExact is true);
@@ -285,7 +285,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                         0.67));
 
         var shadow =
-            await BuildShadowReportAsync(
+            await BuildDualRunPlanningReportAsync(
                 extraction,
                 [
                     new PageVisualRasterObservations(
@@ -298,7 +298,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
         var candidateMode =
             Assert.Single(
                 shadow.Pages)
-                .Shadow
+                .DualRun
                 .Candidate
                 .Plan
                 .TextMode;
@@ -364,7 +364,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                         0));
 
         var shadow =
-            await BuildShadowReportAsync(
+            await BuildDualRunPlanningReportAsync(
                 validExtraction,
                 [
                     new PageVisualRasterObservations(
@@ -438,7 +438,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     0));
 
         var shadow =
-            await BuildShadowReportAsync(
+            await BuildDualRunPlanningReportAsync(
                 extraction,
                 [
                     new PageVisualRasterObservations(
@@ -483,7 +483,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     0));
 
         var shadow =
-            await BuildShadowReportAsync(
+            await BuildDualRunPlanningReportAsync(
                 extraction,
                 [
                     new PageVisualRasterObservations(
@@ -522,7 +522,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     0));
 
         var shadow =
-            await BuildShadowReportAsync(
+            await BuildDualRunPlanningReportAsync(
                 extraction,
                 [
                     new PageVisualRasterObservations(
@@ -551,13 +551,13 @@ public sealed class DocumentControlledCandidateTextExecutionTests
             report.Status);
     }
 
-    private static DocumentShadowPlanningDependencies Shadow(
+    private static DocumentDualRunPlanningDependencies DualRunPlanningDependencies(
         IVisualRasterObservationSource source) =>
         new(
             source,
-            new NoOpShadowObserver());
+            new NoOpDualRunPlanningObserver());
 
-    private static async Task<DocumentShadowPlanningReport> BuildShadowReportAsync(
+    private static async Task<DocumentDualRunPlanningReport> BuildDualRunPlanningReportAsync(
         DocumentExtractionResult extraction,
         IReadOnlyList<PageVisualRasterObservations> rasterObservations)
     {
@@ -568,8 +568,8 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                     extraction);
 
         var runner =
-            new DocumentShadowPlanningRunner(
-                Shadow(
+            new DocumentDualRunPlanningRunner(
+                DualRunPlanningDependencies(
                     new StubVisualSource(
                         rasterObservations)));
 
@@ -593,7 +593,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
     private static async Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
         ProcessNativeAsync(
             DocumentExtractionResult extraction,
-            DocumentShadowPlanningDependencies? shadow,
+            DocumentDualRunPlanningDependencies? dualRun,
             DocumentControlledCandidateTextExecutionDependencies? controlled)
     {
         var processor =
@@ -604,7 +604,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 new StubPreflightAnalyzer(),
                 "test-engine-h4d1-v1",
                 NativeIdentity,
-                shadow,
+                dualRun,
                 controlled);
 
         await using var stream =
@@ -869,14 +869,14 @@ public sealed class DocumentControlledCandidateTextExecutionTests
             DocumentExtractionResult extraction,
             CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException(
-                "synthetic shadow failure");
+                "synthetic dualRun failure");
     }
 
-    private sealed class NoOpShadowObserver
-        : IDocumentShadowPlanningObserver
+    private sealed class NoOpDualRunPlanningObserver
+        : IDocumentDualRunPlanningObserver
     {
         public ValueTask ObserveAsync(
-            DocumentShadowPlanningReport report,
+            DocumentDualRunPlanningReport report,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

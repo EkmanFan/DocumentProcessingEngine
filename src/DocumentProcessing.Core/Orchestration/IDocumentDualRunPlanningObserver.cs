@@ -6,9 +6,9 @@ namespace DocumentProcessing.Core.Orchestration;
 /// Observer failures are isolated by the shadow runner and cannot change legacy
 /// runtime execution. Caller-requested cancellation still propagates.
 /// </summary>
-public interface IDocumentShadowPlanningObserver
+public interface IDocumentDualRunPlanningObserver
 {
     ValueTask ObserveAsync(
-        DocumentShadowPlanningReport report,
+        DocumentDualRunPlanningReport report,
         CancellationToken cancellationToken = default);
 }

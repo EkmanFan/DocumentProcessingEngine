@@ -3,10 +3,10 @@ namespace DocumentProcessing.Core.Orchestration;
 /// <summary>
 /// Sanitized deterministic description of a non-fatal shadow-planning failure.
 /// </summary>
-public sealed record DocumentShadowPlanningFailure
+public sealed record DocumentDualRunPlanningFailure
 {
-    public DocumentShadowPlanningFailure(
-        DocumentShadowPlanningFailureStage stage,
+    public DocumentDualRunPlanningFailure(
+        DocumentDualRunPlanningFailureStage stage,
         string exceptionType,
         string message)
     {
@@ -45,7 +45,7 @@ public sealed record DocumentShadowPlanningFailure
             message.Trim();
     }
 
-    public DocumentShadowPlanningFailureStage Stage { get; }
+    public DocumentDualRunPlanningFailureStage Stage { get; }
 
     public string ExceptionType { get; }
 

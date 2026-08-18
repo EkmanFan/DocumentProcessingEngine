@@ -14,10 +14,10 @@ public sealed record DocumentControlledCandidateTextPageComparison
 {
     public DocumentControlledCandidateTextPageComparison(
         int physicalPageNumber,
-        PageProcessingRoute authoritativeLegacyRoute,
+        PageProcessingRoute authoritativeRoute,
         TextExecutionMode candidateTextMode,
         DocumentControlledCandidateTextPageStatus status,
-        bool candidateRemovesLegacyTextMl,
+        bool candidateRemovesAuthoritativeTextMl,
         bool candidateHasIndependentVisualWork,
         bool? selectedTextSequenceExact = null,
         bool? textProjectionExact = null,
@@ -38,10 +38,10 @@ public sealed record DocumentControlledCandidateTextPageComparison
         }
 
         if (!Enum.IsDefined(
-                authoritativeLegacyRoute))
+                authoritativeRoute))
         {
             throw new ArgumentOutOfRangeException(
-                nameof(authoritativeLegacyRoute));
+                nameof(authoritativeRoute));
         }
 
         if (!Enum.IsDefined(
@@ -114,11 +114,11 @@ public sealed record DocumentControlledCandidateTextPageComparison
                     "Deferred candidate text modes cannot carry execution metrics.");
             }
 
-            if (candidateRemovesLegacyTextMl)
+            if (candidateRemovesAuthoritativeTextMl)
             {
                 throw new ArgumentException(
                     "A deferred non-native text mode cannot remove legacy text ML.",
-                    nameof(candidateRemovesLegacyTextMl));
+                    nameof(candidateRemovesAuthoritativeTextMl));
             }
         }
         else
@@ -156,19 +156,19 @@ public sealed record DocumentControlledCandidateTextPageComparison
 
             if (status !=
                     DocumentControlledCandidateTextPageStatus.ExecutedNativeText &&
-                candidateRemovesLegacyTextMl)
+                candidateRemovesAuthoritativeTextMl)
             {
                 throw new ArgumentException(
                     "Only an executed NativeText candidate can remove legacy text ML.",
-                    nameof(candidateRemovesLegacyTextMl));
+                    nameof(candidateRemovesAuthoritativeTextMl));
             }
         }
 
         PhysicalPageNumber =
             physicalPageNumber;
 
-        AuthoritativeLegacyRoute =
-            authoritativeLegacyRoute;
+        AuthoritativeRoute =
+            authoritativeRoute;
 
         CandidateTextMode =
             candidateTextMode;
@@ -176,8 +176,8 @@ public sealed record DocumentControlledCandidateTextPageComparison
         Status =
             status;
 
-        CandidateRemovesLegacyTextMl =
-            candidateRemovesLegacyTextMl;
+        CandidateRemovesAuthoritativeTextMl =
+            candidateRemovesAuthoritativeTextMl;
 
         CandidateHasIndependentVisualWork =
             candidateHasIndependentVisualWork;
@@ -342,13 +342,13 @@ public sealed record DocumentControlledCandidateTextPageComparison
 
     public int PhysicalPageNumber { get; }
 
-    public PageProcessingRoute AuthoritativeLegacyRoute { get; }
+    public PageProcessingRoute AuthoritativeRoute { get; }
 
     public TextExecutionMode CandidateTextMode { get; }
 
     public DocumentControlledCandidateTextPageStatus Status { get; }
 
-    public bool CandidateRemovesLegacyTextMl { get; }
+    public bool CandidateRemovesAuthoritativeTextMl { get; }
 
     /// <summary>
     /// True means H.3C selected visual analysis and/or meaningful visual

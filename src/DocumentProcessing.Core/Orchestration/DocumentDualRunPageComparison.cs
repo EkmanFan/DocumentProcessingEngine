@@ -4,24 +4,24 @@ namespace DocumentProcessing.Core.Orchestration;
 /// Side-by-side comparison of the decision that remains authoritative for
 /// runtime execution and the candidate guarded shadow decision.
 /// </summary>
-public sealed record DocumentShadowPageComparison
+public sealed record DocumentDualRunPageComparison
 {
-    public DocumentShadowPageComparison(
-        PageProcessingDecision authoritativeLegacy,
-        GuardedPagePlanningDecision shadow)
+    public DocumentDualRunPageComparison(
+        PageProcessingDecision authoritative,
+        GuardedPagePlanningDecision dualRun)
     {
-        AuthoritativeLegacy =
-            authoritativeLegacy ??
+        Authoritative =
+            authoritative ??
             throw new ArgumentNullException(
-                nameof(authoritativeLegacy));
+                nameof(authoritative));
 
-        Shadow =
-            shadow ??
+        DualRun =
+            dualRun ??
             throw new ArgumentNullException(
-                nameof(shadow));
+                nameof(dualRun));
 
-        if (AuthoritativeLegacy.PhysicalPageNumber !=
-            Shadow.PhysicalPageNumber)
+        if (Authoritative.PhysicalPageNumber !=
+            DualRun.PhysicalPageNumber)
         {
             throw new ArgumentException(
                 "Authoritative and shadow decisions must refer to the same physical page.");
@@ -29,36 +29,36 @@ public sealed record DocumentShadowPageComparison
     }
 
     public int PhysicalPageNumber =>
-        AuthoritativeLegacy.PhysicalPageNumber;
+        Authoritative.PhysicalPageNumber;
 
     /// <summary>
     /// Decision consumed by DocumentProcessor runtime execution.
     /// </summary>
-    public PageProcessingDecision AuthoritativeLegacy { get; }
+    public PageProcessingDecision Authoritative { get; }
 
     /// <summary>
     /// Non-authoritative guarded candidate decision.
     /// </summary>
-    public GuardedPagePlanningDecision Shadow { get; }
+    public GuardedPagePlanningDecision DualRun { get; }
 
     /// <summary>
     /// Verifies that the legacy branch recomputed inside the guarded planner
     /// agrees with the already-authoritative planner used by DocumentProcessor.
     /// </summary>
     public bool LegacyPlanningAgreement =>
-        AuthoritativeLegacy.Assessment.NativeTextStatus ==
-            Shadow.Legacy.Assessment.NativeTextStatus &&
-        AuthoritativeLegacy.Plan.Route ==
-            Shadow.Legacy.Plan.Route;
+        Authoritative.Assessment.NativeTextStatus ==
+            DualRun.Authoritative.Assessment.NativeTextStatus &&
+        Authoritative.Plan.Route ==
+            DualRun.Authoritative.Plan.Route;
 
-    public bool CandidateRemovesLegacyTextMl =>
-        AuthoritativeLegacy.Plan.Route !=
+    public bool candidateRemovesAuthoritativeTextMl =>
+        Authoritative.Plan.Route !=
             PageProcessingRoute.NativeOnly &&
-        Shadow.Candidate.Plan.TextMode ==
+        DualRun.Candidate.Plan.TextMode ==
             TextExecutionMode.NativeText;
 
     public bool CandidateAddsIndependentVisualWorkToLegacyNativePage =>
-        AuthoritativeLegacy.Plan.Route ==
+        Authoritative.Plan.Route ==
             PageProcessingRoute.NativeOnly &&
-        Shadow.CandidateHasIndependentVisualWork;
+        DualRun.CandidateHasIndependentVisualWork;
 }

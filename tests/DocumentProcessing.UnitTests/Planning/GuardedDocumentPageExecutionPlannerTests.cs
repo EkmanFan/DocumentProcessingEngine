@@ -27,7 +27,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
 
         Assert.Equal(
             PageProcessingRoute.LayoutWithTargetedOcrRecovery,
-            decision.Legacy.Plan.Route);
+            decision.Authoritative.Plan.Route);
 
         Assert.Equal(
             TextExecutionMode.TargetedOcrRecovery,
@@ -58,7 +58,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
 
         Assert.Equal(
             PageProcessingRoute.LayoutWithTargetedOcrReconciliation,
-            decision.Legacy.Plan.Route);
+            decision.Authoritative.Plan.Route);
 
         Assert.Equal(
             TextExecutionMode.TargetedOcrReconciliation,
@@ -92,7 +92,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
 
         Assert.Equal(
             PageProcessingRoute.LayoutWithTargetedOcrReconciliation,
-            decision.Legacy.Plan.Route);
+            decision.Authoritative.Plan.Route);
 
         Assert.Equal(
             TextExecutionMode.NativeText,
@@ -131,7 +131,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
 
         Assert.Equal(
             PageProcessingRoute.LayoutWithTargetedOcrReconciliation,
-            decision.Legacy.Plan.Route);
+            decision.Authoritative.Plan.Route);
 
         Assert.Equal(
             TextExecutionMode.TargetedOcrVerification,
@@ -168,7 +168,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
 
         Assert.Equal(
             PageProcessingRoute.NativeOnly,
-            decision.Legacy.Plan.Route);
+            decision.Authoritative.Plan.Route);
 
         Assert.Equal(
             TextExecutionMode.NativeText,
@@ -213,7 +213,7 @@ public sealed class GuardedDocumentPageExecutionPlannerTests
 
         Assert.Equal(
             PageProcessingRoute.NativeOnly,
-            decision.Legacy.Plan.Route);
+            decision.Authoritative.Plan.Route);
 
         Assert.Equal(
             TextExecutionMode.NativeText,

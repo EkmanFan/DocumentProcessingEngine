@@ -3,27 +3,27 @@ namespace DocumentProcessing.Core.Orchestration;
 /// <summary>
 /// Side-by-side legacy and candidate planning result for one physical page.
 ///
-/// Runtime execution still consumes <see cref="Legacy"/> during Phase
+/// Runtime execution still consumes <see cref="Authoritative"/> during Phase
 /// 21E.1H.3C. The candidate plan exists for guarded comparison and future
 /// cutover only.
 /// </summary>
 public sealed record GuardedPagePlanningDecision
 {
     public GuardedPagePlanningDecision(
-        PageProcessingDecision legacy,
+        PageProcessingDecision authoritative,
         PageExecutionPlanningDecision candidate)
     {
-        Legacy =
-            legacy ??
+        Authoritative =
+            authoritative ??
             throw new ArgumentNullException(
-                nameof(legacy));
+                nameof(authoritative));
 
         Candidate =
             candidate ??
             throw new ArgumentNullException(
                 nameof(candidate));
 
-        if (Legacy.PhysicalPageNumber !=
+        if (Authoritative.PhysicalPageNumber !=
             Candidate.PhysicalPageNumber)
         {
             throw new ArgumentException(
@@ -32,9 +32,9 @@ public sealed record GuardedPagePlanningDecision
     }
 
     public int PhysicalPageNumber =>
-        Legacy.PhysicalPageNumber;
+        Authoritative.PhysicalPageNumber;
 
-    public PageProcessingDecision Legacy { get; }
+    public PageProcessingDecision Authoritative { get; }
 
     public PageExecutionPlanningDecision Candidate { get; }
 
@@ -46,7 +46,7 @@ public sealed record GuardedPagePlanningDecision
     /// runtime execution during Phase 21E.1H.3C.
     /// </summary>
     public bool CandidateRemovesLegacyTextMl =>
-        Legacy.Plan.Route !=
+        Authoritative.Plan.Route !=
             PageProcessingRoute.NativeOnly &&
         Candidate.Plan.TextMode ==
             TextExecutionMode.NativeText;

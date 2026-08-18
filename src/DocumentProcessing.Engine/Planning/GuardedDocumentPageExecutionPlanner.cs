@@ -21,7 +21,7 @@ public sealed class GuardedDocumentPageExecutionPlanner
     #region Variables and Constants
 
     private readonly IPageProcessingAssessor _nativeAssessor;
-    private readonly IPageProcessingPolicy _legacyPolicy;
+    private readonly IPageProcessingPolicy _authoritativePolicy;
     private readonly DefaultVisualEvidenceAssessor _visualAssessor;
     private readonly IPageProcessingRequirementsPolicy _requirementsPolicy;
     private readonly DefaultPageExecutionPlanCompiler _executionPlanCompiler;
@@ -32,7 +32,7 @@ public sealed class GuardedDocumentPageExecutionPlanner
 
     public GuardedDocumentPageExecutionPlanner(
         IPageProcessingAssessor nativeAssessor,
-        IPageProcessingPolicy legacyPolicy,
+        IPageProcessingPolicy authoritativePolicy,
         DefaultVisualEvidenceAssessor visualAssessor,
         IPageProcessingRequirementsPolicy requirementsPolicy,
         DefaultPageExecutionPlanCompiler executionPlanCompiler)
@@ -42,10 +42,10 @@ public sealed class GuardedDocumentPageExecutionPlanner
             throw new ArgumentNullException(
                 nameof(nativeAssessor));
 
-        _legacyPolicy =
-            legacyPolicy ??
+        _authoritativePolicy =
+            authoritativePolicy ??
             throw new ArgumentNullException(
-                nameof(legacyPolicy));
+                nameof(authoritativePolicy));
 
         _visualAssessor =
             visualAssessor ??
@@ -118,14 +118,14 @@ public sealed class GuardedDocumentPageExecutionPlanner
                     $"{page.PhysicalPageNumber}.");
             }
 
-            var legacyPlan =
-                _legacyPolicy.Decide(
+            var  authoritativePlan =
+                _authoritativePolicy.Decide(
                     nativeAssessment);
 
-            var legacyDecision =
+            var authoritativeDecision =
                 new PageProcessingDecision(
                     nativeAssessment,
-                    legacyPlan);
+                     authoritativePlan);
 
             var visualEvidence =
                 pageVisualObservations
@@ -163,7 +163,7 @@ public sealed class GuardedDocumentPageExecutionPlanner
 
             decisions[index] =
                 new GuardedPagePlanningDecision(
-                    legacyDecision,
+                    authoritativeDecision,
                     candidateDecision);
         }
 

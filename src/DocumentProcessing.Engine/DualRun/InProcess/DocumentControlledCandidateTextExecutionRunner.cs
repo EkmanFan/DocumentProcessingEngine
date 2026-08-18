@@ -66,8 +66,8 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
     public ValueTask<DocumentControlledCandidateTextExecutionReport>
         RunAsync(
             DocumentExtractionResult extraction,
-            IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
-            DocumentShadowPlanningReport shadowPlanning,
+            IReadOnlyList<HybridDocumentPage> authoritativePages,
+            DocumentDualRunPlanningReport dualRunPlanning,
             string sourceDocumentSha256,
             CancellationToken cancellationToken = default) =>
         RunCoreAsync(
@@ -76,8 +76,8 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             format:
                 null,
             extraction,
-            authoritativeLegacyPages,
-            shadowPlanning,
+            authoritativePages,
+            dualRunPlanning,
             sourceDocumentSha256,
             cancellationToken);
 
@@ -91,7 +91,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             DocumentFormatId format,
             DocumentExtractionResult extraction,
             IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
-            DocumentShadowPlanningReport shadowPlanning,
+            DocumentDualRunPlanningReport dualRunPlanning,
             string sourceDocumentSha256,
             CancellationToken cancellationToken = default)
     {
@@ -103,7 +103,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             format,
             extraction,
             authoritativeLegacyPages,
-            shadowPlanning,
+            dualRunPlanning,
             sourceDocumentSha256,
             cancellationToken);
     }
@@ -114,7 +114,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             DocumentFormatId? format,
             DocumentExtractionResult extraction,
             IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
-            DocumentShadowPlanningReport shadowPlanning,
+            DocumentDualRunPlanningReport dualRunPlanning,
             string sourceDocumentSha256,
             CancellationToken cancellationToken)
     {
@@ -125,7 +125,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             authoritativeLegacyPages);
 
         ArgumentNullException.ThrowIfNull(
-            shadowPlanning);
+            dualRunPlanning);
 
         if (string.IsNullOrWhiteSpace(
                 sourceDocumentSha256))
@@ -144,7 +144,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
         try
         {
-            if (!shadowPlanning.IsCompleted)
+            if (!dualRunPlanning.IsCompleted)
             {
                 report =
                     new DocumentControlledCandidateTextExecutionReport(
@@ -159,7 +159,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 ValidateCoverage(
                     extraction,
                     authoritativeLegacyPages,
-                    shadowPlanning,
+                    dualRunPlanning,
                     sourceDocumentSha256);
 
                 var comparisons =
@@ -174,11 +174,11 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                     var firstExecutableOcrPage =
                         _ocrTextPageExecutor is null
                             ? null
-                            : shadowPlanning.Pages
+                            : dualRunPlanning.Pages
                                 .FirstOrDefault(
                                     page =>
                                         page
-                                            .Shadow
+                                            .DualRun
                                             .Candidate
                                             .Plan
                                             .TextMode !=
@@ -197,12 +197,12 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                 "the prepared document source and detected format.");
                         }
 
-                        if (shadowPlanning.Format !=
+                        if (dualRunPlanning.Format !=
                             format.Value)
                         {
                             throw new InvalidDataException(
                                 $"Controlled candidate format '{format.Value}' does not " +
-                                $"match shadow-planning format '{shadowPlanning.Format}'.");
+                                $"match shadow-planning format '{dualRunPlanning.Format}'.");
                         }
 
                         var rasterizer =
@@ -246,15 +246,15 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                         var authoritativePage =
                             authoritativeLegacyPages[index];
 
-                        var shadowPage =
-                            shadowPlanning.Pages[index];
+                        var dualRunPage =
+                            dualRunPlanning.Pages[index];
 
                         currentPhysicalPageNumber =
                             extractionPage.PhysicalPageNumber;
 
                         var candidatePlan =
-                            shadowPage
-                                .Shadow
+                            dualRunPage
+                                .DualRun
                                 .Candidate
                                 .Plan;
 
@@ -287,18 +287,18 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                             comparisons.Add(
                                 new DocumentControlledCandidateTextPageComparison(
                                     extractionPage.PhysicalPageNumber,
-                                    shadowPage
-                                        .AuthoritativeLegacy
+                                    dualRunPage
+                                        .Authoritative
                                         .Plan
                                         .Route,
                                     candidatePlan.TextMode,
                                     DocumentControlledCandidateTextPageStatus
                                         .DeferredNonNativeTextMode,
-                                    candidateRemovesLegacyTextMl:
+                                    candidateRemovesAuthoritativeTextMl:
                                         false,
                                     candidateHasIndependentVisualWork:
-                                        shadowPage
-                                            .Shadow
+                                        dualRunPage
+                                            .DualRun
                                             .CandidateHasIndependentVisualWork));
 
                             continue;
@@ -316,8 +316,8 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                 await _ocrTextPageExecutor
                                     .ExecuteAsync(
                                         extractionPage,
-                                        shadowPage
-                                            .Shadow
+                                        dualRunPage
+                                            .DualRun
                                             .Candidate
                                             .NativeAssessment
                                             .NativeTextStatus,
@@ -345,7 +345,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                             Compare(
                                 authoritativePage,
                                 candidatePage,
-                                shadowPage,
+                                dualRunPage,
                                 pageStatus,
                                 layoutVisualEvidence,
                                 preservedLayoutVisuals));
@@ -404,7 +404,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
     private static DocumentControlledCandidateTextPageComparison Compare(
         HybridDocumentPage authoritativePage,
         HybridDocumentPage candidatePage,
-        DocumentShadowPageComparison shadowPage,
+        DocumentDualRunPageComparison dualRunPage,
         DocumentControlledCandidateTextPageStatus status,
         IReadOnlyList<LayoutVisualEvidence>
             layoutVisualEvidence,
@@ -420,23 +420,23 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 .AuthoritativeTextElements;
 
         return new DocumentControlledCandidateTextPageComparison(
-            shadowPage.PhysicalPageNumber,
-            shadowPage
-                .AuthoritativeLegacy
+            dualRunPage.PhysicalPageNumber,
+            dualRunPage
+                .Authoritative
                 .Plan
                 .Route,
-            shadowPage
-                .Shadow
+            dualRunPage
+                .DualRun
                 .Candidate
                 .Plan
                 .TextMode,
             status,
-            candidateRemovesLegacyTextMl:
-                shadowPage
-                    .CandidateRemovesLegacyTextMl,
+            candidateRemovesAuthoritativeTextMl:
+                dualRunPage
+                    .candidateRemovesAuthoritativeTextMl,
             candidateHasIndependentVisualWork:
-                shadowPage
-                    .Shadow
+                dualRunPage
+                    .DualRun
                     .CandidateHasIndependentVisualWork,
             SelectedTextSequenceExact(
                 authoritativeText,
@@ -488,11 +488,11 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
     private static void ValidateCoverage(
         DocumentExtractionResult extraction,
         IReadOnlyList<HybridDocumentPage> authoritativeLegacyPages,
-        DocumentShadowPlanningReport shadowPlanning,
+        DocumentDualRunPlanningReport dualRunPlanning,
         string sourceDocumentSha256)
     {
         if (!string.Equals(
-                shadowPlanning.SourceDocumentSha256,
+                dualRunPlanning.SourceDocumentSha256,
                 sourceDocumentSha256,
                 StringComparison.Ordinal))
         {
@@ -508,11 +508,11 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 $"does not match extraction page count {extraction.Pages.Count}.");
         }
 
-        if (shadowPlanning.Pages.Count !=
+        if (dualRunPlanning.Pages.Count !=
             extraction.Pages.Count)
         {
             throw new InvalidDataException(
-                $"Shadow-planning page count {shadowPlanning.Pages.Count} " +
+                $"Shadow-planning page count {dualRunPlanning.Pages.Count} " +
                 $"does not match extraction page count {extraction.Pages.Count}.");
         }
 
@@ -535,13 +535,13 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                     $"expected {expected}.");
             }
 
-            if (shadowPlanning.Pages[index]
+            if (dualRunPlanning.Pages[index]
                     .PhysicalPageNumber !=
                 expected)
             {
                 throw new InvalidDataException(
                     $"Shadow-planning page at index {index} is " +
-                    $"{shadowPlanning.Pages[index].PhysicalPageNumber}; " +
+                    $"{dualRunPlanning.Pages[index].PhysicalPageNumber}; " +
                     $"expected {expected}.");
             }
         }

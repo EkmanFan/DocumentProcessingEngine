@@ -9,7 +9,7 @@ using DocumentProcessing.Engine.DualRun.InProcess;
 
 namespace DocumentProcessing.UnitTests.DualRun.InProcess;
 
-public sealed class DocumentProcessorShadowPlanningTests
+public sealed class DocumentProcessorDualRunPlanningTests
 {
     private static readonly ProcessingComponentIdentity NativeIdentity =
         new(
@@ -20,7 +20,7 @@ public sealed class DocumentProcessorShadowPlanningTests
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     [Fact]
-    public async Task ProcessAsync_CompletedShadow_EmitsReportWithoutChangingNativeResult()
+    public async Task ProcessAsync_CompletedDualRun_EmitsReportWithoutChangingNativeResult()
     {
         var extraction =
             Extraction(
@@ -36,7 +36,7 @@ public sealed class DocumentProcessorShadowPlanningTests
         var baseline =
             await ProcessNativeAsync(
                 extraction,
-                shadow:
+                dualRun:
                     null);
 
         var observer =
@@ -51,7 +51,7 @@ public sealed class DocumentProcessorShadowPlanningTests
                 ]);
 
         var shadow =
-            Shadow(
+            DualRun(
                 visualSource,
                 observer);
 
@@ -69,11 +69,11 @@ public sealed class DocumentProcessorShadowPlanningTests
                 observer.Reports);
 
         Assert.Equal(
-            DocumentShadowPlanningStatus.Completed,
+            DocumentDualRunPlanningStatus.Completed,
             report.Status);
 
         Assert.True(
-            report.LegacyPlanningAgreementExact);
+            report.AuthoritativePlanningAgreementExact);
 
         Assert.Equal(
             1,
@@ -85,7 +85,7 @@ public sealed class DocumentProcessorShadowPlanningTests
 
         Assert.Equal(
             0,
-            report.CandidateRemovesLegacyTextMlCount);
+            report.CandidateRemovesAuthoritativeTextMlCount);
 
         Assert.Equal(
             1,
@@ -93,7 +93,7 @@ public sealed class DocumentProcessorShadowPlanningTests
     }
 
     [Fact]
-    public async Task ProcessAsync_ShadowRasterFailure_IsolatedFromLegacyResult()
+    public async Task ProcessAsync_DualRunRasterFailure_IsolatedFromAuthoritativeResult()
     {
         var extraction =
             Extraction(
@@ -112,7 +112,7 @@ public sealed class DocumentProcessorShadowPlanningTests
         var result =
             await ProcessNativeAsync(
                 extraction,
-                Shadow(
+                DualRun(
                     new ThrowingVisualSource(),
                     observer));
 
@@ -124,15 +124,15 @@ public sealed class DocumentProcessorShadowPlanningTests
                 observer.Reports);
 
         Assert.Equal(
-            DocumentShadowPlanningStatus.Failed,
+            DocumentDualRunPlanningStatus.Failed,
             report.Status);
 
         var failure =
-            Assert.IsType<DocumentShadowPlanningFailure>(
+            Assert.IsType<DocumentDualRunPlanningFailure>(
                 report.Failure);
 
         Assert.Equal(
-            DocumentShadowPlanningFailureStage.RasterObservation,
+            DocumentDualRunPlanningFailureStage.RasterObservation,
             failure.Stage);
 
         Assert.Contains(
@@ -142,7 +142,7 @@ public sealed class DocumentProcessorShadowPlanningTests
     }
 
     [Fact]
-    public async Task ProcessAsync_UnsupportedShadowCapability_SkipsWithoutChangingLegacyResult()
+    public async Task ProcessAsync_UnsupportedDualRunCapability_SkipsWithoutChangingAuthoritativeResult()
     {
         var extraction =
             Extraction(
@@ -168,7 +168,7 @@ public sealed class DocumentProcessorShadowPlanningTests
         var result =
             await ProcessNativeAsync(
                 extraction,
-                Shadow(
+                DualRun(
                     source,
                     observer));
 
@@ -184,7 +184,7 @@ public sealed class DocumentProcessorShadowPlanningTests
                 observer.Reports);
 
         Assert.Equal(
-            DocumentShadowPlanningStatus.UnsupportedFormat,
+            DocumentDualRunPlanningStatus.UnsupportedFormat,
             report.Status);
 
         Assert.Empty(
@@ -195,7 +195,7 @@ public sealed class DocumentProcessorShadowPlanningTests
     }
 
     [Fact]
-    public async Task ProcessAsync_ShadowObserverFailure_IsolatedFromLegacyResult()
+    public async Task ProcessAsync_DualRunObserverFailure_IsolatedFromAuthoritativeResult()
     {
         var extraction =
             Extraction(
@@ -211,7 +211,7 @@ public sealed class DocumentProcessorShadowPlanningTests
         var result =
             await ProcessNativeAsync(
                 extraction,
-                Shadow(
+                DualRun(
                     new StubVisualSource(
                         [
                             new PageVisualRasterObservations(
@@ -233,7 +233,7 @@ public sealed class DocumentProcessorShadowPlanningTests
     }
 
     [Fact]
-    public async Task ProcessAsync_CoordinatedShadow_UsesPrecomputedRasterObservations()
+    public async Task ProcessAsync_CoordinatedDualRun_UsesPrecomputedRasterObservations()
     {
         var extraction =
             Extraction(
@@ -269,7 +269,7 @@ public sealed class DocumentProcessorShadowPlanningTests
         var result =
             await ProcessNativeAsync(
                 coordinatedExtractor,
-                Shadow(
+                DualRun(
                     visualSource,
                     observer));
 
@@ -295,15 +295,15 @@ public sealed class DocumentProcessorShadowPlanningTests
                 observer.Reports);
 
         Assert.Equal(
-            DocumentShadowPlanningStatus.Completed,
+            DocumentDualRunPlanningStatus.Completed,
             report.Status);
 
         Assert.True(
-            report.LegacyPlanningAgreementExact);
+            report.AuthoritativePlanningAgreementExact);
     }
 
     [Fact]
-    public async Task ProcessAsync_CoordinatedRasterFailure_IsolatedFromLegacyResult()
+    public async Task ProcessAsync_CoordinatedRasterFailure_IsolatedFromAuthoritativeResult()
     {
         var extraction =
             Extraction(
@@ -338,7 +338,7 @@ public sealed class DocumentProcessorShadowPlanningTests
         var result =
             await ProcessNativeAsync(
                 coordinatedExtractor,
-                Shadow(
+                DualRun(
                     visualSource,
                     observer));
 
@@ -354,15 +354,15 @@ public sealed class DocumentProcessorShadowPlanningTests
                 observer.Reports);
 
         Assert.Equal(
-            DocumentShadowPlanningStatus.Failed,
+            DocumentDualRunPlanningStatus.Failed,
             report.Status);
 
         var failure =
-            Assert.IsType<DocumentShadowPlanningFailure>(
+            Assert.IsType<DocumentDualRunPlanningFailure>(
                 report.Failure);
 
         Assert.Equal(
-            DocumentShadowPlanningFailureStage.RasterObservation,
+            DocumentDualRunPlanningFailureStage.RasterObservation,
             failure.Stage);
 
         Assert.Contains(
@@ -397,7 +397,7 @@ public sealed class DocumentProcessorShadowPlanningTests
                             _ =>
                                 throw new InvalidDataException(
                                     "synthetic authoritative extraction failure")),
-                        Shadow(
+                        DualRun(
                             new StubVisualSource(
                                 [
                                     new PageVisualRasterObservations(
@@ -449,7 +449,7 @@ public sealed class DocumentProcessorShadowPlanningTests
             () =>
                 ProcessNativeAsync(
                     extractor,
-                    Shadow(
+                    DualRun(
                         new StubVisualSource(
                             [
                                 new PageVisualRasterObservations(
@@ -482,7 +482,7 @@ public sealed class DocumentProcessorShadowPlanningTests
                         _ =>
                             throw new OutOfMemoryException(
                                 "synthetic fatal allocation failure")),
-                    Shadow(
+                    DualRun(
                         new StubVisualSource(
                             [
                                 new PageVisualRasterObservations(
@@ -493,7 +493,7 @@ public sealed class DocumentProcessorShadowPlanningTests
     }
 
     [Fact]
-    public async Task Runner_UnverifiedPresentationOnlyVisual_ReportsLegacyMlRemovalWithoutAuthority()
+    public async Task Runner_UnverifiedPresentationOnlyVisual_ReportsAuthoritativeMlRemovalWithoutAuthority()
     {
         var extraction =
             Extraction(
@@ -523,8 +523,8 @@ public sealed class DocumentProcessorShadowPlanningTests
             new RecordingObserver();
 
         var runner =
-            new DocumentShadowPlanningRunner(
-                Shadow(
+            new DocumentDualRunPlanningRunner(
+                DualRun(
                     new StubVisualSource(
                         [
                             new PageVisualRasterObservations(
@@ -553,15 +553,15 @@ public sealed class DocumentProcessorShadowPlanningTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentShadowPlanningStatus.Completed,
+            DocumentDualRunPlanningStatus.Completed,
             report.Status);
 
         Assert.True(
-            report.LegacyPlanningAgreementExact);
+            report.AuthoritativePlanningAgreementExact);
 
         Assert.Equal(
             1,
-            report.CandidateRemovesLegacyTextMlCount);
+            report.CandidateRemovesAuthoritativeTextMlCount);
 
         var comparison =
             Assert.Single(
@@ -569,14 +569,14 @@ public sealed class DocumentProcessorShadowPlanningTests
 
         Assert.Equal(
             PageProcessingRoute.LayoutWithTargetedOcrReconciliation,
-            comparison.AuthoritativeLegacy.Plan.Route);
+            comparison.Authoritative.Plan.Route);
 
         Assert.Equal(
             TextExecutionMode.NativeText,
-            comparison.Shadow.Candidate.Plan.TextMode);
+            comparison.DualRun.Candidate.Plan.TextMode);
 
         Assert.False(
-            comparison.Shadow.Candidate.Plan.RequiresTargetedOcr);
+            comparison.DualRun.Candidate.Plan.RequiresTargetedOcr);
     }
 
     [Fact]
@@ -600,8 +600,8 @@ public sealed class DocumentProcessorShadowPlanningTests
                     extraction);
 
         var runner =
-            new DocumentShadowPlanningRunner(
-                Shadow(
+            new DocumentDualRunPlanningRunner(
+                DualRun(
                     new StubVisualSource(
                         [
                             new PageVisualRasterObservations(
@@ -633,10 +633,10 @@ public sealed class DocumentProcessorShadowPlanningTests
 
         Assert.Equal(
             TextExecutionMode.TargetedOcrReconciliation,
-            comparison.Shadow.Candidate.Plan.TextMode);
+            comparison.DualRun.Candidate.Plan.TextMode);
 
         Assert.False(
-            comparison.CandidateRemovesLegacyTextMl);
+            comparison.candidateRemovesAuthoritativeTextMl);
     }
 
     [Fact]
@@ -660,8 +660,8 @@ public sealed class DocumentProcessorShadowPlanningTests
                     extraction);
 
         var runner =
-            new DocumentShadowPlanningRunner(
-                Shadow(
+            new DocumentDualRunPlanningRunner(
+                DualRun(
                     new StubVisualSource(
                         [
                             new PageVisualRasterObservations(
@@ -690,7 +690,7 @@ public sealed class DocumentProcessorShadowPlanningTests
         var candidate =
             Assert.Single(
                 report.Pages)
-                .Shadow
+                .DualRun
                 .Candidate
                 .Plan;
 
@@ -705,9 +705,9 @@ public sealed class DocumentProcessorShadowPlanningTests
             candidate.RequiresTargetedOcr);
     }
 
-    private static DocumentShadowPlanningDependencies Shadow(
+    private static DocumentDualRunPlanningDependencies DualRun(
         IVisualRasterObservationSource source,
-        IDocumentShadowPlanningObserver observer) =>
+        IDocumentDualRunPlanningObserver observer) =>
         new(
             source,
             observer);
@@ -715,18 +715,18 @@ public sealed class DocumentProcessorShadowPlanningTests
     private static Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
         ProcessNativeAsync(
             DocumentExtractionResult extraction,
-            DocumentShadowPlanningDependencies? shadow,
+            DocumentDualRunPlanningDependencies? dualRun,
             CancellationToken cancellationToken = default) =>
         ProcessNativeAsync(
             new StubExtractor(
                 extraction),
-            shadow,
+            dualRun,
             cancellationToken);
 
     private static async Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
         ProcessNativeAsync(
             IDocumentExtractor extractor,
-            DocumentShadowPlanningDependencies? shadow,
+            DocumentDualRunPlanningDependencies? dualRun,
             CancellationToken cancellationToken = default)
     {
         var processor =
@@ -736,7 +736,7 @@ public sealed class DocumentProcessorShadowPlanningTests
                 new StubPreflightAnalyzer(),
                 "test-engine-shadow-v1",
                 NativeIdentity,
-                shadow);
+                dualRun);
 
         await using var stream =
             new MemoryStream(
@@ -1190,13 +1190,13 @@ public sealed class DocumentProcessorShadowPlanningTests
     }
 
     private sealed class RecordingObserver
-        : IDocumentShadowPlanningObserver
+        : IDocumentDualRunPlanningObserver
     {
-        public List<DocumentShadowPlanningReport> Reports { get; } =
+        public List<DocumentDualRunPlanningReport> Reports { get; } =
             [];
 
         public ValueTask ObserveAsync(
-            DocumentShadowPlanningReport report,
+            DocumentDualRunPlanningReport report,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -1209,10 +1209,10 @@ public sealed class DocumentProcessorShadowPlanningTests
     }
 
     private sealed class ThrowingObserver
-        : IDocumentShadowPlanningObserver
+        : IDocumentDualRunPlanningObserver
     {
         public ValueTask ObserveAsync(
-            DocumentShadowPlanningReport report,
+            DocumentDualRunPlanningReport report,
             CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException(
                 "synthetic observer failure");

@@ -8,14 +8,14 @@ namespace DocumentProcessing.Core.Orchestration;
 /// This report is diagnostics/evaluation evidence. It is not consumed by
 /// DocumentProcessor to choose runtime execution.
 /// </summary>
-public sealed record DocumentShadowPlanningReport
+public sealed record DocumentDualRunPlanningReport
 {
-    public DocumentShadowPlanningReport(
+    public DocumentDualRunPlanningReport(
         string sourceDocumentSha256,
         DocumentFormatId format,
-        DocumentShadowPlanningStatus status,
-        IEnumerable<DocumentShadowPageComparison> pages,
-        DocumentShadowPlanningFailure? failure = null)
+        DocumentDualRunPlanningStatus status,
+        IEnumerable<DocumentDualRunPageComparison> pages,
+        DocumentDualRunPlanningFailure? failure = null)
     {
         if (string.IsNullOrWhiteSpace(
                 sourceDocumentSha256))
@@ -67,7 +67,7 @@ public sealed record DocumentShadowPlanningReport
         }
 
         if (status ==
-                DocumentShadowPlanningStatus.Completed &&
+                DocumentDualRunPlanningStatus.Completed &&
             failure is not null)
         {
             throw new ArgumentException(
@@ -76,7 +76,7 @@ public sealed record DocumentShadowPlanningReport
         }
 
         if (status ==
-                DocumentShadowPlanningStatus.UnsupportedFormat &&
+                DocumentDualRunPlanningStatus.UnsupportedFormat &&
             failure is not null)
         {
             throw new ArgumentException(
@@ -85,7 +85,7 @@ public sealed record DocumentShadowPlanningReport
         }
 
         if (status ==
-                DocumentShadowPlanningStatus.Failed &&
+                DocumentDualRunPlanningStatus.Failed &&
             failure is null)
         {
             throw new ArgumentException(
@@ -114,28 +114,28 @@ public sealed record DocumentShadowPlanningReport
 
     public DocumentFormatId Format { get; }
 
-    public DocumentShadowPlanningStatus Status { get; }
+    public DocumentDualRunPlanningStatus Status { get; }
 
-    public IReadOnlyList<DocumentShadowPageComparison> Pages { get; }
+    public IReadOnlyList<DocumentDualRunPageComparison> Pages { get; }
 
-    public DocumentShadowPlanningFailure? Failure { get; }
+    public DocumentDualRunPlanningFailure? Failure { get; }
 
     public bool IsCompleted =>
         Status ==
-        DocumentShadowPlanningStatus.Completed;
+        DocumentDualRunPlanningStatus.Completed;
 
-    public bool LegacyPlanningAgreementExact =>
+    public bool AuthoritativePlanningAgreementExact =>
         IsCompleted &&
         Pages.All(
             page =>
                 page.LegacyPlanningAgreement);
 
-    public int CandidateRemovesLegacyTextMlCount =>
+    public int CandidateRemovesAuthoritativeTextMlCount =>
         Pages.Count(
             page =>
-                page.CandidateRemovesLegacyTextMl);
+                page.candidateRemovesAuthoritativeTextMl);
 
-    public int CandidateAddsIndependentVisualWorkToLegacyNativePageCount =>
+    public int CandidateAddsIndependentVisualWorkToAuthoritativeNativePageCount =>
         Pages.Count(
             page =>
                 page.CandidateAddsIndependentVisualWorkToLegacyNativePage);
@@ -143,7 +143,7 @@ public sealed record DocumentShadowPlanningReport
     public int CandidateNativeTextPageCount =>
         Pages.Count(
             page =>
-                page.Shadow.Candidate.Plan.TextMode ==
+                page.DualRun.Candidate.Plan.TextMode ==
                 TextExecutionMode.NativeText);
 
     public int CandidateTargetedOcrPageCount =>
@@ -153,10 +153,10 @@ public sealed record DocumentShadowPlanningReport
     public int CandidateVisualAnalysisPageCount =>
         Pages.Count(
             page =>
-                page.Shadow.Candidate.Plan.RequiresVisualAnalysis);
+                page.DualRun.Candidate.Plan.RequiresVisualAnalysis);
 
     public int CandidateMeaningfulVisualPreservationPageCount =>
         Pages.Count(
             page =>
-                page.Shadow.Candidate.Plan.RequiresMeaningfulVisualPreservation);
+                page.DualRun.Candidate.Plan.RequiresMeaningfulVisualPreservation);
 }

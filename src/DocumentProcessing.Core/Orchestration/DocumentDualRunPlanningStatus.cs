@@ -3,7 +3,7 @@ namespace DocumentProcessing.Core.Orchestration;
 /// <summary>
 /// Outcome of the non-authoritative document shadow-planning path.
 /// </summary>
-public enum DocumentShadowPlanningStatus
+public enum DocumentDualRunPlanningStatus
 {
     /// <summary>
     /// The complete candidate planning chain ran successfully.

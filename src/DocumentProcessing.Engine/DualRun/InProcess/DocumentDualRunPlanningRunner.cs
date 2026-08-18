@@ -12,18 +12,18 @@ namespace DocumentProcessing.Engine.DualRun.InProcess;
 /// do not authorize or alter runtime execution. Fatal allocation failures are
 /// not swallowed.
 /// </summary>
-public sealed class DocumentShadowPlanningRunner
+public sealed class DocumentDualRunPlanningRunner
 {
     #region Variables and Constants
 
-    private readonly DocumentShadowPlanningDependencies _dependencies;
+    private readonly DocumentDualRunPlanningDependencies _dependencies;
 
     #endregion
 
     #region ctor
 
-    public DocumentShadowPlanningRunner(
-        DocumentShadowPlanningDependencies dependencies)
+    public DocumentDualRunPlanningRunner(
+        DocumentDualRunPlanningDependencies dependencies)
     {
         _dependencies =
             dependencies ??
@@ -35,29 +35,29 @@ public sealed class DocumentShadowPlanningRunner
 
     #region Methods Execution
 
-    public ValueTask<DocumentShadowPlanningReport> RunAsync(
+    public ValueTask<DocumentDualRunPlanningReport> RunAsync(
         DocumentSource source,
         DocumentFormatId format,
         DocumentExtractionResult extraction,
-        IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions,
+        IReadOnlyList<PageProcessingDecision> authoritativeDecisions,
         string sourceDocumentSha256,
         CancellationToken cancellationToken = default) =>
         RunAsync(
             source,
             format,
             extraction,
-            authoritativeLegacyDecisions,
+            authoritativeDecisions,
             sourceDocumentSha256,
             coordinatedExtraction:
                 null,
             cancellationToken:
                 cancellationToken);
 
-    internal async ValueTask<DocumentShadowPlanningReport> RunAsync(
+    internal async ValueTask<DocumentDualRunPlanningReport> RunAsync(
         DocumentSource source,
         DocumentFormatId format,
         DocumentExtractionResult extraction,
-        IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions,
+        IReadOnlyList<PageProcessingDecision> authoritativeDecisions,
         string sourceDocumentSha256,
         DocumentExtractionWithRasterObservationsResult? coordinatedExtraction,
         CancellationToken cancellationToken = default)
@@ -69,14 +69,14 @@ public sealed class DocumentShadowPlanningRunner
             extraction);
 
         ArgumentNullException.ThrowIfNull(
-            authoritativeLegacyDecisions);
+            authoritativeDecisions);
 
         cancellationToken.ThrowIfCancellationRequested();
 
         var stage =
-            DocumentShadowPlanningFailureStage.Capability;
+            DocumentDualRunPlanningFailureStage.Capability;
 
-        DocumentShadowPlanningReport report;
+        DocumentDualRunPlanningReport report;
 
         try
         {
@@ -86,10 +86,10 @@ public sealed class DocumentShadowPlanningRunner
                         format))
             {
                 report =
-                    new DocumentShadowPlanningReport(
+                    new DocumentDualRunPlanningReport(
                         sourceDocumentSha256,
                         format,
-                        DocumentShadowPlanningStatus.UnsupportedFormat,
+                        DocumentDualRunPlanningStatus.UnsupportedFormat,
                         pages:
                             []);
 
@@ -101,12 +101,12 @@ public sealed class DocumentShadowPlanningRunner
                 return report;
             }
 
-            ValidateAuthoritativeLegacyCoverage(
+            ValidateAuthoritativeCoverage(
                 extraction,
-                authoritativeLegacyDecisions);
+                authoritativeDecisions);
 
             stage =
-                DocumentShadowPlanningFailureStage.NativeNormalization;
+                DocumentDualRunPlanningFailureStage.NativeNormalization;
 
             var normalization =
                 _dependencies
@@ -116,20 +116,20 @@ public sealed class DocumentShadowPlanningRunner
                         cancellationToken);
 
             stage =
-                DocumentShadowPlanningFailureStage.RasterObservation;
+                DocumentDualRunPlanningFailureStage.RasterObservation;
 
             if (coordinatedExtraction?
                     .RasterObservationFailure is { } rasterFailure)
             {
                 report =
-                    new DocumentShadowPlanningReport(
+                    new DocumentDualRunPlanningReport(
                         sourceDocumentSha256,
                         format,
-                        DocumentShadowPlanningStatus.Failed,
+                        DocumentDualRunPlanningStatus.Failed,
                         pages:
                             [],
-                        new DocumentShadowPlanningFailure(
-                            DocumentShadowPlanningFailureStage
+                        new DocumentDualRunPlanningFailure(
+                            DocumentDualRunPlanningFailureStage
                                 .RasterObservation,
                             rasterFailure.ExceptionType,
                             rasterFailure.Message));
@@ -159,7 +159,7 @@ public sealed class DocumentShadowPlanningRunner
                 }
 
                 stage =
-                    DocumentShadowPlanningFailureStage.StructuralEnrichment;
+                    DocumentDualRunPlanningFailureStage.StructuralEnrichment;
 
                 var visualObservations =
                     _dependencies
@@ -171,9 +171,9 @@ public sealed class DocumentShadowPlanningRunner
                             cancellationToken);
 
                 stage =
-                    DocumentShadowPlanningFailureStage.CandidatePlanning;
+                    DocumentDualRunPlanningFailureStage.CandidatePlanning;
 
-                var shadowDecisions =
+                var dualRunDecisions =
                     _dependencies
                         .GuardedPlanner
                         .Plan(
@@ -183,14 +183,14 @@ public sealed class DocumentShadowPlanningRunner
                 var comparisons =
                     BuildComparisons(
                         extraction,
-                        authoritativeLegacyDecisions,
-                        shadowDecisions);
+                        authoritativeDecisions,
+                        dualRunDecisions);
 
                 report =
-                    new DocumentShadowPlanningReport(
+                    new DocumentDualRunPlanningReport(
                         sourceDocumentSha256,
                         format,
-                        DocumentShadowPlanningStatus.Completed,
+                        DocumentDualRunPlanningStatus.Completed,
                         comparisons);
             }
         }
@@ -203,13 +203,13 @@ public sealed class DocumentShadowPlanningRunner
             when (exception is not OutOfMemoryException)
         {
             report =
-                new DocumentShadowPlanningReport(
+                new DocumentDualRunPlanningReport(
                     sourceDocumentSha256,
                     format,
-                    DocumentShadowPlanningStatus.Failed,
+                    DocumentDualRunPlanningStatus.Failed,
                     pages:
                         [],
-                    new DocumentShadowPlanningFailure(
+                    new DocumentDualRunPlanningFailure(
                         stage,
                         exception.GetType().FullName ??
                         exception.GetType().Name,
@@ -229,7 +229,7 @@ public sealed class DocumentShadowPlanningRunner
     #region Methods Telemetry
 
     private async ValueTask DeliverBestEffortAsync(
-        DocumentShadowPlanningReport report,
+        DocumentDualRunPlanningReport report,
         CancellationToken cancellationToken)
     {
         try
@@ -258,7 +258,7 @@ public sealed class DocumentShadowPlanningRunner
 
     #region Methods Validation and Comparison
 
-    private static void ValidateAuthoritativeLegacyCoverage(
+    private static void ValidateAuthoritativeCoverage(
         DocumentExtractionResult extraction,
         IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions)
     {
@@ -294,7 +294,7 @@ public sealed class DocumentShadowPlanningRunner
         }
     }
 
-    private static IReadOnlyList<DocumentShadowPageComparison> BuildComparisons(
+    private static IReadOnlyList<DocumentDualRunPageComparison> BuildComparisons(
         DocumentExtractionResult extraction,
         IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions,
         IReadOnlyList<GuardedPagePlanningDecision> shadowDecisions)
@@ -308,7 +308,7 @@ public sealed class DocumentShadowPlanningRunner
         }
 
         var comparisons =
-            new DocumentShadowPageComparison[
+            new DocumentDualRunPageComparison[
                 extraction.Pages.Count];
 
         for (var index = 0;
@@ -317,7 +317,7 @@ public sealed class DocumentShadowPlanningRunner
              index++)
         {
             comparisons[index] =
-                new DocumentShadowPageComparison(
+                new DocumentDualRunPageComparison(
                     authoritativeLegacyDecisions[index],
                     shadowDecisions[index]);
         }

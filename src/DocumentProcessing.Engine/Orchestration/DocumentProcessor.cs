@@ -52,8 +52,8 @@ public sealed class DocumentProcessor
     private readonly DocumentHybridExecutionDependencies? _hybridExecution;
     private readonly DocumentAuthoritativeVisualPlanningRunner?
         _authoritativeVisualPlanningRunner;
-    private readonly DocumentShadowPlanningDependencies? _shadowPlanningDependencies;
-    private readonly DocumentShadowPlanningRunner? _shadowPlanningRunner;
+    private readonly DocumentDualRunPlanningDependencies? _dualRunPlanningDependencies;
+    private readonly DocumentDualRunPlanningRunner? _dualRunPlanningRunner;
     private readonly DocumentControlledCandidateTextExecutionRunner?
         _controlledCandidateTextExecutionRunner;
     private readonly string _engineVersion;
@@ -76,7 +76,7 @@ public sealed class DocumentProcessor
         IDocumentPreflightAnalyzer preflightAnalyzer,
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity,
-        DocumentShadowPlanningDependencies? shadowPlanning = null,
+        DocumentDualRunPlanningDependencies? dualRunPlanning = null,
         DocumentControlledCandidateTextExecutionDependencies?
             controlledCandidateTextExecution = null)
         : this(
@@ -90,7 +90,7 @@ public sealed class DocumentProcessor
             nativeExtractionIdentity,
             requireHybridExecution:
                 false,
-            shadowPlanning,
+            dualRunPlanning,
             controlledCandidateTextExecution)
     {
     }
@@ -106,7 +106,7 @@ public sealed class DocumentProcessor
         DocumentHybridExecutionDependencies hybridExecution,
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity,
-        DocumentShadowPlanningDependencies? shadowPlanning = null,
+        DocumentDualRunPlanningDependencies? dualRunPlanning = null,
         DocumentControlledCandidateTextExecutionDependencies?
             controlledCandidateTextExecution = null)
         : this(
@@ -121,7 +121,7 @@ public sealed class DocumentProcessor
             nativeExtractionIdentity,
             requireHybridExecution:
                 true,
-            shadowPlanning,
+            dualRunPlanning,
             controlledCandidateTextExecution)
     {
     }
@@ -135,7 +135,7 @@ public sealed class DocumentProcessor
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity,
         bool requireHybridExecution = false,
-        DocumentShadowPlanningDependencies? shadowPlanning = null,
+        DocumentDualRunPlanningDependencies? dualRunPlanning = null,
         DocumentControlledCandidateTextExecutionDependencies?
             controlledCandidateTextExecution = null)
     {
@@ -175,17 +175,17 @@ public sealed class DocumentProcessor
                 : new DocumentAuthoritativeVisualPlanningRunner(
                     hybridExecution.AuthoritativeVisualPlanning);
 
-        _shadowPlanningDependencies =
-            shadowPlanning;
+        _dualRunPlanningDependencies =
+            dualRunPlanning;
 
-        _shadowPlanningRunner =
-            shadowPlanning is null
+        _dualRunPlanningRunner =
+            dualRunPlanning is null
                 ? null
-                : new DocumentShadowPlanningRunner(
-                    shadowPlanning);
+                : new DocumentDualRunPlanningRunner(
+                    dualRunPlanning);
 
         if (controlledCandidateTextExecution is not null &&
-            shadowPlanning is null)
+            dualRunPlanning is null)
         {
             throw new ArgumentException(
                 "Controlled candidate execution requires H.4C shadow planning.",
@@ -311,14 +311,14 @@ public sealed class DocumentProcessor
 
         prepared.ResetForRead();
 
-        if (_shadowPlanningDependencies is not null &&
+        if (_dualRunPlanningDependencies is not null &&
             _nativeExtractor is
                 IDocumentExtractorWithRasterObservations
                     coordinatedExtractor &&
             coordinatedExtractor
                 .CanExtractWithRasterObservations(
                     format,
-                    _shadowPlanningDependencies
+                    _dualRunPlanningDependencies
                         .VisualRasterObservationSource))
         {
             coordinatedExtraction =
@@ -326,7 +326,7 @@ public sealed class DocumentProcessor
                     .ExtractWithRasterObservationsAsync(
                         prepared.Source,
                         format,
-                        _shadowPlanningDependencies
+                        _dualRunPlanningDependencies
                             .VisualRasterObservationSource,
                         cancellationToken)
                     .ConfigureAwait(false);
@@ -403,7 +403,7 @@ public sealed class DocumentProcessor
                 authoritativeVisualPlanning);
         }
 
-        var requiresLegacyHybridExecution =
+        var requiresAuthoritativeHybridExecution =
             decisions.Any(
                 decision =>
                     decision.Plan.Route !=
@@ -422,7 +422,7 @@ public sealed class DocumentProcessor
                         selected);
 
         var requiresHybridExecution =
-            requiresLegacyHybridExecution ||
+            requiresAuthoritativeHybridExecution ||
             requiresHealthyNativeVisualExecution;
 
         var hybridExecution =
@@ -431,17 +431,17 @@ public sealed class DocumentProcessor
                 decisions,
                 requiresHybridExecution);
 
-        DocumentShadowPlanningReport? shadowPlanningReport =
+        DocumentDualRunPlanningReport? dualRunPlanningReport =
             null;
 
-        if (_shadowPlanningRunner is not null)
+        if (_dualRunPlanningRunner is not null)
         {
             prepared.ResetForRead();
 
             try
             {
-                shadowPlanningReport =
-                    await _shadowPlanningRunner
+                dualRunPlanningReport =
+                    await _dualRunPlanningRunner
                     .RunAsync(
                         prepared.Source,
                         format,
@@ -599,7 +599,7 @@ public sealed class DocumentProcessor
 
         if (_controlledCandidateTextExecutionRunner is not null)
         {
-            if (shadowPlanningReport is null)
+            if (dualRunPlanningReport is null)
             {
                 throw new InvalidOperationException(
                     "Controlled candidate execution was configured without a shadow-planning report.");
@@ -619,7 +619,7 @@ public sealed class DocumentProcessor
                             format,
                             extraction,
                             assembledPages,
-                            shadowPlanningReport,
+                            dualRunPlanningReport,
                             prepared.Sha256,
                             cancellationToken)
                         .ConfigureAwait(false);
@@ -638,7 +638,7 @@ public sealed class DocumentProcessor
                         .RunAsync(
                         extraction,
                         assembledPages,
-                        shadowPlanningReport,
+                        dualRunPlanningReport,
                         prepared.Sha256,
                         cancellationToken)
                     .ConfigureAwait(false);
@@ -694,40 +694,40 @@ public sealed class DocumentProcessor
     }
 
     private static void ValidateAuthoritativeVisualPlanning(
-        IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions,
+        IReadOnlyList<PageProcessingDecision> authoritativeDecisions,
         IReadOnlyList<GuardedPagePlanningDecision> guardedDecisions)
     {
         ArgumentNullException.ThrowIfNull(
-            authoritativeLegacyDecisions);
+            authoritativeDecisions);
 
         ArgumentNullException.ThrowIfNull(
             guardedDecisions);
 
         if (guardedDecisions.Count !=
-            authoritativeLegacyDecisions.Count)
+            authoritativeDecisions.Count)
         {
             throw new InvalidDataException(
                 $"Authoritative visual planning returned {guardedDecisions.Count} " +
-                $"decision(s) for {authoritativeLegacyDecisions.Count} authoritative " +
+                $"decision(s) for {authoritativeDecisions.Count} authoritative " +
                 "legacy page decision(s).");
         }
 
         for (var index = 0;
              index <
-             authoritativeLegacyDecisions.Count;
+             authoritativeDecisions.Count;
              index++)
         {
             var authoritative =
-                authoritativeLegacyDecisions[index];
+                authoritativeDecisions[index];
 
             var guarded =
                 guardedDecisions[index];
 
             if (guarded.PhysicalPageNumber !=
                     authoritative.PhysicalPageNumber ||
-                guarded.Legacy.Assessment.NativeTextStatus !=
+                guarded.Authoritative.Assessment.NativeTextStatus !=
                     authoritative.Assessment.NativeTextStatus ||
-                guarded.Legacy.Plan.Route !=
+                guarded.Authoritative.Plan.Route !=
                     authoritative.Plan.Route)
             {
                 throw new InvalidDataException(
@@ -738,7 +738,7 @@ public sealed class DocumentProcessor
     }
 
     private static bool ShouldExecuteHealthyNativeVisual(
-        PageProcessingDecision legacyDecision,
+        PageProcessingDecision authoritativeDecision,
         GuardedPagePlanningDecision? guardedDecision)
     {
         if (guardedDecision is null)
@@ -749,9 +749,9 @@ public sealed class DocumentProcessor
         var candidate =
             guardedDecision.Candidate.Plan;
 
-        return legacyDecision.Plan.Route ==
+        return authoritativeDecision.Plan.Route ==
                    PageProcessingRoute.NativeOnly &&
-               legacyDecision.Assessment.NativeTextStatus ==
+               authoritativeDecision.Assessment.NativeTextStatus ==
                    NativeTextStatus.Healthy &&
                candidate.TextMode ==
                    TextExecutionMode.NativeText &&

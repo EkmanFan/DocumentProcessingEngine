@@ -46,7 +46,7 @@ public sealed class HealthyNativeVisualPageExecutor
 
     public async ValueTask<HybridDocumentPage> ExecuteAsync(
         DocumentExtractionPage sourcePage,
-        PageProcessingDecision legacyDecision,
+        PageProcessingDecision authoritativeDecision,
         PageExecutionPlan candidatePlan,
         IDocumentRasterizationSession rasterSession,
         string sourceDocumentSha256,
@@ -56,7 +56,7 @@ public sealed class HealthyNativeVisualPageExecutor
     {
         ValidateRequest(
             sourcePage,
-            legacyDecision,
+            authoritativeDecision,
             candidatePlan,
             rasterSession,
             sourceDocumentSha256);
@@ -195,7 +195,7 @@ public sealed class HealthyNativeVisualPageExecutor
 
     private static void ValidateRequest(
         DocumentExtractionPage sourcePage,
-        PageProcessingDecision legacyDecision,
+        PageProcessingDecision authoritativeDecision,
         PageExecutionPlan candidatePlan,
         IDocumentRasterizationSession rasterSession,
         string sourceDocumentSha256)
@@ -204,7 +204,7 @@ public sealed class HealthyNativeVisualPageExecutor
             sourcePage);
 
         ArgumentNullException.ThrowIfNull(
-            legacyDecision);
+            authoritativeDecision);
 
         ArgumentNullException.ThrowIfNull(
             candidatePlan);
@@ -212,7 +212,7 @@ public sealed class HealthyNativeVisualPageExecutor
         ArgumentNullException.ThrowIfNull(
             rasterSession);
 
-        if (legacyDecision.PhysicalPageNumber !=
+        if (authoritativeDecision.PhysicalPageNumber !=
                 sourcePage.PhysicalPageNumber ||
             candidatePlan.PhysicalPageNumber !=
                 sourcePage.PhysicalPageNumber)
@@ -221,14 +221,14 @@ public sealed class HealthyNativeVisualPageExecutor
                 "Legacy and candidate decisions must belong to the source page.");
         }
 
-        if (legacyDecision.Assessment.NativeTextStatus !=
+        if (authoritativeDecision.Assessment.NativeTextStatus !=
             NativeTextStatus.Healthy)
         {
             throw new InvalidOperationException(
                 "Healthy native visual execution requires NativeTextStatus.Healthy.");
         }
 
-        if (legacyDecision.Plan.Route !=
+        if (authoritativeDecision.Plan.Route !=
             PageProcessingRoute.NativeOnly)
         {
             throw new InvalidOperationException(
