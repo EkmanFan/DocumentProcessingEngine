@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Evaluati
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pdf_pages_test", "pdf_pages_test", "{0C6F0A54-2F9C-4D21-9996-18AA021DF803}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.DualRunWorker", "src\DocumentProcessing.DualRunWorker\DocumentProcessing.DualRunWorker.csproj", "{7477DD45-06B0-4848-8D0D-B7E48B28323F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -102,6 +104,18 @@ Global
 		{2E711910-FD50-46FF-9806-B50EC797403C}.Release|x64.Build.0 = Release|Any CPU
 		{2E711910-FD50-46FF-9806-B50EC797403C}.Release|x86.ActiveCfg = Release|Any CPU
 		{2E711910-FD50-46FF-9806-B50EC797403C}.Release|x86.Build.0 = Release|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Debug|x64.Build.0 = Debug|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Debug|x86.Build.0 = Debug|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Release|x64.ActiveCfg = Release|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Release|x64.Build.0 = Release|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Release|x86.ActiveCfg = Release|Any CPU
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -114,5 +128,6 @@ Global
 		{20D08596-E27B-4C96-B687-075CE850DFA2} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{2E711910-FD50-46FF-9806-B50EC797403C} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 		{0C6F0A54-2F9C-4D21-9996-18AA021DF803} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{7477DD45-06B0-4848-8D0D-B7E48B28323F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
