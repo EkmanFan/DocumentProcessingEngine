@@ -6,7 +6,7 @@ namespace DocumentProcessing.Core.DualRun;
 /// <summary>
 /// Non-authoritative comparison evidence for one physical page.
 ///
-/// H.4D.1 executes NativeText. H.4D.2B additionally permits controlled
+/// Candidate text execution supports NativeText and additionally permits configured
 /// OCR-backed text execution when explicitly composed. Independent visual work
 /// remains outside this report's execution authority.
 /// </summary>
@@ -127,7 +127,7 @@ public sealed record DocumentDualRunCandidateTextPageComparison
                 expectedMode)
             {
                 throw new ArgumentException(
-                    $"Controlled status '{status}' requires candidate text mode " +
+                    $"Candidate status '{status}' requires candidate text mode " +
                     $"'{expectedMode}', observed '{candidateTextMode}'.",
                     nameof(candidateTextMode));
             }
@@ -351,8 +351,8 @@ public sealed record DocumentDualRunCandidateTextPageComparison
     public bool CandidateRemovesAuthoritativeTextMl { get; }
 
     /// <summary>
-    /// True means H.3C selected visual analysis and/or meaningful visual
-    /// preservation. H.4D.2B still does not execute that visual work.
+    /// True means candidate planning selected visual analysis and/or meaningful visual
+    /// preservation. Candidate text execution still does not execute that visual work.
     /// </summary>
     public bool CandidateHasIndependentVisualWork { get; }
 
@@ -374,7 +374,7 @@ public sealed record DocumentDualRunCandidateTextPageComparison
     public int? CandidateReconciliationEvidenceCount { get; }
 
     /// <summary>
-    /// Actual executed candidate page retained for H.4D.4B projection.
+    /// Actual executed candidate page retained for downstream candidate projection.
     /// Null remains valid for deferred/manual authoritative comparison evidence.
     /// </summary>
     public HybridDocumentPage? CandidatePage { get; }
@@ -384,7 +384,7 @@ public sealed record DocumentDualRunCandidateTextPageComparison
 
     /// <summary>
     /// Non-authoritative regional visual materialization retained from the
-    /// controlled OCR-backed candidate path. These values are evidence only;
+    /// Dual Run OCR-backed candidate path. These values are evidence only;
     /// they do not transfer document authority or choose persistence.
     /// </summary>
     public IReadOnlyList<PreservedVisualEvidence>

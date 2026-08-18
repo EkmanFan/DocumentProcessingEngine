@@ -8,8 +8,8 @@ namespace DocumentProcessing.Engine.Planning;
 /// Pure deterministic compiler from policy requirements to the engine's current
 /// independent text/visual execution mechanisms.
 ///
-/// This component performs no I/O and is not wired into
-/// <see cref="DocumentPageProcessingPlanner"/> in Phase 21E.1H.3B.
+/// This component performs no I/O. Guarded page planning uses it to compile
+/// policy requirements into independent text/visual execution plans.
 /// </summary>
 public sealed class DefaultPageExecutionPlanCompiler
 {

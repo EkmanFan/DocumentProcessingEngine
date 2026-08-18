@@ -2,8 +2,8 @@ namespace DocumentProcessing.Core.Planning;
 /// <summary>
 /// Policy vocabulary for what the engine should do with visual evidence.
 ///
-/// Phase 21E.1H.1 defines the vocabulary only. No production assessor or route
-/// currently assigns these values.
+/// Deterministic visual-evidence policy assigns this vocabulary for planning.
+/// The enum itself carries no execution authority.
 /// </summary>
 public enum VisualDisposition
 {

@@ -7,7 +7,7 @@ namespace DocumentProcessing.Pdf;
 /// Pure deterministic measurement engine for an already-decoded RGBA source
 /// visual.
 ///
-/// Thresholds are promoted unchanged from the frozen Phase 21E.1F diagnostic
+/// Thresholds are promoted unchanged from the frozen raster-measurement diagnostic
 /// algorithm. They describe low-level measurement, not visual semantic policy.
 /// </summary>
 internal sealed class PdfVisualRasterMeasurementEngine

@@ -10,9 +10,9 @@ using DocumentProcessing.Engine.Hybrid;
 namespace DocumentProcessing.Engine.DualRun.InProcess;
 
 /// <summary>
-/// Controlled non-authoritative candidate text execution.
+/// Non-authoritative Dual Run candidate text execution.
 ///
-/// H.4D.1 executes NativeText and defers OCR-backed modes unless OCR capability
+/// NativeText executes by default and OCR-backed modes remain deferred unless OCR capability
 /// is explicitly composed.
 ///
 /// OCR-backed modes execute through the Dual Run candidate
@@ -61,7 +61,7 @@ public sealed class DocumentDualRunCandidateTextExecutionRunner
         _ocrTextPageExecutor is not null;
 
     /// <summary>
-    /// Backward-compatible H.4D.1 entry point. OCR-backed modes remain deferred
+    /// NativeText-only entry point. OCR-backed modes remain deferred
     /// when only NativeText execution was composed.
     /// </summary>
     public ValueTask<DocumentDualRunCandidateTextExecutionReport>
@@ -83,7 +83,7 @@ public sealed class DocumentDualRunCandidateTextExecutionRunner
             cancellationToken);
 
     /// <summary>
-    /// H.4D.2B entry point. The document source is used only by the explicitly
+    /// OCR-capable entry point. The document source is used only by the explicitly
     /// configured Dual Run candidate rasterizer.
     /// </summary>
     public ValueTask<DocumentDualRunCandidateTextExecutionReport>
@@ -194,7 +194,7 @@ public sealed class DocumentDualRunCandidateTextExecutionRunner
                             format is null)
                         {
                             throw new InvalidOperationException(
-                                "Controlled OCR-backed candidate execution requires " +
+                                "Dual Run OCR-backed candidate execution requires " +
                                 "the prepared document source and detected format.");
                         }
 
@@ -209,7 +209,7 @@ public sealed class DocumentDualRunCandidateTextExecutionRunner
                         var rasterizer =
                             _dependencies.DocumentRasterizer ??
                             throw new InvalidOperationException(
-                                "Controlled OCR-backed candidate execution has no rasterizer.");
+                                "Dual Run OCR-backed candidate execution has no rasterizer.");
 
                         if (!rasterizer.CanRasterize(
                                 format.Value))
@@ -309,7 +309,7 @@ public sealed class DocumentDualRunCandidateTextExecutionRunner
                             if (rasterSession is null)
                             {
                                 throw new InvalidOperationException(
-                                    "Controlled OCR-backed candidate page reached " +
+                                    "Dual Run OCR-backed candidate page reached " +
                                     "execution without a document-scoped raster session.");
                             }
 
@@ -479,7 +479,7 @@ public sealed class DocumentDualRunCandidateTextExecutionRunner
 
             _ =>
                 throw new InvalidOperationException(
-                    $"Text mode '{textMode}' is not an OCR-backed controlled mode.")
+                    $"Text mode '{textMode}' is not an OCR-backed Dual Run candidate mode.")
         };
 
     #endregion

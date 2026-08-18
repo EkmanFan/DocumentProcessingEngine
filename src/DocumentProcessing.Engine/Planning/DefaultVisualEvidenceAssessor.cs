@@ -9,8 +9,8 @@ namespace DocumentProcessing.Engine.Planning;
 /// Maps deterministic visual observations to neutral
 /// <see cref="VisualEvidenceKind"/> values.
 ///
-/// The rule order and thresholds are the frozen Phase 21E.1F policy that
-/// subsequently passed the Phase 21E.1G blind holdout. This class produces
+/// The rule order and thresholds are frozen regression policy that
+/// subsequently passed the recorded blind-holdout validation. This class produces
 /// evidence only. It does not select <see cref="VisualDisposition"/> or
 /// <see cref="PageProcessingRoute"/>.
 /// </summary>
@@ -76,7 +76,7 @@ public sealed class DefaultVisualEvidenceAssessor
             observation.ForegroundPixelRatio.Value;
 
         // Caption evidence has priority over container evidence. This protects
-        // labelled figures such as the Phase 21E p79 regression control.
+        // labelled figures such as the p79 regression control.
         if (observation.CaptionAssociation ==
             CaptionAssociationEvidenceKind.StrongAssociation)
         {

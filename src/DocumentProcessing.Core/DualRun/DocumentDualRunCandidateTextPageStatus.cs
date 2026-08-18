@@ -26,8 +26,8 @@ public enum DocumentDualRunCandidateTextPageStatus
 
     /// <summary>
     /// The candidate requires an OCR-backed text mode but this composition does
-    /// not provide controlled OCR execution dependencies. This preserves the
-    /// H.4D.1 NativeText-only opt-in behavior.
+    /// not provide OCR-capable Dual Run dependencies.
+    /// This preserves the NativeText-only candidate opt-in behavior.
     /// </summary>
     DeferredNonNativeTextMode
 }

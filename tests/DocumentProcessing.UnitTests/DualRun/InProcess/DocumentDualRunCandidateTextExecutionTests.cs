@@ -24,7 +24,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     [Fact]
-    public async Task ProcessAsync_ControlledNativeTextExecution_DoesNotChangeAuthoritativeResult()
+    public async Task ProcessAsync_DualRunCandidateNativeTextExecution_DoesNotChangeAuthoritativeResult()
     {
         var extraction =
             Extraction(
@@ -41,7 +41,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
                 extraction,
                 dualRun:
                     null,
-                controlled:
+                dualRunCandidateTextExecution:
                     null);
 
         var candidateObserver =
@@ -99,7 +99,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
     }
 
     [Fact]
-    public void Constructor_ControlledExecutionWithoutDualRunPlanning_FailsFast()
+    public void Constructor_DualRunCandidateExecutionWithoutPlanning_FailsFast()
     {
         var observer =
             new RecordingCandidateObserver();
@@ -132,7 +132,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
     }
 
     [Fact]
-    public async Task ProcessAsync_FailedDualRunPlanning_SkipsControlledExecutionAndKeepsAuthority()
+    public async Task ProcessAsync_FailedDualRunPlanning_SkipsCandidateExecutionAndKeepsAuthority()
     {
         var extraction =
             Extraction(
@@ -149,7 +149,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
                 extraction,
                 dualRun:
                     null,
-                controlled:
+                dualRunCandidateTextExecution:
                     null);
 
         var candidateObserver =
@@ -596,7 +596,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
         ProcessNativeAsync(
             DocumentExtractionResult extraction,
             DocumentDualRunPlanningDependencies? dualRun,
-            DocumentDualRunCandidateTextExecutionDependencies? controlled)
+            DocumentDualRunCandidateTextExecutionDependencies? dualRunCandidateTextExecution)
     {
         var processor =
             new DocumentProcessor(
@@ -607,7 +607,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
                 "test-engine-h4d1-v1",
                 NativeIdentity,
                 dualRun,
-                controlled);
+                dualRunCandidateTextExecution);
 
         await using var stream =
             new MemoryStream(

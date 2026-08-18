@@ -2,8 +2,8 @@ namespace DocumentProcessing.Core.Planning;
 /// <summary>
 /// Side-by-side authoritative and candidate planning result for one physical page.
 ///
-/// Runtime execution still consumes <see cref="Authoritative"/> during Phase
-/// 21E.1H.3C. The candidate plan exists for guarded comparison and future
+/// Runtime execution consumes <see cref="Authoritative"/>.
+/// The candidate plan exists for guarded comparison and future
 /// cutover only.
 /// </summary>
 public sealed record GuardedPagePlanningDecision
@@ -41,8 +41,8 @@ public sealed record GuardedPagePlanningDecision
     /// True when the authoritative route requests hybrid text processing but the
     /// candidate two-axis policy can safely consume native text.
     ///
-    /// This is an intended optimization signal, not permission to cut over
-    /// runtime execution during Phase 21E.1H.3C.
+    /// This is an intended optimization signal, not permission to change
+    /// authoritative runtime execution.
     /// </summary>
     public bool CandidateRemovesAuthoritativeTextMl =>
         Authoritative.Plan.Route !=

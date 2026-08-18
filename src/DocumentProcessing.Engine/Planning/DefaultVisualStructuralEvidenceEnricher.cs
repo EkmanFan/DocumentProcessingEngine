@@ -10,7 +10,7 @@ namespace DocumentProcessing.Engine.Planning;
 /// document structure and produces complete <see cref="VisualEvidenceObservation"/>
 /// instances.
 ///
-/// This component promotes the frozen Phase 21E.1F structural algorithms.
+/// This component promotes the frozen structural visual-evidence algorithms.
 /// It produces evidence only. It does not select visual disposition, routing,
 /// OCR or layout execution.
 /// </summary>

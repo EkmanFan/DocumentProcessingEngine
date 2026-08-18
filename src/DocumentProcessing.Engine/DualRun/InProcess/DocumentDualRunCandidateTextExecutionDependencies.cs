@@ -8,8 +8,8 @@ namespace DocumentProcessing.Engine.DualRun.InProcess;
 /// <summary>
 /// Explicit opt-in composition for Dual Run candidate text execution.
 ///
-/// The one-argument constructor preserves H.4D.1 NativeText-only behavior.
-/// The four-argument constructor additionally enables H.4D.2B OCR-backed
+/// The one-argument constructor provides NativeText-only candidate execution.
+/// The four-argument constructor additionally enables OCR-backed
 /// candidate text execution.
 ///
 /// Visual execution is intentionally absent from both compositions.

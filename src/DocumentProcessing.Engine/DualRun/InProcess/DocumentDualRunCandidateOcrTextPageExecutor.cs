@@ -405,7 +405,7 @@ internal sealed class DocumentDualRunCandidateOcrTextPageExecutor
             0)
         {
             throw new InvalidOperationException(
-                "Controlled native-present OCR execution requires native text blocks.");
+                "Dual Run native-present OCR candidate execution requires native text blocks.");
         }
     }
 
