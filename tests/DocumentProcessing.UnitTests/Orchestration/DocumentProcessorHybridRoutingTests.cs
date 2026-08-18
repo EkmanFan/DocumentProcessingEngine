@@ -18,6 +18,8 @@ namespace DocumentProcessing.UnitTests.Orchestration;
 
 public sealed class DocumentProcessorHybridRoutingTests
 {
+    #region Variables and Constants
+
     private static readonly ProcessingComponentIdentity NativeIdentity =
         new(
             "fake-native",
@@ -33,6 +35,8 @@ public sealed class DocumentProcessorHybridRoutingTests
             "native-ocr-text-reconciler",
             "native-ocr-reconciliation-v1");
 
+    #endregion
+
     #region Route composition
 
     [Fact]
@@ -40,6 +44,9 @@ public sealed class DocumentProcessorHybridRoutingTests
     {
         var extraction =
             MixedExtraction();
+
+        var executionEvents =
+            new List<string>();
 
         var rasterizer =
             new FakeDocumentRasterizer();
@@ -90,7 +97,8 @@ public sealed class DocumentProcessorHybridRoutingTests
                             0.55,
                             0.25)
                     ]
-                });
+                },
+                executionEvents);
 
         var recognizer =
             new FakeRegionTextRecognizer(
@@ -102,7 +110,8 @@ public sealed class DocumentProcessorHybridRoutingTests
                         "Recovered caption.",
                     [(3, 0)] =
                         "Verified beta."
-                });
+                },
+                executionEvents);
 
         var processor =
             CreateHybridProcessor(
@@ -217,6 +226,17 @@ public sealed class DocumentProcessorHybridRoutingTests
 
         Assert.False(
             page3.HasReconciliationDivergence);
+
+        Assert.Equal(
+            new[]
+            {
+                "layout:2",
+                "layout:3",
+                "ocr:2:0",
+                "ocr:2:2",
+                "ocr:3:0"
+            },
+            executionEvents);
 
         Assert.Equal(
             1,
@@ -988,7 +1008,8 @@ public sealed class DocumentProcessorHybridRoutingTests
     }
 
     private sealed class FakePageLayoutAnalyzer(
-        IReadOnlyDictionary<int, IReadOnlyList<LayoutObservation>> pages)
+        IReadOnlyDictionary<int, IReadOnlyList<LayoutObservation>> pages,
+        ICollection<string>? executionEvents = null)
         : IPageLayoutAnalyzer
     {
         public ValueTask<LayoutAnalysisResult> AnalyzeAsync(
@@ -999,6 +1020,9 @@ public sealed class DocumentProcessorHybridRoutingTests
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            executionEvents?.Add(
+                $"layout:{physicalPageNumber}");
 
             if (!pages.TryGetValue(
                     physicalPageNumber,
@@ -1017,7 +1041,8 @@ public sealed class DocumentProcessorHybridRoutingTests
     }
 
     private sealed class FakeRegionTextRecognizer(
-        IReadOnlyDictionary<(int Page, int Sequence), string> texts)
+        IReadOnlyDictionary<(int Page, int Sequence), string> texts,
+        ICollection<string>? executionEvents = null)
         : IRegionTextRecognizer
     {
         public int CallCount { get; private set; }
@@ -1033,6 +1058,10 @@ public sealed class DocumentProcessorHybridRoutingTests
             cancellationToken.ThrowIfCancellationRequested();
 
             CallCount++;
+
+            executionEvents?.Add(
+                $"ocr:{sourceLayoutObservation.PhysicalPageNumber}:" +
+                sourceLayoutObservation.ObservationSequence);
 
             var key =
                 (

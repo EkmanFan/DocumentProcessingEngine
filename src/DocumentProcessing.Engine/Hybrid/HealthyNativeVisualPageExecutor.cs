@@ -64,6 +64,37 @@ public sealed class HealthyNativeVisualPageExecutor
             openVisualDestinationAsync,
         CancellationToken cancellationToken = default)
     {
+        var prepared =
+            await PrepareLayoutAsync(
+                    sourcePage,
+                    authoritativeDecision,
+                    candidatePlan,
+                    rasterSession,
+                    sourceDocumentSha256,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return await ExecutePreparedAsync(
+                sourcePage,
+                rasterSession,
+                prepared.PageRaster,
+                prepared.Layout,
+                sourceDocumentSha256,
+                openVisualDestinationAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    internal async ValueTask<(
+        RasterRenderResult PageRaster,
+        LayoutAnalysisResult Layout)> PrepareLayoutAsync(
+        DocumentExtractionPage sourcePage,
+        PageProcessingDecision authoritativeDecision,
+        PageExecutionPlan candidatePlan,
+        IDocumentRasterizationSession rasterSession,
+        string sourceDocumentSha256,
+        CancellationToken cancellationToken = default)
+    {
         ValidateRequest(
             sourcePage,
             authoritativeDecision,
@@ -105,15 +136,9 @@ public sealed class HealthyNativeVisualPageExecutor
             sourcePage,
             layout);
 
-        return await ExecutePreparedAsync(
-                sourcePage,
-                rasterSession,
-                pageRaster,
-                layout,
-                sourceDocumentSha256,
-                openVisualDestinationAsync,
-                cancellationToken)
-            .ConfigureAwait(false);
+        return (
+            pageRaster,
+            layout);
     }
 
     /// <summary>

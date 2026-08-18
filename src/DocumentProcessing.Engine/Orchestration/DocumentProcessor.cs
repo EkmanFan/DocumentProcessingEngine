@@ -469,6 +469,9 @@ public sealed class DocumentProcessor
         IDocumentRasterizationSession? rasterSession =
             null;
 
+        AuthoritativeLayoutSpool? layoutSpool =
+            null;
+
         ProcessingComponentIdentity? rasterizationIdentity =
             null;
 
@@ -497,6 +500,53 @@ public sealed class DocumentProcessor
                     new ProcessingComponentIdentity(
                         rasterSession.BackendId,
                         rasterSession.ProfileId);
+
+                layoutSpool =
+                    AuthoritativeLayoutSpool.Create();
+
+                for (var index = 0;
+                     index <
+                     extraction.Pages.Count;
+                     index++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var page =
+                        extraction.Pages[index];
+
+                    var decision =
+                        decisions[index];
+
+                    var authoritativeVisualDecision =
+                        authoritativeVisualPlanning is null
+                            ? null
+                            : authoritativeVisualPlanning[index];
+
+                    if (!RequiresPreparedLayout(
+                            decision,
+                            authoritativeVisualDecision))
+                    {
+                        continue;
+                    }
+
+                    var preparedLayout =
+                        await PrepareAuthoritativeLayoutPageAsync(
+                                page,
+                                decision,
+                                authoritativeVisualDecision,
+                                rasterSession,
+                                hybridExecution,
+                                prepared.Sha256,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+
+                    await layoutSpool
+                        .WriteAsync(
+                            preparedLayout.PageRaster,
+                            preparedLayout.Layout,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                }
             }
 
             for (var index = 0;
@@ -513,7 +563,7 @@ public sealed class DocumentProcessor
                     decisions[index];
 
                 assembledPages.Add(
-                    await ExecutePageAsync(
+                    await ExecutePageWithPreparedLayoutAsync(
                             page,
                             decision,
                             authoritativeVisualPlanning is null
@@ -521,6 +571,7 @@ public sealed class DocumentProcessor
                                 : authoritativeVisualPlanning[index],
                             rasterSession,
                             hybridExecution,
+                            layoutSpool,
                             prepared.Sha256,
                             openVisualDestinationAsync,
                             cancellationToken)
@@ -529,11 +580,23 @@ public sealed class DocumentProcessor
         }
         finally
         {
-            if (rasterSession is not null)
+            try
             {
-                await rasterSession
-                    .DisposeAsync()
-                    .ConfigureAwait(false);
+                if (layoutSpool is not null)
+                {
+                    await layoutSpool
+                        .DisposeAsync()
+                        .ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                if (rasterSession is not null)
+                {
+                    await rasterSession
+                        .DisposeAsync()
+                        .ConfigureAwait(false);
+                }
             }
         }
 
@@ -799,16 +862,24 @@ public sealed class DocumentProcessor
         return _hybridExecution;
     }
 
-    private static async ValueTask<HybridDocumentPage> ExecutePageAsync(
-        DocumentExtractionPage page,
+    private static bool RequiresPreparedLayout(
         PageProcessingDecision decision,
-        GuardedPagePlanningDecision? authoritativeVisualDecision,
-        IDocumentRasterizationSession? rasterSession,
-        DocumentHybridExecutionDependencies? hybridExecution,
-        string sourceDocumentSha256,
-        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
-            openVisualDestinationAsync,
-        CancellationToken cancellationToken)
+        GuardedPagePlanningDecision? authoritativeVisualDecision) =>
+        decision.Plan.Route !=
+            PageProcessingRoute.NativeOnly ||
+        ShouldExecuteHealthyNativeVisual(
+            decision,
+            authoritativeVisualDecision);
+
+    private static async ValueTask<AuthoritativePreparedLayoutPage>
+        PrepareAuthoritativeLayoutPageAsync(
+            DocumentExtractionPage page,
+            PageProcessingDecision decision,
+            GuardedPagePlanningDecision? authoritativeVisualDecision,
+            IDocumentRasterizationSession? rasterSession,
+            DocumentHybridExecutionDependencies? hybridExecution,
+            string sourceDocumentSha256,
+            CancellationToken cancellationToken)
     {
         if (decision.PhysicalPageNumber !=
             page.PhysicalPageNumber)
@@ -816,6 +887,110 @@ public sealed class DocumentProcessor
             throw new InvalidDataException(
                 $"Page decision {decision.PhysicalPageNumber} does not match " +
                 $"extraction page {page.PhysicalPageNumber}.");
+        }
+
+        var resolved =
+            RequireHybridExecution(
+                hybridExecution,
+                rasterSession);
+
+        (RasterRenderResult PageRaster, LayoutAnalysisResult Layout) prepared =
+            decision.Plan.Route switch
+            {
+                PageProcessingRoute.NativeOnly
+                    when ShouldExecuteHealthyNativeVisual(
+                        decision,
+                        authoritativeVisualDecision) =>
+                    await RequireHealthyNativeVisualExecutor(
+                            hybridExecution,
+                            rasterSession)
+                        .PrepareLayoutAsync(
+                            page,
+                            decision,
+                            authoritativeVisualDecision!
+                                .Candidate
+                                .Plan,
+                            rasterSession!,
+                            sourceDocumentSha256,
+                            cancellationToken)
+                        .ConfigureAwait(false),
+
+                PageProcessingRoute.LayoutWithTargetedOcrRecovery =>
+                    await resolved
+                        .MissingNativeExecutor
+                        .PrepareLayoutAsync(
+                            page,
+                            decision,
+                            rasterSession!,
+                            sourceDocumentSha256,
+                            cancellationToken)
+                        .ConfigureAwait(false),
+
+                PageProcessingRoute.LayoutWithTargetedOcrReconciliation =>
+                    await resolved
+                        .NativePresentExecutor
+                        .PrepareLayoutAsync(
+                            page,
+                            decision,
+                            rasterSession!,
+                            sourceDocumentSha256,
+                            cancellationToken)
+                        .ConfigureAwait(false),
+
+                PageProcessingRoute.NativeOnly =>
+                    throw new InvalidOperationException(
+                        $"Physical page {page.PhysicalPageNumber} does not require prepared layout execution."),
+
+                _ =>
+                    throw new InvalidOperationException(
+                        $"Unsupported page-processing route '{decision.Plan.Route}'.")
+            };
+
+        return new AuthoritativePreparedLayoutPage(
+            prepared.PageRaster,
+            prepared.Layout);
+    }
+
+    private static async ValueTask<HybridDocumentPage>
+        ExecutePageWithPreparedLayoutAsync(
+            DocumentExtractionPage page,
+            PageProcessingDecision decision,
+            GuardedPagePlanningDecision? authoritativeVisualDecision,
+            IDocumentRasterizationSession? rasterSession,
+            DocumentHybridExecutionDependencies? hybridExecution,
+            AuthoritativeLayoutSpool? layoutSpool,
+            string sourceDocumentSha256,
+            Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+                openVisualDestinationAsync,
+            CancellationToken cancellationToken)
+    {
+        if (decision.PhysicalPageNumber !=
+            page.PhysicalPageNumber)
+        {
+            throw new InvalidDataException(
+                $"Page decision {decision.PhysicalPageNumber} does not match " +
+                $"extraction page {page.PhysicalPageNumber}.");
+        }
+
+        AuthoritativePreparedLayoutPage? preparedLayout =
+            null;
+
+        if (RequiresPreparedLayout(
+                decision,
+                authoritativeVisualDecision))
+        {
+            if (layoutSpool is null)
+            {
+                throw new InvalidOperationException(
+                    "Authoritative prepared-layout execution requires a layout spool.");
+            }
+
+            preparedLayout =
+                await layoutSpool
+                    .ReadAsync(
+                        page.PhysicalPageNumber,
+                        cancellationToken)
+                    .ConfigureAwait(false);
         }
 
         return decision.Plan.Route switch
@@ -827,13 +1002,15 @@ public sealed class DocumentProcessor
                 await RequireHealthyNativeVisualExecutor(
                         hybridExecution,
                         rasterSession)
-                    .ExecuteAsync(
+                    .ExecuteWithPrecomputedLayoutAsync(
                         page,
                         decision,
                         authoritativeVisualDecision!
                             .Candidate
                             .Plan,
                         rasterSession!,
+                        preparedLayout!.PageRaster,
+                        preparedLayout!.Layout,
                         sourceDocumentSha256,
                         openVisualDestinationAsync,
                         cancellationToken)
@@ -849,10 +1026,12 @@ public sealed class DocumentProcessor
                         hybridExecution,
                         rasterSession)
                     .MissingNativeExecutor
-                    .ExecuteAsync(
+                    .ExecuteWithPrecomputedLayoutAsync(
                         page,
                         decision,
                         rasterSession!,
+                        preparedLayout!.PageRaster,
+                        preparedLayout!.Layout,
                         sourceDocumentSha256,
                         openVisualDestinationAsync,
                         cancellationToken)
@@ -863,10 +1042,12 @@ public sealed class DocumentProcessor
                         hybridExecution,
                         rasterSession)
                     .NativePresentExecutor
-                    .ExecuteAsync(
+                    .ExecuteWithPrecomputedLayoutAsync(
                         page,
                         decision,
                         rasterSession!,
+                        preparedLayout!.PageRaster,
+                        preparedLayout!.Layout,
                         sourceDocumentSha256,
                         openVisualDestinationAsync,
                         cancellationToken)
