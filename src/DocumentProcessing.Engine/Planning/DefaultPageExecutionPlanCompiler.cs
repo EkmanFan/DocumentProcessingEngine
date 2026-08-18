@@ -1,6 +1,6 @@
 using DocumentProcessing.Core.Orchestration;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.Planning;
 
 /// <summary>
 /// Pure deterministic compiler from policy requirements to the engine's current

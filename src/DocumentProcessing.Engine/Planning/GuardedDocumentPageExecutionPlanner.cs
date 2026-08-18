@@ -2,7 +2,7 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Reconciliation;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.Planning;
 
 /// <summary>
 /// Guarded integration of the authoritative route planner and the two-axis

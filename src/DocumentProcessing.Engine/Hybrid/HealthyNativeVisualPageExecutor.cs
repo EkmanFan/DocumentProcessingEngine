@@ -6,6 +6,7 @@ using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Visual;
+using DocumentProcessing.Engine.Planning;
 
 namespace DocumentProcessing.Engine.Hybrid;
 

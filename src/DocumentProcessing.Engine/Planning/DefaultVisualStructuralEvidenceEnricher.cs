@@ -3,7 +3,7 @@ using DocumentProcessing.Core.Normalization;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Engine.Segmentation;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.Planning;
 
 /// <summary>
 /// Enriches low-level visual raster observations with deterministic native

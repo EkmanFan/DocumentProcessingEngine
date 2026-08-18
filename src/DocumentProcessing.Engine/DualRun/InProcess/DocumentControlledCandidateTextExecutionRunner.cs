@@ -6,7 +6,7 @@ using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Hybrid;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.DualRun.InProcess;
 
 /// <summary>
 /// Controlled non-authoritative candidate text execution.

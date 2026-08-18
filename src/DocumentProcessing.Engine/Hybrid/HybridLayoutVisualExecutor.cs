@@ -4,6 +4,7 @@ using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Visual;
+using DocumentProcessing.Engine.Planning;
 
 namespace DocumentProcessing.Engine.Hybrid;
 

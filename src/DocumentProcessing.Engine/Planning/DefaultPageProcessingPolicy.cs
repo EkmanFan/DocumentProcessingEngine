@@ -1,7 +1,7 @@
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Reconciliation;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.Planning;
 
 /// <summary>
 /// Default deterministic V1 mapping from native-text assessment to one of the

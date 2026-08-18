@@ -1,6 +1,6 @@
 using DocumentProcessing.Core.Orchestration;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.Planning;
 
 /// <summary>
 /// Single deterministic mapping from neutral visual evidence to semantic

@@ -15,6 +15,7 @@ using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Raster;
 using DocumentProcessing.Engine.Visual;
 using DocumentProcessing.Pdf;
+using DocumentProcessing.Engine.Planning;
 
 namespace DocumentProcessing.EvaluationCli;
 

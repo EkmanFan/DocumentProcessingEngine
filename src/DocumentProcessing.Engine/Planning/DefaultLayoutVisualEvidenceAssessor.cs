@@ -2,7 +2,7 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Orchestration;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.Planning;
 
 /// <summary>
 /// Classifies layout-detected Figure regions using layout evidence only.

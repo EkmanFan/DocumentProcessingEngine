@@ -4,6 +4,7 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Pdf;
+using DocumentProcessing.Engine.Planning;
 
 namespace DocumentProcessing.EvaluationCli;
 

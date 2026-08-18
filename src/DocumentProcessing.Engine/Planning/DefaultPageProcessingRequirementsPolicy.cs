@@ -1,6 +1,6 @@
 using DocumentProcessing.Core.Orchestration;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.Planning;
 
 /// <summary>
 /// Default deterministic two-axis policy.

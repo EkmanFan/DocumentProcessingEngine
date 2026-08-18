@@ -3,7 +3,7 @@ using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.DualRun.InProcess;
 
 /// <summary>
 /// Explicit opt-in composition for controlled candidate text execution.

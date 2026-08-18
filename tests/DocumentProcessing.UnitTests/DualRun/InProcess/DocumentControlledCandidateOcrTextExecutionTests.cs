@@ -11,8 +11,10 @@ using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Visual;
+using DocumentProcessing.Engine.Planning;
+using DocumentProcessing.Engine.DualRun.InProcess;
 
-namespace DocumentProcessing.UnitTests.Orchestration;
+namespace DocumentProcessing.UnitTests.DualRun.InProcess;
 
 public sealed class DocumentControlledCandidateOcrTextExecutionTests
 {

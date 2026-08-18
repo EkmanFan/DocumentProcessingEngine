@@ -8,8 +8,9 @@ using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Visual;
+using DocumentProcessing.Engine.Planning;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.DualRun.InProcess;
 
 /// <summary>
 /// Executes the OCR-backed controlled candidate page path.

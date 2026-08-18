@@ -4,8 +4,10 @@ using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Preflight;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Engine.Orchestration;
+using DocumentProcessing.Engine.Planning;
+using DocumentProcessing.Engine.DualRun.InProcess;
 
-namespace DocumentProcessing.UnitTests.Orchestration;
+namespace DocumentProcessing.UnitTests.DualRun.InProcess;
 
 public sealed class DocumentProcessorShadowPlanningTests
 {

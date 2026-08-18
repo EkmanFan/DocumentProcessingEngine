@@ -12,6 +12,7 @@ using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Visual;
+using DocumentProcessing.Engine.Planning;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 

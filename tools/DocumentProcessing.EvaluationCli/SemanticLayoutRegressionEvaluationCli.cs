@@ -8,6 +8,7 @@ using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Visual;
 using DocumentProcessing.Pdf;
+using DocumentProcessing.Engine.Planning;
 
 namespace DocumentProcessing.EvaluationCli;
 

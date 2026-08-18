@@ -1,7 +1,7 @@
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.Planning;
 
 /// <summary>
 /// Production composition of deterministic page assessment and routing policy.

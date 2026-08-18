@@ -2,8 +2,9 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Engine.Orchestration;
+using DocumentProcessing.Engine.Planning;
 
-namespace DocumentProcessing.UnitTests.Orchestration;
+namespace DocumentProcessing.UnitTests.Planning;
 
 public sealed class DefaultLayoutVisualEvidenceAssessorTests
 {

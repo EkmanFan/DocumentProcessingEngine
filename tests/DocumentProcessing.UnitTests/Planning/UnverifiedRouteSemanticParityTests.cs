@@ -8,7 +8,7 @@ using DocumentProcessing.Engine.Hybrid.Normalization;
 using DocumentProcessing.Engine.Hybrid.Segmentation;
 using DocumentProcessing.Engine.Reconciliation;
 
-namespace DocumentProcessing.UnitTests.Orchestration;
+namespace DocumentProcessing.UnitTests.Planning;
 
 public sealed class UnverifiedRouteSemanticParityTests
 {

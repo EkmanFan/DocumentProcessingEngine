@@ -3,7 +3,7 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Reconciliation;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.Planning;
 
 /// <summary>
 /// Evidence-conservative V1 native page assessor.

@@ -1,8 +1,9 @@
 using System.Reflection;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Engine.Orchestration;
+using DocumentProcessing.Engine.Planning;
 
-namespace DocumentProcessing.UnitTests.Orchestration;
+namespace DocumentProcessing.UnitTests.Planning;
 
 public sealed class DefaultVisualEvidenceAssessorTests
 {

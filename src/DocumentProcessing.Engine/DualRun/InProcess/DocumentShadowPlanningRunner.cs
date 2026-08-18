@@ -2,7 +2,7 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
 
-namespace DocumentProcessing.Engine.Orchestration;
+namespace DocumentProcessing.Engine.DualRun.InProcess;
 
 /// <summary>
 /// Executes the complete candidate planning chain as non-authoritative shadow
