@@ -23,9 +23,35 @@ public static class HybridDocumentElementFactory
         ArgumentNullException.ThrowIfNull(
             nativeBlock);
 
-        var readingOrder =
+        return FromNativeWithReadingOrder(
+            physicalPageNumber,
+            nativeBlock,
             nativeBlock.ReadingOrder ??
-            nativeBlock.SourceSequence;
+            nativeBlock.SourceSequence);
+    }
+
+    /// <summary>
+    /// Projects an authoritative native block into a caller-resolved hybrid
+    /// stream position while retaining the original native block unchanged as
+    /// provenance.
+    ///
+    /// The caller owns the ordering decision. This factory performs no layout
+    /// matching or authority selection.
+    /// </summary>
+    public static HybridDocumentElement FromNativeWithReadingOrder(
+        int physicalPageNumber,
+        DocumentTextBlock nativeBlock,
+        int readingOrder)
+    {
+        ArgumentNullException.ThrowIfNull(
+            nativeBlock);
+
+        if (readingOrder <
+            0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(readingOrder));
+        }
 
         return new HybridDocumentElement(
             physicalPageNumber,

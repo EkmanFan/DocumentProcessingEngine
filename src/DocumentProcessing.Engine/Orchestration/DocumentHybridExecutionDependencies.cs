@@ -5,13 +5,12 @@ using DocumentProcessing.Engine.Hybrid;
 namespace DocumentProcessing.Engine.Orchestration;
 
 /// <summary>
-/// Explicit runtime dependencies required only when a page plan selects a
-/// raster/layout/OCR hybrid route.
+/// Explicit runtime dependencies required when authoritative page execution
+/// needs raster/layout-backed hybrid work.
 ///
-/// This is a small composition object, not a plugin registry. Route selection
-/// remains owned by <see cref="DocumentPageProcessingPlanner"/>, while the two
-/// concrete page executors retain the already-proven recovery and
-/// reconciliation behavior.
+/// Legacy OCR recovery/reconciliation remain unchanged. The optional
+/// authoritative visual-planning pair enables only the independently proven
+/// Healthy + NativeText + resolved meaningful-visual preservation branch.
 /// </summary>
 public sealed class DocumentHybridExecutionDependencies
 {
@@ -20,7 +19,11 @@ public sealed class DocumentHybridExecutionDependencies
         MissingNativeHybridPageExecutor missingNativeExecutor,
         NativePresentHybridPageExecutor nativePresentExecutor,
         ProcessingComponentIdentity layoutAnalysisIdentity,
-        ProcessingComponentIdentity reconciliationIdentity)
+        ProcessingComponentIdentity reconciliationIdentity,
+        DocumentAuthoritativeVisualPlanningDependencies?
+            authoritativeVisualPlanning = null,
+        HealthyNativeVisualPageExecutor?
+            healthyNativeVisualExecutor = null)
     {
         DocumentRasterizer =
             documentRasterizer ??
@@ -46,6 +49,20 @@ public sealed class DocumentHybridExecutionDependencies
             reconciliationIdentity ??
             throw new ArgumentNullException(
                 nameof(reconciliationIdentity));
+
+        if ((authoritativeVisualPlanning is null) !=
+            (healthyNativeVisualExecutor is null))
+        {
+            throw new ArgumentException(
+                "Authoritative Healthy native visual execution requires both " +
+                "planning dependencies and a page executor, or neither.");
+        }
+
+        AuthoritativeVisualPlanning =
+            authoritativeVisualPlanning;
+
+        HealthyNativeVisualExecutor =
+            healthyNativeVisualExecutor;
     }
 
     public IDocumentRasterizer DocumentRasterizer { get; }
@@ -66,4 +83,18 @@ public sealed class DocumentHybridExecutionDependencies
     /// the configured native-present executor.
     /// </summary>
     public ProcessingComponentIdentity ReconciliationIdentity { get; }
+
+    /// <summary>
+    /// Optional authoritative deterministic source-visual evidence chain.
+    /// This is distinct from shadow planning: failures propagate.
+    /// </summary>
+    public DocumentAuthoritativeVisualPlanningDependencies?
+        AuthoritativeVisualPlanning { get; }
+
+    /// <summary>
+    /// Optional layout-only executor for the narrow proven Healthy-native
+    /// meaningful-visual preservation branch.
+    /// </summary>
+    public HealthyNativeVisualPageExecutor?
+        HealthyNativeVisualExecutor { get; }
 }

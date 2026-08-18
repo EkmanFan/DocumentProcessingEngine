@@ -8,6 +8,7 @@ using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Preflight;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
+using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Hybrid.Normalization;
@@ -47,6 +48,8 @@ public sealed class DocumentProcessor
     private readonly IDocumentPreflightAnalyzer _preflightAnalyzer;
     private readonly DocumentPageProcessingPlanner _pageProcessingPlanner;
     private readonly DocumentHybridExecutionDependencies? _hybridExecution;
+    private readonly DocumentAuthoritativeVisualPlanningRunner?
+        _authoritativeVisualPlanningRunner;
     private readonly DocumentShadowPlanningDependencies? _shadowPlanningDependencies;
     private readonly DocumentShadowPlanningRunner? _shadowPlanningRunner;
     private readonly DocumentControlledCandidateTextExecutionRunner?
@@ -159,6 +162,12 @@ public sealed class DocumentProcessor
 
         _hybridExecution =
             hybridExecution;
+
+        _authoritativeVisualPlanningRunner =
+            hybridExecution?.AuthoritativeVisualPlanning is null
+                ? null
+                : new DocumentAuthoritativeVisualPlanningRunner(
+                    hybridExecution.AuthoritativeVisualPlanning);
 
         _shadowPlanningDependencies =
             shadowPlanning;
@@ -354,11 +363,61 @@ public sealed class DocumentProcessor
             preflight,
             decisions);
 
-        var requiresHybridExecution =
+        IReadOnlyList<GuardedPagePlanningDecision>?
+            authoritativeVisualPlanning =
+                null;
+
+        if (_authoritativeVisualPlanningRunner is not null &&
+            RequiresAuthoritativeVisualPlanning(
+                extraction,
+                decisions))
+        {
+            prepared.ResetForRead();
+
+            try
+            {
+                authoritativeVisualPlanning =
+                    await _authoritativeVisualPlanningRunner
+                        .RunAsync(
+                            prepared.Source,
+                            format,
+                            extraction,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+            }
+            finally
+            {
+                // Authoritative source-visual evidence acquisition must not leak
+                // stream position into shadow or page execution.
+                prepared.ResetForRead();
+            }
+
+            ValidateAuthoritativeVisualPlanning(
+                decisions,
+                authoritativeVisualPlanning);
+        }
+
+        var requiresLegacyHybridExecution =
             decisions.Any(
                 decision =>
                     decision.Plan.Route !=
                     PageProcessingRoute.NativeOnly);
+
+        var requiresHealthyNativeVisualExecution =
+            authoritativeVisualPlanning is not null &&
+            decisions
+                .Select(
+                    (decision, index) =>
+                        ShouldExecuteHealthyNativeVisual(
+                            decision,
+                            authoritativeVisualPlanning[index]))
+                .Any(
+                    selected =>
+                        selected);
+
+        var requiresHybridExecution =
+            requiresLegacyHybridExecution ||
+            requiresHealthyNativeVisualExecution;
 
         var hybridExecution =
             ResolveHybridExecution(
@@ -449,6 +508,9 @@ public sealed class DocumentProcessor
                     await ExecutePageAsync(
                             page,
                             decision,
+                            authoritativeVisualPlanning is null
+                                ? null
+                                : authoritativeVisualPlanning[index],
                             rasterSession,
                             hybridExecution,
                             prepared.Sha256,
@@ -584,6 +646,114 @@ public sealed class DocumentProcessor
 
     #region Page planning and route execution
 
+    private bool RequiresAuthoritativeVisualPlanning(
+        DocumentExtractionResult extraction,
+        IReadOnlyList<PageProcessingDecision> decisions)
+    {
+        if (_authoritativeVisualPlanningRunner is null)
+        {
+            return false;
+        }
+
+        if (decisions.Count !=
+            extraction.Pages.Count)
+        {
+            throw new InvalidDataException(
+                "Authoritative visual planning selection requires aligned page decisions.");
+        }
+
+        for (var index = 0;
+             index <
+             decisions.Count;
+             index++)
+        {
+            var decision =
+                decisions[index];
+
+            var page =
+                extraction.Pages[index];
+
+            if (decision.Plan.Route ==
+                    PageProcessingRoute.NativeOnly &&
+                decision.Assessment.NativeTextStatus ==
+                    NativeTextStatus.Healthy &&
+                page.RasterImageCount >
+                    0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void ValidateAuthoritativeVisualPlanning(
+        IReadOnlyList<PageProcessingDecision> authoritativeLegacyDecisions,
+        IReadOnlyList<GuardedPagePlanningDecision> guardedDecisions)
+    {
+        ArgumentNullException.ThrowIfNull(
+            authoritativeLegacyDecisions);
+
+        ArgumentNullException.ThrowIfNull(
+            guardedDecisions);
+
+        if (guardedDecisions.Count !=
+            authoritativeLegacyDecisions.Count)
+        {
+            throw new InvalidDataException(
+                $"Authoritative visual planning returned {guardedDecisions.Count} " +
+                $"decision(s) for {authoritativeLegacyDecisions.Count} authoritative " +
+                "legacy page decision(s).");
+        }
+
+        for (var index = 0;
+             index <
+             authoritativeLegacyDecisions.Count;
+             index++)
+        {
+            var authoritative =
+                authoritativeLegacyDecisions[index];
+
+            var guarded =
+                guardedDecisions[index];
+
+            if (guarded.PhysicalPageNumber !=
+                    authoritative.PhysicalPageNumber ||
+                guarded.Legacy.Assessment.NativeTextStatus !=
+                    authoritative.Assessment.NativeTextStatus ||
+                guarded.Legacy.Plan.Route !=
+                    authoritative.Plan.Route)
+            {
+                throw new InvalidDataException(
+                    $"Authoritative visual planning legacy decision at index {index} " +
+                    "does not agree with the already-selected authoritative legacy route.");
+            }
+        }
+    }
+
+    private static bool ShouldExecuteHealthyNativeVisual(
+        PageProcessingDecision legacyDecision,
+        GuardedPagePlanningDecision? guardedDecision)
+    {
+        if (guardedDecision is null)
+        {
+            return false;
+        }
+
+        var candidate =
+            guardedDecision.Candidate.Plan;
+
+        return legacyDecision.Plan.Route ==
+                   PageProcessingRoute.NativeOnly &&
+               legacyDecision.Assessment.NativeTextStatus ==
+                   NativeTextStatus.Healthy &&
+               candidate.TextMode ==
+                   TextExecutionMode.NativeText &&
+               !candidate.RequiresTargetedOcr &&
+               !candidate.RequiresVisualAnalysis &&
+               candidate.RequiresMeaningfulVisualPreservation;
+    }
+
     private DocumentHybridExecutionDependencies? ResolveHybridExecution(
         DocumentFormatId format,
         IReadOnlyList<PageProcessingDecision> decisions,
@@ -624,6 +794,7 @@ public sealed class DocumentProcessor
     private static async ValueTask<HybridDocumentPage> ExecutePageAsync(
         DocumentExtractionPage page,
         PageProcessingDecision decision,
+        GuardedPagePlanningDecision? authoritativeVisualDecision,
         IDocumentRasterizationSession? rasterSession,
         DocumentHybridExecutionDependencies? hybridExecution,
         string sourceDocumentSha256,
@@ -641,6 +812,25 @@ public sealed class DocumentProcessor
 
         return decision.Plan.Route switch
         {
+            PageProcessingRoute.NativeOnly
+                when ShouldExecuteHealthyNativeVisual(
+                    decision,
+                    authoritativeVisualDecision) =>
+                await RequireHealthyNativeVisualExecutor(
+                        hybridExecution,
+                        rasterSession)
+                    .ExecuteAsync(
+                        page,
+                        decision,
+                        authoritativeVisualDecision!
+                            .Candidate
+                            .Plan,
+                        rasterSession!,
+                        sourceDocumentSha256,
+                        openVisualDestinationAsync,
+                        cancellationToken)
+                    .ConfigureAwait(false),
+
             PageProcessingRoute.NativeOnly =>
                 NativeHybridPageAssembler
                     .Assemble(
@@ -678,6 +868,22 @@ public sealed class DocumentProcessor
                 throw new InvalidOperationException(
                     $"Unsupported page-processing route '{decision.Plan.Route}'.")
         };
+    }
+
+    private static HealthyNativeVisualPageExecutor
+        RequireHealthyNativeVisualExecutor(
+            DocumentHybridExecutionDependencies? hybridExecution,
+            IDocumentRasterizationSession? rasterSession)
+    {
+        var resolved =
+            RequireHybridExecution(
+                hybridExecution,
+                rasterSession);
+
+        return resolved.HealthyNativeVisualExecutor ??
+               throw new InvalidOperationException(
+                   "Healthy native visual execution was selected without a " +
+                   "configured HealthyNativeVisualPageExecutor.");
     }
 
     private static DocumentHybridExecutionDependencies RequireHybridExecution(
