@@ -25,8 +25,14 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// </summary>
 public sealed class HealthyNativeVisualPageExecutor
 {
+    #region Variables and Constants
+
     private readonly IPageLayoutAnalyzer _layoutAnalyzer;
     private readonly HybridLayoutVisualExecutor _visualExecutor;
+
+    #endregion
+
+    #region ctor
 
     public HealthyNativeVisualPageExecutor(
         IPageLayoutAnalyzer layoutAnalyzer,
@@ -43,6 +49,10 @@ public sealed class HealthyNativeVisualPageExecutor
                 throw new ArgumentNullException(
                     nameof(visualAssetPreserver)));
     }
+
+    #endregion
+
+    #region Methods Execution
 
     public async ValueTask<HybridDocumentPage> ExecuteAsync(
         DocumentExtractionPage sourcePage,
@@ -95,6 +105,81 @@ public sealed class HealthyNativeVisualPageExecutor
             sourcePage,
             layout);
 
+        return await ExecutePreparedAsync(
+                sourcePage,
+                rasterSession,
+                pageRaster,
+                layout,
+                sourceDocumentSha256,
+                openVisualDestinationAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Executes the authoritative healthy-native visual branch from an already
+    /// acquired neutral layout result.
+    ///
+    /// The supplied full-page raster result is metadata captured during the
+    /// earlier layout phase. No full-page raster bytes are required here; only
+    /// targeted regional visual rendering remains for semantic visual custody.
+    /// </summary>
+    public async ValueTask<HybridDocumentPage> ExecuteWithPrecomputedLayoutAsync(
+        DocumentExtractionPage sourcePage,
+        PageProcessingDecision authoritativeDecision,
+        PageExecutionPlan candidatePlan,
+        IDocumentRasterizationSession rasterSession,
+        RasterRenderResult pageRaster,
+        LayoutAnalysisResult layout,
+        string sourceDocumentSha256,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateRequest(
+            sourcePage,
+            authoritativeDecision,
+            candidatePlan,
+            rasterSession,
+            sourceDocumentSha256);
+
+        ArgumentNullException.ThrowIfNull(
+            pageRaster);
+
+        ArgumentNullException.ThrowIfNull(
+            layout);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        ValidatePageRaster(
+            sourcePage,
+            pageRaster);
+
+        ValidateLayout(
+            sourcePage,
+            layout);
+
+        return await ExecutePreparedAsync(
+                sourcePage,
+                rasterSession,
+                pageRaster,
+                layout,
+                sourceDocumentSha256,
+                openVisualDestinationAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async ValueTask<HybridDocumentPage> ExecutePreparedAsync(
+        DocumentExtractionPage sourcePage,
+        IDocumentRasterizationSession rasterSession,
+        RasterRenderResult pageRaster,
+        LayoutAnalysisResult layout,
+        string sourceDocumentSha256,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync,
+        CancellationToken cancellationToken)
+    {
         var visualEvidence =
             _visualExecutor
                 .Assess(
@@ -192,6 +277,10 @@ public sealed class HealthyNativeVisualPageExecutor
                 layout,
                 visualElements);
     }
+
+    #endregion
+
+    #region Methods Validation
 
     private static void ValidateRequest(
         DocumentExtractionPage sourcePage,
@@ -325,4 +414,6 @@ public sealed class HealthyNativeVisualPageExecutor
         stream.Position =
             0;
     }
+
+    #endregion
 }

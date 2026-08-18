@@ -29,11 +29,15 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// </summary>
 public sealed class MissingNativeHybridPageExecutor
 {
+    #region Variables and Constants
+
     private readonly IPageLayoutAnalyzer _layoutAnalyzer;
     private readonly TargetedHybridTextExecutor _textExecutor;
     private readonly HybridLayoutVisualExecutor _visualExecutor;
 
-    #region Construction
+    #endregion
+
+    #region ctor
 
     public MissingNativeHybridPageExecutor(
         IPageLayoutAnalyzer layoutAnalyzer,
@@ -56,7 +60,7 @@ public sealed class MissingNativeHybridPageExecutor
 
     #endregion
 
-    #region Public execution
+    #region Methods Execution
 
     public async ValueTask<HybridDocumentPage> ExecuteAsync(
         DocumentExtractionPage sourcePage,
@@ -107,6 +111,79 @@ public sealed class MissingNativeHybridPageExecutor
             sourcePage,
             layout);
 
+        return await ExecutePreparedAsync(
+                sourcePage,
+                rasterSession,
+                pageRaster,
+                layout,
+                sourceDocumentSha256,
+                openVisualDestinationAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Executes the authoritative missing-native route from an already acquired
+    /// neutral layout result.
+    ///
+    /// The supplied full-page raster result is metadata captured during the
+    /// earlier layout phase. No full-page raster bytes are required here; only
+    /// targeted region rendering remains for OCR and semantic visual custody.
+    /// </summary>
+    public async ValueTask<HybridDocumentPage> ExecuteWithPrecomputedLayoutAsync(
+        DocumentExtractionPage sourcePage,
+        PageProcessingDecision decision,
+        IDocumentRasterizationSession rasterSession,
+        RasterRenderResult pageRaster,
+        LayoutAnalysisResult layout,
+        string sourceDocumentSha256,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync = null,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateRequest(
+            sourcePage,
+            decision,
+            rasterSession,
+            sourceDocumentSha256);
+
+        ArgumentNullException.ThrowIfNull(
+            pageRaster);
+
+        ArgumentNullException.ThrowIfNull(
+            layout);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        ValidatePageRaster(
+            sourcePage,
+            pageRaster);
+
+        ValidateLayout(
+            sourcePage,
+            layout);
+
+        return await ExecutePreparedAsync(
+                sourcePage,
+                rasterSession,
+                pageRaster,
+                layout,
+                sourceDocumentSha256,
+                openVisualDestinationAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async ValueTask<HybridDocumentPage> ExecutePreparedAsync(
+        DocumentExtractionPage sourcePage,
+        IDocumentRasterizationSession rasterSession,
+        RasterRenderResult pageRaster,
+        LayoutAnalysisResult layout,
+        string sourceDocumentSha256,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync,
+        CancellationToken cancellationToken)
+    {
         var ocrTargets =
             _textExecutor
                 .CreateOcrTargets(
@@ -208,7 +285,7 @@ public sealed class MissingNativeHybridPageExecutor
 
     #endregion
 
-    #region Validation
+    #region Methods Validation
 
     private static void ValidateRequest(
         DocumentExtractionPage sourcePage,
