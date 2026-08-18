@@ -13,7 +13,7 @@ using DocumentProcessing.Engine.DualRun.InProcess;
 
 namespace DocumentProcessing.UnitTests.DualRun.InProcess;
 
-public sealed class DocumentControlledCandidateTextExecutionTests
+public sealed class DocumentDualRunCandidateTextExecutionTests
 {
     private static readonly ProcessingComponentIdentity NativeIdentity =
         new(
@@ -57,7 +57,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                                 1,
                                 [])
                         ])),
-                new DocumentControlledCandidateTextExecutionDependencies(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     candidateObserver));
 
         AssertSerializedEquivalent(
@@ -69,7 +69,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 candidateObserver.Reports);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Completed,
+            DocumentDualRunCandidateTextExecutionStatus.Completed,
             report.Status);
 
         Assert.Equal(
@@ -85,7 +85,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 report.Pages);
 
         Assert.Equal(
-            DocumentControlledCandidateTextPageStatus.ExecutedNativeText,
+            DocumentDualRunCandidateTextPageStatus.ExecutedNativeText,
             page.Status);
 
         Assert.True(
@@ -121,8 +121,8 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                         NativeIdentity,
                         dualRunPlanning:
                             null,
-                        controlledCandidateTextExecution:
-                            new DocumentControlledCandidateTextExecutionDependencies(
+                        dualRunCandidateTextExecution:
+                            new DocumentDualRunCandidateTextExecutionDependencies(
                                 observer)));
 
         Assert.Contains(
@@ -160,7 +160,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 extraction,
                 DualRunPlanningDependencies(
                     new ThrowingVisualSource()),
-                new DocumentControlledCandidateTextExecutionDependencies(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     candidateObserver));
 
         AssertSerializedEquivalent(
@@ -172,7 +172,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 candidateObserver.Reports);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.PlanningUnavailable,
+            DocumentDualRunCandidateTextExecutionStatus.PlanningUnavailable,
             report.Status);
 
         Assert.Empty(
@@ -230,8 +230,8 @@ public sealed class DocumentControlledCandidateTextExecutionTests
             new RecordingCandidateObserver();
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     observer));
 
         var report =
@@ -244,7 +244,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Completed,
+            DocumentDualRunCandidateTextExecutionStatus.Completed,
             report.Status);
 
         Assert.Equal(
@@ -256,7 +256,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 report.Pages);
 
         Assert.Equal(
-            DocumentControlledCandidateTextPageStatus.ExecutedNativeText,
+            DocumentDualRunCandidateTextPageStatus.ExecutedNativeText,
             comparison.Status);
 
         Assert.True(
@@ -310,8 +310,8 @@ public sealed class DocumentControlledCandidateTextExecutionTests
             candidateMode);
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     new RecordingCandidateObserver()));
 
         var report =
@@ -326,7 +326,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Completed,
+            DocumentDualRunCandidateTextExecutionStatus.Completed,
             report.Status);
 
         Assert.Equal(
@@ -342,7 +342,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 report.Pages);
 
         Assert.Equal(
-            DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode,
+            DocumentDualRunCandidateTextPageStatus.DeferredNonNativeTextMode,
             page.Status);
 
         Assert.Null(
@@ -388,8 +388,8 @@ public sealed class DocumentControlledCandidateTextExecutionTests
             new RecordingCandidateObserver();
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     observer));
 
         var report =
@@ -403,14 +403,14 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Failed,
+            DocumentDualRunCandidateTextExecutionStatus.Failed,
             report.Status);
 
         Assert.Empty(
             report.Pages);
 
         var failure =
-            Assert.IsType<DocumentControlledCandidateTextExecutionFailure>(
+            Assert.IsType<DocumentDualRunCandidateTextExecutionFailure>(
                 report.Failure);
 
         Assert.Equal(
@@ -454,8 +454,8 @@ public sealed class DocumentControlledCandidateTextExecutionTests
         cancellation.Cancel();
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     new RecordingCandidateObserver()));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
@@ -494,8 +494,8 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 ]);
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     new OutOfMemoryCandidateObserver()));
 
         await Assert.ThrowsAsync<OutOfMemoryException>(
@@ -533,8 +533,8 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 ]);
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     new ThrowingCandidateObserver()));
 
         var report =
@@ -549,7 +549,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Completed,
+            DocumentDualRunCandidateTextExecutionStatus.Completed,
             report.Status);
     }
 
@@ -596,7 +596,7 @@ public sealed class DocumentControlledCandidateTextExecutionTests
         ProcessNativeAsync(
             DocumentExtractionResult extraction,
             DocumentDualRunPlanningDependencies? dualRun,
-            DocumentControlledCandidateTextExecutionDependencies? controlled)
+            DocumentDualRunCandidateTextExecutionDependencies? controlled)
     {
         var processor =
             new DocumentProcessor(
@@ -888,13 +888,13 @@ public sealed class DocumentControlledCandidateTextExecutionTests
     }
 
     private sealed class RecordingCandidateObserver
-        : IDocumentControlledCandidateTextExecutionObserver
+        : IDocumentDualRunCandidateTextExecutionObserver
     {
-        public List<DocumentControlledCandidateTextExecutionReport> Reports { get; } =
+        public List<DocumentDualRunCandidateTextExecutionReport> Reports { get; } =
             [];
 
         public ValueTask ObserveAsync(
-            DocumentControlledCandidateTextExecutionReport report,
+            DocumentDualRunCandidateTextExecutionReport report,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -907,20 +907,20 @@ public sealed class DocumentControlledCandidateTextExecutionTests
     }
 
     private sealed class ThrowingCandidateObserver
-        : IDocumentControlledCandidateTextExecutionObserver
+        : IDocumentDualRunCandidateTextExecutionObserver
     {
         public ValueTask ObserveAsync(
-            DocumentControlledCandidateTextExecutionReport report,
+            DocumentDualRunCandidateTextExecutionReport report,
             CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException(
                 "synthetic candidate observer failure");
     }
 
     private sealed class OutOfMemoryCandidateObserver
-        : IDocumentControlledCandidateTextExecutionObserver
+        : IDocumentDualRunCandidateTextExecutionObserver
     {
         public ValueTask ObserveAsync(
-            DocumentControlledCandidateTextExecutionReport report,
+            DocumentDualRunCandidateTextExecutionReport report,
             CancellationToken cancellationToken = default) =>
             throw new OutOfMemoryException(
                 "synthetic candidate observer OOM");

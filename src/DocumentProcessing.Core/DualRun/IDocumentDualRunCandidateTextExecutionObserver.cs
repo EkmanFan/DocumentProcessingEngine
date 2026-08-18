@@ -1,13 +1,13 @@
 namespace DocumentProcessing.Core.DualRun;
 /// <summary>
-/// Receives non-authoritative H.4D.1 controlled candidate execution evidence.
+/// Receives non-authoritative H.4D.1 Dual Run candidate execution evidence.
 ///
 /// Observer failures are best-effort except caller cancellation and
 /// <see cref="OutOfMemoryException"/>, which propagate.
 /// </summary>
-public interface IDocumentControlledCandidateTextExecutionObserver
+public interface IDocumentDualRunCandidateTextExecutionObserver
 {
     ValueTask ObserveAsync(
-        DocumentControlledCandidateTextExecutionReport report,
+        DocumentDualRunCandidateTextExecutionReport report,
         CancellationToken cancellationToken = default);
 }

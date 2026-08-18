@@ -1,10 +1,10 @@
 namespace DocumentProcessing.Core.DualRun;
 /// <summary>
-/// Sanitized evidence for an ordinary controlled-candidate execution failure.
+/// Sanitized evidence for an ordinary Dual Run candidate execution failure.
 /// </summary>
-public sealed record DocumentControlledCandidateTextExecutionFailure
+public sealed record DocumentDualRunCandidateTextExecutionFailure
 {
-    public DocumentControlledCandidateTextExecutionFailure(
+    public DocumentDualRunCandidateTextExecutionFailure(
         string exceptionType,
         string message,
         int? physicalPageNumber = null)

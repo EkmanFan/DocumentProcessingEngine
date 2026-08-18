@@ -1,17 +1,17 @@
 namespace DocumentProcessing.Core.DualRun;
 /// <summary>
-/// Non-authoritative evidence produced by controlled candidate text execution.
+/// Non-authoritative evidence produced by Dual Run candidate text execution.
 ///
 /// The report can be observed and evaluated but is never consumed to select the
 /// authoritative document-processing result.
 /// </summary>
-public sealed record DocumentControlledCandidateTextExecutionReport
+public sealed record DocumentDualRunCandidateTextExecutionReport
 {
-    public DocumentControlledCandidateTextExecutionReport(
+    public DocumentDualRunCandidateTextExecutionReport(
         string sourceDocumentSha256,
-        DocumentControlledCandidateTextExecutionStatus status,
-        IEnumerable<DocumentControlledCandidateTextPageComparison> pages,
-        DocumentControlledCandidateTextExecutionFailure? failure = null)
+        DocumentDualRunCandidateTextExecutionStatus status,
+        IEnumerable<DocumentDualRunCandidateTextPageComparison> pages,
+        DocumentDualRunCandidateTextExecutionFailure? failure = null)
     {
         if (string.IsNullOrWhiteSpace(
                 sourceDocumentSha256))
@@ -42,7 +42,7 @@ public sealed record DocumentControlledCandidateTextExecutionReport
             var page =
                 materialized[index] ??
                 throw new ArgumentException(
-                    "Controlled candidate pages cannot contain null values.",
+                    "Dual Run candidate pages cannot contain null values.",
                     nameof(pages));
 
             var expectedPhysicalPageNumber =
@@ -53,7 +53,7 @@ public sealed record DocumentControlledCandidateTextExecutionReport
                 expectedPhysicalPageNumber)
             {
                 throw new ArgumentException(
-                    $"Controlled candidate pages must be contiguous and one-based; " +
+                    $"Dual Run candidate pages must be contiguous and one-based; " +
                     $"expected physical page {expectedPhysicalPageNumber}, observed " +
                     $"{page.PhysicalPageNumber}.",
                     nameof(pages));
@@ -62,7 +62,7 @@ public sealed record DocumentControlledCandidateTextExecutionReport
 
         switch (status)
         {
-            case DocumentControlledCandidateTextExecutionStatus.Completed:
+            case DocumentDualRunCandidateTextExecutionStatus.Completed:
                 if (failure is not null)
                 {
                     throw new ArgumentException(
@@ -71,7 +71,7 @@ public sealed record DocumentControlledCandidateTextExecutionReport
                 }
                 break;
 
-            case DocumentControlledCandidateTextExecutionStatus.PlanningUnavailable:
+            case DocumentDualRunCandidateTextExecutionStatus.PlanningUnavailable:
                 if (failure is not null)
                 {
                     throw new ArgumentException(
@@ -88,7 +88,7 @@ public sealed record DocumentControlledCandidateTextExecutionReport
                 }
                 break;
 
-            case DocumentControlledCandidateTextExecutionStatus.Failed:
+            case DocumentDualRunCandidateTextExecutionStatus.Failed:
                 if (failure is null)
                 {
                     throw new ArgumentException(
@@ -126,37 +126,37 @@ public sealed record DocumentControlledCandidateTextExecutionReport
 
     public string SourceDocumentSha256 { get; }
 
-    public DocumentControlledCandidateTextExecutionStatus Status { get; }
+    public DocumentDualRunCandidateTextExecutionStatus Status { get; }
 
-    public IReadOnlyList<DocumentControlledCandidateTextPageComparison> Pages { get; }
+    public IReadOnlyList<DocumentDualRunCandidateTextPageComparison> Pages { get; }
 
-    public DocumentControlledCandidateTextExecutionFailure? Failure { get; }
+    public DocumentDualRunCandidateTextExecutionFailure? Failure { get; }
 
     public int ExecutedNativeTextPageCount =>
         Pages.Count(
             page =>
                 page.Status ==
-                DocumentControlledCandidateTextPageStatus.ExecutedNativeText);
+                DocumentDualRunCandidateTextPageStatus.ExecutedNativeText);
 
     public int ExecutedTargetedOcrRecoveryPageCount =>
         Pages.Count(
             page =>
                 page.Status ==
-                DocumentControlledCandidateTextPageStatus
+                DocumentDualRunCandidateTextPageStatus
                     .ExecutedTargetedOcrRecovery);
 
     public int ExecutedTargetedOcrVerificationPageCount =>
         Pages.Count(
             page =>
                 page.Status ==
-                DocumentControlledCandidateTextPageStatus
+                DocumentDualRunCandidateTextPageStatus
                     .ExecutedTargetedOcrVerification);
 
     public int ExecutedTargetedOcrReconciliationPageCount =>
         Pages.Count(
             page =>
                 page.Status ==
-                DocumentControlledCandidateTextPageStatus
+                DocumentDualRunCandidateTextPageStatus
                     .ExecutedTargetedOcrReconciliation);
 
     public int ExecutedOcrBackedTextPageCount =>
@@ -168,13 +168,13 @@ public sealed record DocumentControlledCandidateTextExecutionReport
         Pages.Count(
             page =>
                 page.Status ==
-                DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode);
+                DocumentDualRunCandidateTextPageStatus.DeferredNonNativeTextMode);
 
     public int ExecutedCandidateRemovesAuthoritativeTextMlCount =>
         Pages.Count(
             page =>
                 page.Status !=
-                    DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode &&
+                    DocumentDualRunCandidateTextPageStatus.DeferredNonNativeTextMode &&
                 page.CandidateRemovesAuthoritativeTextMl);
 
     public int ExecutedSelectedTextAgreementCount =>

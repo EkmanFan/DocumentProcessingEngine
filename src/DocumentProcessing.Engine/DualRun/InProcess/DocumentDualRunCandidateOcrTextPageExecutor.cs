@@ -13,14 +13,14 @@ using DocumentProcessing.Engine.Planning;
 namespace DocumentProcessing.Engine.DualRun.InProcess;
 
 /// <summary>
-/// Executes the OCR-backed controlled candidate page path.
+/// Executes the OCR-backed Dual Run candidate page path.
 ///
 /// It reuses <see cref="TargetedHybridTextExecutor"/> for OCR planning,
 /// target-centric pairing, recognition, and reconciliation. Neutral layout
 /// visual evidence is assessed independently, and only semantically authorized
 /// regions are materialized as non-authoritative preservation evidence.
 /// </summary>
-internal sealed class DocumentControlledCandidateOcrTextPageExecutor
+internal sealed class DocumentDualRunCandidateOcrTextPageExecutor
 {
     #region Variables and Constants
 
@@ -31,7 +31,7 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
 
     #region ctor
 
-    public DocumentControlledCandidateOcrTextPageExecutor(
+    public DocumentDualRunCandidateOcrTextPageExecutor(
         IPageLayoutAnalyzer layoutAnalyzer,
         DocumentProcessing.Core.Ocr.IRegionTextRecognizer textRecognizer)
     {
@@ -394,7 +394,7 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
         if (!valid)
         {
             throw new InvalidOperationException(
-                $"Controlled candidate text mode '{textMode}' is not valid for " +
+                $"Dual Run candidate text mode '{textMode}' is not valid for " +
                 $"native-text status '{nativeTextStatus}'.");
         }
 
@@ -417,13 +417,13 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
             sourcePage.PhysicalPageNumber)
         {
             throw new InvalidDataException(
-                "Controlled candidate page raster belongs to a different physical page.");
+                "Dual Run candidate page raster belongs to a different physical page.");
         }
 
         if (!pageRaster.IsFullPage)
         {
             throw new InvalidDataException(
-                "Controlled candidate OCR requires a full-page raster before layout analysis.");
+                "Dual Run candidate OCR requires a full-page raster before layout analysis.");
         }
     }
 
@@ -438,7 +438,7 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
             sourcePage.PhysicalPageNumber)
         {
             throw new InvalidDataException(
-                "Controlled candidate layout result belongs to a different physical page.");
+                "Dual Run candidate layout result belongs to a different physical page.");
         }
     }
 
@@ -448,7 +448,7 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
         if (!stream.CanSeek)
         {
             throw new InvalidOperationException(
-                "Internal controlled candidate buffer must be seekable.");
+                "Internal Dual Run candidate buffer must be seekable.");
         }
 
         stream.Position =

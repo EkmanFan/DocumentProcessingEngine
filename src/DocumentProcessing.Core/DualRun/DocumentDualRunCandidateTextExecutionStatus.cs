@@ -1,11 +1,11 @@
 namespace DocumentProcessing.Core.DualRun;
 /// <summary>
-/// Overall outcome of the controlled candidate text-execution experiment.
+/// Overall outcome of the Dual Run candidate text-execution experiment.
 ///
 /// The report is comparison evidence only. It never authorizes candidate output
 /// to replace the authoritative result.
 /// </summary>
-public enum DocumentControlledCandidateTextExecutionStatus
+public enum DocumentDualRunCandidateTextExecutionStatus
 {
     /// <summary>
     /// Dual Run planning completed and every page was either executed in the

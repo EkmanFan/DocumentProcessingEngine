@@ -15,7 +15,7 @@ namespace DocumentProcessing.Engine.DualRun.InProcess;
 /// H.4D.1 executes NativeText and defers OCR-backed modes unless OCR capability
 /// is explicitly composed.
 ///
-/// OCR-backed modes execute through the controlled candidate
+/// OCR-backed modes execute through the Dual Run candidate
 /// raster/layout/OCR runtime. The same page execution may materialize
 /// semantically authorized layout visual regions, but those preserved values
 /// remain non-authoritative comparison evidence.
@@ -23,22 +23,22 @@ namespace DocumentProcessing.Engine.DualRun.InProcess;
 /// The authoritative page list is already complete before this runner is invoked. No
 /// candidate result is returned to authoritative orchestration.
 /// </summary>
-public sealed class DocumentControlledCandidateTextExecutionRunner
+public sealed class DocumentDualRunCandidateTextExecutionRunner
 {
     #region Variables and Constants
 
-    private readonly DocumentControlledCandidateTextExecutionDependencies
+    private readonly DocumentDualRunCandidateTextExecutionDependencies
         _dependencies;
 
-    private readonly DocumentControlledCandidateOcrTextPageExecutor?
+    private readonly DocumentDualRunCandidateOcrTextPageExecutor?
         _ocrTextPageExecutor;
 
     #endregion
 
     #region ctor
 
-    public DocumentControlledCandidateTextExecutionRunner(
-        DocumentControlledCandidateTextExecutionDependencies dependencies)
+    public DocumentDualRunCandidateTextExecutionRunner(
+        DocumentDualRunCandidateTextExecutionDependencies dependencies)
     {
         _dependencies =
             dependencies ??
@@ -47,7 +47,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
         _ocrTextPageExecutor =
             dependencies.CanExecuteOcrBackedText
-                ? new DocumentControlledCandidateOcrTextPageExecutor(
+                ? new DocumentDualRunCandidateOcrTextPageExecutor(
                     dependencies.LayoutAnalyzer!,
                     dependencies.TextRecognizer!)
                 : null;
@@ -64,7 +64,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
     /// Backward-compatible H.4D.1 entry point. OCR-backed modes remain deferred
     /// when only NativeText execution was composed.
     /// </summary>
-    public ValueTask<DocumentControlledCandidateTextExecutionReport>
+    public ValueTask<DocumentDualRunCandidateTextExecutionReport>
         RunAsync(
             DocumentExtractionResult extraction,
             IReadOnlyList<HybridDocumentPage> authoritativePages,
@@ -84,9 +84,9 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
     /// <summary>
     /// H.4D.2B entry point. The document source is used only by the explicitly
-    /// configured controlled candidate rasterizer.
+    /// configured Dual Run candidate rasterizer.
     /// </summary>
-    public ValueTask<DocumentControlledCandidateTextExecutionReport>
+    public ValueTask<DocumentDualRunCandidateTextExecutionReport>
         RunAsync(
             DocumentSource source,
             DocumentFormatId format,
@@ -109,7 +109,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             cancellationToken);
     }
 
-    private async ValueTask<DocumentControlledCandidateTextExecutionReport>
+    private async ValueTask<DocumentDualRunCandidateTextExecutionReport>
         RunCoreAsync(
             DocumentSource? source,
             DocumentFormatId? format,
@@ -138,7 +138,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        DocumentControlledCandidateTextExecutionReport report;
+        DocumentDualRunCandidateTextExecutionReport report;
 
         int? currentPhysicalPageNumber =
             null;
@@ -148,9 +148,9 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             if (!dualRunPlanning.IsCompleted)
             {
                 report =
-                    new DocumentControlledCandidateTextExecutionReport(
+                    new DocumentDualRunCandidateTextExecutionReport(
                         sourceDocumentSha256,
-                        DocumentControlledCandidateTextExecutionStatus
+                        DocumentDualRunCandidateTextExecutionStatus
                             .PlanningUnavailable,
                         pages:
                             []);
@@ -164,7 +164,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                     sourceDocumentSha256);
 
                 var comparisons =
-                    new List<DocumentControlledCandidateTextPageComparison>(
+                    new List<DocumentDualRunCandidateTextPageComparison>(
                         extraction.Pages.Count);
 
                 IDocumentRasterizationSession? rasterSession =
@@ -202,7 +202,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                             format.Value)
                         {
                             throw new InvalidDataException(
-                                $"Controlled candidate format '{format.Value}' does not " +
+                                $"Dual Run candidate format '{format.Value}' does not " +
                                 $"match Dual Run planning format '{dualRunPlanning.Format}'.");
                         }
 
@@ -215,7 +215,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                 format.Value))
                         {
                             throw new NotSupportedException(
-                                $"The controlled candidate rasterizer cannot process " +
+                                $"The Dual Run candidate rasterizer cannot process " +
                                 $"format '{format.Value}'.");
                         }
 
@@ -230,7 +230,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                         if (rasterSession is null)
                         {
                             throw new InvalidDataException(
-                                "Controlled candidate rasterizer returned no session.");
+                                "Dual Run candidate rasterizer returned no session.");
                         }
                     }
 
@@ -269,7 +269,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                             preservedLayoutVisuals =
                                 [];
 
-                        DocumentControlledCandidateTextPageStatus pageStatus;
+                        DocumentDualRunCandidateTextPageStatus pageStatus;
 
                         if (candidatePlan.TextMode ==
                             TextExecutionMode.NativeText)
@@ -280,20 +280,20 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                                         extractionPage);
 
                             pageStatus =
-                                DocumentControlledCandidateTextPageStatus
+                                DocumentDualRunCandidateTextPageStatus
                                     .ExecutedNativeText;
                         }
                         else if (_ocrTextPageExecutor is null)
                         {
                             comparisons.Add(
-                                new DocumentControlledCandidateTextPageComparison(
+                                new DocumentDualRunCandidateTextPageComparison(
                                     extractionPage.PhysicalPageNumber,
                                     dualRunPage
                                         .Authoritative
                                         .Plan
                                         .Route,
                                     candidatePlan.TextMode,
-                                    DocumentControlledCandidateTextPageStatus
+                                    DocumentDualRunCandidateTextPageStatus
                                         .DeferredNonNativeTextMode,
                                     candidateRemovesAuthoritativeTextMl:
                                         false,
@@ -363,9 +363,9 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 }
 
                 report =
-                    new DocumentControlledCandidateTextExecutionReport(
+                    new DocumentDualRunCandidateTextExecutionReport(
                         sourceDocumentSha256,
-                        DocumentControlledCandidateTextExecutionStatus.Completed,
+                        DocumentDualRunCandidateTextExecutionStatus.Completed,
                         comparisons);
             }
         }
@@ -378,12 +378,12 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             when (exception is not OutOfMemoryException)
         {
             report =
-                new DocumentControlledCandidateTextExecutionReport(
+                new DocumentDualRunCandidateTextExecutionReport(
                     sourceDocumentSha256,
-                    DocumentControlledCandidateTextExecutionStatus.Failed,
+                    DocumentDualRunCandidateTextExecutionStatus.Failed,
                     pages:
                         [],
-                    new DocumentControlledCandidateTextExecutionFailure(
+                    new DocumentDualRunCandidateTextExecutionFailure(
                         exception.GetType().FullName ??
                         exception.GetType().Name,
                         exception.Message,
@@ -402,11 +402,11 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
 
     #region Methods Comparison
 
-    private static DocumentControlledCandidateTextPageComparison Compare(
+    private static DocumentDualRunCandidateTextPageComparison Compare(
         HybridDocumentPage authoritativePage,
         HybridDocumentPage candidatePage,
         DocumentDualRunPageComparison dualRunPage,
-        DocumentControlledCandidateTextPageStatus status,
+        DocumentDualRunCandidateTextPageStatus status,
         IReadOnlyList<LayoutVisualEvidence>
             layoutVisualEvidence,
         IReadOnlyList<PreservedVisualEvidence>
@@ -420,7 +420,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             candidatePage
                 .AuthoritativeTextElements;
 
-        return new DocumentControlledCandidateTextPageComparison(
+        return new DocumentDualRunCandidateTextPageComparison(
             dualRunPage.PhysicalPageNumber,
             dualRunPage
                 .Authoritative
@@ -461,20 +461,20 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 preservedLayoutVisuals);
     }
 
-    private static DocumentControlledCandidateTextPageStatus ExecutedStatus(
+    private static DocumentDualRunCandidateTextPageStatus ExecutedStatus(
         TextExecutionMode textMode) =>
         textMode switch
         {
             TextExecutionMode.TargetedOcrRecovery =>
-                DocumentControlledCandidateTextPageStatus
+                DocumentDualRunCandidateTextPageStatus
                     .ExecutedTargetedOcrRecovery,
 
             TextExecutionMode.TargetedOcrVerification =>
-                DocumentControlledCandidateTextPageStatus
+                DocumentDualRunCandidateTextPageStatus
                     .ExecutedTargetedOcrVerification,
 
             TextExecutionMode.TargetedOcrReconciliation =>
-                DocumentControlledCandidateTextPageStatus
+                DocumentDualRunCandidateTextPageStatus
                     .ExecutedTargetedOcrReconciliation,
 
             _ =>
@@ -498,7 +498,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 StringComparison.Ordinal))
         {
             throw new InvalidDataException(
-                "Controlled candidate source SHA-256 does not match Dual Run planning evidence.");
+                "Dual Run candidate source SHA-256 does not match Dual Run planning evidence.");
         }
 
         if (authoritativePages.Count !=
@@ -625,7 +625,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
     #region Methods Telemetry
 
     private async ValueTask DeliverBestEffortAsync(
-        DocumentControlledCandidateTextExecutionReport report,
+        DocumentDualRunCandidateTextExecutionReport report,
         CancellationToken cancellationToken)
     {
         try
@@ -645,7 +645,7 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
         catch (Exception exception)
             when (exception is not OutOfMemoryException)
         {
-            // Controlled candidate telemetry is non-authoritative.
+            // Dual Run candidate telemetry is non-authoritative.
         }
     }
 

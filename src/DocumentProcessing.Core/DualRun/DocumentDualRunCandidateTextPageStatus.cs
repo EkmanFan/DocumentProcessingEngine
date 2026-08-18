@@ -1,8 +1,8 @@
 namespace DocumentProcessing.Core.DualRun;
 /// <summary>
-/// Text-axis execution disposition for one controlled candidate page.
+/// Text-axis execution disposition for one Dual Run candidate page.
 /// </summary>
-public enum DocumentControlledCandidateTextPageStatus
+public enum DocumentDualRunCandidateTextPageStatus
 {
     /// <summary>
     /// Candidate NativeText was executed from extracted native blocks.

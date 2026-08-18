@@ -10,13 +10,13 @@ namespace DocumentProcessing.Core.DualRun;
 /// OCR-backed text execution when explicitly composed. Independent visual work
 /// remains outside this report's execution authority.
 /// </summary>
-public sealed record DocumentControlledCandidateTextPageComparison
+public sealed record DocumentDualRunCandidateTextPageComparison
 {
-    public DocumentControlledCandidateTextPageComparison(
+    public DocumentDualRunCandidateTextPageComparison(
         int physicalPageNumber,
         PageProcessingRoute authoritativeRoute,
         TextExecutionMode candidateTextMode,
-        DocumentControlledCandidateTextPageStatus status,
+        DocumentDualRunCandidateTextPageStatus status,
         bool candidateRemovesAuthoritativeTextMl,
         bool candidateHasIndependentVisualWork,
         bool? selectedTextSequenceExact = null,
@@ -77,19 +77,19 @@ public sealed record DocumentControlledCandidateTextPageComparison
         TextExecutionMode? expectedMode =
             status switch
             {
-                DocumentControlledCandidateTextPageStatus.ExecutedNativeText =>
+                DocumentDualRunCandidateTextPageStatus.ExecutedNativeText =>
                     TextExecutionMode.NativeText,
 
-                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrRecovery =>
+                DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrRecovery =>
                     TextExecutionMode.TargetedOcrRecovery,
 
-                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrVerification =>
+                DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrVerification =>
                     TextExecutionMode.TargetedOcrVerification,
 
-                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrReconciliation =>
+                DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrReconciliation =>
                     TextExecutionMode.TargetedOcrReconciliation,
 
-                DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode =>
+                DocumentDualRunCandidateTextPageStatus.DeferredNonNativeTextMode =>
                     null,
 
                 _ =>
@@ -98,7 +98,7 @@ public sealed record DocumentControlledCandidateTextPageComparison
             };
 
         if (status ==
-            DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode)
+            DocumentDualRunCandidateTextPageStatus.DeferredNonNativeTextMode)
         {
             if (candidateTextMode ==
                 TextExecutionMode.NativeText)
@@ -155,7 +155,7 @@ public sealed record DocumentControlledCandidateTextPageComparison
                 nameof(candidateReconciliationEvidenceCount));
 
             if (status !=
-                    DocumentControlledCandidateTextPageStatus.ExecutedNativeText &&
+                    DocumentDualRunCandidateTextPageStatus.ExecutedNativeText &&
                 candidateRemovesAuthoritativeTextMl)
             {
                 throw new ArgumentException(
@@ -210,7 +210,7 @@ public sealed record DocumentControlledCandidateTextPageComparison
         }
 
         if (status ==
-                DocumentControlledCandidateTextPageStatus.DeferredNonNativeTextMode &&
+                DocumentDualRunCandidateTextPageStatus.DeferredNonNativeTextMode &&
             candidatePage is not null)
         {
             throw new ArgumentException(
@@ -258,9 +258,9 @@ public sealed record DocumentControlledCandidateTextPageComparison
         if (visualEvidence.Length >
                 0 &&
             status is not (
-                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrRecovery or
-                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrVerification or
-                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrReconciliation))
+                DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrRecovery or
+                DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrVerification or
+                DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrReconciliation))
         {
             throw new ArgumentException(
                 "Only executed OCR-backed text pages can carry candidate layout visual evidence.",
@@ -319,9 +319,9 @@ public sealed record DocumentControlledCandidateTextPageComparison
         if (preservedLayoutVisuals.Length >
                 0 &&
             status is not (
-                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrRecovery or
-                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrVerification or
-                DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrReconciliation))
+                DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrRecovery or
+                DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrVerification or
+                DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrReconciliation))
         {
             throw new ArgumentException(
                 "Only executed OCR-backed candidate pages can carry preserved layout visuals.",
@@ -346,7 +346,7 @@ public sealed record DocumentControlledCandidateTextPageComparison
 
     public TextExecutionMode CandidateTextMode { get; }
 
-    public DocumentControlledCandidateTextPageStatus Status { get; }
+    public DocumentDualRunCandidateTextPageStatus Status { get; }
 
     public bool CandidateRemovesAuthoritativeTextMl { get; }
 

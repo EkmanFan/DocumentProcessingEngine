@@ -18,7 +18,7 @@ using DocumentProcessing.Engine.DualRun.InProcess;
 
 namespace DocumentProcessing.UnitTests.DualRun.InProcess;
 
-public sealed class DocumentControlledCandidateOcrTextExecutionTests
+public sealed class DocumentDualRunCandidateOcrTextExecutionTests
 {
     private const string SourceSha =
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -32,19 +32,19 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
     [InlineData(
         NativeTextStatus.Missing,
         TextExecutionMode.TargetedOcrRecovery,
-        DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrRecovery)]
+        DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrRecovery)]
     [InlineData(
         NativeTextStatus.Unverified,
         TextExecutionMode.TargetedOcrVerification,
-        DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrVerification)]
+        DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrVerification)]
     [InlineData(
         NativeTextStatus.Suspicious,
         TextExecutionMode.TargetedOcrReconciliation,
-        DocumentControlledCandidateTextPageStatus.ExecutedTargetedOcrReconciliation)]
+        DocumentDualRunCandidateTextPageStatus.ExecutedTargetedOcrReconciliation)]
     public async Task Runner_ExplicitOcrComposition_ExecutesEachCandidateModeExactly(
         NativeTextStatus nativeStatus,
         TextExecutionMode textMode,
-        DocumentControlledCandidateTextPageStatus expectedStatus)
+        DocumentDualRunCandidateTextPageStatus expectedStatus)
     {
         var page =
             nativeStatus ==
@@ -83,8 +83,8 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
             new RecordingCandidateObserver();
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     observer,
                     new FakeDocumentRasterizer(),
                     layoutAnalyzer,
@@ -120,7 +120,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Completed,
+            DocumentDualRunCandidateTextExecutionStatus.Completed,
             report.Status);
 
         Assert.Equal(
@@ -173,8 +173,8 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
             new RecordingCandidateObserver();
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     observer,
                     new ThrowingDocumentRasterizer(
                         new InvalidOperationException(
@@ -215,14 +215,14 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Failed,
+            DocumentDualRunCandidateTextExecutionStatus.Failed,
             report.Status);
 
         Assert.Empty(
             report.Pages);
 
         var failure =
-            Assert.IsType<DocumentControlledCandidateTextExecutionFailure>(
+            Assert.IsType<DocumentDualRunCandidateTextExecutionFailure>(
                 report.Failure);
 
         Assert.Equal(
@@ -248,8 +248,8 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 1);
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     new RecordingCandidateObserver(),
                     new ThrowingDocumentRasterizer(
                         new OutOfMemoryException(
@@ -318,7 +318,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
         var actual =
             await ProcessAsync(
                 extraction,
-                new DocumentControlledCandidateTextExecutionDependencies(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     observer,
                     new ThrowingDocumentRasterizer(
                         new InvalidOperationException(
@@ -340,11 +340,11 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 observer.Reports);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Failed,
+            DocumentDualRunCandidateTextExecutionStatus.Failed,
             report.Status);
 
         var failure =
-            Assert.IsType<DocumentControlledCandidateTextExecutionFailure>(
+            Assert.IsType<DocumentDualRunCandidateTextExecutionFailure>(
                 report.Failure);
 
         Assert.Contains(
@@ -395,8 +395,8 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 "Recovered by OCR.");
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     new RecordingCandidateObserver(),
                     new FakeDocumentRasterizer(),
                     new FakePageLayoutAnalyzer(
@@ -435,7 +435,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Completed,
+            DocumentDualRunCandidateTextExecutionStatus.Completed,
             report.Status);
 
         var comparison =
@@ -535,8 +535,8 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 page.Blocks[0].Text);
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     new RecordingCandidateObserver(),
                     new FakeDocumentRasterizer(),
                     new FakePageLayoutAnalyzer(
@@ -576,7 +576,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Completed,
+            DocumentDualRunCandidateTextExecutionStatus.Completed,
             report.Status);
 
         var comparison =
@@ -686,8 +686,8 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 "Recovered by OCR.");
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     new RecordingCandidateObserver(),
                     new FakeDocumentRasterizer(),
                     new FakePageLayoutAnalyzer(
@@ -724,7 +724,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Completed,
+            DocumentDualRunCandidateTextExecutionStatus.Completed,
             report.Status);
 
         var comparison =
@@ -832,8 +832,8 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 "Recovered by OCR.");
 
         var runner =
-            new DocumentControlledCandidateTextExecutionRunner(
-                new DocumentControlledCandidateTextExecutionDependencies(
+            new DocumentDualRunCandidateTextExecutionRunner(
+                new DocumentDualRunCandidateTextExecutionDependencies(
                     new RecordingCandidateObserver(),
                     new FakeDocumentRasterizer(),
                     candidateLayoutAnalyzer,
@@ -866,7 +866,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
                 SourceSha);
 
         Assert.Equal(
-            DocumentControlledCandidateTextExecutionStatus.Completed,
+            DocumentDualRunCandidateTextExecutionStatus.Completed,
             report.Status);
 
         var comparison =
@@ -909,7 +909,7 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
     private static async Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
         ProcessAsync(
             DocumentExtractionResult extraction,
-            DocumentControlledCandidateTextExecutionDependencies? controlled)
+            DocumentDualRunCandidateTextExecutionDependencies? controlled)
     {
         var page =
             Assert.Single(
@@ -1438,13 +1438,13 @@ public sealed class DocumentControlledCandidateOcrTextExecutionTests
     }
 
     private sealed class RecordingCandidateObserver
-        : IDocumentControlledCandidateTextExecutionObserver
+        : IDocumentDualRunCandidateTextExecutionObserver
     {
-        public List<DocumentControlledCandidateTextExecutionReport> Reports { get; } =
+        public List<DocumentDualRunCandidateTextExecutionReport> Reports { get; } =
             [];
 
         public ValueTask ObserveAsync(
-            DocumentControlledCandidateTextExecutionReport report,
+            DocumentDualRunCandidateTextExecutionReport report,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

@@ -56,8 +56,8 @@ public sealed class DocumentProcessor
         _authoritativeVisualPlanningRunner;
     private readonly DocumentDualRunPlanningDependencies? _dualRunPlanningDependencies;
     private readonly DocumentDualRunPlanningRunner? _dualRunPlanningRunner;
-    private readonly DocumentControlledCandidateTextExecutionRunner?
-        _controlledCandidateTextExecutionRunner;
+    private readonly DocumentDualRunCandidateTextExecutionRunner?
+        _dualRunCandidateTextExecutionRunner;
     private readonly string _engineVersion;
     private readonly ProcessingComponentIdentity _nativeExtractionIdentity;
 
@@ -79,8 +79,8 @@ public sealed class DocumentProcessor
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity,
         DocumentDualRunPlanningDependencies? dualRunPlanning = null,
-        DocumentControlledCandidateTextExecutionDependencies?
-            controlledCandidateTextExecution = null)
+        DocumentDualRunCandidateTextExecutionDependencies?
+            dualRunCandidateTextExecution = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -93,7 +93,7 @@ public sealed class DocumentProcessor
             requireHybridExecution:
                 false,
             dualRunPlanning,
-            controlledCandidateTextExecution)
+            dualRunCandidateTextExecution)
     {
     }
 
@@ -109,8 +109,8 @@ public sealed class DocumentProcessor
         string engineVersion,
         ProcessingComponentIdentity nativeExtractionIdentity,
         DocumentDualRunPlanningDependencies? dualRunPlanning = null,
-        DocumentControlledCandidateTextExecutionDependencies?
-            controlledCandidateTextExecution = null)
+        DocumentDualRunCandidateTextExecutionDependencies?
+            dualRunCandidateTextExecution = null)
         : this(
             documentTypeDetector,
             nativeExtractor,
@@ -124,7 +124,7 @@ public sealed class DocumentProcessor
             requireHybridExecution:
                 true,
             dualRunPlanning,
-            controlledCandidateTextExecution)
+            dualRunCandidateTextExecution)
     {
     }
 
@@ -138,8 +138,8 @@ public sealed class DocumentProcessor
         ProcessingComponentIdentity nativeExtractionIdentity,
         bool requireHybridExecution = false,
         DocumentDualRunPlanningDependencies? dualRunPlanning = null,
-        DocumentControlledCandidateTextExecutionDependencies?
-            controlledCandidateTextExecution = null)
+        DocumentDualRunCandidateTextExecutionDependencies?
+            dualRunCandidateTextExecution = null)
     {
         _documentTypeDetector =
             documentTypeDetector ??
@@ -186,19 +186,19 @@ public sealed class DocumentProcessor
                 : new DocumentDualRunPlanningRunner(
                     dualRunPlanning);
 
-        if (controlledCandidateTextExecution is not null &&
+        if (dualRunCandidateTextExecution is not null &&
             dualRunPlanning is null)
         {
             throw new ArgumentException(
-                "Controlled candidate execution requires Dual Run planning.",
-                nameof(controlledCandidateTextExecution));
+                "Dual Run candidate execution requires Dual Run planning.",
+                nameof(dualRunCandidateTextExecution));
         }
 
-        _controlledCandidateTextExecutionRunner =
-            controlledCandidateTextExecution is null
+        _dualRunCandidateTextExecutionRunner =
+            dualRunCandidateTextExecution is null
                 ? null
-                : new DocumentControlledCandidateTextExecutionRunner(
-                    controlledCandidateTextExecution);
+                : new DocumentDualRunCandidateTextExecutionRunner(
+                    dualRunCandidateTextExecution);
 
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -595,27 +595,27 @@ public sealed class DocumentProcessor
                     segmentation,
                     provenanceContext);
 
-        DocumentControlledCandidateTextExecutionReport?
-            controlledCandidateTextExecutionReport =
+        DocumentDualRunCandidateTextExecutionReport?
+            dualRunCandidateTextExecutionReport =
                 null;
 
-        if (_controlledCandidateTextExecutionRunner is not null)
+        if (_dualRunCandidateTextExecutionRunner is not null)
         {
             if (dualRunPlanningReport is null)
             {
                 throw new InvalidOperationException(
-                    "Controlled candidate execution was configured without a Dual Run planning report.");
+                    "Dual Run candidate execution was configured without a Dual Run planning report.");
             }
 
-            if (_controlledCandidateTextExecutionRunner
+            if (_dualRunCandidateTextExecutionRunner
                 .CanExecuteOcrBackedText)
             {
                 prepared.ResetForRead();
 
                 try
                 {
-                    controlledCandidateTextExecutionReport =
-                        await _controlledCandidateTextExecutionRunner
+                    dualRunCandidateTextExecutionReport =
+                        await _dualRunCandidateTextExecutionRunner
                             .RunAsync(
                             prepared.Source,
                             format,
@@ -628,15 +628,15 @@ public sealed class DocumentProcessor
                 }
                 finally
                 {
-                    // Controlled candidate source access must not leak stream
+                    // Dual Run candidate source access must not leak stream
                     // position into caller-visible source custody.
                     prepared.ResetForRead();
                 }
             }
             else
             {
-                controlledCandidateTextExecutionReport =
-                    await _controlledCandidateTextExecutionRunner
+                dualRunCandidateTextExecutionReport =
+                    await _dualRunCandidateTextExecutionRunner
                         .RunAsync(
                         extraction,
                         assembledPages,

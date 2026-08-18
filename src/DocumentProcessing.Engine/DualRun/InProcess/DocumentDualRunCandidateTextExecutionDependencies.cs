@@ -6,7 +6,7 @@ using DocumentProcessing.Core.DualRun;
 namespace DocumentProcessing.Engine.DualRun.InProcess;
 
 /// <summary>
-/// Explicit opt-in composition for controlled candidate text execution.
+/// Explicit opt-in composition for Dual Run candidate text execution.
 ///
 /// The one-argument constructor preserves H.4D.1 NativeText-only behavior.
 /// The four-argument constructor additionally enables H.4D.2B OCR-backed
@@ -14,7 +14,7 @@ namespace DocumentProcessing.Engine.DualRun.InProcess;
 ///
 /// Visual execution is intentionally absent from both compositions.
 /// </summary>
-public sealed class DocumentControlledCandidateTextExecutionDependencies
+public sealed class DocumentDualRunCandidateTextExecutionDependencies
 {
     #region Variables and Constants
 
@@ -22,8 +22,8 @@ public sealed class DocumentControlledCandidateTextExecutionDependencies
 
     #region ctor
 
-    public DocumentControlledCandidateTextExecutionDependencies(
-        IDocumentControlledCandidateTextExecutionObserver observer)
+    public DocumentDualRunCandidateTextExecutionDependencies(
+        IDocumentDualRunCandidateTextExecutionObserver observer)
     {
         Observer =
             observer ??
@@ -31,8 +31,8 @@ public sealed class DocumentControlledCandidateTextExecutionDependencies
                 nameof(observer));
     }
 
-    public DocumentControlledCandidateTextExecutionDependencies(
-        IDocumentControlledCandidateTextExecutionObserver observer,
+    public DocumentDualRunCandidateTextExecutionDependencies(
+        IDocumentDualRunCandidateTextExecutionObserver observer,
         IDocumentRasterizer documentRasterizer,
         IPageLayoutAnalyzer layoutAnalyzer,
         IRegionTextRecognizer textRecognizer)
@@ -59,7 +59,7 @@ public sealed class DocumentControlledCandidateTextExecutionDependencies
 
     #region Properties
 
-    public IDocumentControlledCandidateTextExecutionObserver Observer { get; }
+    public IDocumentDualRunCandidateTextExecutionObserver Observer { get; }
 
     internal IDocumentRasterizer? DocumentRasterizer { get; }
 
