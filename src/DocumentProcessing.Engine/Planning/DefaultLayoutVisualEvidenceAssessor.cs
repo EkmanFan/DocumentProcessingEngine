@@ -18,6 +18,8 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DefaultLayoutVisualEvidenceAssessor
 {
+    #region Variables and Constants
+
     // Reuses the already validated real-corpus Figure/Caption spatial oracle.
     private const double MinimumHorizontalOverlap =
         0.40;
@@ -30,6 +32,14 @@ public sealed class DefaultLayoutVisualEvidenceAssessor
     // text-like layout observations.
     private const double MinimumIndependentFigureVisibleAreaRatio =
         0.25;
+
+    #endregion
+
+    #region ctor
+
+    #endregion
+
+    #region Methods Assessment
 
     public IReadOnlyList<LayoutVisualEvidence> Assess(
         LayoutAnalysisResult layout)
@@ -116,6 +126,10 @@ public sealed class DefaultLayoutVisualEvidenceAssessor
             LayoutObservationKind.Text or
             LayoutObservationKind.Heading or
             LayoutObservationKind.Table;
+
+    #endregion
+
+    #region Methods Geometry
 
     private static double VisiblePageAreaRatio(
         NormalizedRectangle bounds)
@@ -260,4 +274,6 @@ public sealed class DefaultLayoutVisualEvidenceAssessor
 
         return 0;
     }
+
+    #endregion
 }

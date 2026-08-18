@@ -16,6 +16,12 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DocumentControlledCandidateTextExecutionDependencies
 {
+    #region Variables and Constants
+
+    #endregion
+
+    #region ctor
+
     public DocumentControlledCandidateTextExecutionDependencies(
         IDocumentControlledCandidateTextExecutionObserver observer)
     {
@@ -49,6 +55,10 @@ public sealed class DocumentControlledCandidateTextExecutionDependencies
                 nameof(textRecognizer));
     }
 
+    #endregion
+
+    #region Properties
+
     public IDocumentControlledCandidateTextExecutionObserver Observer { get; }
 
     internal IDocumentRasterizer? DocumentRasterizer { get; }
@@ -57,8 +67,14 @@ public sealed class DocumentControlledCandidateTextExecutionDependencies
 
     internal IRegionTextRecognizer? TextRecognizer { get; }
 
+    #endregion
+
+    #region Methods
+
     internal bool CanExecuteOcrBackedText =>
         DocumentRasterizer is not null &&
         LayoutAnalyzer is not null &&
         TextRecognizer is not null;
+
+    #endregion
 }

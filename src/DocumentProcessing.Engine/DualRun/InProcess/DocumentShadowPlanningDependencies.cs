@@ -12,6 +12,12 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DocumentShadowPlanningDependencies
 {
+    #region Variables and Constants
+
+    #endregion
+
+    #region ctor
+
     public DocumentShadowPlanningDependencies(
         IVisualRasterObservationSource visualRasterObservationSource,
         IDocumentShadowPlanningObserver observer,
@@ -43,6 +49,10 @@ public sealed class DocumentShadowPlanningDependencies
                 .CreateDefault();
     }
 
+    #endregion
+
+    #region Properties
+
     public IVisualRasterObservationSource VisualRasterObservationSource { get; }
 
     public IDocumentShadowPlanningObserver Observer { get; }
@@ -52,4 +62,10 @@ public sealed class DocumentShadowPlanningDependencies
     public DefaultVisualStructuralEvidenceEnricher StructuralEvidenceEnricher { get; }
 
     public GuardedDocumentPageExecutionPlanner GuardedPlanner { get; }
+
+    #endregion
+
+    #region Methods
+
+    #endregion
 }

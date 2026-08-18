@@ -5,24 +5,30 @@ using DocumentProcessing.Core.Reconciliation;
 namespace DocumentProcessing.Engine.Orchestration;
 
 /// <summary>
-/// Guarded shadow integration of the legacy route planner and the new two-axis
+/// Guarded integration of the authoritative route planner and the two-axis
 /// planning chain.
 ///
 /// The planner requires complete visual-observation coverage for every source
-/// visual occurrence. It produces both the legacy decision and the candidate
+/// visual occurrence. It produces the authoritative decision plus the candidate
 /// execution plan, then enforces text-safety invariants before returning.
 ///
-/// Phase 21E.1H.4C wires this planner into <see cref="DocumentProcessor"/>
-/// only through non-authoritative shadow planning. Runtime execution remains
-/// driven exclusively by the legacy planner.
+/// The same deterministic planning logic can be consumed by authoritative
+/// execution and by non-authoritative Dual Run evaluation. This class performs
+/// no page execution.
 /// </summary>
 public sealed class GuardedDocumentPageExecutionPlanner
 {
+    #region Variables and Constants
+
     private readonly IPageProcessingAssessor _nativeAssessor;
     private readonly IPageProcessingPolicy _legacyPolicy;
     private readonly DefaultVisualEvidenceAssessor _visualAssessor;
     private readonly IPageProcessingRequirementsPolicy _requirementsPolicy;
     private readonly DefaultPageExecutionPlanCompiler _executionPlanCompiler;
+
+    #endregion
+
+    #region ctor
 
     public GuardedDocumentPageExecutionPlanner(
         IPageProcessingAssessor nativeAssessor,
@@ -56,6 +62,10 @@ public sealed class GuardedDocumentPageExecutionPlanner
             throw new ArgumentNullException(
                 nameof(executionPlanCompiler));
     }
+
+    #endregion
+
+    #region Methods Planning
 
     public IReadOnlyList<GuardedPagePlanningDecision> Plan(
         DocumentExtractionResult extraction,
@@ -168,6 +178,10 @@ public sealed class GuardedDocumentPageExecutionPlanner
             new DefaultPageProcessingRequirementsPolicy(),
             new DefaultPageExecutionPlanCompiler());
 
+    #endregion
+
+    #region Methods Validation
+
     private static void ValidateObservationCoverage(
         DocumentExtractionPage page,
         PageVisualEvidenceObservations observations,
@@ -254,4 +268,6 @@ public sealed class GuardedDocumentPageExecutionPlanner
                 $"permitted for native-text status '{nativeTextStatus}'.");
         }
     }
+
+    #endregion
 }

@@ -13,8 +13,14 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DocumentPageProcessingPlanner
 {
+    #region Variables and Constants
+
     private readonly IPageProcessingAssessor _assessor;
     private readonly IPageProcessingPolicy _policy;
+
+    #endregion
+
+    #region ctor
 
     public DocumentPageProcessingPlanner(
         IPageProcessingAssessor assessor,
@@ -30,6 +36,10 @@ public sealed class DocumentPageProcessingPlanner
             throw new ArgumentNullException(
                 nameof(policy));
     }
+
+    #endregion
+
+    #region Methods
 
     public IReadOnlyList<PageProcessingDecision> Plan(
         DocumentExtractionResult extraction)
@@ -78,4 +88,6 @@ public sealed class DocumentPageProcessingPlanner
         new(
             new DefaultPageProcessingAssessor(),
             new DefaultPageProcessingPolicy());
+
+    #endregion
 }

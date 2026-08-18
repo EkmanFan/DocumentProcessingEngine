@@ -10,6 +10,16 @@ namespace DocumentProcessing.Engine.Orchestration;
 public sealed class DefaultPageProcessingPolicy
     : IPageProcessingPolicy
 {
+    #region Variables and Constants
+
+    #endregion
+
+    #region ctor
+
+    #endregion
+
+    #region Methods
+
     public PageProcessingPlan Decide(
         PageProcessingAssessment assessment)
     {
@@ -41,4 +51,6 @@ public sealed class DefaultPageProcessingPolicy
         return new PageProcessingPlan(
             route);
     }
+
+    #endregion
 }

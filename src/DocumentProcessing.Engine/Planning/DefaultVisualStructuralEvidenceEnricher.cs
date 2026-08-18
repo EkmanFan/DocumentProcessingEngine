@@ -16,6 +16,8 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DefaultVisualStructuralEvidenceEnricher
 {
+    #region Variables and Constants
+
     private const double StrongHeadingDistance =
         0.025;
 
@@ -78,6 +80,14 @@ public sealed class DefaultVisualStructuralEvidenceEnricher
 
     private const int CaptionMaximumCharacterCount =
         320;
+
+    #endregion
+
+    #region ctor
+
+    #endregion
+
+    #region Methods Public
 
     public IReadOnlyList<PageVisualEvidenceObservations> Enrich(
         DocumentExtractionResult extraction,
@@ -200,7 +210,9 @@ public sealed class DefaultVisualStructuralEvidenceEnricher
         return result;
     }
 
-    #region Page and structural-block preparation
+    #endregion
+
+    #region Methods Structural Block Preparation
 
     private static void ValidatePageAlignment(
         DocumentExtractionPage extractionPage,
@@ -289,7 +301,7 @@ public sealed class DefaultVisualStructuralEvidenceEnricher
 
     #endregion
 
-    #region Visual enrichment
+    #region Methods Visual Enrichment
 
     private static VisualEvidenceObservation EnrichVisual(
         VisualRasterObservation raster,
@@ -383,7 +395,7 @@ public sealed class DefaultVisualStructuralEvidenceEnricher
 
     #endregion
 
-    #region Heading association
+    #region Methods Heading Association
 
     private static HeadingAssociationEvidenceKind AnalyzeHeadingAssociation(
         NormalizedRectangle visual,
@@ -559,7 +571,7 @@ public sealed class DefaultVisualStructuralEvidenceEnricher
 
     #endregion
 
-    #region Native-text containment
+    #region Methods Native Text Containment
 
     private static NativeTextContainmentEvidenceKind AnalyzeTextContainment(
         NormalizedRectangle visual,
@@ -683,7 +695,7 @@ public sealed class DefaultVisualStructuralEvidenceEnricher
 
     #endregion
 
-    #region Caption association
+    #region Methods Caption Association
 
     private static CaptionAssociationEvidenceKind AnalyzeCaptionAssociation(
         NormalizedRectangle visual,
@@ -941,7 +953,7 @@ public sealed class DefaultVisualStructuralEvidenceEnricher
 
     #endregion
 
-    #region Geometry helpers
+    #region Methods Geometry Helpers
 
     private static bool ContainsPoint(
         NormalizedRectangle container,
@@ -1071,7 +1083,7 @@ public sealed class DefaultVisualStructuralEvidenceEnricher
 
     #endregion
 
-    #region Private evidence records
+    #region Internal Evidence Types
 
     private sealed record StructuralBlock(
         int SourceSequence,

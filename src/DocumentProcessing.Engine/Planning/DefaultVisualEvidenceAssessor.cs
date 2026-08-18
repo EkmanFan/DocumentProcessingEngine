@@ -13,6 +13,8 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DefaultVisualEvidenceAssessor
 {
+    #region Variables and Constants
+
     private const double SmallForegroundMaximumRatio =
         0.005;
 
@@ -30,6 +32,14 @@ public sealed class DefaultVisualEvidenceAssessor
 
     private const double LargeIndependentMinimumForegroundRatio =
         0.05;
+
+    #endregion
+
+    #region ctor
+
+    #endregion
+
+    #region Methods
 
     public VisualElementEvidence Assess(
         VisualEvidenceObservation observation)
@@ -122,4 +132,6 @@ public sealed class DefaultVisualEvidenceAssessor
 
         return VisualEvidenceKind.Unknown;
     }
+
+    #endregion
 }

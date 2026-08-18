@@ -24,11 +24,17 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DocumentControlledCandidateTextExecutionRunner
 {
+    #region Variables and Constants
+
     private readonly DocumentControlledCandidateTextExecutionDependencies
         _dependencies;
 
     private readonly DocumentControlledCandidateOcrTextPageExecutor?
         _ocrTextPageExecutor;
+
+    #endregion
+
+    #region ctor
 
     public DocumentControlledCandidateTextExecutionRunner(
         DocumentControlledCandidateTextExecutionDependencies dependencies)
@@ -45,6 +51,10 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                     dependencies.TextRecognizer!)
                 : null;
     }
+
+    #endregion
+
+    #region Methods Execution
 
     internal bool CanExecuteOcrBackedText =>
         _ocrTextPageExecutor is not null;
@@ -387,6 +397,10 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
         return report;
     }
 
+    #endregion
+
+    #region Methods Comparison
+
     private static DocumentControlledCandidateTextPageComparison Compare(
         HybridDocumentPage authoritativePage,
         HybridDocumentPage candidatePage,
@@ -466,6 +480,10 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
                 throw new InvalidOperationException(
                     $"Text mode '{textMode}' is not an OCR-backed controlled mode.")
         };
+
+    #endregion
+
+    #region Methods Validation
 
     private static void ValidateCoverage(
         DocumentExtractionResult extraction,
@@ -601,6 +619,10 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
         return true;
     }
 
+    #endregion
+
+    #region Methods Telemetry
+
     private async ValueTask DeliverBestEffortAsync(
         DocumentControlledCandidateTextExecutionReport report,
         CancellationToken cancellationToken)
@@ -625,4 +647,6 @@ public sealed class DocumentControlledCandidateTextExecutionRunner
             // Controlled candidate telemetry is non-authoritative.
         }
     }
+
+    #endregion
 }

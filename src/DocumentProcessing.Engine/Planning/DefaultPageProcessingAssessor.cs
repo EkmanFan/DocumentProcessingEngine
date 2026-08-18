@@ -21,6 +21,8 @@ namespace DocumentProcessing.Engine.Orchestration;
 public sealed class DefaultPageProcessingAssessor
     : IPageProcessingAssessor
 {
+    #region Variables and Constants
+
     /// <summary>
     /// V1 threshold identifying a page whose visible content is materially
     /// image-backed. It is used as a verification trigger, not as evidence of
@@ -28,6 +30,14 @@ public sealed class DefaultPageProcessingAssessor
     /// </summary>
     public const double ImageBackedVerificationAreaRatio =
         0.60;
+
+    #endregion
+
+    #region ctor
+
+    #endregion
+
+    #region Methods
 
     public PageProcessingAssessment Assess(
         DocumentExtractionPage page)
@@ -120,4 +130,6 @@ public sealed class DefaultPageProcessingAssessor
 
         return false;
     }
+
+    #endregion
 }

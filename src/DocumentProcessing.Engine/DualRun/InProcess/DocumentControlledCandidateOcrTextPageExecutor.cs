@@ -21,8 +21,14 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 internal sealed class DocumentControlledCandidateOcrTextPageExecutor
 {
+    #region Variables and Constants
+
     private readonly IPageLayoutAnalyzer _layoutAnalyzer;
     private readonly TargetedHybridTextExecutor _textExecutor;
+
+    #endregion
+
+    #region ctor
 
     public DocumentControlledCandidateOcrTextPageExecutor(
         IPageLayoutAnalyzer layoutAnalyzer,
@@ -37,6 +43,10 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
             new TargetedHybridTextExecutor(
                 textRecognizer);
     }
+
+    #endregion
+
+    #region Methods Execution
 
     public async ValueTask<(
         HybridDocumentPage Page,
@@ -345,6 +355,10 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
                 observation =>
                     observation.ObservationSequence);
 
+    #endregion
+
+    #region Methods Validation
+
     private static void ValidateRequest(
         DocumentExtractionPage sourcePage,
         NativeTextStatus nativeTextStatus,
@@ -439,4 +453,6 @@ internal sealed class DocumentControlledCandidateOcrTextPageExecutor
         stream.Position =
             0;
     }
+
+    #endregion
 }

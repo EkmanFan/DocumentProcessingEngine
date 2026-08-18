@@ -14,7 +14,13 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DocumentShadowPlanningRunner
 {
+    #region Variables and Constants
+
     private readonly DocumentShadowPlanningDependencies _dependencies;
+
+    #endregion
+
+    #region ctor
 
     public DocumentShadowPlanningRunner(
         DocumentShadowPlanningDependencies dependencies)
@@ -24,6 +30,10 @@ public sealed class DocumentShadowPlanningRunner
             throw new ArgumentNullException(
                 nameof(dependencies));
     }
+
+    #endregion
+
+    #region Methods Execution
 
     public ValueTask<DocumentShadowPlanningReport> RunAsync(
         DocumentSource source,
@@ -214,6 +224,10 @@ public sealed class DocumentShadowPlanningRunner
         return report;
     }
 
+    #endregion
+
+    #region Methods Telemetry
+
     private async ValueTask DeliverBestEffortAsync(
         DocumentShadowPlanningReport report,
         CancellationToken cancellationToken)
@@ -239,6 +253,10 @@ public sealed class DocumentShadowPlanningRunner
             // report cannot change the authoritative legacy execution path.
         }
     }
+
+    #endregion
+
+    #region Methods Validation and Comparison
 
     private static void ValidateAuthoritativeLegacyCoverage(
         DocumentExtractionResult extraction,
@@ -306,4 +324,6 @@ public sealed class DocumentShadowPlanningRunner
 
         return comparisons;
     }
+
+    #endregion
 }

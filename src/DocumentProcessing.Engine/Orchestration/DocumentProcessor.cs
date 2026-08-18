@@ -41,7 +41,7 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DocumentProcessor
 {
-    #region Dependencies and construction
+    #region Variables and Constants
 
     private readonly IDocumentTypeDetector _documentTypeDetector;
     private readonly IDocumentExtractor _nativeExtractor;
@@ -56,6 +56,10 @@ public sealed class DocumentProcessor
         _controlledCandidateTextExecutionRunner;
     private readonly string _engineVersion;
     private readonly ProcessingComponentIdentity _nativeExtractionIdentity;
+
+    #endregion
+
+    #region ctor
 
     /// <summary>
     /// Backward-compatible native-capable composition.
@@ -211,7 +215,7 @@ public sealed class DocumentProcessor
 
     #endregion
 
-    #region Public processing
+    #region Methods Public Processing
 
     public Task<DocumentIngestionResult> ProcessAsync(
         DocumentSource source,
@@ -644,7 +648,7 @@ public sealed class DocumentProcessor
 
     #endregion
 
-    #region Page planning and route execution
+    #region Methods Page Planning and Route Execution
 
     private bool RequiresAuthoritativeVisualPlanning(
         DocumentExtractionResult extraction,
@@ -952,6 +956,8 @@ public sealed class DocumentProcessor
 
     #endregion
 
+    #region Methods Validation
+
     private static void ValidateExtraction(
         DocumentFormatId detectedFormat,
         DocumentExtractionResult extraction)
@@ -1018,6 +1024,10 @@ public sealed class DocumentProcessor
         }
     }
 
+    #endregion
+
+    #region Internal Types
+
     /// <summary>
     /// Makes the input repeatably readable while computing the custody root.
     ///
@@ -1034,12 +1044,18 @@ public sealed class DocumentProcessor
     private sealed class PreparedDocumentSource
         : IAsyncDisposable
     {
+        #region Variables and Constants
+
         private const int BufferSize =
             81920;
 
         private readonly Stream? _ownedStream;
         private readonly Stream? _borrowedStream;
         private readonly long? _borrowedOriginalPosition;
+
+        #endregion
+
+        #region ctor
 
         private PreparedDocumentSource(
             DocumentSource source,
@@ -1068,11 +1084,19 @@ public sealed class DocumentProcessor
                 borrowedOriginalPosition;
         }
 
+        #endregion
+
+        #region Properties
+
         public DocumentSource Source { get; }
 
         public string Sha256 { get; }
 
         public long ByteLength { get; }
+
+        #endregion
+
+        #region Methods Creation and Lifecycle
 
         public static async ValueTask<PreparedDocumentSource> CreateAsync(
             DocumentSource source,
@@ -1232,6 +1256,10 @@ public sealed class DocumentProcessor
             }
         }
 
+        #endregion
+
+        #region Methods Stream and Hash
+
         private static async ValueTask<SourceByteIdentity> ReadAndHashAsync(
             Stream source,
             Stream? destination,
@@ -1316,8 +1344,16 @@ public sealed class DocumentProcessor
             }
         }
 
+        #endregion
+
+        #region Internal Types
+
         private readonly record struct SourceByteIdentity(
             string Sha256,
             long ByteLength);
+
+        #endregion
     }
+
+    #endregion
 }

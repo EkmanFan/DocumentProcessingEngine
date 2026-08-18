@@ -11,6 +11,16 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 internal static class VisualEvidenceDispositionPolicy
 {
+    #region Variables and Constants
+
+    #endregion
+
+    #region ctor
+
+    #endregion
+
+    #region Methods
+
     public static VisualDisposition Decide(
         VisualEvidenceKind evidenceKind)
     {
@@ -46,4 +56,6 @@ internal static class VisualEvidenceDispositionPolicy
                     "Unsupported visual evidence kind.")
         };
     }
+
+    #endregion
 }

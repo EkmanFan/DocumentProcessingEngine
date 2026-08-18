@@ -16,6 +16,16 @@ namespace DocumentProcessing.Engine.Orchestration;
 public sealed class DefaultPageProcessingRequirementsPolicy
     : IPageProcessingRequirementsPolicy
 {
+    #region Variables and Constants
+
+    #endregion
+
+    #region ctor
+
+    #endregion
+
+    #region Methods
+
     public PageProcessingRequirements Decide(
         PageProcessingEvidence evidence)
     {
@@ -95,4 +105,6 @@ public sealed class DefaultPageProcessingRequirementsPolicy
                 visual.Disposition !=
                 VisualDisposition.RequiresVisualAnalysis);
     }
+
+    #endregion
 }

@@ -11,6 +11,16 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 public sealed class DefaultPageExecutionPlanCompiler
 {
+    #region Variables and Constants
+
+    #endregion
+
+    #region ctor
+
+    #endregion
+
+    #region Methods
+
     public PageExecutionPlan Compile(
         PageProcessingRequirements requirements)
     {
@@ -89,4 +99,6 @@ public sealed class DefaultPageExecutionPlanCompiler
             visual.SourceVisualIndex,
             action);
     }
+
+    #endregion
 }
