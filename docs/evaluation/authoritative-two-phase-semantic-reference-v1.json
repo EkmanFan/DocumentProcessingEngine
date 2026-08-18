@@ -1,0 +1,156 @@
+{
+  "schemaVersion": "document-processing-authoritative-two-phase-semantic-reference-v1",
+  "implementationCommit": "604bf4063cf868b6d229d02359e36d6e4849ff15",
+  "status": "PASS",
+  "referencePurpose": "Frozen semantic reference for the Authoritative two-phase path.",
+  "publicEntryPoint": "DocumentProcessor.ProcessAsync",
+  "architecture": {
+    "layoutPhaseCompletesBeforeSemanticExecution": true,
+    "diskSpoolBetweenPhases": true,
+    "fullPageRasterBytesPersistedInSpool": false,
+    "semanticExecutionUsesPrecomputedLayout": true,
+    "targetedRegionRenderingDuringOcrPhase": true,
+    "plainNativeOnlyBypassesRasterAndLayout": true
+  },
+  "semanticAcceptance": {
+    "permanentStage1": {
+      "nativeProvenance": "PASS",
+      "layoutSemanticControls": "7/7 PASS",
+      "realPpAndPaddleOcr": "PASS",
+      "figureOcr": 0,
+      "deterministicRegressionBefore": "643/643 PASS",
+      "deterministicRegressionAfter": "643/643 PASS"
+    },
+    "publicStage2": {
+      "controls": [
+        "de-decretis-native",
+        "habermas-p40",
+        "habermas-p43",
+        "habermas-p44",
+        "ehrman-p233",
+        "ehrman-p380",
+        "ehrman-p405"
+      ],
+      "figureOcr": 0,
+      "deterministicRegressionAfter": "643/643 PASS"
+    }
+  },
+  "acceptedControls": {
+    "deDecretisRepresentative": {
+      "nativeWords": 612,
+      "nativeTextStatus": "Healthy",
+      "route": "NativeOnly",
+      "layoutCalls": 0,
+      "ocrCalls": 0,
+      "readingOrder": "PASS"
+    },
+    "habermas": {
+      "habermas-p40": {
+        "nativeWords": 196,
+        "nativeTextStatus": "Healthy",
+        "route": "NativeOnly",
+        "layoutCalls": 1,
+        "ocrCalls": 0,
+        "preservedVisualCount": 1,
+        "readingOrder": "PASS",
+        "exactVisualOracle": {
+          "observationSequence": 0,
+          "width": 1678,
+          "height": 1928,
+          "bytes": 798598,
+          "sha256": "bffd8d7fd27462ab530f50c483aa39bad7849653c81960d15e8cf73c8c829f03"
+        }
+      },
+      "habermas-p43": {
+        "nativeWords": 360,
+        "nativeTextStatus": "Healthy",
+        "route": "NativeOnly",
+        "layoutCalls": 1,
+        "ocrCalls": 0,
+        "preservedVisualCount": 1,
+        "readingOrder": "PASS",
+        "exactVisualOracle": {
+          "observationSequence": 0,
+          "width": 1702,
+          "height": 1173,
+          "bytes": 878872,
+          "sha256": "bf20176970e097a3d20d1142db44488f7aba4e7ca8e76c5c8bf7b6b799b813f2"
+        }
+      },
+      "habermas-p44": {
+        "nativeWords": 315,
+        "nativeTextStatus": "Healthy",
+        "route": "NativeOnly",
+        "layoutCalls": 1,
+        "ocrCalls": 0,
+        "preservedVisualCount": 1,
+        "readingOrder": "PASS",
+        "exactVisualOracle": null
+      }
+    },
+    "ehrman": {
+      "p233": {
+        "nativeTextStatus": "Missing",
+        "route": "LayoutWithTargetedOcrRecovery",
+        "layoutCalls": 1,
+        "ocrCalls": 7,
+        "figureOcr": 0,
+        "readingOrder": "PASS",
+        "preservedVisual": {
+          "observationSequence": 4,
+          "width": 841,
+          "height": 1398,
+          "bytes": 1505768,
+          "sha256": "c4170e36da6d0bfdec419f8db199ba972baf3075887a264aa2e9e4d46e6e4e77"
+        }
+      },
+      "p380": {
+        "nativeTextStatus": "Unverified",
+        "route": "LayoutWithTargetedOcrReconciliation",
+        "layoutCalls": 1,
+        "ocrCalls": 9,
+        "figureOcr": 0,
+        "reconciliation": {
+          "observationSequence": 5,
+          "decision": "Conflict",
+          "selectedOrigin": "None",
+          "resolved": false,
+          "divergence": true,
+          "nativeBlockSourceSequence": 2
+        }
+      },
+      "p405": {
+        "nativeTextStatus": "Unverified",
+        "route": "LayoutWithTargetedOcrReconciliation",
+        "layoutCalls": 1,
+        "ocrCalls": 8,
+        "figureOcr": 0,
+        "reconciliation": {
+          "observationSequence": 9,
+          "decision": "Agreement",
+          "selectedOrigin": "NativePdf",
+          "resolved": true,
+          "divergence": false,
+          "nativeBlockSourceSequence": 6
+        }
+      }
+    }
+  },
+  "evidenceSha256": {
+    "de-decretis-native": "33a05149770bbbe1c183d164a72c251ffd398aa3ab27cec0c98210dd6ece459b",
+    "habermas-p40": "4d25409ed09f6091237514d3656d8bc6c1ff7ff07f1956ac43e806b9575b716e",
+    "habermas-p43": "c535606a4132e7c1b54a9b68e30bc4c84393c6b287eb6165b870ef743cef8a5b",
+    "habermas-p44": "1b2014355556672b8161fd8d9d853d14f83d68f2269451f8258cf3b7f996eb66",
+    "ehrman-p233": "454d4beabe56d12ef9278ed7f8ec48dcd6b3e61fc41e37b4071c597711868865",
+    "ehrman-p380": "8c0dce64a45c262a6acee9bbc3e3c4f7ecd37052fdb60eb91d3544fde2ea4f8d",
+    "ehrman-p405": "49793878d4cba6aae9d19826a2d9f5f34e0ad881fdffc3097605b0e75f9a07ef",
+    "summary": "5f744ad616b9a793bb709d55c424338012abbb8de4e0b40f44de642d22b0ebf1",
+    "postStage2Tests": "d6bda163ad34a859ae88e7a2f68828821a93f58d3dcfe6654db7f4d581c26b08"
+  },
+  "explicitNonClaims": [
+    "The production engine does not yet own automatic PP-StructureV3/PaddleOCR process lifecycle.",
+    "This reference does not establish document-level PP-once/Paddle-once runtime lifecycle.",
+    "Memory-envelope acceptance is not yet established.",
+    "Performance acceptance is not yet established."
+  ]
+}
