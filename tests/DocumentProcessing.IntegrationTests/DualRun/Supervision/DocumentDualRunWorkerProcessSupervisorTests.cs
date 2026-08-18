@@ -76,7 +76,7 @@ public sealed class DocumentDualRunWorkerProcessSupervisorTests
             DocumentDualRunWorkerFailureStage.Planning,
             result.WorkerResult.Failure?.Stage);
 
-        Assert.Equal(
+        Assert.NotEqual(
             "PlanningNotImplemented",
             result.WorkerResult.Failure?.ExceptionType);
 

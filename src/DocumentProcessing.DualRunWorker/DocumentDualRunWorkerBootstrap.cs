@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
+using DocumentProcessing.Core.DualRun;
 using DocumentProcessing.Core.DualRun.Transport;
 
 namespace DocumentProcessing.DualRunWorker;
@@ -94,18 +95,56 @@ internal static class DocumentDualRunWorkerBootstrap
                     .ConfigureAwait(false);
             }
 
-            var result =
-                new DocumentDualRunWorkerResult(
-                    request.JobId,
-                    request.ExecutionMode,
-                    WorkerEngineVersion(),
-                    request.SourceDocumentSha256,
-                    DocumentDualRunWorkerResultStatus.Failed,
-                    [],
-                    new DocumentDualRunWorkerFailure(
-                        DocumentDualRunWorkerFailureStage.Planning,
-                        "PlanningNotImplemented",
-                        "Dual Run worker planning execution is not wired at this checkpoint."));
+            DocumentDualRunWorkerResult result;
+
+            if (request.ExecutionMode ==
+                DocumentDualRunExecutionMode.PlanningOnly)
+            {
+                try
+                {
+                    var pages =
+                        await new DocumentDualRunPlanningOnlyExecutor()
+                            .ExecuteAsync(
+                                jobDirectoryPath,
+                                request)
+                            .ConfigureAwait(false);
+
+                    result =
+                        new DocumentDualRunWorkerResult(
+                            request.JobId,
+                            request.ExecutionMode,
+                            WorkerEngineVersion(),
+                            request.SourceDocumentSha256,
+                            DocumentDualRunWorkerResultStatus.Completed,
+                            pages);
+                }
+                catch (Exception exception)
+                    when (IsOrdinaryFailure(
+                        exception))
+                {
+                    return await WriteStructuredFailureAsync(
+                            jobDirectoryPath,
+                            request,
+                            DocumentDualRunWorkerFailureStage.Planning,
+                            exception)
+                        .ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                result =
+                    new DocumentDualRunWorkerResult(
+                        request.JobId,
+                        request.ExecutionMode,
+                        WorkerEngineVersion(),
+                        request.SourceDocumentSha256,
+                        DocumentDualRunWorkerResultStatus.Failed,
+                        [],
+                        new DocumentDualRunWorkerFailure(
+                            DocumentDualRunWorkerFailureStage.CandidateExecution,
+                            "FullExecutionNotImplemented",
+                            "Dual Run Full candidate execution is not wired at this checkpoint."));
+            }
 
             await WriteResultAsync(
                     jobDirectoryPath,
