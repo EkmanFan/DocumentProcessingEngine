@@ -1,6 +1,7 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
+using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Pdf;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Core;

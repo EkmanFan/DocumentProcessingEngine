@@ -4,6 +4,7 @@ using System.Text.Json;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Orchestration;
+using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Visual;

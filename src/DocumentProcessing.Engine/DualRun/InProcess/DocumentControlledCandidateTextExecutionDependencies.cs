@@ -1,7 +1,7 @@
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
-using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
+using DocumentProcessing.Core.DualRun;
 
 namespace DocumentProcessing.Engine.DualRun.InProcess;
 

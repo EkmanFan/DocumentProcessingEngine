@@ -1,6 +1,7 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
+using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Engine.Normalization;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Planning;
