@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Visual;
-using DocumentProcessing.Engine.Raster;
 
 namespace DocumentProcessing.Engine.Visual;
 

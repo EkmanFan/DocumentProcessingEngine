@@ -2,7 +2,6 @@ using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Engine.Orchestration;
-using DocumentProcessing.Engine.Raster;
 using DocumentProcessing.Engine.Planning;
 
 namespace DocumentProcessing.Engine.Visual;

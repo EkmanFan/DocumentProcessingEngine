@@ -6,7 +6,6 @@ using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Layout;
-using DocumentProcessing.Engine.Raster;
 
 namespace DocumentProcessing.Engine.Ocr;
 

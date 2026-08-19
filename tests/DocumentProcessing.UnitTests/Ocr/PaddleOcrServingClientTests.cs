@@ -5,7 +5,6 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Ocr;
-using DocumentProcessing.Engine.Raster;
 
 namespace DocumentProcessing.UnitTests.Ocr;
 

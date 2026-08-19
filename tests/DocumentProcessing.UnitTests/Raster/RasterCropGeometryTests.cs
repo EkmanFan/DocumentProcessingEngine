@@ -1,6 +1,5 @@
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Raster;
-using DocumentProcessing.Engine.Raster;
 
 namespace DocumentProcessing.UnitTests.Raster;
 

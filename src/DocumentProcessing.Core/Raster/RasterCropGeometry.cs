@@ -1,7 +1,6 @@
 using DocumentProcessing.Core.Extraction;
-using DocumentProcessing.Core.Raster;
 
-namespace DocumentProcessing.Engine.Raster;
+namespace DocumentProcessing.Core.Raster;
 
 /// <summary>
 /// Converts normalized page evidence into the exact pixel rectangle that can be

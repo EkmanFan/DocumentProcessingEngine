@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Raster;
-using DocumentProcessing.Engine.Raster;
 using DocumentProcessing.Engine.Visual;
 
 namespace DocumentProcessing.UnitTests.Visual;
