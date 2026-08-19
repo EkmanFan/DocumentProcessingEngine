@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Normalization;
 using DocumentProcessing.Core.Reconciliation;
 
@@ -39,7 +40,8 @@ public sealed record DocumentElementProcessingEvidence
         TextDehyphenationProvenance? normalizationDehyphenation,
         bool normalizationChangedText,
         DocumentBlockExclusionReason? exclusionReason,
-        bool isResolved)
+        bool isResolved,
+        LayoutObservationKind? layoutKind = null)
     {
         if (string.IsNullOrWhiteSpace(
                 elementId))
@@ -86,11 +88,25 @@ public sealed record DocumentElementProcessingEvidence
                 nameof(layoutCandidateSequence));
         }
 
+        if (layoutCandidateSequence.HasValue !=
+            layoutKind.HasValue)
+        {
+            throw new ArgumentException(
+                "Layout candidate sequence and layout kind must either both exist or both be absent.");
+        }
+
         if ((ocrBackendId is null) !=
             (ocrProfileId is null))
         {
             throw new ArgumentException(
                 "OCR backend ID and OCR profile ID must either both exist or both be absent.");
+        }
+
+        if (ocrBackendId is not null &&
+            !layoutCandidateSequence.HasValue)
+        {
+            throw new ArgumentException(
+                "OCR processing evidence must retain its source layout observation.");
         }
 
         ElementId =
@@ -115,6 +131,9 @@ public sealed record DocumentElementProcessingEvidence
 
         LayoutCandidateSequence =
             layoutCandidateSequence;
+
+        LayoutKind =
+            layoutKind;
 
         OcrBackendId =
             NormalizeOptional(
@@ -164,6 +183,11 @@ public sealed record DocumentElementProcessingEvidence
     public int? NativeCandidateSequence { get; }
 
     public int? LayoutCandidateSequence { get; }
+
+    /// <summary>
+    /// Gets the neutral role of the retained source layout observation.
+    /// </summary>
+    public LayoutObservationKind? LayoutKind { get; }
 
     public string? OcrBackendId { get; }
 

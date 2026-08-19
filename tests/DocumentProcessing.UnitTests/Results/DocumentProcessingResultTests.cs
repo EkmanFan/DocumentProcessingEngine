@@ -391,7 +391,9 @@ public sealed class DocumentProcessingResultTests
             exclusionReason:
                 null,
             isResolved:
-                true);
+                true,
+            layoutKind:
+                null);
     }
 
     private static DocumentStructuralSegment CreateSegment()

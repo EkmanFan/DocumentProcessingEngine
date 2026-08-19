@@ -1,5 +1,5 @@
+using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Provenance;
-
 namespace DocumentProcessing.Core.Results;
 
 /// <summary>
@@ -43,7 +43,8 @@ public sealed record DocumentProcessingResult
         IReadOnlyList<DocumentSegmentProcessingEvidence>
             segmentProcessingEvidence,
         IReadOnlyList<DocumentVisualAsset> visualAssets,
-        DocumentProcessingQualityObservations qualityObservations)
+        DocumentProcessingQualityObservations qualityObservations,
+        DocumentSourceStructure? sourceStructure = null)
     {
         Source =
             source ??
@@ -74,6 +75,9 @@ public sealed record DocumentProcessingResult
             qualityObservations ??
             throw new ArgumentNullException(
                 nameof(qualityObservations));
+
+        SourceStructure =
+            sourceStructure;
 
         var elementArray =
             CopyWithoutNulls(
@@ -140,6 +144,10 @@ public sealed record DocumentProcessingResult
                     segment.SegmentId,
                 StringComparer.Ordinal);
 
+        ValidateSourceStructure(
+            SourceStructure,
+            elementArray);
+
         ValidateStructuralMembership(
             elementArray,
             segmentsById,
@@ -202,6 +210,11 @@ public sealed record DocumentProcessingResult
     /// Gets source identity and descriptive metadata.
     /// </summary>
     public DocumentSourceDescriptor Source { get; }
+
+    /// <summary>
+    /// Gets optional format-appropriate structural source custody.
+    /// </summary>
+    public DocumentSourceStructure? SourceStructure { get; }
 
     /// <summary>
     /// Gets deterministic processing-component custody.
@@ -301,6 +314,37 @@ public sealed record DocumentProcessingResult
                 throw new ArgumentException(
                     $"Portable result {description} ordinals must be contiguous and match collection order starting at zero.",
                     parameterName);
+            }
+        }
+    }
+
+    private static void ValidateSourceStructure(
+        DocumentSourceStructure? sourceStructure,
+        IReadOnlyList<DocumentElement> elements)
+    {
+        if (sourceStructure is not
+            PagedDocumentSourceStructure paged)
+        {
+            return;
+        }
+
+        foreach (var element in
+                 elements)
+        {
+            if (element.Location is not
+                PagedDocumentSourceLocation pagedLocation)
+            {
+                throw new ArgumentException(
+                    $"Element '{element.ElementId}' must use a paged source location when the result retains a paged source structure.",
+                    nameof(elements));
+            }
+
+            if (pagedLocation.PhysicalPageNumber >
+                paged.PhysicalPageCount)
+            {
+                throw new ArgumentException(
+                    $"Element '{element.ElementId}' references physical page {pagedLocation.PhysicalPageNumber}, outside the retained paged source structure.",
+                    nameof(elements));
             }
         }
     }

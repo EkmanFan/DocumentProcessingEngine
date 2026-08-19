@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Normalization;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Reconciliation;
@@ -63,7 +64,9 @@ public sealed class PortableProcessingEvidenceTests
                 exclusionReason:
                     null,
                 isResolved:
-                    true);
+                    true,
+                layoutKind:
+                    null);
 
         Assert.Equal(
             DocumentTextSourceKind.Native,
@@ -125,7 +128,9 @@ public sealed class PortableProcessingEvidenceTests
                 exclusionReason:
                     DocumentBlockExclusionReason.RepeatedFooter,
                 isResolved:
-                    true);
+                    true,
+                layoutKind:
+                    LayoutObservationKind.Text);
 
         Assert.Equal(
             "paddle-ocr",
@@ -176,7 +181,9 @@ public sealed class PortableProcessingEvidenceTests
                     exclusionReason:
                         null,
                     isResolved:
-                        false));
+                        false,
+                layoutKind:
+                    null));
     }
 
     [Fact]
