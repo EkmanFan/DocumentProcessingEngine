@@ -2,26 +2,38 @@ using System.Security.Cryptography;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
-using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Visual;
 
 namespace DocumentProcessing.UnitTests.Hybrid;
 
-public sealed class HealthyNativeVisualPageExecutorTests
+public sealed class HealthyNativeVisualSourceBackedFallbackTests
 {
+    #region Variables and Constants
+
     private static readonly string SourceSha =
         new(
             'a',
             64);
 
+    #endregion
+
+    #region ctor
+
+    #endregion
+
+    #region Methods Tests
+
     [Fact]
-    public async Task ExecuteAsync_ResolvedMeaningfulFigure_PreservesNativeAuthorityWithoutOcr()
+    public async Task ExecuteWithPrecomputedLayoutAsync_SourceBackedSingletonUnknownFigure_PreservesWithoutOcr()
     {
         var sourcePage =
-            NativePage();
+            NativePage(
+                rasterImageCount:
+                    1);
 
         var figure =
             Layout(
@@ -31,13 +43,13 @@ public sealed class HealthyNativeVisualPageExecutorTests
                     0,
                 LayoutObservationKind.Figure,
                 left:
-                    0.05,
+                    0.12,
                 top:
-                    0.05,
+                    0.22,
                 right:
-                    0.95,
+                    0.87,
                 bottom:
-                    0.40);
+                    0.30);
 
         var text =
             Layout(
@@ -57,11 +69,7 @@ public sealed class HealthyNativeVisualPageExecutorTests
 
         var executor =
             new HealthyNativeVisualPageExecutor(
-                new FakeLayoutAnalyzer(
-                    [
-                        figure,
-                        text
-                    ]),
+                new ThrowingLayoutAnalyzer(),
                 new VisualAssetPreserver());
 
         var session =
@@ -72,11 +80,20 @@ public sealed class HealthyNativeVisualPageExecutorTests
 
         var page =
             await executor
-                .ExecuteAsync(
+                .ExecuteWithPrecomputedLayoutAsync(
                     sourcePage,
                     HealthyNativeOnlyDecision(),
                     PreservePlan(),
                     session,
+                    FullPageRaster(),
+                    new LayoutAnalysisResult(
+                        "fake-layout",
+                        physicalPageNumber:
+                            1,
+                        [
+                            figure,
+                            text
+                        ]),
                     SourceSha,
                     (_, cancellationToken) =>
                     {
@@ -87,7 +104,7 @@ public sealed class HealthyNativeVisualPageExecutorTests
                     });
 
         Assert.Equal(
-            1,
+            0,
             session.FullPageRenderCount);
 
         Assert.Equal(
@@ -95,33 +112,27 @@ public sealed class HealthyNativeVisualPageExecutorTests
             session.RegionRenderCount);
 
         Assert.Equal(
-            2,
-            page.Elements.Count);
+            [
+                HybridDocumentElementKind.Visual,
+                HybridDocumentElementKind.Text
+            ],
+            page.Elements
+                .Select(
+                    element =>
+                        element.Kind));
 
         var visual =
             page.Elements[0];
 
-        Assert.Equal(
-            HybridDocumentElementKind.Visual,
-            visual.Kind);
-
-        Assert.Equal(
-            0,
-            visual.ReadingOrder);
+        Assert.Same(
+            figure,
+            visual.LayoutObservation);
 
         Assert.NotNull(
             visual.PreservedVisual);
 
         var native =
             page.Elements[1];
-
-        Assert.Equal(
-            HybridDocumentElementKind.Text,
-            native.Kind);
-
-        Assert.Equal(
-            1,
-            native.ReadingOrder);
 
         Assert.Equal(
             TextSelectionOrigin.NativePdf,
@@ -137,127 +148,34 @@ public sealed class HealthyNativeVisualPageExecutorTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_AmbiguousUnresolvedLayoutFigures_FailClosedBeforePreservation()
+    public async Task ExecuteWithPrecomputedLayoutAsync_MultipleSourceVisualPlans_KeepUnknownFigureFailClosed()
     {
         var sourcePage =
-            NativePage();
+            NativePage(
+                rasterImageCount:
+                    2);
 
-        var firstUnknownFigure =
+        var figure =
             Layout(
-                sequence:
-                    0,
-                readingOrder:
-                    0,
+                0,
+                0,
                 LayoutObservationKind.Figure,
-                left:
-                    0.05,
-                top:
-                    0.05,
-                right:
-                    0.25,
-                bottom:
-                    0.25);
-
-        var secondUnknownFigure =
-            Layout(
-                sequence:
-                    1,
-                readingOrder:
-                    1,
-                LayoutObservationKind.Figure,
-                left:
-                    0.40,
-                top:
-                    0.05,
-                right:
-                    0.60,
-                bottom:
-                    0.25);
+                0.12,
+                0.22,
+                0.87,
+                0.30);
 
         var text =
             Layout(
-                sequence:
-                    2,
-                readingOrder:
-                    2,
+                1,
+                1,
                 LayoutObservationKind.Text,
-                left:
-                    0.10,
-                top:
-                    0.65,
-                right:
-                    0.55,
-                bottom:
-                    0.75);
+                0.10,
+                0.65,
+                0.55,
+                0.75);
 
-        var executor =
-            new HealthyNativeVisualPageExecutor(
-                new FakeLayoutAnalyzer(
-                    [
-                        firstUnknownFigure,
-                        secondUnknownFigure,
-                        text
-                    ]),
-                new VisualAssetPreserver());
-
-        var session =
-            new FakeRasterizationSession();
-
-        var destinationOpenCount =
-            0;
-
-        var exception =
-            await Assert.ThrowsAsync<InvalidDataException>(
-                async () =>
-                    await executor
-                        .ExecuteAsync(
-                            sourcePage,
-                            HealthyNativeOnlyDecision(),
-                            PreservePlan(),
-                            session,
-                            SourceSha,
-                            (_, _) =>
-                            {
-                                destinationOpenCount++;
-
-                                return ValueTask.FromResult<Stream>(
-                                    new MemoryStream());
-                            }));
-
-        Assert.Contains(
-            "unresolved Figure evidence",
-            exception.Message,
-            StringComparison.Ordinal);
-
-        Assert.Equal(
-            1,
-            session.FullPageRenderCount);
-
-        Assert.Equal(
-            0,
-            session.RegionRenderCount);
-
-        Assert.Equal(
-            0,
-            destinationOpenCount);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_CandidateAnalyzeVisual_IsRejectedBeforeRasterization()
-    {
-        var sourcePage =
-            NativePage();
-
-        var executor =
-            new HealthyNativeVisualPageExecutor(
-                new FakeLayoutAnalyzer(
-                    []),
-                new VisualAssetPreserver());
-
-        var session =
-            new FakeRasterizationSession();
-
-        var candidate =
+        var plan =
             new PageExecutionPlan(
                 physicalPageNumber:
                     1,
@@ -266,30 +184,47 @@ public sealed class HealthyNativeVisualPageExecutorTests
                     new VisualElementExecutionPlan(
                         sourceVisualIndex:
                             0,
-                        VisualExecutionAction.AnalyzeVisual)
+                        VisualExecutionAction.PreserveMeaningfulVisual),
+                    new VisualElementExecutionPlan(
+                        sourceVisualIndex:
+                            1,
+                        VisualExecutionAction.NoAdditionalSemanticProcessing)
                 ]);
 
+        var executor =
+            new HealthyNativeVisualPageExecutor(
+                new ThrowingLayoutAnalyzer(),
+                new VisualAssetPreserver());
+
+        var session =
+            new FakeRasterizationSession();
+
         var exception =
-            await Assert.ThrowsAsync<InvalidOperationException>(
+            await Assert.ThrowsAsync<InvalidDataException>(
                 async () =>
                     await executor
-                        .ExecuteAsync(
+                        .ExecuteWithPrecomputedLayoutAsync(
                             sourcePage,
                             HealthyNativeOnlyDecision(),
-                            candidate,
+                            plan,
                             session,
+                            FullPageRaster(),
+                            new LayoutAnalysisResult(
+                                "fake-layout",
+                                1,
+                                [
+                                    figure,
+                                    text
+                                ]),
                             SourceSha,
-                            openVisualDestinationAsync:
-                                null));
+                            (_, _) =>
+                                ValueTask.FromResult<Stream>(
+                                    new MemoryStream())));
 
         Assert.Contains(
-            "resolved meaningful-visual preservation",
+            "unresolved Figure evidence",
             exception.Message,
             StringComparison.Ordinal);
-
-        Assert.Equal(
-            0,
-            session.FullPageRenderCount);
 
         Assert.Equal(
             0,
@@ -297,63 +232,76 @@ public sealed class HealthyNativeVisualPageExecutorTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_PreservableFigureWithoutDestination_FailsBeforeCrop()
+    public async Task ExecuteWithPrecomputedLayoutAsync_UnknownFigureIntersectingSemanticText_FailsClosed()
     {
         var sourcePage =
-            NativePage();
+            NativePage(
+                rasterImageCount:
+                    1);
+
+        var figure =
+            Layout(
+                0,
+                0,
+                LayoutObservationKind.Figure,
+                0.12,
+                0.22,
+                0.87,
+                0.30);
+
+        var overlappingText =
+            Layout(
+                1,
+                1,
+                LayoutObservationKind.Text,
+                0.20,
+                0.24,
+                0.70,
+                0.28);
 
         var executor =
             new HealthyNativeVisualPageExecutor(
-                new FakeLayoutAnalyzer(
-                    [
-                        Layout(
-                            0,
-                            0,
-                            LayoutObservationKind.Figure,
-                            0.05,
-                            0.05,
-                            0.95,
-                            0.40),
-                        Layout(
-                            1,
-                            1,
-                            LayoutObservationKind.Text,
-                            0.10,
-                            0.65,
-                            0.55,
-                            0.75)
-                    ]),
+                new ThrowingLayoutAnalyzer(),
                 new VisualAssetPreserver());
 
         var session =
             new FakeRasterizationSession();
 
         var exception =
-            await Assert.ThrowsAsync<InvalidOperationException>(
+            await Assert.ThrowsAsync<InvalidDataException>(
                 async () =>
                     await executor
-                        .ExecuteAsync(
+                        .ExecuteWithPrecomputedLayoutAsync(
                             sourcePage,
                             HealthyNativeOnlyDecision(),
                             PreservePlan(),
                             session,
+                            FullPageRaster(),
+                            new LayoutAnalysisResult(
+                                "fake-layout",
+                                1,
+                                [
+                                    figure,
+                                    overlappingText
+                                ]),
                             SourceSha,
-                            openVisualDestinationAsync:
-                                null));
+                            (_, _) =>
+                                ValueTask.FromResult<Stream>(
+                                    new MemoryStream())));
 
         Assert.Contains(
-            "caller-owned destination",
+            "unresolved Figure evidence",
             exception.Message,
             StringComparison.Ordinal);
-
-        Assert.Equal(
-            1,
-            session.FullPageRenderCount);
 
         Assert.Equal(
             0,
             session.RegionRenderCount);
     }
+
+    #endregion
+
+    #region Methods Helpers
 
     private static PageProcessingDecision HealthyNativeOnlyDecision() =>
         new(
@@ -376,7 +324,8 @@ public sealed class HealthyNativeVisualPageExecutorTests
                     VisualExecutionAction.PreserveMeaningfulVisual)
             ]);
 
-    private static DocumentExtractionPage NativePage()
+    private static DocumentExtractionPage NativePage(
+        int rasterImageCount)
     {
         var words =
             new[]
@@ -422,10 +371,9 @@ public sealed class HealthyNativeVisualPageExecutorTests
                 "Native text.",
             wordCount:
                 words.Length,
-            rasterImageCount:
-                1,
+            rasterImageCount,
             largestRasterImageAreaRatio:
-                0.40,
+                0.10,
             sourceWidth:
                 1000,
             sourceHeight:
@@ -459,8 +407,39 @@ public sealed class HealthyNativeVisualPageExecutorTests
                 bottom),
             kind.ToString());
 
-    private sealed class FakeLayoutAnalyzer(
-        IReadOnlyList<LayoutObservation> observations)
+    private static RasterRenderResult FullPageRaster() =>
+        new(
+            physicalPageNumber:
+                1,
+            sourcePagePixelWidth:
+                1000,
+            sourcePagePixelHeight:
+                1000,
+            crop:
+                null,
+            outputPixelWidth:
+                1000,
+            outputPixelHeight:
+                1000,
+            mediaType:
+                "image/png",
+            profileId:
+                "fake-raster-v1",
+            contentLength:
+                1,
+            contentSha256:
+                Convert.ToHexString(
+                        SHA256.HashData(
+                            [
+                                1
+                            ]))
+                    .ToLowerInvariant());
+
+    #endregion
+
+    #region Nested Types
+
+    private sealed class ThrowingLayoutAnalyzer
         : IPageLayoutAnalyzer
     {
         public ValueTask<LayoutAnalysisResult> AnalyzeAsync(
@@ -468,36 +447,18 @@ public sealed class HealthyNativeVisualPageExecutorTests
             int physicalPageNumber,
             int pixelWidth,
             int pixelHeight,
-            CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return ValueTask.FromResult(
-                new LayoutAnalysisResult(
-                    "fake-layout",
-                    physicalPageNumber,
-                    observations));
-        }
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException(
+                "Precomputed-layout test must not invoke layout analysis.");
     }
 
     private sealed class FakeRasterizationSession
         : IDocumentRasterizationSession
     {
-        private static readonly byte[] PageBytes =
-        [
-            1
-        ];
-
         private static readonly byte[] RegionBytes =
         [
             2
         ];
-
-        private static readonly string PageSha =
-            Convert.ToHexString(
-                    SHA256.HashData(
-                        PageBytes))
-                .ToLowerInvariant();
 
         private static readonly string RegionSha =
             Convert.ToHexString(
@@ -523,33 +484,10 @@ public sealed class HealthyNativeVisualPageExecutorTests
             Stream destination,
             CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             FullPageRenderCount++;
 
-            destination.Write(
-                PageBytes);
-
-            return ValueTask.FromResult(
-                new RasterRenderResult(
-                    physicalPageNumber,
-                    sourcePagePixelWidth:
-                        1000,
-                    sourcePagePixelHeight:
-                        1000,
-                    crop:
-                        null,
-                    outputPixelWidth:
-                        1000,
-                    outputPixelHeight:
-                        1000,
-                    mediaType:
-                        "image/png",
-                    ProfileId,
-                    contentLength:
-                        PageBytes.Length,
-                    contentSha256:
-                        PageSha));
+            throw new InvalidOperationException(
+                "Precomputed-layout execution must not render a full page.");
         }
 
         public ValueTask<RasterRenderResult> RenderRegionAsync(
@@ -577,13 +515,13 @@ public sealed class HealthyNativeVisualPageExecutorTests
                     crop.Height,
                     "image/png",
                     ProfileId,
-                    contentLength:
-                        RegionBytes.Length,
-                    contentSha256:
-                        RegionSha));
+                    RegionBytes.Length,
+                    RegionSha));
         }
 
         public ValueTask DisposeAsync() =>
             ValueTask.CompletedTask;
     }
+
+    #endregion
 }

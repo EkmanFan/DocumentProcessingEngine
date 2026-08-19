@@ -47,6 +47,7 @@ internal static class VisualEvidenceDispositionPolicy
             VisualEvidenceKind.NativeTextContainerOrFrame =>
                 VisualDisposition.PresentationOnly,
 
+            VisualEvidenceKind.SourceBackedMeaningfulVisual or
             VisualEvidenceKind.CaptionedMeaningfulVisual or
             VisualEvidenceKind.LargeIndependentVisual =>
                 VisualDisposition.PreserveMeaningfulVisual,

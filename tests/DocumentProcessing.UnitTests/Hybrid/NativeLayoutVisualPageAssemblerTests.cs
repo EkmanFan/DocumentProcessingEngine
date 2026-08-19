@@ -285,7 +285,7 @@ public sealed class NativeLayoutVisualPageAssemblerTests
     }
 
     [Fact]
-    public void Assemble_UnmappedNativeBlock_FailsClosed()
+    public void Assemble_UnmappedNativeBlockOverlappingFigure_FailsClosed()
     {
         var mapped =
             CreateSingleWordBlock(
@@ -301,7 +301,7 @@ public sealed class NativeLayoutVisualPageAssemblerTests
                 1,
                 "Unmapped",
                 top:
-                    0.80);
+                    0.50);
 
         var page =
             CreatePage(
@@ -341,7 +341,7 @@ public sealed class NativeLayoutVisualPageAssemblerTests
                             ]));
 
         Assert.Contains(
-            "has no deterministic layout text ownership",
+            "overlaps preserved visual",
             exception.Message,
             StringComparison.Ordinal);
 

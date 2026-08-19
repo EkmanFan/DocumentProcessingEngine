@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "document-processing-habermas-p18-p28-robustness-reference-v1",
+  "status": "PASS",
+  "baselineCommit": "ba3e141f68700192866022f96bad7e0382e9880e",
+  "fixtureSha256": {
+    "p18": "dc1b94b7c72107f385f981ddd8f4b89568d5ba0deed9e8753d9327afed3cce65",
+    "p28": "bdea4b71616b8f1fb016742f68e884de51121a3dfad64b4b2a288212b5b67176",
+    "p40": "979d6ffd247ec7eeb957a92fbc78d787d72f949aa8e69d7cfb2b9a1c53312ad7",
+    "p43": "dca2636c4f0947670347e13e46d6410138650f1503d2251f7abd6e1d0e2dd379",
+    "p44": "5f697ff732560287607bc0d3c8949c44bc226265ff9ca174a87277241d8c9853"
+  },
+  "acceptedBehavior": {
+    "p18": {
+      "route": "NativeOnly",
+      "layoutCalls": 1,
+      "ocrCalls": 0,
+      "figureOcr": 0,
+      "preservedVisualCount": 1,
+      "preservedLayoutObservationSequence": 1,
+      "allSelectedTextOrigin": "NativePdf"
+    },
+    "p28": {
+      "route": "NativeOnly",
+      "layoutCalls": 1,
+      "ocrCalls": 0,
+      "figureOcr": 0,
+      "preservedVisualCount": 1,
+      "theyClaimedItNativeBlockSequence": 2,
+      "theyClaimedItReadingOrder": 3,
+      "visualReadingOrder": 1,
+      "allSelectedTextOrigin": "NativePdf"
+    },
+    "existingHealthyVisualControls": {
+      "p40": {
+        "preservedVisualCount": 1,
+        "ocrCalls": 0,
+        "figureOcr": 0
+      },
+      "p43": {
+        "preservedVisualCount": 1,
+        "ocrCalls": 0,
+        "figureOcr": 0
+      },
+      "p44": {
+        "preservedVisualCount": 1,
+        "ocrCalls": 0,
+        "figureOcr": 0
+      }
+    }
+  },
+  "invariants": [
+    "Default layout-only p18-like Figure evidence remains Unknown.",
+    "Source-backed singleton resolution requires exactly one source visual plan and one unresolved Figure.",
+    "Unknown layout observations are not promoted to OCR targets.",
+    "Unowned native blocks may use geometry only when their visual band is unambiguous.",
+    "Native blocks overlapping a preserved visual still fail closed.",
+    "Figure OCR remains exactly zero.",
+    "Native text remains authoritative."
+  ],
+  "knownSeparateIssue": {
+    "status": "OPEN",
+    "description": "p28 PP-StructureV3 currently labels the large paragraph below the diagram as figure_title; caption-semantics hardening is intentionally outside this increment."
+  },
+  "performanceReference": {
+    "commit": "ba3e141f68700192866022f96bad7e0382e9880e",
+    "fixtureCount": 67,
+    "unchanged": true
+  }
+}

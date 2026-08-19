@@ -446,7 +446,8 @@ public sealed class DefaultPageProcessingRequirementsPolicyTests
                 VisualDisposition.PresentationOnly,
 
             VisualEvidenceKind.CaptionedMeaningfulVisual or
-            VisualEvidenceKind.LargeIndependentVisual =>
+            VisualEvidenceKind.LargeIndependentVisual or
+            VisualEvidenceKind.SourceBackedMeaningfulVisual =>
                 VisualDisposition.PreserveMeaningfulVisual,
 
             _ =>

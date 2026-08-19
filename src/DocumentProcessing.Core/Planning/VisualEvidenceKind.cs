@@ -46,6 +46,13 @@ public enum VisualEvidenceKind
     NativeTextContainerOrFrame,
 
     /// <summary>
+    /// A source visual has already been deterministically resolved as meaningful
+    /// and exactly one compatible layout Figure provides its crop/order custody.
+    /// The raw Figure label alone is not sufficient for this evidence kind.
+    /// </summary>
+    SourceBackedMeaningfulVisual,
+
+    /// <summary>
     /// A strong caption association identifies a meaningful visual candidate.
     /// </summary>
     CaptionedMeaningfulVisual,

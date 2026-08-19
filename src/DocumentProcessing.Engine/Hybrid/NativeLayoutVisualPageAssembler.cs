@@ -22,7 +22,8 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// The merge fails closed when deterministic whole-block placement is not
 /// possible:
 /// - ambiguous native-word ownership;
-/// - a native block with no comparable layout-text ownership;
+/// - a native block with neither comparable layout-text ownership nor an
+///   unambiguous geometry-derived band around preserved visuals;
 /// - a native block whose layout-text ownership straddles a preserved visual;
 /// - a text target sharing a reading-order value with a preserved visual;
 /// - missing, duplicate, foreign, or inconsistent visual layout evidence.
@@ -33,6 +34,8 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// </summary>
 public static class NativeLayoutVisualPageAssembler
 {
+    #region Methods
+
     public static HybridDocumentPage Assemble(
         DocumentExtractionPage sourcePage,
         LayoutAnalysisResult layout,
@@ -115,13 +118,6 @@ public static class NativeLayoutVisualPageAssembler
             ordersByBlock,
             pairings);
 
-        var visualOrders =
-            resolvedVisuals
-                .Select(
-                    visual =>
-                        visual.ReadingOrder)
-                .ToArray();
-
         var placements =
             sourcePage.Blocks
                 .Select(
@@ -131,7 +127,7 @@ public static class NativeLayoutVisualPageAssembler
                             block,
                             ordersByBlock[
                                 block.SourceSequence],
-                            visualOrders))
+                            resolvedVisuals))
                 .ToArray();
 
         var merged =
@@ -355,15 +351,23 @@ public static class NativeLayoutVisualPageAssembler
         DocumentExtractionPage sourcePage,
         DocumentTextBlock block,
         IReadOnlyCollection<int> targetOrders,
-        IReadOnlyList<int> visualOrders)
+        IReadOnlyList<HybridDocumentElement> orderedVisuals)
     {
         if (targetOrders.Count ==
             0)
         {
-            throw new InvalidDataException(
-                $"Native block {block.SourceSequence} on page " +
-                $"{sourcePage.PhysicalPageNumber} has no deterministic layout text ownership.");
+            return CreateGeometryFallbackPlacement(
+                sourcePage,
+                block,
+                orderedVisuals);
         }
+
+        var visualOrders =
+            orderedVisuals
+                .Select(
+                    visual =>
+                        visual.ReadingOrder)
+                .ToArray();
 
         foreach (var visualOrder in
                  visualOrders)
@@ -406,6 +410,60 @@ public static class NativeLayoutVisualPageAssembler
                         targetOrder =>
                             targetOrder >
                             visualOrder));
+
+        return new NativeBlockPlacement(
+            block,
+            visualBand);
+    }
+
+    private static NativeBlockPlacement CreateGeometryFallbackPlacement(
+        DocumentExtractionPage sourcePage,
+        DocumentTextBlock block,
+        IReadOnlyList<HybridDocumentElement> orderedVisuals)
+    {
+        var visualBand =
+            0;
+
+        var encounteredVisualAfterBlock =
+            false;
+
+        foreach (var visual in
+                 orderedVisuals)
+        {
+            var visualBounds =
+                visual.LayoutObservation!
+                    .Bounds;
+
+            if (block.Bounds.Top >=
+                visualBounds.Bottom)
+            {
+                if (encounteredVisualAfterBlock)
+                {
+                    throw new InvalidDataException(
+                        $"Native block {block.SourceSequence} on page " +
+                        $"{sourcePage.PhysicalPageNumber} has no deterministic " +
+                        "layout text ownership and preserved-visual geometry " +
+                        "conflicts with layout reading order.");
+                }
+
+                visualBand++;
+                continue;
+            }
+
+            if (block.Bounds.Bottom <=
+                visualBounds.Top)
+            {
+                encounteredVisualAfterBlock =
+                    true;
+                continue;
+            }
+
+            throw new InvalidDataException(
+                $"Native block {block.SourceSequence} on page " +
+                $"{sourcePage.PhysicalPageNumber} has no deterministic layout " +
+                $"text ownership and overlaps preserved visual reading order " +
+                $"{visual.ReadingOrder}; geometry fallback would be unsafe.");
+        }
 
         return new NativeBlockPlacement(
             block,
@@ -493,4 +551,6 @@ public static class NativeLayoutVisualPageAssembler
     private sealed record NativeBlockPlacement(
         DocumentTextBlock Block,
         int VisualBand);
+
+    #endregion
 }

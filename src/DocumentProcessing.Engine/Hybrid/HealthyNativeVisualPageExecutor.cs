@@ -21,7 +21,8 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// preservation -> native/layout visual order merge.
 ///
 /// It never performs OCR or native/OCR reconciliation. Unresolved layout Figure
-/// evidence fails closed rather than being silently dropped or promoted.
+/// evidence fails closed unless an already-resolved single source visual maps
+/// one-to-one to one spatially independent layout Figure.
 /// </summary>
 public sealed class HealthyNativeVisualPageExecutor
 {
@@ -76,6 +77,7 @@ public sealed class HealthyNativeVisualPageExecutor
 
         return await ExecutePreparedAsync(
                 sourcePage,
+                candidatePlan,
                 rasterSession,
                 prepared.PageRaster,
                 prepared.Layout,
@@ -186,6 +188,7 @@ public sealed class HealthyNativeVisualPageExecutor
 
         return await ExecutePreparedAsync(
                 sourcePage,
+                candidatePlan,
                 rasterSession,
                 pageRaster,
                 layout,
@@ -197,6 +200,7 @@ public sealed class HealthyNativeVisualPageExecutor
 
     private async ValueTask<HybridDocumentPage> ExecutePreparedAsync(
         DocumentExtractionPage sourcePage,
+        PageExecutionPlan candidatePlan,
         IDocumentRasterizationSession rasterSession,
         RasterRenderResult pageRaster,
         LayoutAnalysisResult layout,
@@ -219,41 +223,11 @@ public sealed class HealthyNativeVisualPageExecutor
                         evidence.Observation.ObservationSequence)
                 .ToArray();
 
-        var unresolved =
-            visualEvidence
-                .FirstOrDefault(
-                    evidence =>
-                        VisualEvidenceDispositionPolicy
-                            .Decide(
-                                evidence.Kind) ==
-                        VisualDisposition.RequiresVisualAnalysis);
-
-        if (unresolved is not null)
-        {
-            throw new InvalidDataException(
-                $"Healthy native visual execution encountered unresolved " +
-                $"Figure evidence at observation " +
-                $"{unresolved.Observation.ObservationSequence}; " +
-                "the narrow preservation cutover fails closed.");
-        }
-
         var preserving =
-            visualEvidence
-                .Where(
-                    evidence =>
-                        VisualEvidenceDispositionPolicy
-                            .Decide(
-                                evidence.Kind) ==
-                        VisualDisposition.PreserveMeaningfulVisual)
-                .ToArray();
-
-        if (preserving.Length ==
-            0)
-        {
-            throw new InvalidDataException(
-                "Source visual planning requested meaningful preservation, " +
-                "but layout analysis produced no preservable semantic Figure.");
-        }
+            ResolvePreservingEvidence(
+                candidatePlan,
+                layout,
+                visualEvidence);
 
         if (openVisualDestinationAsync is null)
         {
@@ -302,6 +276,134 @@ public sealed class HealthyNativeVisualPageExecutor
                 layout,
                 visualElements);
     }
+
+    private static LayoutVisualEvidence[] ResolvePreservingEvidence(
+        PageExecutionPlan candidatePlan,
+        LayoutAnalysisResult layout,
+        IReadOnlyList<LayoutVisualEvidence> visualEvidence)
+    {
+        var preserving =
+            visualEvidence
+                .Where(
+                    evidence =>
+                        VisualEvidenceDispositionPolicy
+                            .Decide(
+                                evidence.Kind) ==
+                        VisualDisposition.PreserveMeaningfulVisual)
+                .ToArray();
+
+        var unresolved =
+            visualEvidence
+                .Where(
+                    evidence =>
+                        VisualEvidenceDispositionPolicy
+                            .Decide(
+                                evidence.Kind) ==
+                        VisualDisposition.RequiresVisualAnalysis)
+                .ToArray();
+
+        if (unresolved.Length ==
+            0)
+        {
+            if (preserving.Length ==
+                0)
+            {
+                throw new InvalidDataException(
+                    "Source visual planning requested meaningful preservation, " +
+                    "but layout analysis produced no preservable semantic Figure.");
+            }
+
+            return preserving;
+        }
+
+        if (CanResolveSourceBackedSingletonFigure(
+                candidatePlan,
+                layout,
+                visualEvidence,
+                preserving,
+                unresolved))
+        {
+            return
+            [
+                new LayoutVisualEvidence(
+                    unresolved[0].Observation,
+                    VisualEvidenceKind.SourceBackedMeaningfulVisual)
+            ];
+        }
+
+        throw new InvalidDataException(
+            $"Healthy native visual execution encountered unresolved " +
+            $"Figure evidence at observation " +
+            $"{unresolved[0].Observation.ObservationSequence}; " +
+            "the narrow preservation cutover fails closed.");
+    }
+
+    private static bool CanResolveSourceBackedSingletonFigure(
+        PageExecutionPlan candidatePlan,
+        LayoutAnalysisResult layout,
+        IReadOnlyList<LayoutVisualEvidence> visualEvidence,
+        IReadOnlyList<LayoutVisualEvidence> preserving,
+        IReadOnlyList<LayoutVisualEvidence> unresolved)
+    {
+        if (candidatePlan.VisualElements.Count !=
+                1 ||
+            candidatePlan.VisualElements[0].Action !=
+                VisualExecutionAction.PreserveMeaningfulVisual ||
+            visualEvidence.Count !=
+                1 ||
+            preserving.Count !=
+                0 ||
+            unresolved.Count !=
+                1)
+        {
+            return false;
+        }
+
+        var figure =
+            unresolved[0].Observation;
+
+        if (figure.Kind !=
+                LayoutObservationKind.Figure ||
+            figure.ReadingOrder is null)
+        {
+            return false;
+        }
+
+        return !layout.Observations.Any(
+            observation =>
+                !ReferenceEquals(
+                    observation,
+                    figure) &&
+                IsSemanticTextLike(
+                    observation.Kind) &&
+                Intersects(
+                    figure.Bounds,
+                    observation.Bounds));
+    }
+
+    private static bool IsSemanticTextLike(
+        LayoutObservationKind kind) =>
+        kind is
+            LayoutObservationKind.Text or
+            LayoutObservationKind.Heading or
+            LayoutObservationKind.Caption or
+            LayoutObservationKind.Table;
+
+    private static bool Intersects(
+        NormalizedRectangle first,
+        NormalizedRectangle second) =>
+        Math.Max(
+            first.Left,
+            second.Left) <
+        Math.Min(
+            first.Right,
+            second.Right) &&
+        Math.Max(
+            first.Top,
+            second.Top) <
+        Math.Min(
+            first.Bottom,
+            second.Bottom);
 
     #endregion
 
