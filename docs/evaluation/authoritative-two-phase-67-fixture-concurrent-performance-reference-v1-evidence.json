@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "document-processing-authoritative-two-phase-67-fixture-concurrent-performance-reference-evidence-v1",
+  "status": "PASS",
+  "freezeCommit": "d2ef80e28abdbbd374f389d07fdab5722963a4a6",
+  "implementationReference": "604bf4063cf868b6d229d02359e36d6e4849ff15",
+  "reference": {
+    "strategy": "ConcurrentResident",
+    "fixturePages": 67,
+    "corpus": {
+      "Habermas": 9,
+      "Ehrman": 8,
+      "DeDecretis": 50
+    },
+    "warmupRuns": 1,
+    "measuredRuns": 3,
+    "figureOcr": 0,
+    "characterizationOnly": true
+  },
+  "decision": {
+    "concurrentResidencyViableOnMeasured32GiBMachine": true,
+    "productionUniversalSafetyClaim": false,
+    "performanceSlaClaim": false,
+    "sequentialResidencyStillPlannedAsAlternativeStrategy": true
+  },
+  "knownSeparateFunctionalGap": {
+    "status": "OPEN",
+    "scope": "Full-book functional ingestion, outside this performance reference.",
+    "description": "A full Habermas run previously encountered unresolved Healthy Native Figure evidence and failed closed. This was intentionally excluded from the 67-fixture performance campaign and must be investigated separately before claiming arbitrary full-book functional acceptance."
+  },
+  "sourceArtifactSha256": {
+    "baselineSummaryJson": "fef2e0d86dd7951bcb50a659a6aa9a2016f6cc44795f2e1e0c230668ba3046c9",
+    "baselineSummaryMarkdown": "5f12c7fad86612fc1f8164b71bd085789b51ec70d2dff93291896eb5ab3aea7d",
+    "pageMap": "b3069f36f65b96a73bf9e2129a71b7915b8db3dca600ec1591ce38199fd47eaa",
+    "warmupReport": "1c9a85fc132bf290e2bc9c749e389bbf8c2f3c9957afc89dab34a0ec3fbda945",
+    "run1Report": "9e3879105d8e7daf4e20775252132129f073b641281e5d645ff4f4dc5ee5d036",
+    "run2Report": "ba6679def40b2dd9a75f0b370e239d3399ba722abc1fea8c9ede90c181217710",
+    "run3Report": "3626b8aeb52b4701c1600682bd76f60a565133abf1581fd40ed5defe95ac937e",
+    "warmupMonitorSummary": "f1c8a72038423538300f29095007bce4d2763d4e93880b333e8467abe003ef7b",
+    "run1MonitorSummary": "448278d4b2aaca4c0758a90b3c87099655a8d8b4bce4341711b76df7ad00bf06",
+    "run2MonitorSummary": "b7297fc639d454532e4d266b2a32636d88f61fc20a5f19974f74781a0f9207be",
+    "run3MonitorSummary": "b9c064aa4d4dc3cc7d92a98bdb1dd1f38591176d6a3cd43f567bf9dcac3c6070",
+    "environment": "7e7e59ca0807f7ba699e71d38601b5c0b5c4e932f1b626da88e6eee76f26ce85",
+    "startup": "75ee632f87046a6accc4b3dc7e1105db50f6136c0c3b92281c46575a1ac45596",
+    "residencySnapshots": "319234f53f39a62af8383587a4cfb17a4c9611c87a8408aafc5cf8716a054530"
+  }
+}
