@@ -1,4 +1,5 @@
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Raster;
 
