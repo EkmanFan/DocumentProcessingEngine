@@ -227,8 +227,13 @@ public sealed record DocumentProcessingResult
     public IReadOnlyList<DocumentElement> Elements { get; }
 
     /// <summary>
-    /// Gets processing evidence for all non-visual document elements.
+    /// Gets processing evidence for document elements.
     /// </summary>
+    /// <remarks>
+    /// Evidence is mandatory for non-visual elements and optional for visual
+    /// elements. Visual evidence is used when a processor has neutral layout,
+    /// exclusion, or resolved-state custody to retain.
+    /// </remarks>
     public IReadOnlyList<DocumentElementProcessingEvidence>
         ElementProcessingEvidence { get; }
 
@@ -437,14 +442,6 @@ public sealed record DocumentProcessingResult
             {
                 throw new ArgumentException(
                     $"Element processing evidence references unknown element '{item.ElementId}'.",
-                    nameof(evidence));
-            }
-
-            if (element.Kind ==
-                DocumentElementKind.Visual)
-            {
-                throw new ArgumentException(
-                    $"Visual element '{element.ElementId}' must use visual-asset custody rather than text-processing evidence.",
                     nameof(evidence));
             }
 

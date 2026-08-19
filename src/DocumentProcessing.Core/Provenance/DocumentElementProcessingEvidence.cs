@@ -13,9 +13,9 @@ namespace DocumentProcessing.Core.Provenance;
 /// reconciled, normalized, or excluded without introducing physical-page or
 /// PDF-specific state.
 ///
-/// C2.2 intentionally focuses on text custody. Current raster-specific visual
-/// preservation evidence remains in the proven V1 model until it is generalized
-/// separately; no existing evidence is removed by this increment.
+/// For visual elements, text fields remain empty while neutral layout,
+/// exclusion, and resolved-state evidence can still be retained. Preserved
+/// binary custody remains separate in <c>DocumentVisualAsset</c>.
 /// </remarks>
 public sealed record DocumentElementProcessingEvidence
 {
