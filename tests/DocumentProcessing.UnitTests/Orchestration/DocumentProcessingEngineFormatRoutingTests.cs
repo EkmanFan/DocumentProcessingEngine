@@ -177,22 +177,15 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
     #region Methods Fixtures
 
     /// <summary>
-    /// Creates a result using the current page-based V1 contract.
+    /// Creates a minimal format-neutral result for strategy-routing tests.
     /// </summary>
-    /// <remarks>
-    /// A0 does not generalize the result model. In particular, this fixture is
-    /// intentionally PDF-shaped and must not be used to model EPUB or DOCX.
-    /// The portable result is redesigned separately in phase C.
-    /// </remarks>
-    private static DocumentIngestionResult CreateCurrentResult()
+    private static DocumentProcessingResult CreateCurrentResult()
     {
         var source =
-            new DocumentSourceIdentity(
+            new DocumentSourceDescriptor(
                 DocumentFormatId.Pdf,
                 SourceSha,
                 byteLength:
-                    1,
-                physicalPageCount:
                     1);
 
         var manifest =
@@ -220,27 +213,22 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
                 segmentationProfileId:
                     "test-segmentation");
 
-        var page =
-            new DocumentIngestionPage(
-                physicalPageNumber:
-                    1,
-                new NormalizedRectangle(
-                    0d,
-                    0d,
-                    1d,
-                    1d),
-                orderedElementIds:
-                    []);
-
-        return new DocumentIngestionResult(
+        return new DocumentProcessingResult(
             source,
             manifest,
-            [page],
             elements:
+                [],
+            elementProcessingEvidence:
                 [],
             structuralSegments:
                 [],
-            DocumentIngestionQualityObservations.Empty);
+            segmentProcessingEvidence:
+                [],
+            visualAssets:
+                [],
+            DocumentProcessingQualityObservations.Empty,
+            sourceStructure:
+                null);
     }
 
     #endregion
@@ -267,7 +255,7 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
 
     private sealed class StubFormatProcessor(
         DocumentFormatId format,
-        DocumentIngestionResult result)
+        DocumentProcessingResult result)
         : IDocumentFormatProcessor
     {
         public DocumentFormatId Format { get; } =
@@ -275,7 +263,7 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
 
         public int ProcessCallCount { get; private set; }
 
-        public Task<DocumentIngestionResult> ProcessDocumentAsync(
+        public Task<DocumentProcessingResult> ProcessDocumentAsync(
             DocumentSource source,
             CancellationToken cancellationToken = default)
         {
@@ -300,7 +288,7 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
 
         public int ProcessCallCount { get; private set; }
 
-        public Task<DocumentIngestionResult> ProcessDocumentAsync(
+        public Task<DocumentProcessingResult> ProcessDocumentAsync(
             DocumentSource source,
             CancellationToken cancellationToken = default)
         {

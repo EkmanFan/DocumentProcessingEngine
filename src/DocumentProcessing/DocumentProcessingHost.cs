@@ -17,9 +17,9 @@ namespace DocumentProcessing;
 /// services at execution time. This is deliberate constructor injection, not a
 /// Service Locator.
 ///
-/// The current return type remains <see cref="DocumentIngestionResult"/> only
-/// until the portable multi-format result contract is redesigned and renamed to
-/// DocumentProcessingResult.
+/// The consumer-facing operation returns the canonical format-neutral
+/// <see cref="DocumentProcessingResult"/> contract selected through the injected
+/// format strategy.
 /// </remarks>
 public sealed class DocumentProcessingHost
 {
@@ -66,7 +66,7 @@ public sealed class DocumentProcessingHost
     /// <returns>
     /// The current portable processing result.
     /// </returns>
-    public Task<DocumentIngestionResult> ProcessDocumentAsync(
+    public Task<DocumentProcessingResult> ProcessDocumentAsync(
         DocumentSource source,
         CancellationToken cancellationToken = default) =>
         _engine.ProcessDocumentAsync(

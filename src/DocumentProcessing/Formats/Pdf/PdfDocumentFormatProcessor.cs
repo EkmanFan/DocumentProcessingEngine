@@ -76,25 +76,33 @@ public sealed class PdfDocumentFormatProcessor
     #region Methods Processing
 
     /// <inheritdoc />
-    public Task<DocumentIngestionResult> ProcessDocumentAsync(
+    public async Task<DocumentProcessingResult> ProcessDocumentAsync(
         DocumentSource source,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
             source);
 
-        return _openPreservedVisualDestinationAsync is null
-            ? _documentProcessor.ProcessAsync(
-                source,
-                cancellationToken)
-            : _documentProcessor.ProcessAsync(
-                source,
-                (visual, token) =>
-                    _openPreservedVisualDestinationAsync(
+        var legacyResult =
+            _openPreservedVisualDestinationAsync is null
+                ? await _documentProcessor
+                    .ProcessAsync(
                         source,
-                        visual,
-                        token),
-                cancellationToken);
+                        cancellationToken)
+                    .ConfigureAwait(false)
+                : await _documentProcessor
+                    .ProcessAsync(
+                        source,
+                        (visual, token) =>
+                            _openPreservedVisualDestinationAsync(
+                                source,
+                                visual,
+                                token),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+        return PdfDocumentProcessingResultAdapter.Adapt(
+            legacyResult);
     }
 
     #endregion

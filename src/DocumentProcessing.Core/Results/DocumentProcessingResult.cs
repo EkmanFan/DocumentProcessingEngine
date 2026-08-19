@@ -6,14 +6,14 @@ namespace DocumentProcessing.Core.Results;
 /// Canonical format-neutral result returned by document processing.
 /// </summary>
 /// <remarks>
-/// This is the future public consumer boundary. It contains documentary
+/// This is the canonical public consumer result. It contains documentary
 /// structure, source custody, processing evidence, preserved-visual custody, and
 /// non-duplicating quality observations without requiring physical pages.
 ///
-/// The existing <see cref="DocumentIngestionResult"/> remains unchanged during
-/// the PDF migration. C3 introduces this result beside V1; later increments will
-/// adapt the current PDF pipeline and then change <c>IDocumentFormatProcessor</c>
-/// to return this type.
+/// <c>IDocumentFormatProcessor</c>, the generic engine, and the consumer-facing
+/// host return this type. The current authoritative PDF processor may still
+/// produce <see cref="DocumentIngestionResult"/> internally during migration,
+/// but that legacy result is adapted at the PDF strategy boundary.
 /// </remarks>
 public sealed record DocumentProcessingResult
 {

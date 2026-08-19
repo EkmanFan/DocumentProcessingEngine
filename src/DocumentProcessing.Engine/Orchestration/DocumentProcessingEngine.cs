@@ -116,7 +116,7 @@ public sealed class DocumentProcessingEngine
     /// Thrown when detection reports a supported document without a format or a
     /// format strategy violates the non-null result contract.
     /// </exception>
-    public async Task<DocumentIngestionResult> ProcessDocumentAsync(
+    public async Task<DocumentProcessingResult> ProcessDocumentAsync(
         DocumentSource source,
         CancellationToken cancellationToken = default)
     {

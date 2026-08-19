@@ -11,9 +11,8 @@ namespace DocumentProcessing.Core.Processing;
 /// EPUB, DOCX, or any other concrete document-format implementation.
 ///
 /// A strategy owns the processing behavior that is specific to its declared
-/// <see cref="Format"/> and returns the engine's current portable result
-/// contract. The result type will be renamed and generalized separately when
-/// the multi-format public result is redesigned.
+/// <see cref="Format"/> and returns the canonical format-neutral
+/// <see cref="DocumentProcessingResult"/> contract.
 /// </remarks>
 public interface IDocumentFormatProcessor
 {
@@ -38,7 +37,7 @@ public interface IDocumentFormatProcessor
     /// <returns>
     /// The current portable document-processing result.
     /// </returns>
-    Task<DocumentIngestionResult> ProcessDocumentAsync(
+    Task<DocumentProcessingResult> ProcessDocumentAsync(
         DocumentSource source,
         CancellationToken cancellationToken = default);
 

@@ -1,5 +1,6 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
+using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Pdf;
@@ -72,8 +73,12 @@ public sealed class DocumentProcessingHostPdfRoutingTests
             DocumentFormatId.Pdf,
             result.Source.Format);
 
+        var structure =
+            Assert.IsType<PagedDocumentSourceStructure>(
+                result.SourceStructure);
+
         Assert.Single(
-            result.Pages);
+            structure.Pages);
 
         var element =
             Assert.Single(
@@ -81,7 +86,7 @@ public sealed class DocumentProcessingHostPdfRoutingTests
 
         Assert.Equal(
             "Native PDF text.",
-            element.NormalizedText);
+            element.Text);
     }
 
     [Fact]
