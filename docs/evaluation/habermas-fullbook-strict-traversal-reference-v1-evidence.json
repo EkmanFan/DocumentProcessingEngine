@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "document-processing-habermas-fullbook-strict-traversal-reference-evidence-v1",
+  "baselineCommit": "f456e59cf527349736f459bf4c16b20b9efd7111",
+  "sourceArtifacts": {
+    "strictTraversalScript": {
+      "sha256": "25a603f9bf79c3308381008ae8a4ff34b40d2598727c4858e51e26b39a3ac63a",
+      "expectedSha256": "25a603f9bf79c3308381008ae8a4ff34b40d2598727c4858e51e26b39a3ac63a"
+    },
+    "strictTraversalReport": {
+      "sha256": "48d1b48ec69a905e90cde2f4209fa8b0aa3f1eb428849ef192cc259e8a23ce72",
+      "byteLength": 1468
+    },
+    "strictTraversalConsole": {
+      "sha256": "7d2fa519949cd997bf59e933af01a67037ddccab81db416e8e14d7b0676b2c7f",
+      "byteLength": 495
+    },
+    "preservedVisuals": {
+      "fileCount": 22,
+      "totalBytes": 23984612,
+      "files": [
+        {
+          "fileName": "p000018-seq0001.bin",
+          "sha256": "cc363ceff1120a46b60bab74ee81a6f962bd2b422c97b71ee4301ee18f833282",
+          "byteLength": 169800
+        },
+        {
+          "fileName": "p000028-seq0001.bin",
+          "sha256": "cb6c2e5c636ee8a668511ff56523825ea9ae5f3170e0d016c8072fca5607da8f",
+          "byteLength": 1545924
+        },
+        {
+          "fileName": "p000034-seq0000.bin",
+          "sha256": "895e816922fafd05705e97dc943fc33707c34646ff077f76c65d58fa8372174a",
+          "byteLength": 801985
+        },
+        {
+          "fileName": "p000036-seq0000.bin",
+          "sha256": "745c0b971f744177743004192e4ade3cd088023a12eaa3bc798c2d4a976a1f32",
+          "byteLength": 874046
+        },
+        {
+          "fileName": "p000038-seq0000.bin",
+          "sha256": "4f78e94f6ea321479717afe3e2775ee581d3655edbea8f0f10c95767bb5a5ea5",
+          "byteLength": 1358571
+        },
+        {
+          "fileName": "p000040-seq0000.bin",
+          "sha256": "bffd8d7fd27462ab530f50c483aa39bad7849653c81960d15e8cf73c8c829f03",
+          "byteLength": 798598
+        },
+        {
+          "fileName": "p000043-seq0000.bin",
+          "sha256": "bf20176970e097a3d20d1142db44488f7aba4e7ca8e76c5c8bf7b6b799b813f2",
+          "byteLength": 878872
+        },
+        {
+          "fileName": "p000044-seq0000.bin",
+          "sha256": "b7ea9fe5058bfa7363847934190f6553628a513e4750084b601c1e61c220f58f",
+          "byteLength": 865904
+        },
+        {
+          "fileName": "p000051-seq0000.bin",
+          "sha256": "78420917be12b9f29a4b5c056730ea1d72c75110a14ec7affccf5d7218466d1f",
+          "byteLength": 1394724
+        },
+        {
+          "fileName": "p000054-seq0000.bin",
+          "sha256": "82525fa81fcb4ec06c095278d528f8c57829659dcfe8da0afe112820aa21b829",
+          "byteLength": 1820741
+        },
+        {
+          "fileName": "p000056-seq0000.bin",
+          "sha256": "4589645c8baecf7814d4226eed65ee7381fee64e6cafbd6eb06cad41c8f80070",
+          "byteLength": 1382058
+        },
+        {
+          "fileName": "p000058-seq0000.bin",
+          "sha256": "bd9cba9f6efc32bd95e16a7f73052c052eafe42e902c3a2364b1f3a4c6b306b4",
+          "byteLength": 1048754
+        },
+        {
+          "fileName": "p000059-seq0004.bin",
+          "sha256": "8de0e788f4a5b610a716fe4bde98f227edde33743bc6a009fc0d6f6ff3f258ed",
+          "byteLength": 788577
+        },
+        {
+          "fileName": "p000061-seq0003.bin",
+          "sha256": "588b0eebcde6f2a4c236dad3db3bda18cc7f4cc82ca3d08d8bda595f83f7427c",
+          "byteLength": 290367
+        },
+        {
+          "fileName": "p000063-seq0002.bin",
+          "sha256": "027e278657f95fffda22e08b4f2de7bea4d72f270e7caa24ec4fe76a176b178a",
+          "byteLength": 1778746
+        },
+        {
+          "fileName": "p000064-seq0002.bin",
+          "sha256": "bd731903fe2a7a7c31bbb69f3c047acf0b90183bfc869d45c6938d5c7329f564",
+          "byteLength": 1179722
+        },
+        {
+          "fileName": "p000065-seq0001.bin",
+          "sha256": "fac65726c768a25abc0b6336a551e0bbc672cb785958d65b9db8d39115b8eb66",
+          "byteLength": 785150
+        },
+        {
+          "fileName": "p000072-seq0000.bin",
+          "sha256": "fd334dc11603fed34f361da1d80c4ddf02f44b8e3acce5f55a1b89b4c9d212cb",
+          "byteLength": 878624
+        },
+        {
+          "fileName": "p000074-seq0000.bin",
+          "sha256": "057399aea04eb0b082d5ac03930c092796a50833f947f75e8e8893c33b7f2e10",
+          "byteLength": 1863712
+        },
+        {
+          "fileName": "p000076-seq0000.bin",
+          "sha256": "a3179e74df6b50ffde7cecb766c914acebe369e0115c5427c858a84fbc297537",
+          "byteLength": 951935
+        },
+        {
+          "fileName": "p000082-seq0000.bin",
+          "sha256": "517483e12fa3844247808f5b991e7cbcffbcd09f1f0ed0eeccb45742216f350e",
+          "byteLength": 1216430
+        },
+        {
+          "fileName": "p000083-seq0000.bin",
+          "sha256": "23a7ce9d0fcda90430f52d6509ec7dd97b0addbad5731fc25f5ca17aa33724f9",
+          "byteLength": 1311372
+        }
+      ]
+    }
+  },
+  "criticalInvariants": {
+    "pageCount": 170,
+    "figureOcrCount": 0,
+    "diagnosticSourcePatch": false,
+    "semanticBypass": false,
+    "sourceSha256": "f367a503f298337ec589eb1ad5ec5fe956999e49205a486d50798bfeee6d0399"
+  }
+}

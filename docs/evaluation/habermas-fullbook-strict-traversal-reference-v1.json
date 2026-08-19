@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "document-processing-habermas-fullbook-strict-traversal-reference-v1",
+  "qualification": "Strict full-book traversal reference; not exhaustive page-by-page semantic acceptance.",
+  "baselineCommit": "f456e59cf527349736f459bf4c16b20b9efd7111",
+  "method": {
+    "publicDocumentProcessorPath": true,
+    "reportSchema": "document-processing-authoritative-two-phase-concurrent-baseline-v1",
+    "livePpStructureV3": true,
+    "livePaddleOcr": true,
+    "concurrentResidentModels": true,
+    "diagnosticSourcePatch": false,
+    "semanticBypass": false,
+    "failClosedInterruption": false
+  },
+  "run": {
+    "schemaVersion": "document-processing-authoritative-two-phase-concurrent-baseline-v1",
+    "generatedAtUtc": "2026-08-19T10:38:20.437521+00:00",
+    "documentId": "habermas-fullbook-strict-f456e59",
+    "sourceFileName": "The Case for the Resurrection of Jesus - Gary R. Habernas.pdf",
+    "sourceSha256": "f367a503f298337ec589eb1ad5ec5fe956999e49205a486d50798bfeee6d0399",
+    "sourceByteLength": 7792311,
+    "pageCount": 170,
+    "nativeOnlyPages": 159,
+    "plannedOcrBackedPages": 11,
+    "routeCounts": {
+      "LayoutWithTargetedOcrRecovery": 11,
+      "NativeOnly": 159
+    },
+    "layoutCalls": 28,
+    "ocrCalls": 17,
+    "ocrExecutedPageCount": 4,
+    "figureOcrCount": 0,
+    "fullPageRenderCount": 28,
+    "regionRenderCount": 39,
+    "visualObserverCalls": 1,
+    "preservedVisualCount": 22,
+    "preservedVisualBytes": 23984612,
+    "resultElementCount": 1217,
+    "totalProcessMilliseconds": 181667.8992,
+    "fullPageRenderMilliseconds": 16632.518600000003,
+    "layoutServiceMilliseconds": 141785.9704,
+    "regionRenderMilliseconds": 13070.974600000001,
+    "ocrServiceMilliseconds": 5417.5151000000005,
+    "visualPlanningMilliseconds": 1420.0715,
+    "layoutWorkWindowMilliseconds": 158438.7513,
+    "regionExecutionWindowMilliseconds": 18542.0468,
+    "layoutToRegionBoundaryGapMilliseconds": 14.3174,
+    "managedAllocatedBytes": 4475699656,
+    "peakWorkingSetBytes": 498327552,
+    "managedHeapSizeBytesAfter": 835817288,
+    "processStartTimestamp": 52724125307916,
+    "processEndTimestamp": 52905793223152
+  },
+  "reviewedInterpretation": {
+    "physicalPagesTraversed": 170,
+    "nativeOnlyPages": 159,
+    "ocrBackedPages": 11,
+    "layoutCalls": 28,
+    "ocrCalls": 17,
+    "ocrExecutedPages": 4,
+    "figureOcrCalls": 0,
+    "preservedVisuals": 22,
+    "preservedVisualBytes": 23984612,
+    "resultElements": 1217,
+    "totalProcessMillisecondsRounded1": 181667.9,
+    "dpePeakWorkingSetMiBRounded1": 475.2,
+    "managedAllocatedMiBRounded1": 4268.4
+  },
+  "scopeBoundary": {
+    "proves": [
+      "The complete 170-page Habermas source traverses the current public processing path without a fail-closed interruption.",
+      "The run completes without a diagnostic source patch or semantic bypass.",
+      "Figure OCR remains zero for the complete traversal."
+    ],
+    "doesNotProve": [
+      "Exhaustive human semantic correctness of every produced element on all 170 pages.",
+      "Correctness of the known p28 figure_title classification heuristic beyond the accepted final document behavior.",
+      "Performance or memory acceptance for arbitrary documents or shared-server deployment."
+    ]
+  }
+}
