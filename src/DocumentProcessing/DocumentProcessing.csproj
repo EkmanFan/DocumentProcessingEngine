@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Engine\DocumentProcessing.Engine.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Pdf\DocumentProcessing.Pdf.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

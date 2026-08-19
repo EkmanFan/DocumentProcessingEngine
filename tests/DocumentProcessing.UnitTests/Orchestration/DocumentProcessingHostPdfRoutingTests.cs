@@ -1,222 +1,106 @@
+using System.Reflection;
 using DocumentProcessing.Core.Documents;
-using DocumentProcessing.Core.Extraction;
-using DocumentProcessing.Core.Locations;
-using DocumentProcessing.Core.Provenance;
-using DocumentProcessing.Engine.Orchestration;
-using DocumentProcessing.Pdf;
+using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Formats.Pdf;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 
-/// <summary>
-/// Proves the first real format strategy through the consumer-facing host.
-/// </summary>
 public sealed class DocumentProcessingHostPdfRoutingTests
 {
-    #region Variables and Constants
-
-    private static readonly ProcessingComponentIdentity NativeIdentity =
-        new(
-            "fake-native",
-            "fake-native-v1");
-
-    #endregion
-
     #region Methods Tests
 
     [Fact]
-    public async Task ProcessDocumentAsync_Pdf_ExecutesThroughHostAndPdfStrategy()
+    public void PublicConstructor_AcceptsConfigurationNotDetectorOrStrategyInjection()
     {
-        var extraction =
-            new DocumentExtractionResult(
-                DocumentFormatId.Pdf,
-                [
-                    NativePage(
-                        "Native PDF text.")
-                ]);
+        var constructors =
+            typeof(global::DocumentProcessing.DocumentProcessingHost)
+                .GetConstructors(
+                    BindingFlags.Public |
+                    BindingFlags.Instance);
 
-        var detector =
-            new PdfDocumentTypeDetector();
-
-        var authoritativePdfProcessor =
-            new DocumentProcessor(
-                detector,
-                new StubExtractor(
-                    extraction),
-                new PdfPreflightAnalyzer(),
-                "test-engine-v1",
-                NativeIdentity);
-
-        var pdfStrategy =
-            new PdfDocumentFormatProcessor(
-                authoritativePdfProcessor);
-
-        var host =
-            new global::DocumentProcessing.DocumentProcessingHost(
-                detector,
-                [pdfStrategy]);
-
-        await using var stream =
-            new MemoryStream(
-                "%PDF-host-strategy-test"u8.ToArray(),
-                writable:
-                    false);
-
-        var result =
-            await host.ProcessDocumentAsync(
-                new DocumentSource(
-                    stream,
-                    "fixture.pdf",
-                    "application/pdf"));
-
-        Assert.Equal(
-            DocumentFormatId.Pdf,
-            result.Source.Format);
-
-        var structure =
-            Assert.IsType<PagedDocumentSourceStructure>(
-                result.SourceStructure);
-
-        Assert.Single(
-            structure.Pages);
-
-        var element =
+        var constructor =
             Assert.Single(
-                result.Elements);
+                constructors);
+
+        var parameter =
+            Assert.Single(
+                constructor.GetParameters());
 
         Assert.Equal(
-            "Native PDF text.",
-            element.Text);
+            typeof(global::DocumentProcessing.DocumentProcessingHostOptions),
+            parameter.ParameterType);
+
+        Assert.DoesNotContain(
+            constructor.GetParameters(),
+            candidate =>
+                typeof(IDocumentTypeDetector)
+                    .IsAssignableFrom(
+                        candidate.ParameterType));
+
+        Assert.DoesNotContain(
+            constructor.GetParameters(),
+            candidate =>
+                typeof(IEnumerable<IDocumentFormatProcessor>)
+                    .IsAssignableFrom(
+                        candidate.ParameterType));
     }
 
     [Fact]
-    public void PdfDocumentFormatProcessor_DeclaresPdfFormat()
+    public async Task ProcessDocumentAsync_UnsupportedSourceFailsAtHostDetectionBoundary()
     {
-        var extraction =
-            new DocumentExtractionResult(
-                DocumentFormatId.Pdf,
-                [
-                    NativePage(
-                        "Native PDF text.")
-                ]);
+        using var host =
+            CreateHost();
 
-        var processor =
-            new PdfDocumentFormatProcessor(
-                new DocumentProcessor(
-                    new PdfDocumentTypeDetector(),
-                    new StubExtractor(
-                        extraction),
-                    new PdfPreflightAnalyzer(),
-                    "test-engine-v1",
-                    NativeIdentity));
+        await using var stream =
+            new MemoryStream(
+                [1, 2, 3, 4],
+                writable:
+                    false);
 
-        Assert.Equal(
-            DocumentFormatId.Pdf,
-            processor.Format);
+        await Assert.ThrowsAsync<NotSupportedException>(
+            () =>
+                host.ProcessDocumentAsync(
+                    new DocumentSource(
+                        stream,
+                        "unknown.bin",
+                        "application/octet-stream")));
+    }
+
+    [Fact]
+    public async Task Dispose_PreventsFurtherHostProcessing()
+    {
+        var host =
+            CreateHost();
+
+        host.Dispose();
+
+        using var stream =
+            new MemoryStream(
+                [1, 2, 3],
+                writable:
+                    false);
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(
+            () =>
+                host.ProcessDocumentAsync(
+                    new DocumentSource(
+                        stream)));
     }
 
     #endregion
 
     #region Methods Fixtures
 
-    private static DocumentExtractionPage NativePage(
-        string text)
-    {
-        var word =
-            new DocumentWord(
-                sourceSequence:
-                    0,
-                text,
-                new NormalizedRectangle(
-                    0.10,
-                    0.10,
-                    0.40,
-                    0.15),
-                fontName:
-                    "Body",
-                medianPointSize:
-                    10);
-
-        var block =
-            new DocumentTextBlock(
-                sourceSequence:
-                    0,
-                readingOrder:
-                    0,
-                text,
-                new NormalizedRectangle(
-                    0.10,
-                    0.10,
-                    0.60,
-                    0.20),
-                words:
-                    [word],
-                dominantFontName:
-                    "Body",
-                medianPointSize:
-                    10,
-                lineCount:
-                    1);
-
-        return new DocumentExtractionPage(
-            physicalPageNumber:
-                1,
-            text,
-            new NormalizedRectangle(
-                0,
-                0,
-                1,
-                1),
-            wordCount:
-                1,
-            rasterImageCount:
-                0,
-            largestRasterImageAreaRatio:
-                0,
-            sourceWidth:
-                1000,
-            sourceHeight:
-                1000,
-            words:
-                [word],
-            blocks:
-                [block]);
-    }
-
-    #endregion
-
-    #region Test Types
-
-    private sealed class StubExtractor(
-        DocumentExtractionResult extraction)
-        : IDocumentExtractor
-    {
-        public bool CanExtract(
-            DocumentFormatId format) =>
-            format ==
-            DocumentFormatId.Pdf;
-
-        public ValueTask<DocumentExtractionResult> ExtractAsync(
-            DocumentSource source,
-            DocumentFormatId format,
-            CancellationToken cancellationToken = default)
-        {
-            ArgumentNullException.ThrowIfNull(
-                source);
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (!CanExtract(
-                    format))
-            {
-                throw new NotSupportedException(
-                    $"Test extractor cannot process '{format}'.");
-            }
-
-            return ValueTask.FromResult(
-                extraction);
-        }
-    }
+    private static global::DocumentProcessing.DocumentProcessingHost CreateHost() =>
+        new(
+            new global::DocumentProcessing.DocumentProcessingHostOptions(
+                "test-engine-v1",
+                new PdfDocumentProcessingOptions(
+                    new Uri(
+                        "http://127.0.0.1:1/layout-parsing"),
+                    new Uri(
+                        "http://127.0.0.1:1/ocr"),
+                    "test-ocr-profile")));
 
     #endregion
 }

@@ -1,5 +1,4 @@
 using DocumentProcessing.Core.Documents;
-using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
@@ -7,10 +6,6 @@ using DocumentProcessing.Engine.Orchestration;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 
-/// <summary>
-/// Verifies the format-neutral strategy seam without exercising any concrete
-/// document-format implementation.
-/// </summary>
 public sealed class DocumentProcessingEngineFormatRoutingTests
 {
     #region Variables and Constants
@@ -23,162 +18,114 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
     #region Methods Tests
 
     [Fact]
-    public async Task ProcessDocumentAsync_DelegatesToMatchingInjectedStrategy()
+    public async Task ProcessDocumentAsync_ExecutesSelectedInjectedStrategy()
     {
-        var pdfResult =
+        var expected =
             CreateCurrentResult();
 
-        var pdfProcessor =
+        var processor =
             new StubFormatProcessor(
                 DocumentFormatId.Pdf,
-                pdfResult);
-
-        var unexpectedProcessor =
-            new UnexpectedFormatProcessor(
-                new DocumentFormatId(
-                    "epub"));
+                expected);
 
         var engine =
-            new DocumentProcessingEngine(
-                new StubDocumentTypeDetector(
-                    new DocumentTypeDetectionResult(
-                        DocumentFormatId.Pdf,
-                        "application/pdf",
-                        IsSupported: true)),
-                [
-                    unexpectedProcessor,
-                    pdfProcessor
-                ]);
+            new DocumentProcessingEngine();
 
         await using var stream =
             new MemoryStream(
                 "%PDF-test"u8.ToArray());
 
-        var source =
-            new DocumentSource(
-                stream,
-                "fixture.pdf",
-                "application/pdf");
-
         var actual =
-            await engine
-                .ProcessDocumentAsync(
-                    source);
+            await engine.ProcessDocumentAsync(
+                new DocumentSource(
+                    stream,
+                    "fixture.pdf",
+                    "application/pdf"),
+                processor);
 
         Assert.Same(
-            pdfResult,
+            expected,
             actual);
 
         Assert.Equal(
             1,
-            pdfProcessor.ProcessCallCount);
-
-        Assert.Equal(
-            0,
-            unexpectedProcessor.ProcessCallCount);
+            processor.ProcessCallCount);
     }
 
     [Fact]
-    public async Task ProcessDocumentAsync_RejectsDetectedFormatWithoutStrategy()
+    public async Task ProcessDocumentAsync_RejectsNullSelectedStrategy()
     {
         var engine =
-            new DocumentProcessingEngine(
-                new StubDocumentTypeDetector(
-                    new DocumentTypeDetectionResult(
-                        new DocumentFormatId(
-                            "epub"),
-                        "application/epub+zip",
-                        IsSupported: true)),
-                [
-                    new StubFormatProcessor(
-                        DocumentFormatId.Pdf,
-                        CreateCurrentResult())
-                ]);
+            new DocumentProcessingEngine();
 
         await using var stream =
             new MemoryStream(
                 [1, 2, 3]);
 
-        var error =
-            await Assert.ThrowsAsync<NotSupportedException>(
-                () =>
-                    engine.ProcessDocumentAsync(
-                        new DocumentSource(
-                            stream,
-                            "fixture.epub")));
-
-        Assert.Contains(
-            "epub",
-            error.Message,
-            StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task ProcessDocumentAsync_RejectsUnsupportedDetection()
-    {
-        var pdfProcessor =
-            new StubFormatProcessor(
-                DocumentFormatId.Pdf,
-                CreateCurrentResult());
-
-        var engine =
-            new DocumentProcessingEngine(
-                new StubDocumentTypeDetector(
-                    DocumentTypeDetectionResult.Unknown),
-                [pdfProcessor]);
-
-        await using var stream =
-            new MemoryStream(
-                [1, 2, 3]);
-
-        await Assert.ThrowsAsync<NotSupportedException>(
+        await Assert.ThrowsAsync<ArgumentNullException>(
             () =>
                 engine.ProcessDocumentAsync(
                     new DocumentSource(
-                        stream)));
-
-        Assert.Equal(
-            0,
-            pdfProcessor.ProcessCallCount);
+                        stream),
+                    formatProcessor:
+                        null!));
     }
 
     [Fact]
-    public void Constructor_RejectsDuplicateStrategiesForSameFormat()
+    public async Task ProcessDocumentAsync_PropagatesCallerCancellationBeforeStrategyExecution()
     {
-        var first =
+        var processor =
             new StubFormatProcessor(
                 DocumentFormatId.Pdf,
                 CreateCurrentResult());
 
-        var second =
-            new StubFormatProcessor(
-                DocumentFormatId.Pdf,
-                CreateCurrentResult());
+        var engine =
+            new DocumentProcessingEngine();
 
-        var error =
-            Assert.Throws<ArgumentException>(
-                () =>
-                    new DocumentProcessingEngine(
-                        new StubDocumentTypeDetector(
-                            DocumentTypeDetectionResult.Unknown),
-                        [
-                            first,
-                            second
-                        ]));
+        await using var stream =
+            new MemoryStream(
+                [1, 2, 3]);
 
-        Assert.Contains(
-            "one document format processor",
-            error.Message,
-            StringComparison.OrdinalIgnoreCase);
+        using var cancellation =
+            new CancellationTokenSource();
+
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () =>
+                engine.ProcessDocumentAsync(
+                    new DocumentSource(
+                        stream),
+                    processor,
+                    cancellation.Token));
+
+        Assert.Equal(
+            0,
+            processor.ProcessCallCount);
+    }
+
+    [Fact]
+    public async Task ProcessDocumentAsync_RejectsNullStrategyResult()
+    {
+        var engine =
+            new DocumentProcessingEngine();
+
+        await using var stream =
+            new MemoryStream(
+                [1, 2, 3]);
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () =>
+                engine.ProcessDocumentAsync(
+                    new DocumentSource(
+                        stream),
+                    new NullResultFormatProcessor()));
     }
 
     #endregion
 
     #region Methods Fixtures
 
-    /// <summary>
-    /// Creates a minimal format-neutral result for strategy-routing tests.
-    /// </summary>
     private static DocumentProcessingResult CreateCurrentResult()
     {
         var source =
@@ -235,24 +182,6 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
 
     #region Test Types
 
-    private sealed class StubDocumentTypeDetector(
-        DocumentTypeDetectionResult result)
-        : IDocumentTypeDetector
-    {
-        public ValueTask<DocumentTypeDetectionResult> DetectAsync(
-            DocumentSource source,
-            CancellationToken cancellationToken = default)
-        {
-            ArgumentNullException.ThrowIfNull(
-                source);
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return ValueTask.FromResult(
-                result);
-        }
-    }
-
     private sealed class StubFormatProcessor(
         DocumentFormatId format,
         DocumentProcessingResult result)
@@ -279,14 +208,11 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
         }
     }
 
-    private sealed class UnexpectedFormatProcessor(
-        DocumentFormatId format)
+    private sealed class NullResultFormatProcessor
         : IDocumentFormatProcessor
     {
-        public DocumentFormatId Format { get; } =
-            format;
-
-        public int ProcessCallCount { get; private set; }
+        public DocumentFormatId Format =>
+            DocumentFormatId.Pdf;
 
         public Task<DocumentProcessingResult> ProcessDocumentAsync(
             DocumentSource source,
@@ -297,10 +223,8 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            ProcessCallCount++;
-
-            throw new InvalidOperationException(
-                "The non-matching format processor must not be invoked.");
+            return Task.FromResult<DocumentProcessingResult>(
+                null!);
         }
     }
 
