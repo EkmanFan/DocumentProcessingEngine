@@ -20,8 +20,8 @@ namespace DocumentProcessing.Formats.Pdf;
 /// The current authoritative PDF-shaped <see cref="DocumentProcessor"/> remains
 /// behind the strategy until later B2 ownership/splitting work.
 ///
-/// The current inner processor still performs its own PDF type detection. That
-/// duplicate detection is explicitly transitional.
+/// The Host-selected PDF strategy passes the already-known PDF format into the
+/// authoritative processor; format detection is not repeated below this boundary.
 ///
 /// PP-StructureV3/PaddleOCR provider decoupling is not part of this change.
 /// </remarks>
@@ -79,15 +79,11 @@ public sealed class PdfDocumentFormatProcessor
     #region Methods Composition
 
     internal static PdfDocumentFormatProcessor CreateForHost(
-        IDocumentTypeDetector documentTypeDetector,
         PdfDocumentProcessingOptions options,
         string engineVersion,
         HttpClient layoutHttpClient,
         HttpClient ocrHttpClient)
     {
-        ArgumentNullException.ThrowIfNull(
-            documentTypeDetector);
-
         ArgumentNullException.ThrowIfNull(
             options);
 
@@ -146,7 +142,7 @@ public sealed class PdfDocumentFormatProcessor
 
         var authoritativeProcessor =
             new DocumentProcessor(
-                documentTypeDetector,
+                DocumentFormatId.Pdf,
                 new PdfPigDocumentExtractor(),
                 new PdfPreflightAnalyzer(),
                 DocumentPageProcessingPlanner.CreateDefault(),

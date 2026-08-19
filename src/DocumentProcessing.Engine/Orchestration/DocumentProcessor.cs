@@ -28,7 +28,7 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// supported V1 execution routes:
 ///
 /// source
-///   -> type detection
+///   -> selected format execution
 ///   -> native extraction
 ///   -> preflight
 ///   -> deterministic page assessment / route planning
@@ -47,7 +47,7 @@ public sealed class DocumentProcessor
 {
     #region Variables and Constants
 
-    private readonly IDocumentTypeDetector _documentTypeDetector;
+    private readonly DocumentFormatId _format;
     private readonly IDocumentExtractor _nativeExtractor;
     private readonly IDocumentPreflightAnalyzer _preflightAnalyzer;
     private readonly DocumentPageProcessingPlanner _pageProcessingPlanner;
@@ -73,7 +73,7 @@ public sealed class DocumentProcessor
     /// were configured.
     /// </summary>
     public DocumentProcessor(
-        IDocumentTypeDetector documentTypeDetector,
+        DocumentFormatId format,
         IDocumentExtractor nativeExtractor,
         IDocumentPreflightAnalyzer preflightAnalyzer,
         string engineVersion,
@@ -82,7 +82,7 @@ public sealed class DocumentProcessor
         DocumentDualRunCandidateTextExecutionDependencies?
             dualRunCandidateTextExecution = null)
         : this(
-            documentTypeDetector,
+            format,
             nativeExtractor,
             preflightAnalyzer,
             DocumentPageProcessingPlanner.CreateDefault(),
@@ -101,7 +101,7 @@ public sealed class DocumentProcessor
     /// Full V1 hybrid composition with an explicit deterministic planner.
     /// </summary>
     public DocumentProcessor(
-        IDocumentTypeDetector documentTypeDetector,
+        DocumentFormatId format,
         IDocumentExtractor nativeExtractor,
         IDocumentPreflightAnalyzer preflightAnalyzer,
         DocumentPageProcessingPlanner pageProcessingPlanner,
@@ -112,7 +112,7 @@ public sealed class DocumentProcessor
         DocumentDualRunCandidateTextExecutionDependencies?
             dualRunCandidateTextExecution = null)
         : this(
-            documentTypeDetector,
+            format,
             nativeExtractor,
             preflightAnalyzer,
             pageProcessingPlanner,
@@ -129,7 +129,7 @@ public sealed class DocumentProcessor
     }
 
     private DocumentProcessor(
-        IDocumentTypeDetector documentTypeDetector,
+        DocumentFormatId format,
         IDocumentExtractor nativeExtractor,
         IDocumentPreflightAnalyzer preflightAnalyzer,
         DocumentPageProcessingPlanner pageProcessingPlanner,
@@ -141,10 +141,16 @@ public sealed class DocumentProcessor
         DocumentDualRunCandidateTextExecutionDependencies?
             dualRunCandidateTextExecution = null)
     {
-        _documentTypeDetector =
-            documentTypeDetector ??
-            throw new ArgumentNullException(
-                nameof(documentTypeDetector));
+        if (string.IsNullOrWhiteSpace(
+                format.Value))
+        {
+            throw new ArgumentException(
+                "Selected document format cannot be empty.",
+                nameof(format));
+        }
+
+        _format =
+            format;
 
         _nativeExtractor =
             nativeExtractor ??
@@ -270,26 +276,8 @@ public sealed class DocumentProcessor
                     cancellationToken)
                 .ConfigureAwait(false);
 
-        prepared.ResetForRead();
-
-        var detection =
-            await _documentTypeDetector
-                .DetectAsync(
-                    prepared.Source,
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-        if (!detection.IsSupported)
-        {
-            throw new NotSupportedException(
-                "The document format is not supported by the configured document processor.");
-        }
-
-        if (detection.Format is not { } format)
-        {
-            throw new InvalidDataException(
-                "Document type detection reported a supported document without a format identifier.");
-        }
+        var format =
+            _format;
 
         if (!_nativeExtractor.CanExtract(
                 format))
@@ -1144,17 +1132,17 @@ public sealed class DocumentProcessor
     #region Methods Validation
 
     private static void ValidateExtraction(
-        DocumentFormatId detectedFormat,
+        DocumentFormatId selectedFormat,
         DocumentExtractionResult extraction)
     {
         ArgumentNullException.ThrowIfNull(
             extraction);
 
         if (extraction.Format !=
-            detectedFormat)
+            selectedFormat)
         {
             throw new InvalidDataException(
-                $"Native extraction format '{extraction.Format}' does not match detected format '{detectedFormat}'.");
+                $"Native extraction format '{extraction.Format}' does not match selected format '{selectedFormat}'.");
         }
 
         if (extraction.Pages.Count ==

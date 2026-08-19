@@ -108,7 +108,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
             Assert.Throws<ArgumentException>(
                 () =>
                     new DocumentProcessor(
-                        new StubDetector(),
+                        DocumentFormatId.Pdf,
                         new StubExtractor(
                             Extraction(
                                 Page(
@@ -600,7 +600,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
     {
         var processor =
             new DocumentProcessor(
-                new StubDetector(),
+                DocumentFormatId.Pdf,
                 new StubExtractor(
                     extraction),
                 new StubPreflightAnalyzer(),

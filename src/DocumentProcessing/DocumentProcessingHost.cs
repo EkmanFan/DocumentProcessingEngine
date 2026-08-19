@@ -57,7 +57,6 @@ public sealed class DocumentProcessingHost
 
             var pdfProcessor =
                 PdfDocumentFormatProcessor.CreateForHost(
-                    _documentTypeDetector,
                     options.Pdf,
                     options.EngineVersion,
                     _layoutHttpClient,

@@ -25,14 +25,6 @@ public sealed class DocumentProcessorTests
         var extraction =
             CreateHealthyExtraction();
 
-        var detector =
-            new StubDetector(
-                new DocumentTypeDetectionResult(
-                    DocumentFormatId.Pdf,
-                    "application/pdf",
-                    IsSupported:
-                        true));
-
         var extractor =
             new StubExtractor(
                 extraction);
@@ -55,7 +47,6 @@ public sealed class DocumentProcessorTests
 
         var processor =
             CreateProcessor(
-                detector,
                 extractor,
                 preflight);
 
@@ -157,14 +148,7 @@ public sealed class DocumentProcessorTests
             });
 
         Assert.True(
-            detector.SawSeekableSource);
-
-        Assert.True(
             extractor.SawSeekableSource);
-
-        Assert.Equal(
-            1,
-            detector.CallCount);
 
         Assert.Equal(
             1,
@@ -216,21 +200,12 @@ public sealed class DocumentProcessorTests
             new NonSeekableReadStream(
                 bytes);
 
-        var detector =
-            new StubDetector(
-                new DocumentTypeDetectionResult(
-                    DocumentFormatId.Pdf,
-                    "application/pdf",
-                    IsSupported:
-                        true));
-
         var extractor =
             new StubExtractor(
                 CreateHealthyExtraction());
 
         var processor =
             CreateProcessor(
-                detector,
                 extractor,
                 new StubPreflightAnalyzer(
                     DocumentPreflightClassification.HealthyBornDigital));
@@ -252,46 +227,43 @@ public sealed class DocumentProcessorTests
             result.Source.ByteLength);
 
         Assert.True(
-            detector.SawSeekableSource);
-
-        Assert.True(
             extractor.SawSeekableSource);
     }
 
     [Fact]
-    public async Task ProcessAsync_UnsupportedDetection_StopsBeforeExtraction()
+    public void PublicConstructors_ReceiveSelectedFormatInsteadOfTypeDetector()
     {
-        var detector =
-            new StubDetector(
-                DocumentTypeDetectionResult.Unknown);
+        var constructors =
+            typeof(DocumentProcessor)
+                .GetConstructors();
 
-        var extractor =
-            new StubExtractor(
-                CreateHealthyExtraction());
+        Assert.NotEmpty(
+            constructors);
 
-        var processor =
-            CreateProcessor(
-                detector,
-                extractor,
-                new StubPreflightAnalyzer(
-                    DocumentPreflightClassification.HealthyBornDigital));
+        Assert.All(
+            constructors,
+            constructor =>
+            {
+                var parameterTypes =
+                    constructor
+                        .GetParameters()
+                        .Select(
+                            parameter =>
+                                parameter.ParameterType)
+                        .ToArray();
 
-        await using var stream =
-            CreateSourceStream();
+                Assert.Contains(
+                    typeof(DocumentFormatId),
+                    parameterTypes);
 
-        await Assert.ThrowsAsync<NotSupportedException>(
-            () =>
-                processor.ProcessAsync(
-                    new DocumentSource(
-                        stream)));
-
-        Assert.Equal(
-            0,
-            extractor.CallCount);
+                Assert.DoesNotContain(
+                    typeof(IDocumentTypeDetector),
+                    parameterTypes);
+            });
     }
 
     [Fact]
-    public async Task ProcessAsync_ExtractorCannotHandleDetectedFormat_RejectsExplicitly()
+    public async Task ProcessAsync_ExtractorCannotHandleSelectedFormat_RejectsExplicitly()
     {
         var extractor =
             new StubExtractor(
@@ -301,12 +273,6 @@ public sealed class DocumentProcessorTests
 
         var processor =
             CreateProcessor(
-                new StubDetector(
-                    new DocumentTypeDetectionResult(
-                        DocumentFormatId.Pdf,
-                        "application/pdf",
-                        IsSupported:
-                            true)),
                 extractor,
                 new StubPreflightAnalyzer(
                     DocumentPreflightClassification.HealthyBornDigital));
@@ -326,7 +292,7 @@ public sealed class DocumentProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_PreflightCannotHandleDetectedFormat_RejectsExplicitly()
+    public async Task ProcessAsync_PreflightCannotHandleSelectedFormat_RejectsExplicitly()
     {
         var preflight =
             new StubPreflightAnalyzer(
@@ -336,12 +302,6 @@ public sealed class DocumentProcessorTests
 
         var processor =
             CreateProcessor(
-                new StubDetector(
-                    new DocumentTypeDetectionResult(
-                        DocumentFormatId.Pdf,
-                        "application/pdf",
-                        IsSupported:
-                            true)),
                 new StubExtractor(
                     CreateHealthyExtraction()),
                 preflight);
@@ -397,12 +357,6 @@ public sealed class DocumentProcessorTests
     {
         var processor =
             CreateProcessor(
-                new StubDetector(
-                    new DocumentTypeDetectionResult(
-                        DocumentFormatId.Pdf,
-                        "application/pdf",
-                        IsSupported:
-                            true)),
                 new StubExtractor(
                     CreateHealthyExtraction()),
                 new StubPreflightAnalyzer(
@@ -467,23 +421,16 @@ public sealed class DocumentProcessorTests
     private static DocumentProcessor CreateProcessor(
         DocumentExtractionResult extraction) =>
         CreateProcessor(
-            new StubDetector(
-                new DocumentTypeDetectionResult(
-                    DocumentFormatId.Pdf,
-                    "application/pdf",
-                    IsSupported:
-                        true)),
             new StubExtractor(
                 extraction),
             new StubPreflightAnalyzer(
                 DocumentPreflightClassification.HealthyBornDigital));
 
     private static DocumentProcessor CreateProcessor(
-        StubDetector detector,
         StubExtractor extractor,
         StubPreflightAnalyzer preflight) =>
         new(
-            detector,
+            DocumentFormatId.Pdf,
             extractor,
             preflight,
             "test-engine-v1",

@@ -733,7 +733,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
     {
         var processor =
             new DocumentProcessor(
-                new StubDetector(),
+                DocumentFormatId.Pdf,
                 extractor,
                 new StubPreflightAnalyzer(),
                 "test-engine-dual-run-v1",

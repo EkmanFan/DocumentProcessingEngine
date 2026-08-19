@@ -961,7 +961,7 @@ public sealed class DocumentDualRunCandidateOcrTextExecutionTests
 
         var processor =
             new DocumentProcessor(
-                new StubDetector(),
+                DocumentFormatId.Pdf,
                 new StubExtractor(
                     extraction),
                 new StubPreflightAnalyzer(),

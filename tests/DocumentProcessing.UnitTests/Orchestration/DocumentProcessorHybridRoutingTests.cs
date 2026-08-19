@@ -358,7 +358,7 @@ public sealed class DocumentProcessorHybridRoutingTests
 
         var processor =
             new DocumentProcessor(
-                new StubDetector(),
+                DocumentFormatId.Pdf,
                 new StubExtractor(
                     extraction),
                 new StubPreflightAnalyzer(
@@ -637,7 +637,7 @@ public sealed class DocumentProcessorHybridRoutingTests
                 ReconciliationIdentity);
 
         return new DocumentProcessor(
-            new StubDetector(),
+            DocumentFormatId.Pdf,
             new StubExtractor(
                 extraction),
             new StubPreflightAnalyzer(
