@@ -31,42 +31,6 @@ public static class DocumentProcessorFactory
     #region Methods Composition
 
     /// <summary>
-    /// Compatibility composition that still owns native extraction.
-    /// </summary>
-    public static DocumentProcessor CreateHybrid(
-        DocumentFormatId format,
-        IDocumentExtractor nativeExtractor,
-        IDocumentRasterizer documentRasterizer,
-        IVisualRasterObservationSource visualRasterObservationSource,
-        IPageLayoutAnalyzer layoutAnalyzer,
-        IRegionTextRecognizer textRecognizer,
-        string engineVersion,
-        ProcessingComponentIdentity nativeExtractionIdentity,
-        ProcessingComponentIdentity layoutAnalysisIdentity)
-    {
-        ArgumentNullException.ThrowIfNull(
-            nativeExtractor);
-
-        ArgumentNullException.ThrowIfNull(
-            nativeExtractionIdentity);
-
-        return new DocumentProcessor(
-            format,
-            nativeExtractor,
-            new DefaultDocumentPreflightAssessor(
-                format),
-            DocumentPageProcessingPlanner.CreateDefault(),
-            CreateHybridExecutionDependencies(
-                documentRasterizer,
-                visualRasterObservationSource,
-                layoutAnalyzer,
-                textRecognizer,
-                layoutAnalysisIdentity),
-            engineVersion,
-            nativeExtractionIdentity);
-    }
-
-    /// <summary>
     /// Engine-owned paged/hybrid strategy for already acquired native evidence.
     /// </summary>
     internal static DocumentProcessor CreatePreparedHybrid(

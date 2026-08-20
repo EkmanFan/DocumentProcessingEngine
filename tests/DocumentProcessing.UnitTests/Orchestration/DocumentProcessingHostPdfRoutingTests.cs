@@ -1,7 +1,5 @@
 using System.Reflection;
 using DocumentProcessing.Core.Documents;
-using DocumentProcessing.Core.Processing;
-using DocumentProcessing.Pdf;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Engine.Orchestration;
@@ -32,17 +30,10 @@ public sealed class DocumentProcessingHostPdfRoutingTests
         Assert.Equal(
             typeof(global::DocumentProcessing.DocumentProcessingHostOptions),
             parameter.ParameterType);
-
-        Assert.DoesNotContain(
-            constructor.GetParameters(),
-            candidate =>
-                typeof(IEnumerable<IDocumentFormatProcessor>)
-                    .IsAssignableFrom(
-                        candidate.ParameterType));
     }
 
     [Fact]
-    public void HostOwnsConfiguredEngine_NotFormatProcessorResolver()
+    public void HostOwnsConfiguredEngine()
     {
         var fields =
             typeof(global::DocumentProcessing.DocumentProcessingHost)
@@ -55,14 +46,6 @@ public sealed class DocumentProcessingHostPdfRoutingTests
             field =>
                 field.FieldType ==
                 typeof(DocumentProcessingEngine));
-
-        Assert.DoesNotContain(
-            fields,
-            field =>
-                string.Equals(
-                    field.FieldType.FullName,
-                    "DocumentProcessing.Formats.DocumentFormatProcessorResolver",
-                    StringComparison.Ordinal));
     }
 
     [Fact]

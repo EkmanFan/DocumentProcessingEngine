@@ -10,10 +10,10 @@ namespace DocumentProcessing.Core.Results;
 /// structure, source custody, processing evidence, preserved-visual custody, and
 /// non-duplicating quality observations without requiring physical pages.
 ///
-/// <c>IDocumentFormatProcessor</c>, the generic engine, and the consumer-facing
-/// host return this type. The current authoritative PDF processor may still
-/// produce <see cref="DocumentIngestionResult"/> internally during migration,
-/// but that legacy result is adapted at the PDF strategy boundary.
+/// The Engine returns this type through the consumer-facing Host. The current
+/// paged/hybrid Engine strategy may still use
+/// <see cref="DocumentIngestionResult"/> internally during migration, but
+/// portable projection occurs inside the Engine.
 /// </remarks>
 public sealed record DocumentProcessingResult
 {

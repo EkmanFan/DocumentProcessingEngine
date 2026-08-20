@@ -57,7 +57,7 @@ public sealed class SharedProcessingCapabilityOwnershipTests
     public void PdfAssembly_DoesNotDeclareOptionsOrVisualDestinationDelegate()
     {
         var pdfAssembly =
-            typeof(PdfDocumentFormatProcessor)
+            typeof(PdfDocumentFormat)
                 .Assembly;
 
         const string obsoletePdfOptionsType =
@@ -75,33 +75,6 @@ public sealed class SharedProcessingCapabilityOwnershipTests
         Assert.Null(
             pdfAssembly.GetType(
                 obsoletePdfVisualDestinationType));
-    }
-
-    [Fact]
-    public void Resolver_DoesNotOwnSharedHttpClientLifecycle()
-    {
-        var assembly =
-            typeof(global::DocumentProcessing.DocumentProcessingHost)
-                .Assembly;
-
-        var resolverType =
-            assembly.GetType(
-                "DocumentProcessing.Formats.DocumentFormatProcessorResolver",
-                throwOnError:
-                    true)!;
-
-        Assert.False(
-            typeof(IDisposable)
-                .IsAssignableFrom(
-                    resolverType));
-
-        Assert.DoesNotContain(
-            resolverType.GetFields(
-                BindingFlags.NonPublic |
-                BindingFlags.Instance),
-            field =>
-                field.FieldType ==
-                typeof(HttpClient));
     }
 
     [Fact]
@@ -127,9 +100,10 @@ public sealed class SharedProcessingCapabilityOwnershipTests
                 .GetFields(
                     BindingFlags.NonPublic |
                     BindingFlags.Instance)
-                .Where(field =>
-                    field.FieldType ==
-                    typeof(HttpClient))
+                .Where(
+                    field =>
+                        field.FieldType ==
+                        typeof(HttpClient))
                 .ToArray();
 
         Assert.Equal(

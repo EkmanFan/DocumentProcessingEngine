@@ -2,7 +2,6 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Orchestration;
-using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Results;
@@ -14,9 +13,8 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// Universal document-processing orchestration boundary.
 /// </summary>
 /// <remarks>
-/// The configured path owns format selection, native-evidence acquisition and
-/// Engine strategy composition. The selected-format processor overload remains
-/// temporarily as a compatibility path until the Host cutover is complete.
+/// The Engine owns format selection, native-evidence acquisition and processing
+/// strategy composition.
 /// </remarks>
 public sealed class DocumentProcessingEngine
 {
@@ -34,13 +32,6 @@ public sealed class DocumentProcessingEngine
     #endregion
 
     #region ctor
-
-    /// <summary>
-    /// Temporary compatibility constructor for the current Host path.
-    /// </summary>
-    public DocumentProcessingEngine()
-    {
-    }
 
     /// <summary>
     /// Creates an Engine that owns document-format selection and processing
@@ -179,34 +170,6 @@ public sealed class DocumentProcessingEngine
                 throw new InvalidDataException(
                     $"Unsupported document format selection outcome '{selection.GetType().FullName}'.");
         }
-    }
-
-    /// <summary>
-    /// Temporary compatibility path used by the current Host until Step 2.
-    /// </summary>
-    public async Task<DocumentProcessingResult> ProcessDocumentAsync(
-        DocumentSource source,
-        IDocumentFormatProcessor formatProcessor,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(
-            source);
-
-        ArgumentNullException.ThrowIfNull(
-            formatProcessor);
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var result =
-            await formatProcessor
-                .ProcessDocumentAsync(
-                    source,
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-        return result ??
-               throw new InvalidDataException(
-                   $"The selected document format processor for '{formatProcessor.Format}' returned no result.");
     }
 
     #endregion
