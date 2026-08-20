@@ -8,6 +8,7 @@ using DocumentProcessing.Core.Quality;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Engine.Results;
 using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing.UnitTests.Formats.Pdf;
@@ -242,6 +243,91 @@ public sealed class PdfDocumentProcessingResultAdapterTests
             "only convert PDF",
             error.Message,
             StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_MatchesPdfAdapter_ForTextFixture()
+    {
+        var ingestion =
+            CreateTextLegacyResult();
+
+        var expected =
+            PdfDocumentProcessingResultAdapter.Adapt(
+                ingestion);
+
+        var actual =
+            DocumentProcessingResultProjector.Project(
+                ingestion);
+
+        Assert.Equivalent(
+            expected,
+            actual,
+            strict:
+                true);
+    }
+
+    [Fact]
+    public void Project_MatchesPdfAdapter_ForVisualFixture()
+    {
+        var ingestion =
+            CreateVisualLegacyResult();
+
+        var expected =
+            PdfDocumentProcessingResultAdapter.Adapt(
+                ingestion);
+
+        var actual =
+            DocumentProcessingResultProjector.Project(
+                ingestion);
+
+        Assert.Equivalent(
+            expected,
+            actual,
+            strict:
+                true);
+    }
+
+    [Fact]
+    public void Project_RejectsNonCanonicalReadingOrder()
+    {
+        var ingestion =
+            CreateSingleTextLegacyResult(
+                DocumentFormatId.Pdf,
+                readingOrder:
+                    7);
+
+        var error =
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                    DocumentProcessingResultProjector.Project(
+                        ingestion));
+
+        Assert.Contains(
+            "contiguous from zero",
+            error.Message,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Project_AcceptsNonPdfIngestionResult()
+    {
+        var format =
+            new DocumentFormatId(
+                "epub");
+
+        var ingestion =
+            CreateSingleTextLegacyResult(
+                format,
+                readingOrder:
+                    0);
+
+        var result =
+            DocumentProcessingResultProjector.Project(
+                ingestion);
+
+        Assert.Equal(
+            format,
+            result.Source.Format);
     }
 
     #endregion
