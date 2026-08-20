@@ -1,24 +1,21 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
-using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Engine.Orchestration;
-using DocumentProcessing.Engine.Planning;
-using DocumentProcessing.Engine.Visual;
 using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing.Formats;
 
 /// <summary>
-/// Composes the current authoritative Engine implementation used by the PDF
-/// format processor.
+/// Composes the current PDF format adapter from PDF-specific capabilities and
+/// shared processing capabilities.
 /// </summary>
 /// <remarks>
-/// This type intentionally lives in the top-level composition assembly because
-/// it is the boundary allowed to know both generic Engine implementations and
-/// concrete PDF capabilities.
+/// Engine-internal planner, hybrid-executor, visual-preservation and
+/// reconciliation composition is owned by <see cref="DocumentProcessorFactory"/>
+/// and is deliberately not reproduced here.
 /// </remarks>
 internal static class PdfDocumentFormatProcessorComposition
 {
@@ -33,11 +30,6 @@ internal static class PdfDocumentFormatProcessorComposition
         new(
             "pp-structurev3",
             "pp-structurev3-3.7.0-paddle3.2.2-cpu-v1");
-
-    private static readonly ProcessingComponentIdentity ReconciliationIdentity =
-        new(
-            "native-ocr-text-reconciler",
-            "native-ocr-reconciliation-v1");
 
     #endregion
 
@@ -81,39 +73,20 @@ internal static class PdfDocumentFormatProcessorComposition
                     options.OcrProfileId,
                     options.OcrRequestTimeout));
 
-        var visualPreserver =
-            new VisualAssetPreserver();
-
-        var hybridExecution =
-            new DocumentHybridExecutionDependencies(
-                new PdftoppmDocumentRasterizer(
-                    dpi:
-                        300),
-                new MissingNativeHybridPageExecutor(
-                    layoutAnalyzer,
-                    textRecognizer,
-                    visualPreserver),
-                new NativePresentHybridPageExecutor(
-                    layoutAnalyzer,
-                    textRecognizer,
-                    visualPreserver),
-                LayoutIdentity,
-                ReconciliationIdentity,
-                new DocumentAuthoritativeVisualPlanningDependencies(
-                    new PdfPigVisualRasterObservationSource()),
-                new HealthyNativeVisualPageExecutor(
-                    layoutAnalyzer,
-                    visualPreserver));
-
         var authoritativeProcessor =
-            new DocumentProcessor(
+            DocumentProcessorFactory.CreateHybrid(
                 DocumentFormatId.Pdf,
                 new PdfPigDocumentExtractor(),
                 new PdfPreflightAnalyzer(),
-                DocumentPageProcessingPlanner.CreateDefault(),
-                hybridExecution,
+                new PdftoppmDocumentRasterizer(
+                    dpi:
+                        300),
+                new PdfPigVisualRasterObservationSource(),
+                layoutAnalyzer,
+                textRecognizer,
                 engineVersion,
-                NativeIdentity);
+                NativeIdentity,
+                LayoutIdentity);
 
         return new PdfDocumentFormatProcessor(
             ExecuteAsync,
