@@ -2,18 +2,53 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Preflight;
 
-namespace DocumentProcessing.Pdf;
+namespace DocumentProcessing.Engine.Planning;
 
-public sealed class PdfPreflightAnalyzer
+/// <summary>
+/// Applies the current deterministic paged-document preflight assessment policy
+/// to already acquired native extraction evidence.
+/// </summary>
+/// <remarks>
+/// Raw word counts and raster-area ratios are format-provided evidence. The
+/// dominant-raster threshold and document classification are Engine policy.
+/// </remarks>
+public sealed class DefaultDocumentPreflightAssessor
     : IDocumentPreflightAnalyzer
 {
+    #region Variables and Constants
+
     public const double DominantRasterImageAreaRatio =
         0.60;
+
+    private readonly DocumentFormatId _format;
+
+    #endregion
+
+    #region ctor
+
+    public DefaultDocumentPreflightAssessor(
+        DocumentFormatId format)
+    {
+        if (string.IsNullOrWhiteSpace(
+                format.Value))
+        {
+            throw new ArgumentException(
+                "Document format cannot be empty.",
+                nameof(format));
+        }
+
+        _format =
+            format;
+    }
+
+    #endregion
+
+    #region Methods Assessment
 
     public bool CanAnalyze(
         DocumentFormatId format) =>
         format ==
-        DocumentFormatId.Pdf;
+        _format;
 
     public DocumentPreflightResult Analyze(
         DocumentExtractionResult extraction)
@@ -25,7 +60,7 @@ public sealed class PdfPreflightAnalyzer
                 extraction.Format))
         {
             throw new NotSupportedException(
-                $"Format '{extraction.Format}' is not supported by the PDF preflight analyzer.");
+                $"Format '{extraction.Format}' is not supported by the configured document preflight assessor.");
         }
 
         var pages =
@@ -109,4 +144,6 @@ public sealed class PdfPreflightAnalyzer
             textlessDominantRasterPageNumbers,
             classification);
     }
+
+    #endregion
 }

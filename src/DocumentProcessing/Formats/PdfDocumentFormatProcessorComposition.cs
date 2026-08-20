@@ -60,7 +60,6 @@ internal static class PdfDocumentFormatProcessorComposition
             DocumentProcessorFactory.CreateHybrid(
                 DocumentFormatId.Pdf,
                 new PdfPigDocumentExtractor(),
-                new PdfPreflightAnalyzer(),
                 new PdftoppmDocumentRasterizer(
                     dpi:
                         300),

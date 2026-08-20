@@ -4,7 +4,6 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Orchestration;
-using DocumentProcessing.Core.Preflight;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Orchestration;
@@ -38,7 +37,6 @@ public sealed class DocumentProcessorFactoryTests
             {
                 typeof(DocumentFormatId),
                 typeof(IDocumentExtractor),
-                typeof(IDocumentPreflightAnalyzer),
                 typeof(IDocumentRasterizer),
                 typeof(IVisualRasterObservationSource),
                 typeof(IPageLayoutAnalyzer),

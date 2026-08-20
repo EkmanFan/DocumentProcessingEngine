@@ -5,7 +5,6 @@ using DocumentProcessing.Core.Preflight;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Engine.Orchestration;
-using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 
@@ -397,22 +396,6 @@ public sealed class DocumentProcessorTests
                     new DocumentSource(
                         stream),
                     cancellation.Token));
-    }
-
-    [Fact]
-    public void PdfPreflightAnalyzer_AdvertisesOnlyPdfCapability()
-    {
-        IDocumentPreflightAnalyzer analyzer =
-            new PdfPreflightAnalyzer();
-
-        Assert.True(
-            analyzer.CanAnalyze(
-                DocumentFormatId.Pdf));
-
-        Assert.False(
-            analyzer.CanAnalyze(
-                new DocumentFormatId(
-                    "docx")));
     }
 
     private static DocumentProcessor CreateProcessor(

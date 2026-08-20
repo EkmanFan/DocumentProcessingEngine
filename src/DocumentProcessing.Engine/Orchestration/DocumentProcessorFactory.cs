@@ -3,7 +3,6 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Orchestration;
-using DocumentProcessing.Core.Preflight;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Hybrid;
@@ -36,17 +35,15 @@ public static class DocumentProcessorFactory
     /// format and shared processing capabilities.
     /// </summary>
     /// <remarks>
-    /// The caller owns selection of the concrete format extractor/preflight/
-    /// raster/visual capabilities and shared layout/OCR implementations.
-    ///
-    /// Planner selection, visual preservation, hybrid executors, visual planning
-    /// dependencies and reconciliation identity are Engine implementation
-    /// details and are composed here.
+    /// The caller supplies format-owned extraction/raster/visual capabilities
+    /// and shared layout/OCR implementations. Document preflight assessment,
+    /// planner selection, visual preservation, hybrid executors, visual planning
+    /// dependencies and reconciliation identity are Engine responsibilities and
+    /// are composed here.
     /// </remarks>
     public static DocumentProcessor CreateHybrid(
         DocumentFormatId format,
         IDocumentExtractor nativeExtractor,
-        IDocumentPreflightAnalyzer preflightAnalyzer,
         IDocumentRasterizer documentRasterizer,
         IVisualRasterObservationSource visualRasterObservationSource,
         IPageLayoutAnalyzer layoutAnalyzer,
@@ -57,9 +54,6 @@ public static class DocumentProcessorFactory
     {
         ArgumentNullException.ThrowIfNull(
             nativeExtractor);
-
-        ArgumentNullException.ThrowIfNull(
-            preflightAnalyzer);
 
         ArgumentNullException.ThrowIfNull(
             documentRasterizer);
@@ -104,7 +98,8 @@ public static class DocumentProcessorFactory
         return new DocumentProcessor(
             format,
             nativeExtractor,
-            preflightAnalyzer,
+            new DefaultDocumentPreflightAssessor(
+                format),
             DocumentPageProcessingPlanner.CreateDefault(),
             hybridExecution,
             engineVersion,
