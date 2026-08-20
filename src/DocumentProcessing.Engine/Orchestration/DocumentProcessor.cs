@@ -390,6 +390,30 @@ public sealed class DocumentProcessor
             cancellationToken);
     }
 
+    internal async Task<DocumentProcessingResult>
+        ProcessPreparedEvidencePortableAsync(
+            PreparedDocumentSource prepared,
+            DocumentFormatId selectedFormat,
+            NativeDocumentEvidence evidence,
+            Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+                openVisualDestinationAsync,
+            CancellationToken cancellationToken = default)
+    {
+        var ingestionResult =
+            await ProcessPreparedEvidenceAsync(
+                    prepared,
+                    selectedFormat,
+                    evidence,
+                    openVisualDestinationAsync,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return DocumentProcessingResultProjector
+            .Project(
+                ingestionResult);
+    }
+
+
     private async Task<DocumentIngestionResult>
         ProcessPreparedEvidenceCoreAsync(
             PreparedDocumentSource prepared,

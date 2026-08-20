@@ -110,6 +110,51 @@ public sealed class NativeEvidenceProcessingSeamTests
             preflight.AnalyzeCalls);
     }
 
+    [Fact]
+    public async Task ProcessPreparedEvidencePortableAsync_DoesNotInvokeNativeExtractor()
+    {
+        var extractor =
+            new ThrowingDocumentExtractor();
+
+        var preflight =
+            new CountingPreflightAnalyzer();
+
+        var processor =
+            CreateProcessor(
+                extractor,
+                preflight);
+
+        var evidence =
+            CreateEvidence(
+                AlternateFormat);
+
+        await using var prepared =
+            await PreparedDocumentSource.CreateAsync(
+                new DocumentSource(
+                    new MemoryStream(
+                        "portable prepared evidence fixture"u8.ToArray())),
+                CancellationToken.None);
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            async () =>
+                await processor
+                    .ProcessPreparedEvidencePortableAsync(
+                        prepared,
+                        DocumentFormatId.Pdf,
+                        evidence,
+                        openVisualDestinationAsync:
+                            null,
+                        CancellationToken.None));
+
+        Assert.Equal(
+            0,
+            extractor.ExtractCalls);
+
+        Assert.Equal(
+            0,
+            preflight.AnalyzeCalls);
+    }
+
     #endregion
 
     #region Methods Fixtures
