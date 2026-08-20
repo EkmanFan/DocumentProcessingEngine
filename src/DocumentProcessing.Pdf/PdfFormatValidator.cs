@@ -13,7 +13,7 @@ namespace DocumentProcessing.Pdf;
 public sealed class PdfFormatValidator
     : IFormatValidator
 {
-    #region Variables and Constants
+    #region Properties
 
     private static ReadOnlySpan<byte> PdfSignature =>
         "%PDF-"u8;

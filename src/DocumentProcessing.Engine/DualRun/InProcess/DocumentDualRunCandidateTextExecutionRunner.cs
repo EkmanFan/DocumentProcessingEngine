@@ -35,6 +35,13 @@ public sealed class DocumentDualRunCandidateTextExecutionRunner
 
     #endregion
 
+    #region Properties
+
+    internal bool CanExecuteOcrBackedText =>
+        _ocrTextPageExecutor is not null;
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunCandidateTextExecutionRunner(
@@ -56,9 +63,6 @@ public sealed class DocumentDualRunCandidateTextExecutionRunner
     #endregion
 
     #region Methods Execution
-
-    internal bool CanExecuteOcrBackedText =>
-        _ocrTextPageExecutor is not null;
 
     /// <summary>
     /// NativeText-only entry point. OCR-backed modes remain deferred
