@@ -1,3 +1,4 @@
+using DocumentProcessing.Composition;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Engine.Orchestration;
@@ -9,9 +10,9 @@ namespace DocumentProcessing;
 /// Consumer-facing, format-neutral document-processing facade.
 /// </summary>
 /// <remarks>
-/// The Host knows no concrete document format. One Host-lifetime resolver owns
-/// V1 processor registration and asks each processor whether it can handle the
-/// supplied source.
+/// One Host-lifetime shared-capability composition owns selected reusable
+/// Layout/OCR infrastructure. One Host-lifetime resolver owns explicit V1
+/// format registration and selection.
 ///
 /// Unsupported formats are returned as functional failures with a message.
 /// Technical failures and cancellation remain exceptional.
@@ -21,7 +22,12 @@ public sealed class DocumentProcessingHost
 {
     #region Variables and Constants
 
-    private readonly DocumentFormatProcessorResolver _formatProcessorResolver;
+    private readonly SharedProcessingCapabilities
+        _sharedProcessingCapabilities;
+
+    private readonly DocumentFormatProcessorResolver
+        _formatProcessorResolver;
+
     private readonly DocumentProcessingEngine _engine;
 
     private bool _disposed;
@@ -36,9 +42,24 @@ public sealed class DocumentProcessingHost
         ArgumentNullException.ThrowIfNull(
             options);
 
-        _formatProcessorResolver =
-            new DocumentFormatProcessorResolver(
-                options);
+        _sharedProcessingCapabilities =
+            new SharedProcessingCapabilities(
+                options.PpStructureV3,
+                options.PaddleOcr);
+
+        try
+        {
+            _formatProcessorResolver =
+                new DocumentFormatProcessorResolver(
+                    options,
+                    _sharedProcessingCapabilities);
+        }
+        catch
+        {
+            _sharedProcessingCapabilities.Dispose();
+
+            throw;
+        }
 
         _engine =
             new DocumentProcessingEngine();
@@ -98,7 +119,7 @@ public sealed class DocumentProcessingHost
         _disposed =
             true;
 
-        _formatProcessorResolver.Dispose();
+        _sharedProcessingCapabilities.Dispose();
     }
 
     private void ThrowIfDisposed()

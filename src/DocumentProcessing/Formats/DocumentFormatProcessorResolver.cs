@@ -1,5 +1,7 @@
+using DocumentProcessing.Composition;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Processing;
+
 namespace DocumentProcessing.Formats;
 
 /// <summary>
@@ -9,61 +11,44 @@ namespace DocumentProcessing.Formats;
 /// V1 deliberately uses explicit hard-coded registration. No assembly scanning,
 /// reflection-based discovery, or hot loading is performed.
 ///
-/// The resolver knows only format processors. Each processor encapsulates how
-/// it validates candidate input for its own format.
+/// Shared processing infrastructure is composed and owned outside this resolver.
+/// The resolver owns only processor registration and format selection.
 /// </remarks>
 internal sealed class DocumentFormatProcessorResolver
-    : IDisposable
 {
     #region Variables and Constants
 
     private readonly IReadOnlyDictionary<DocumentFormatId, IDocumentFormatProcessor>
         _formatProcessors;
 
-    private readonly HttpClient _layoutHttpClient;
-    private readonly HttpClient _ocrHttpClient;
-
-    private bool _disposed;
-
     #endregion
 
     #region ctor
 
     public DocumentFormatProcessorResolver(
-        DocumentProcessingHostOptions options)
+        DocumentProcessingHostOptions options,
+        SharedProcessingCapabilities sharedProcessingCapabilities)
     {
         ArgumentNullException.ThrowIfNull(
             options);
 
-        _layoutHttpClient =
-            CreateServiceHttpClient();
+        ArgumentNullException.ThrowIfNull(
+            sharedProcessingCapabilities);
 
-        _ocrHttpClient =
-            CreateServiceHttpClient();
+        var pdfProcessor =
+            PdfDocumentFormatProcessorComposition.Create(
+                options.Pdf,
+                options.EngineVersion,
+                sharedProcessingCapabilities.LayoutAnalyzer,
+                sharedProcessingCapabilities.TextRecognizer,
+                sharedProcessingCapabilities.LayoutAnalysisIdentity);
 
-        try
-        {
-            var pdfProcessor =
-                PdfDocumentFormatProcessorComposition.Create(
-                    options.Pdf,
-                    options.EngineVersion,
-                    _layoutHttpClient,
-                    _ocrHttpClient);
-
-            _formatProcessors =
-                new Dictionary<DocumentFormatId, IDocumentFormatProcessor>
-                {
-                    [pdfProcessor.Format] =
-                        pdfProcessor
-                };
-        }
-        catch
-        {
-            _layoutHttpClient.Dispose();
-            _ocrHttpClient.Dispose();
-
-            throw;
-        }
+        _formatProcessors =
+            new Dictionary<DocumentFormatId, IDocumentFormatProcessor>
+            {
+                [pdfProcessor.Format] =
+                    pdfProcessor
+            };
     }
 
     #endregion
@@ -74,8 +59,6 @@ internal sealed class DocumentFormatProcessorResolver
         DocumentSource source,
         CancellationToken cancellationToken = default)
     {
-        ThrowIfDisposed();
-
         ArgumentNullException.ThrowIfNull(
             source);
 
@@ -96,38 +79,6 @@ internal sealed class DocumentFormatProcessorResolver
 
         return null;
     }
-
-    #endregion
-
-    #region Methods Lifecycle
-
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed =
-            true;
-
-        _layoutHttpClient.Dispose();
-        _ocrHttpClient.Dispose();
-    }
-
-    private void ThrowIfDisposed()
-    {
-        ObjectDisposedException.ThrowIf(
-            _disposed,
-            this);
-    }
-
-    private static HttpClient CreateServiceHttpClient() =>
-        new()
-        {
-            Timeout =
-                Timeout.InfiniteTimeSpan
-        };
 
     #endregion
 }

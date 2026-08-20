@@ -2,6 +2,8 @@ using System.Reflection;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Pdf;
+using DocumentProcessing.Engine.Layout;
+using DocumentProcessing.Engine.Ocr;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 
@@ -103,12 +105,14 @@ public sealed class DocumentProcessingHostPdfRoutingTests
         new(
             new global::DocumentProcessing.DocumentProcessingHostOptions(
                 "test-engine-v1",
-                new PdfDocumentProcessingOptions(
+                new PpStructureV3Options(
                     new Uri(
-                        "http://127.0.0.1:1/layout-parsing"),
+                        "http://127.0.0.1:1/layout-parsing")),
+                new PaddleOcrOptions(
                     new Uri(
                         "http://127.0.0.1:1/ocr"),
-                    "test-ocr-profile")));
+                    "test-ocr-profile"),
+                new PdfDocumentProcessingOptions()));
 
     #endregion
 }

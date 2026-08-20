@@ -1,3 +1,5 @@
+using DocumentProcessing.Engine.Layout;
+using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing;
@@ -6,19 +8,17 @@ namespace DocumentProcessing;
 /// Consumer configuration for one <see cref="DocumentProcessingHost"/>.
 /// </summary>
 /// <remarks>
-/// This contract contains configuration values only. Consumers do not inject
-/// document-type detectors, format processors, layout/OCR clients, or other
-/// internal processing services.
+/// The V1 composition root selects concrete shared Layout/OCR providers
+/// explicitly. Format-specific configuration remains separate.
 /// </remarks>
 public sealed class DocumentProcessingHostOptions
 {
     #region ctor
 
-    /// <summary>
-    /// Creates the V1 host configuration.
-    /// </summary>
     public DocumentProcessingHostOptions(
         string engineVersion,
+        PpStructureV3Options ppStructureV3,
+        PaddleOcrOptions paddleOcr,
         PdfDocumentProcessingOptions pdf)
     {
         if (string.IsNullOrWhiteSpace(
@@ -31,6 +31,16 @@ public sealed class DocumentProcessingHostOptions
 
         EngineVersion =
             engineVersion.Trim();
+
+        PpStructureV3 =
+            ppStructureV3 ??
+            throw new ArgumentNullException(
+                nameof(ppStructureV3));
+
+        PaddleOcr =
+            paddleOcr ??
+            throw new ArgumentNullException(
+                nameof(paddleOcr));
 
         Pdf =
             pdf ??
@@ -48,7 +58,17 @@ public sealed class DocumentProcessingHostOptions
     public string EngineVersion { get; }
 
     /// <summary>
-    /// Gets V1 PDF runtime configuration.
+    /// Gets configuration for the selected shared layout provider.
+    /// </summary>
+    public PpStructureV3Options PpStructureV3 { get; }
+
+    /// <summary>
+    /// Gets configuration for the selected shared OCR provider.
+    /// </summary>
+    public PaddleOcrOptions PaddleOcr { get; }
+
+    /// <summary>
+    /// Gets the remaining V1 PDF-specific integration configuration.
     /// </summary>
     public PdfDocumentProcessingOptions Pdf { get; }
 

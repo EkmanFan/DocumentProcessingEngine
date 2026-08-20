@@ -1,21 +1,20 @@
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
-using DocumentProcessing.Engine.Layout;
-using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing.Formats;
 
 /// <summary>
-/// Composes the current PDF format adapter from PDF-specific capabilities and
-/// shared processing capabilities.
+/// Composes the PDF format adapter from PDF-specific capabilities and already
+/// composed shared processing capabilities.
 /// </summary>
 /// <remarks>
-/// Engine-internal planner, hybrid-executor, visual-preservation and
-/// reconciliation composition is owned by <see cref="DocumentProcessorFactory"/>
-/// and is deliberately not reproduced here.
+/// This type deliberately does not construct PP-StructureV3, PaddleOCR, service
+/// HTTP clients, or Engine-internal planner/hybrid/visual implementation details.
 /// </remarks>
 internal static class PdfDocumentFormatProcessorComposition
 {
@@ -26,11 +25,6 @@ internal static class PdfDocumentFormatProcessorComposition
             "pdfpig",
             "pdfpig-native-v1");
 
-    private static readonly ProcessingComponentIdentity LayoutIdentity =
-        new(
-            "pp-structurev3",
-            "pp-structurev3-3.7.0-paddle3.2.2-cpu-v1");
-
     #endregion
 
     #region Methods Composition
@@ -38,17 +32,21 @@ internal static class PdfDocumentFormatProcessorComposition
     public static PdfDocumentFormatProcessor Create(
         PdfDocumentProcessingOptions options,
         string engineVersion,
-        HttpClient layoutHttpClient,
-        HttpClient ocrHttpClient)
+        IPageLayoutAnalyzer layoutAnalyzer,
+        IRegionTextRecognizer textRecognizer,
+        ProcessingComponentIdentity layoutAnalysisIdentity)
     {
         ArgumentNullException.ThrowIfNull(
             options);
 
         ArgumentNullException.ThrowIfNull(
-            layoutHttpClient);
+            layoutAnalyzer);
 
         ArgumentNullException.ThrowIfNull(
-            ocrHttpClient);
+            textRecognizer);
+
+        ArgumentNullException.ThrowIfNull(
+            layoutAnalysisIdentity);
 
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -57,21 +55,6 @@ internal static class PdfDocumentFormatProcessorComposition
                 "Engine version cannot be empty.",
                 nameof(engineVersion));
         }
-
-        var layoutAnalyzer =
-            new PpStructureV3PageLayoutAnalyzer(
-                new PpStructureV3ServingClient(
-                    layoutHttpClient,
-                    options.LayoutEndpoint,
-                    options.LayoutRequestTimeout));
-
-        var textRecognizer =
-            new PaddleOcrRegionTextRecognizer(
-                new PaddleOcrServingClient(
-                    ocrHttpClient,
-                    options.OcrEndpoint,
-                    options.OcrProfileId,
-                    options.OcrRequestTimeout));
 
         var authoritativeProcessor =
             DocumentProcessorFactory.CreateHybrid(
@@ -86,7 +69,7 @@ internal static class PdfDocumentFormatProcessorComposition
                 textRecognizer,
                 engineVersion,
                 NativeIdentity,
-                LayoutIdentity);
+                layoutAnalysisIdentity);
 
         return new PdfDocumentFormatProcessor(
             ExecuteAsync,
