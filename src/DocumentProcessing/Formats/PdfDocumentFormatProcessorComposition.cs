@@ -31,7 +31,7 @@ internal static class PdfDocumentFormatProcessorComposition
 
     #region Methods Composition
 
-    public static PdfDocumentFormatProcessor Create(
+    public static PdfDocumentProcessingComposition Create(
         string engineVersion,
         IPageLayoutAnalyzer layoutAnalyzer,
         IRegionTextRecognizer textRecognizer,
@@ -56,24 +56,46 @@ internal static class PdfDocumentFormatProcessorComposition
                 nameof(engineVersion));
         }
 
+        var nativeExtractor =
+            new PdfPigDocumentExtractor();
+
+        var visualRasterObservationSource =
+            new PdfPigVisualRasterObservationSource();
+
+        var documentFormat =
+            new PdfDocumentFormat(
+                new PdfFormatValidator(),
+                nativeExtractor,
+                visualRasterObservationSource);
+
         var authoritativeProcessor =
             DocumentProcessorFactory.CreateHybrid(
                 DocumentFormatId.Pdf,
-                new PdfPigDocumentExtractor(),
+                nativeExtractor,
                 new PdfPreflightAnalyzer(),
                 new PdftoppmDocumentRasterizer(
                     dpi:
                         300),
-                new PdfPigVisualRasterObservationSource(),
+                visualRasterObservationSource,
                 layoutAnalyzer,
                 textRecognizer,
                 engineVersion,
                 NativeIdentity,
                 layoutAnalysisIdentity);
 
-        return new PdfDocumentFormatProcessor(
-            ExecuteAsync,
-            openPreservedLayoutVisualDestinationAsync);
+        var legacyProcessor =
+            new PdfDocumentFormatProcessor(
+                ExecuteAsync,
+                openPreservedLayoutVisualDestinationAsync);
+
+        var processingBinding =
+            new DocumentFormatProcessingBinding(
+                documentFormat,
+                authoritativeProcessor);
+
+        return new PdfDocumentProcessingComposition(
+            legacyProcessor,
+            processingBinding);
 
         Task<DocumentIngestionResult> ExecuteAsync(
             DocumentSource source,

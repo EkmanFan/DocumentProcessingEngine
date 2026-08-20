@@ -18,6 +18,9 @@ internal sealed class DocumentFormatProcessorResolver
 {
     #region Variables and Constants
 
+    private readonly PdfDocumentProcessingComposition
+        _pdfComposition;
+
     private readonly IReadOnlyDictionary<DocumentFormatId, IDocumentFormatProcessor>
         _formatProcessors;
 
@@ -35,13 +38,16 @@ internal sealed class DocumentFormatProcessorResolver
         ArgumentNullException.ThrowIfNull(
             sharedProcessingCapabilities);
 
-        var pdfProcessor =
+        _pdfComposition =
             PdfDocumentFormatProcessorComposition.Create(
                 options.EngineVersion,
                 sharedProcessingCapabilities.LayoutAnalyzer,
                 sharedProcessingCapabilities.TextRecognizer,
                 sharedProcessingCapabilities.LayoutAnalysisIdentity,
                 options.OpenPreservedLayoutVisualDestinationAsync);
+
+        var pdfProcessor =
+            _pdfComposition.LegacyProcessor;
 
         _formatProcessors =
             new Dictionary<DocumentFormatId, IDocumentFormatProcessor>
