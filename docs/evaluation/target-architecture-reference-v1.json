@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "document-processing-target-architecture-reference-v1",
+  "status": "PASS",
+  "implementationCommit": "fd48b968f7cdfe726d9dc74ca98592ad26e19694",
+  "referencePurpose": "Frozen implementation reference for the accepted target architecture.",
+  "normativeArchitecture": {
+    "name": "DPEngine - Architecture Cible - 2026-08-20.md",
+    "sha256": "3f564791c4a3867ad938a6cdc6c9de3c7b5a32de7d5c3650daadaf0ac31143e3"
+  },
+  "validationGate": {
+    "path": "scripts/tmp/dpengine-target-cutover-step-4-4-final-architecture-gate.sh",
+    "sha256": "82c28c0fe8b0ea24bc36a40f58b58a77220bf3b8b5bd9bd0fee673d77d46ba4d",
+    "result": "PASS"
+  },
+  "productionPath": [
+    "DocumentProcessingHost",
+    "DocumentProcessingEngine",
+    "ACQUIRE NATIVE EVIDENCE",
+    "ASSESS",
+    "PLAN REQUIRED ENRICHMENT",
+    "ACQUIRE SUPPLEMENTAL EVIDENCE",
+    "RECONCILE",
+    "ASSEMBLE",
+    "QUALITY GATE",
+    "DocumentProcessingResult"
+  ],
+  "ownership": {
+    "host": [
+      "public API",
+      "configuration",
+      "composition",
+      "lifecycle",
+      "owns and calls Engine"
+    ],
+    "engine": [
+      "document format selection",
+      "assessment",
+      "planning",
+      "supplemental enrichment decisions",
+      "reconciliation",
+      "assembly",
+      "quality and provenance projection"
+    ],
+    "format": [
+      "native evidence acquisition",
+      "format-specific technical capabilities"
+    ],
+    "sharedCapabilities": [
+      "layout analysis",
+      "OCR"
+    ],
+    "core": [
+      "neutral contracts",
+      "portable/shared models"
+    ]
+  },
+  "assemblyDirection": {
+    "coreImplementationDependencies": [],
+    "engineReferences": [
+      "DocumentProcessing.Core"
+    ],
+    "pdfReferences": [
+      "DocumentProcessing.Core"
+    ],
+    "hostReferences": [
+      "DocumentProcessing.Core",
+      "DocumentProcessing.Engine",
+      "DocumentProcessing.Pdf"
+    ]
+  },
+  "obsoleteArchitectureAbsent": [
+    "IDocumentFormatProcessor",
+    "DocumentFormatProcessorResolver",
+    "PdfDocumentFormatProcessor",
+    "PdfDocumentFormatProcessorComposition",
+    "DocumentFormatProcessingBinding",
+    "DocumentProcessingAttemptResult",
+    "PdfDocumentExecution",
+    "PdfDocumentProcessingResultAdapter",
+    "DocumentProcessorFactory.CreateHybrid",
+    "parameterless DocumentProcessingEngine compatibility construction"
+  ],
+  "acceptance": {
+    "assemblyDependencyDirection": "PASS",
+    "hostFacadeCompositionLifecycle": "PASS",
+    "minimalRootFormatContract": "PASS",
+    "engineUniversalOrchestrationOwnership": "PASS",
+    "formatFactsCapabilitiesBoundary": "PASS",
+    "obsoleteFormatProcessorPathAbsent": "PASS",
+    "sourceLevelIntegrity": "PASS",
+    "releaseBuildWarningsAsErrors": "PASS",
+    "focusedTargetArchitectureRegression": "23/23 PASS",
+    "fullDeterministicRegression": "727/727 PASS"
+  },
+  "explicitNonClaims": [
+    "Internal class names are not frozen when responsibility remains unchanged.",
+    "The final shape of NativeDocumentEvidence is not frozen.",
+    "Future EPUB/DOC/DOCX/ODT/PPT/PPTX capability contracts are not designed or frozen.",
+    "Provider lifecycle and performance optimizations are not frozen.",
+    "Implementation-level organization may change when ownership boundaries remain intact."
+  ]
+}
