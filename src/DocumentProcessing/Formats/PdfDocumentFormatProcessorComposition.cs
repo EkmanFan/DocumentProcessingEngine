@@ -76,14 +76,8 @@ internal static class PdfDocumentFormatProcessorComposition
                 ExecuteAsync,
                 openPreservedLayoutVisualDestinationAsync);
 
-        var processingBinding =
-            new DocumentFormatProcessingBinding(
-                new PdfDocumentFormat(),
-                authoritativeProcessor);
-
         return new PdfDocumentProcessingComposition(
-            legacyProcessor,
-            processingBinding);
+            legacyProcessor);
 
         Task<DocumentIngestionResult> ExecuteAsync(
             DocumentSource source,
