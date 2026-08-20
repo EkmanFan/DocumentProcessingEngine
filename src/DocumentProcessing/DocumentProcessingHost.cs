@@ -1,4 +1,4 @@
-using DocumentProcessing.Composition;
+using DocumentProcessing.Shared;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Engine.Orchestration;

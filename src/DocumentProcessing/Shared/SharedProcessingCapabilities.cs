@@ -4,14 +4,16 @@ using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 
-namespace DocumentProcessing.Composition;
+namespace DocumentProcessing.Shared;
+
 
 /// <summary>
 /// Owns the current Host-lifetime shared processing capabilities.
 /// </summary>
 /// <remarks>
-/// Concrete PP-StructureV3 and PaddleOCR providers are selected by the V1
-/// composition root. Format compositions consume only their Core contracts.
+/// Concrete PP-StructureV3 and PaddleOCR providers are selected by the Host
+/// composition root. The configured Engine consumes them through their neutral
+/// Core contracts.
 ///
 /// This type owns the service <see cref="HttpClient"/> instances and therefore
 /// owns their deterministic disposal.

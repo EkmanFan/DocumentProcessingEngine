@@ -78,7 +78,7 @@ public sealed class SharedProcessingCapabilityOwnershipTests
     }
 
     [Fact]
-    public void SharedComposition_OwnsTwoServiceHttpClients()
+    public void SharedCapabilities_OwnTwoServiceHttpClients()
     {
         var assembly =
             typeof(global::DocumentProcessing.DocumentProcessingHost)
@@ -86,7 +86,7 @@ public sealed class SharedProcessingCapabilityOwnershipTests
 
         var sharedType =
             assembly.GetType(
-                "DocumentProcessing.Composition.SharedProcessingCapabilities",
+                "DocumentProcessing.Shared.SharedProcessingCapabilities",
                 throwOnError:
                     true)!;
 
