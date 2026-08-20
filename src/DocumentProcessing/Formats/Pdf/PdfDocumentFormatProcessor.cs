@@ -13,17 +13,12 @@ using DocumentProcessing.Pdf;
 namespace DocumentProcessing.Formats.Pdf;
 
 /// <summary>
-/// Transitional PDF implementation of the generic document-format strategy.
+/// PDF implementation of the generic document-format strategy.
 /// </summary>
 /// <remarks>
-/// B2.3A lets the Host construct this strategy once and select it per document.
-/// The current authoritative PDF-shaped <see cref="DocumentProcessor"/> remains
-/// behind the strategy until later B2 ownership/splitting work.
-///
-/// The Host-selected PDF strategy passes the already-known PDF format into the
-/// authoritative processor; format detection is not repeated below this boundary.
-///
-/// PP-StructureV3/PaddleOCR provider decoupling is not part of this change.
+/// The strategy owns PDF format validation and the current authoritative PDF
+/// processing composition. Generic routing asks this processor whether it can
+/// handle a source and never sees the PDF validator directly.
 /// </remarks>
 public sealed class PdfDocumentFormatProcessor
     : IDocumentFormatProcessor
@@ -45,6 +40,7 @@ public sealed class PdfDocumentFormatProcessor
             "native-ocr-text-reconciler",
             "native-ocr-reconciliation-v1");
 
+    private readonly IFormatValidator _validator;
     private readonly DocumentProcessor _documentProcessor;
     private readonly PdfPreservedVisualDestinationFactory?
         _openPreservedVisualDestinationAsync;
@@ -58,6 +54,9 @@ public sealed class PdfDocumentFormatProcessor
         PdfPreservedVisualDestinationFactory?
             openPreservedVisualDestinationAsync = null)
     {
+        _validator =
+            new PdfFormatValidator();
+
         _documentProcessor =
             documentProcessor ??
             throw new ArgumentNullException(
@@ -153,6 +152,22 @@ public sealed class PdfDocumentFormatProcessor
         return new PdfDocumentFormatProcessor(
             authoritativeProcessor,
             options.OpenPreservedVisualDestinationAsync);
+    }
+
+    #endregion
+
+    #region Methods Validation
+
+    public ValueTask<bool> ValidateAsync(
+        DocumentSource source,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            source);
+
+        return _validator.ValidateAsync(
+            source,
+            cancellationToken);
     }
 
     #endregion

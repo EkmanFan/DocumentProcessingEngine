@@ -934,24 +934,6 @@ public sealed class DocumentProcessorDualRunPlanningTests
             effectiveVisualBounds:
                 null);
 
-    private sealed class StubDetector
-        : IDocumentTypeDetector
-    {
-        public ValueTask<DocumentTypeDetectionResult> DetectAsync(
-            DocumentSource source,
-            CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return ValueTask.FromResult(
-                new DocumentTypeDetectionResult(
-                    DocumentFormatId.Pdf,
-                    "application/pdf",
-                    IsSupported:
-                        true));
-        }
-    }
-
     private sealed class StubExtractor(
         DocumentExtractionResult extraction)
         : IDocumentExtractor

@@ -256,9 +256,6 @@ public sealed class DocumentProcessorTests
                     typeof(DocumentFormatId),
                     parameterTypes);
 
-                Assert.DoesNotContain(
-                    typeof(IDocumentTypeDetector),
-                    parameterTypes);
             });
     }
 
@@ -532,30 +529,6 @@ public sealed class DocumentProcessorTests
                 SHA256.HashData(
                     bytes))
             .ToLowerInvariant();
-
-    private sealed class StubDetector(
-        DocumentTypeDetectionResult result)
-        : IDocumentTypeDetector
-    {
-        public int CallCount { get; private set; }
-
-        public bool SawSeekableSource { get; private set; }
-
-        public ValueTask<DocumentTypeDetectionResult> DetectAsync(
-            DocumentSource source,
-            CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            CallCount++;
-
-            SawSeekableSource =
-                source.Content.CanSeek;
-
-            return ValueTask.FromResult(
-                result);
-        }
-    }
 
     private sealed class StubExtractor
         : IDocumentExtractor

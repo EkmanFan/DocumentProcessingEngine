@@ -1,36 +1,27 @@
 using DocumentProcessing.Core.Documents;
-using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Engine.Orchestration;
-using DocumentProcessing.Formats.Pdf;
-using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing;
 
 /// <summary>
-/// Consumer-facing composition root and document-format router.
+/// Consumer-facing, format-neutral document-processing facade.
 /// </summary>
 /// <remarks>
-/// V1 uses explicit manual dependency composition. The Host creates and owns
-/// format detection and one strategy instance per configured format, selects
-/// the strategy for each source, then injects that selected strategy into the
-/// neutral Engine call.
+/// The Host knows no concrete document format. One Host-lifetime resolver owns
+/// V1 processor registration and asks each processor whether it can handle the
+/// supplied source.
 ///
-/// Consumers supply configuration values only, not processing services.
-/// Future dynamic strategy discovery is deliberately outside V1.
+/// Unsupported formats are returned as functional failures with a message.
+/// Technical failures and cancellation remain exceptional.
 /// </remarks>
 public sealed class DocumentProcessingHost
     : IDisposable
 {
     #region Variables and Constants
 
-    private readonly IDocumentTypeDetector _documentTypeDetector;
-    private readonly IReadOnlyDictionary<DocumentFormatId, IDocumentFormatProcessor>
-        _formatProcessors;
-
+    private readonly DocumentFormatProcessorResolver _formatProcessorResolver;
     private readonly DocumentProcessingEngine _engine;
-    private readonly HttpClient _layoutHttpClient;
-    private readonly HttpClient _ocrHttpClient;
 
     private bool _disposed;
 
@@ -44,48 +35,19 @@ public sealed class DocumentProcessingHost
         ArgumentNullException.ThrowIfNull(
             options);
 
-        _layoutHttpClient =
-            CreateServiceHttpClient();
+        _formatProcessorResolver =
+            new DocumentFormatProcessorResolver(
+                options);
 
-        _ocrHttpClient =
-            CreateServiceHttpClient();
-
-        try
-        {
-            _documentTypeDetector =
-                new PdfDocumentTypeDetector();
-
-            var pdfProcessor =
-                PdfDocumentFormatProcessor.CreateForHost(
-                    options.Pdf,
-                    options.EngineVersion,
-                    _layoutHttpClient,
-                    _ocrHttpClient);
-
-            _formatProcessors =
-                new Dictionary<DocumentFormatId, IDocumentFormatProcessor>
-                {
-                    [pdfProcessor.Format] =
-                        pdfProcessor
-                };
-
-            _engine =
-                new DocumentProcessingEngine();
-        }
-        catch
-        {
-            _layoutHttpClient.Dispose();
-            _ocrHttpClient.Dispose();
-
-            throw;
-        }
+        _engine =
+            new DocumentProcessingEngine();
     }
 
     #endregion
 
     #region Methods Processing
 
-    public async Task<DocumentProcessingResult> ProcessDocumentAsync(
+    public async Task<DocumentProcessingOutcome> ProcessDocumentAsync(
         DocumentSource source,
         CancellationToken cancellationToken = default)
     {
@@ -96,39 +58,29 @@ public sealed class DocumentProcessingHost
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var detection =
-            await _documentTypeDetector
-                .DetectAsync(
+        var processor =
+            await _formatProcessorResolver
+                .ResolveAsync(
                     source,
                     cancellationToken)
                 .ConfigureAwait(false);
 
-        if (!detection.IsSupported)
+        if (processor is null)
         {
-            throw new NotSupportedException(
-                "The document format is not supported by this document-processing Host.");
+            return DocumentProcessingOutcome.Failure(
+                "The document format is not supported.");
         }
 
-        if (detection.Format is not { } format)
-        {
-            throw new InvalidDataException(
-                "Document type detection reported a supported document without a format identifier.");
-        }
+        var result =
+            await _engine
+                .ProcessDocumentAsync(
+                    source,
+                    processor,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
-        if (!_formatProcessors.TryGetValue(
-                format,
-                out var processor))
-        {
-            throw new NotSupportedException(
-                $"No Host-owned document format strategy is configured for format '{format}'.");
-        }
-
-        return await _engine
-            .ProcessDocumentAsync(
-                source,
-                processor,
-                cancellationToken)
-            .ConfigureAwait(false);
+        return DocumentProcessingOutcome.Success(
+            result);
     }
 
     #endregion
@@ -145,8 +97,7 @@ public sealed class DocumentProcessingHost
         _disposed =
             true;
 
-        _layoutHttpClient.Dispose();
-        _ocrHttpClient.Dispose();
+        _formatProcessorResolver.Dispose();
     }
 
     private void ThrowIfDisposed()
@@ -155,13 +106,6 @@ public sealed class DocumentProcessingHost
             _disposed,
             this);
     }
-
-    private static HttpClient CreateServiceHttpClient() =>
-        new()
-        {
-            Timeout =
-                Timeout.InfiniteTimeSpan
-        };
 
     #endregion
 }

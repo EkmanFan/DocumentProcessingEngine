@@ -192,6 +192,19 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
 
         public int ProcessCallCount { get; private set; }
 
+        public ValueTask<bool> ValidateAsync(
+            DocumentSource source,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(
+                source);
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            return ValueTask.FromResult(
+                true);
+        }
+
         public Task<DocumentProcessingResult> ProcessDocumentAsync(
             DocumentSource source,
             CancellationToken cancellationToken = default)
@@ -213,6 +226,19 @@ public sealed class DocumentProcessingEngineFormatRoutingTests
     {
         public DocumentFormatId Format =>
             DocumentFormatId.Pdf;
+
+        public ValueTask<bool> ValidateAsync(
+            DocumentSource source,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(
+                source);
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            return ValueTask.FromResult(
+                true);
+        }
 
         public Task<DocumentProcessingResult> ProcessDocumentAsync(
             DocumentSource source,

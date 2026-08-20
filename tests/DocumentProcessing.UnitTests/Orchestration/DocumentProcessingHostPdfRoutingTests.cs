@@ -10,7 +10,7 @@ public sealed class DocumentProcessingHostPdfRoutingTests
     #region Methods Tests
 
     [Fact]
-    public void PublicConstructor_AcceptsConfigurationNotDetectorOrStrategyInjection()
+    public void PublicConstructor_AcceptsConfigurationOnly()
     {
         var constructors =
             typeof(global::DocumentProcessing.DocumentProcessingHost)
@@ -33,20 +33,13 @@ public sealed class DocumentProcessingHostPdfRoutingTests
         Assert.DoesNotContain(
             constructor.GetParameters(),
             candidate =>
-                typeof(IDocumentTypeDetector)
-                    .IsAssignableFrom(
-                        candidate.ParameterType));
-
-        Assert.DoesNotContain(
-            constructor.GetParameters(),
-            candidate =>
                 typeof(IEnumerable<IDocumentFormatProcessor>)
                     .IsAssignableFrom(
                         candidate.ParameterType));
     }
 
     [Fact]
-    public async Task ProcessDocumentAsync_UnsupportedSourceFailsAtHostDetectionBoundary()
+    public async Task ProcessDocumentAsync_UnsupportedSourceReturnsFunctionalFailure()
     {
         using var host =
             CreateHost();
@@ -57,13 +50,28 @@ public sealed class DocumentProcessingHostPdfRoutingTests
                 writable:
                     false);
 
-        await Assert.ThrowsAsync<NotSupportedException>(
-            () =>
-                host.ProcessDocumentAsync(
+        var outcome =
+            await host
+                .ProcessDocumentAsync(
                     new DocumentSource(
                         stream,
-                        "unknown.bin",
-                        "application/octet-stream")));
+                        "unknown.pdf",
+                        "application/pdf"));
+
+        Assert.False(
+            outcome.IsSuccess);
+
+        Assert.Null(
+            outcome.Result);
+
+        Assert.False(
+            string.IsNullOrWhiteSpace(
+                outcome.ErrorMessage));
+
+        Assert.Contains(
+            "not supported",
+            outcome.ErrorMessage!,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -74,7 +82,7 @@ public sealed class DocumentProcessingHostPdfRoutingTests
 
         host.Dispose();
 
-        using var stream =
+        await using var stream =
             new MemoryStream(
                 [1, 2, 3],
                 writable:
