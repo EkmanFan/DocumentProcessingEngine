@@ -4,6 +4,7 @@ using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Pdf;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
+using DocumentProcessing.Engine.Orchestration;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 
@@ -38,6 +39,30 @@ public sealed class DocumentProcessingHostPdfRoutingTests
                 typeof(IEnumerable<IDocumentFormatProcessor>)
                     .IsAssignableFrom(
                         candidate.ParameterType));
+    }
+
+    [Fact]
+    public void HostOwnsConfiguredEngine_NotFormatProcessorResolver()
+    {
+        var fields =
+            typeof(global::DocumentProcessing.DocumentProcessingHost)
+                .GetFields(
+                    BindingFlags.NonPublic |
+                    BindingFlags.Instance);
+
+        Assert.Contains(
+            fields,
+            field =>
+                field.FieldType ==
+                typeof(DocumentProcessingEngine));
+
+        Assert.DoesNotContain(
+            fields,
+            field =>
+                string.Equals(
+                    field.FieldType.FullName,
+                    "DocumentProcessing.Formats.DocumentFormatProcessorResolver",
+                    StringComparison.Ordinal));
     }
 
     [Fact]

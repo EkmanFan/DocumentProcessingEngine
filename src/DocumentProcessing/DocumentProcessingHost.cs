@@ -2,7 +2,7 @@ using DocumentProcessing.Composition;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Engine.Orchestration;
-using DocumentProcessing.Formats;
+using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing;
 
@@ -10,12 +10,13 @@ namespace DocumentProcessing;
 /// Consumer-facing, format-neutral document-processing facade.
 /// </summary>
 /// <remarks>
-/// One Host-lifetime shared-capability composition owns selected reusable
-/// Layout/OCR infrastructure. One Host-lifetime resolver owns explicit V1
-/// format registration and selection.
+/// The Host owns lifecycle and composition only: shared processing
+/// infrastructure, explicit document-format registration, and the configured
+/// Engine. Document-format selection and processing decisions belong to the
+/// Engine.
 ///
-/// Unsupported formats are returned as functional failures with a message.
-/// Technical failures and cancellation remain exceptional.
+/// Unsupported formats remain consumer-facing functional failures. Technical
+/// failures and cancellation remain exceptional.
 /// </remarks>
 public sealed class DocumentProcessingHost
     : IDisposable
@@ -24,9 +25,6 @@ public sealed class DocumentProcessingHost
 
     private readonly SharedProcessingCapabilities
         _sharedProcessingCapabilities;
-
-    private readonly DocumentFormatProcessorResolver
-        _formatProcessorResolver;
 
     private readonly DocumentProcessingEngine _engine;
 
@@ -49,10 +47,16 @@ public sealed class DocumentProcessingHost
 
         try
         {
-            _formatProcessorResolver =
-                new DocumentFormatProcessorResolver(
-                    options,
-                    _sharedProcessingCapabilities);
+            _engine =
+                new DocumentProcessingEngine(
+                    [
+                        new PdfDocumentFormat()
+                    ],
+                    _sharedProcessingCapabilities.LayoutAnalyzer,
+                    _sharedProcessingCapabilities.TextRecognizer,
+                    options.EngineVersion,
+                    _sharedProcessingCapabilities.LayoutAnalysisIdentity,
+                    options.OpenPreservedLayoutVisualDestinationAsync);
         }
         catch
         {
@@ -60,9 +64,6 @@ public sealed class DocumentProcessingHost
 
             throw;
         }
-
-        _engine =
-            new DocumentProcessingEngine();
     }
 
     #endregion
@@ -80,29 +81,23 @@ public sealed class DocumentProcessingHost
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var processor =
-            await _formatProcessorResolver
-                .ResolveAsync(
-                    source,
-                    cancellationToken)
-                .ConfigureAwait(false);
+        try
+        {
+            var result =
+                await _engine
+                    .ProcessDocumentAsync(
+                        source,
+                        cancellationToken)
+                    .ConfigureAwait(false);
 
-        if (processor is null)
+            return DocumentProcessingOutcome.Success(
+                result);
+        }
+        catch (DocumentFormatSelectionException exception)
         {
             return DocumentProcessingOutcome.Failure(
-                "The document format is not supported.");
+                exception.Message);
         }
-
-        var result =
-            await _engine
-                .ProcessDocumentAsync(
-                    source,
-                    processor,
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-        return DocumentProcessingOutcome.Success(
-            result);
     }
 
     #endregion

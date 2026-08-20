@@ -147,15 +147,15 @@ public sealed class DocumentProcessingEngine
         switch (selection)
         {
             case DocumentFormatSelectionResult.NotRecognized:
-                throw new NotSupportedException(
-                    "No registered document format recognized the source.");
+                throw new DocumentFormatSelectionException(
+                    "The document format is not supported.");
 
             case DocumentFormatSelectionResult.Invalid invalid:
-                throw new InvalidDataException(
+                throw new DocumentFormatSelectionException(
                     $"Document format '{invalid.DocumentFormat.Format}' recognized the source but rejected it: {invalid.Reason}");
 
             case DocumentFormatSelectionResult.Ambiguous ambiguous:
-                throw new InvalidDataException(
+                throw new DocumentFormatSelectionException(
                     "Document format selection is ambiguous between: " +
                     string.Join(
                         ", ",

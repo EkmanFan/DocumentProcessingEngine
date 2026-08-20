@@ -103,11 +103,17 @@ public sealed class DocumentProcessingEngineOwnedPathTests
                 writable:
                     false);
 
-        await Assert.ThrowsAsync<NotSupportedException>(
-            () =>
-                engine.ProcessDocumentAsync(
-                    new DocumentSource(
-                        stream)));
+        var exception =
+            await Assert.ThrowsAsync<DocumentFormatSelectionException>(
+                () =>
+                    engine.ProcessDocumentAsync(
+                        new DocumentSource(
+                            stream)));
+
+        Assert.Contains(
+            "not supported",
+            exception.Message,
+            StringComparison.OrdinalIgnoreCase);
 
         Assert.Equal(
             1,
