@@ -30,33 +30,15 @@ public sealed class PdfDocumentFormat
     #region ctor
 
     public PdfDocumentFormat()
-        : this(
-            new PdfFormatValidator(),
-            new PdfPigDocumentExtractor(),
-            new PdfPigVisualRasterObservationSource())
-    {
-    }
-
-    public PdfDocumentFormat(
-        PdfFormatValidator validator,
-        PdfPigDocumentExtractor extractor,
-        PdfPigVisualRasterObservationSource
-            visualRasterObservationSource)
     {
         _validator =
-            validator ??
-            throw new ArgumentNullException(
-                nameof(validator));
+            new PdfFormatValidator();
 
         _extractor =
-            extractor ??
-            throw new ArgumentNullException(
-                nameof(extractor));
+            new PdfPigDocumentExtractor();
 
         _visualRasterObservationSource =
-            visualRasterObservationSource ??
-            throw new ArgumentNullException(
-                nameof(visualRasterObservationSource));
+            new PdfPigVisualRasterObservationSource();
     }
 
     #endregion

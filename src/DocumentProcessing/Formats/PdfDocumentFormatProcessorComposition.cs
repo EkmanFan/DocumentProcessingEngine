@@ -56,27 +56,15 @@ internal static class PdfDocumentFormatProcessorComposition
                 nameof(engineVersion));
         }
 
-        var nativeExtractor =
-            new PdfPigDocumentExtractor();
-
-        var visualRasterObservationSource =
-            new PdfPigVisualRasterObservationSource();
-
-        var documentFormat =
-            new PdfDocumentFormat(
-                new PdfFormatValidator(),
-                nativeExtractor,
-                visualRasterObservationSource);
-
         var authoritativeProcessor =
             DocumentProcessorFactory.CreateHybrid(
                 DocumentFormatId.Pdf,
-                nativeExtractor,
+                new PdfPigDocumentExtractor(),
                 new PdfPreflightAnalyzer(),
                 new PdftoppmDocumentRasterizer(
                     dpi:
                         300),
-                visualRasterObservationSource,
+                new PdfPigVisualRasterObservationSource(),
                 layoutAnalyzer,
                 textRecognizer,
                 engineVersion,
@@ -90,7 +78,7 @@ internal static class PdfDocumentFormatProcessorComposition
 
         var processingBinding =
             new DocumentFormatProcessingBinding(
-                documentFormat,
+                new PdfDocumentFormat(),
                 authoritativeProcessor);
 
         return new PdfDocumentProcessingComposition(
