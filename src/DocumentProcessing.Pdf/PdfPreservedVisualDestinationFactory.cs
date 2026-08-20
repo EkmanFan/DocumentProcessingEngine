@@ -1,21 +1,20 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Layout;
 
-namespace DocumentProcessing.Formats.Pdf;
+namespace DocumentProcessing.Pdf;
 
 /// <summary>
 /// Opens caller-owned storage for a meaningful visual selected by the current
 /// authoritative PDF processing pipeline.
 /// </summary>
 /// <remarks>
-/// This delegate belongs to the temporary composition bridge used while the
-/// existing PDF-shaped authoritative pipeline still lives in
-/// DocumentProcessing.Engine.
+/// This delegate is PDF-specific because the current authoritative PDF
+/// processing path identifies preserved visuals through the portable layout
+/// observation contract.
 ///
-/// It is intentionally not part of <c>IDocumentFormatProcessor</c>. B2 will
-/// relocate PDF orchestration into the PDF module; at that point this bridge
-/// can move with the concrete PDF strategy without introducing a dependency
-/// from the PDF module to the generic engine module.
+/// It intentionally remains outside <c>IDocumentFormatProcessor</c> so the
+/// generic format-processing boundary does not acquire PDF-specific visual
+/// destination semantics.
 /// </remarks>
 /// <param name="source">PDF source currently being processed.</param>
 /// <param name="visual">

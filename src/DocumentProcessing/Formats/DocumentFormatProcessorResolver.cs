@@ -2,7 +2,7 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Formats.Pdf;
 
-namespace DocumentProcessing;
+namespace DocumentProcessing.Formats;
 
 /// <summary>
 /// Host-lifetime registry and resolver for document-format processors.

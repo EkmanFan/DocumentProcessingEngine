@@ -1,4 +1,4 @@
-namespace DocumentProcessing.Formats.Pdf;
+namespace DocumentProcessing.Pdf;
 
 /// <summary>
 /// Configuration values required by the current V1 PDF processing strategy.

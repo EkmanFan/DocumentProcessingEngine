@@ -5,7 +5,7 @@ using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Core.Results;
 
-namespace DocumentProcessing.Formats.Pdf;
+namespace DocumentProcessing.Pdf;
 
 /// <summary>
 /// Converts the current authoritative PDF result into the format-neutral
