@@ -15,6 +15,8 @@ namespace DocumentProcessing.Pdf;
 public sealed class PdfPigDocumentExtractor
     : IDocumentExtractorWithRasterObservations
 {
+    #region Variables and Constants
+
     // PdfPig 0.1.15 appends orientation buckets to a shared result list in parallel.
     // SourceSequence is provenance, so this stage must preserve deterministic bucket order.
     private static readonly NearestNeighbourWordExtractor DeterministicWordExtractor =
@@ -27,6 +29,11 @@ public sealed class PdfPigDocumentExtractor
                 GroupByOrientation =
                     true
             });
+
+    #endregion
+
+
+    #region Methods
 
     public bool CanExtract(
         DocumentFormatId format) =>
@@ -544,6 +551,8 @@ public sealed class PdfPigDocumentExtractor
                pointSizes[middle]) / 2.0
             : pointSizes[middle];
     }
+
+    #endregion
 
 
 }

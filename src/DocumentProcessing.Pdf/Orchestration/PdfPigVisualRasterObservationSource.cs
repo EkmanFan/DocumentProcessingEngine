@@ -18,6 +18,8 @@ namespace DocumentProcessing.Pdf;
 public sealed class PdfPigVisualRasterObservationSource
     : IVisualRasterObservationSource
 {
+    #region Variables and Constants
+
     /// <summary>
     /// Operational safety ceiling for one decoded RGBA source image.
     ///
@@ -31,6 +33,11 @@ public sealed class PdfPigVisualRasterObservationSource
     private readonly long _maxDecodedPixels;
     private readonly PdfVisualRasterMeasurementEngine _measurementEngine =
         new();
+
+    #endregion
+
+
+    #region ctor
 
     public PdfPigVisualRasterObservationSource(
         long maxDecodedPixels = DefaultMaxDecodedPixels)
@@ -46,6 +53,11 @@ public sealed class PdfPigVisualRasterObservationSource
         _maxDecodedPixels =
             maxDecodedPixels;
     }
+
+    #endregion
+
+
+    #region Methods
 
     public bool CanObserve(
         DocumentFormatId format) =>
@@ -424,4 +436,6 @@ public sealed class PdfPigVisualRasterObservationSource
                 null,
             effectiveVisualBounds:
                 null);
+
+    #endregion
 }

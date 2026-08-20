@@ -13,8 +13,15 @@ namespace DocumentProcessing.Core.Results.Serialization;
 /// </summary>
 public static class DocumentIngestionResultJson
 {
+    #region Variables and Constants
+
     private static readonly JsonSerializerOptions Options =
         CreateOptions();
+
+    #endregion
+
+
+    #region Methods
 
     public static byte[] SerializeToUtf8Bytes(
         DocumentIngestionResult result)
@@ -99,4 +106,6 @@ public static class DocumentIngestionResultJson
                 JsonUnmappedMemberHandling.Skip,
             WriteIndented = false
         };
+
+    #endregion
 }

@@ -25,8 +25,15 @@ namespace DocumentProcessing.Engine.Results;
 /// </summary>
 public static class DocumentIngestionResultBuilder
 {
+    #region Variables and Constants
+
     public const string ProjectionProfileId =
         "document-ingestion-result-projection-v1";
+
+    #endregion
+
+
+    #region Methods
 
     public static DocumentIngestionResult Build(
         HybridDocumentSegmentationResult segmentation,
@@ -388,4 +395,6 @@ public static class DocumentIngestionResultBuilder
             }
         }
     }
+
+    #endregion
 }

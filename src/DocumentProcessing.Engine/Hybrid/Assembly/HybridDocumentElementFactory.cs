@@ -16,6 +16,8 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// </summary>
 public static class HybridDocumentElementFactory
 {
+    #region Methods
+
     public static HybridDocumentElement FromNative(
         int physicalPageNumber,
         DocumentTextBlock nativeBlock)
@@ -242,4 +244,6 @@ public static class HybridDocumentElementFactory
                     $"Layout kind {kind} is not a supported textual hybrid kind.")
         };
     }
+
+    #endregion
 }

@@ -10,6 +10,8 @@ namespace DocumentProcessing.Engine.Normalization;
 /// </summary>
 internal static class RecurringMarginGeometry
 {
+    #region Variables and Constants
+
     private const double HeaderZoneFraction =
         0.12;
 
@@ -18,6 +20,11 @@ internal static class RecurringMarginGeometry
 
     private const double MaximumMarginHeightFraction =
         0.20;
+
+    #endregion
+
+
+    #region Methods
 
     public static RecurringMarginZone? GetZone(
         NormalizedRectangle bounds,
@@ -71,6 +78,8 @@ internal static class RecurringMarginGeometry
 
         return null;
     }
+
+    #endregion
 }
 
 internal enum RecurringMarginZone

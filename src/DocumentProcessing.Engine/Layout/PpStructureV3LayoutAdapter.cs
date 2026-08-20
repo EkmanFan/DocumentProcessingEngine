@@ -14,7 +14,14 @@ namespace DocumentProcessing.Engine.Layout;
 /// </summary>
 public sealed class PpStructureV3LayoutAdapter
 {
+    #region Variables and Constants
+
     public const string BackendId = "pp-structurev3";
+
+    #endregion
+
+
+    #region Methods
 
     public async ValueTask<LayoutAnalysisResult> AdaptAsync(
         Stream resultJson,
@@ -240,4 +247,6 @@ public sealed class PpStructureV3LayoutAdapter
             _ =>
                 LayoutObservationKind.Unknown
         };
+
+    #endregion
 }

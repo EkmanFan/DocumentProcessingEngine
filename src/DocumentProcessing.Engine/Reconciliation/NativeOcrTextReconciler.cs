@@ -19,6 +19,8 @@ namespace DocumentProcessing.Engine.Reconciliation;
 /// </summary>
 public static class NativeOcrTextReconciler
 {
+    #region Methods
+
     /// <summary>
     /// Raw block-level reconciliation retained for Phase 17A compatibility.
     /// </summary>
@@ -429,4 +431,6 @@ public static class NativeOcrTextReconciler
 
         return builder.ToString();
     }
+
+    #endregion
 }

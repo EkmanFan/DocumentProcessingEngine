@@ -15,6 +15,8 @@ namespace DocumentProcessing.Engine.Reconciliation;
 /// </summary>
 public static class NativeTextExtentProjector
 {
+    #region Methods
+
     public static ComparableNativeTextExtent? Project(
         DocumentTextBlock sourceBlock,
         LayoutObservation sourceLayoutObservation)
@@ -121,4 +123,6 @@ public static class NativeTextExtentProjector
                intersectionBottom >
                    intersectionTop;
     }
+
+    #endregion
 }

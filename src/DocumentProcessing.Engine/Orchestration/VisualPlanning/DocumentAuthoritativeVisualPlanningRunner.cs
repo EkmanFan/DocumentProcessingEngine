@@ -13,7 +13,14 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// </summary>
 internal sealed class DocumentAuthoritativeVisualPlanningRunner
 {
+    #region Variables and Constants
+
     private readonly DocumentAuthoritativeVisualPlanningDependencies _dependencies;
+
+    #endregion
+
+
+    #region ctor
 
     public DocumentAuthoritativeVisualPlanningRunner(
         DocumentAuthoritativeVisualPlanningDependencies dependencies)
@@ -23,6 +30,11 @@ internal sealed class DocumentAuthoritativeVisualPlanningRunner
             throw new ArgumentNullException(
                 nameof(dependencies));
     }
+
+    #endregion
+
+
+    #region Methods
 
     public async ValueTask<IReadOnlyList<GuardedPagePlanningDecision>> RunAsync(
         DocumentSource source,
@@ -80,4 +92,6 @@ internal sealed class DocumentAuthoritativeVisualPlanningRunner
                 extraction,
                 visualObservations);
     }
+
+    #endregion
 }

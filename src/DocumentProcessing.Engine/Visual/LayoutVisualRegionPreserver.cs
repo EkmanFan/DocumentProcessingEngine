@@ -18,7 +18,14 @@ namespace DocumentProcessing.Engine.Visual;
 /// </summary>
 public sealed class LayoutVisualRegionPreserver
 {
+    #region Variables and Constants
+
     private readonly VisualAssetPreserver _assetPreserver;
+
+    #endregion
+
+
+    #region ctor
 
     public LayoutVisualRegionPreserver(
         VisualAssetPreserver? assetPreserver = null)
@@ -27,6 +34,11 @@ public sealed class LayoutVisualRegionPreserver
             assetPreserver ??
             new VisualAssetPreserver();
     }
+
+    #endregion
+
+
+    #region Methods
 
     public async ValueTask<PreservedVisualEvidence> PreserveAsync(
         LayoutVisualEvidence evidence,
@@ -191,4 +203,6 @@ public sealed class LayoutVisualRegionPreserver
         stream.Position =
             0;
     }
+
+    #endregion
 }

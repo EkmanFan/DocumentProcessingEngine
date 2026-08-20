@@ -18,10 +18,17 @@ namespace DocumentProcessing.Engine.Visual;
 /// </summary>
 public sealed class VisualAssetPreserver
 {
+    #region Variables and Constants
+
     public const long DefaultMaxInputBytes =
         64L * 1024L * 1024L;
 
     private readonly long _maxInputBytes;
+
+    #endregion
+
+
+    #region ctor
 
     public VisualAssetPreserver(
         long maxInputBytes = DefaultMaxInputBytes)
@@ -34,6 +41,11 @@ public sealed class VisualAssetPreserver
 
         _maxInputBytes = maxInputBytes;
     }
+
+    #endregion
+
+
+    #region Methods
 
     public async ValueTask<PreservedVisualEvidence> PreserveAsync(
         Stream visualContent,
@@ -233,4 +245,6 @@ public sealed class VisualAssetPreserver
             }
         }
     }
+
+    #endregion
 }

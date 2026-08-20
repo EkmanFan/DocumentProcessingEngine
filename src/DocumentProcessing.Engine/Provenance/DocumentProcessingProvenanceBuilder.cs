@@ -16,8 +16,15 @@ namespace DocumentProcessing.Engine.Provenance;
 /// </summary>
 public static class DocumentProcessingProvenanceBuilder
 {
+    #region Variables and Constants
+
     public const string ProjectionProfileId =
         "custody-complete-provenance-projection-v1";
+
+    #endregion
+
+
+    #region Methods
 
     public static DocumentProcessingProvenance Build(
         HybridDocumentSegmentationResult segmentation,
@@ -429,4 +436,6 @@ public static class DocumentProcessingProvenanceBuilder
             }
         }
     }
+
+    #endregion
 }

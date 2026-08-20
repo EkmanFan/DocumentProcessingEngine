@@ -21,7 +21,14 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// </summary>
 internal sealed class TargetedHybridTextExecutor
 {
+    #region Variables and Constants
+
     private readonly IRegionTextRecognizer _textRecognizer;
+
+    #endregion
+
+
+    #region ctor
 
     public TargetedHybridTextExecutor(
         IRegionTextRecognizer textRecognizer)
@@ -31,6 +38,11 @@ internal sealed class TargetedHybridTextExecutor
             throw new ArgumentNullException(
                 nameof(textRecognizer));
     }
+
+    #endregion
+
+
+    #region Methods
 
     public IReadOnlyDictionary<int, TargetedOcrRegion> CreateOcrTargets(
         LayoutAnalysisResult layout,
@@ -342,4 +354,6 @@ internal sealed class TargetedHybridTextExecutor
         stream.Position =
             0;
     }
+
+    #endregion
 }

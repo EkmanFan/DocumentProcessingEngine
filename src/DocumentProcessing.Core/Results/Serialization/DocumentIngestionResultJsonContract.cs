@@ -22,6 +22,8 @@ namespace DocumentProcessing.Core.Results.Serialization;
 /// </summary>
 internal sealed class DocumentIngestionResultJsonContract
 {
+    #region Properties
+
     [JsonPropertyName("schemaVersion"), JsonRequired]
     public string SchemaVersion { get; init; } =
         null!;
@@ -49,6 +51,11 @@ internal sealed class DocumentIngestionResultJsonContract
     [JsonPropertyName("qualityObservations"), JsonRequired]
     public DocumentIngestionQualityJsonContract QualityObservations { get; init; } =
         null!;
+
+    #endregion
+
+
+    #region Methods
 
     public static DocumentIngestionResultJsonContract FromModel(
         DocumentIngestionResult result) =>
@@ -123,10 +130,14 @@ internal sealed class DocumentIngestionResultJsonContract
                     QualityObservations,
                     "qualityObservations")
                 .ToModel());
+
+    #endregion
 }
 
 internal sealed class DocumentSourceIdentityJsonContract
 {
+    #region Properties
+
     [JsonPropertyName("format"), JsonRequired]
     public string Format { get; init; } =
         null!;
@@ -146,6 +157,11 @@ internal sealed class DocumentSourceIdentityJsonContract
 
     [JsonPropertyName("declaredMediaType")]
     public string? DeclaredMediaType { get; init; }
+
+    #endregion
+
+
+    #region Methods
 
     public static DocumentSourceIdentityJsonContract FromModel(
         DocumentSourceIdentity source) =>
@@ -180,10 +196,14 @@ internal sealed class DocumentSourceIdentityJsonContract
             PhysicalPageCount,
             FileName,
             DeclaredMediaType);
+
+    #endregion
 }
 
 internal sealed class DocumentProcessingManifestJsonContract
 {
+    #region Properties
+
     [JsonPropertyName("engineVersion"), JsonRequired]
     public string EngineVersion { get; init; } =
         null!;
@@ -220,6 +240,11 @@ internal sealed class DocumentProcessingManifestJsonContract
     [JsonPropertyName("segmentationProfileId"), JsonRequired]
     public string SegmentationProfileId { get; init; } =
         null!;
+
+    #endregion
+
+
+    #region Methods
 
     public static DocumentProcessingManifestJsonContract FromModel(
         DocumentProcessingManifest manifest) =>
@@ -305,6 +330,8 @@ internal sealed class DocumentProcessingManifestJsonContract
                 .RequireNonBlank(
                     SegmentationProfileId,
                     "processingManifest.segmentationProfileId"));
+
+    #endregion
 }
 
 internal sealed class ProcessingComponentIdentityJsonContract
@@ -383,6 +410,8 @@ internal sealed class DocumentIngestionPageJsonContract
 
 internal sealed class DocumentElementProvenanceJsonContract
 {
+    #region Properties
+
     [JsonPropertyName("sourceDocumentSha256"), JsonRequired]
     public string SourceDocumentSha256 { get; init; } =
         null!;
@@ -465,6 +494,11 @@ internal sealed class DocumentElementProvenanceJsonContract
 
     [JsonPropertyName("preservedVisual")]
     public PreservedVisualProvenanceJsonContract? PreservedVisual { get; init; }
+
+    #endregion
+
+
+    #region Methods
 
     public static DocumentElementProvenanceJsonContract FromModel(
         DocumentElementProvenance element) =>
@@ -616,10 +650,14 @@ internal sealed class DocumentElementProvenanceJsonContract
             IsResolved,
             PreservedVisual
                 ?.ToModel());
+
+    #endregion
 }
 
 internal sealed class DocumentSegmentProvenanceJsonContract
 {
+    #region Properties
+
     [JsonPropertyName("sourceDocumentSha256"), JsonRequired]
     public string SourceDocumentSha256 { get; init; } =
         null!;
@@ -658,6 +696,11 @@ internal sealed class DocumentSegmentProvenanceJsonContract
 
     [JsonPropertyName("hasUnresolvedEvidence"), JsonRequired]
     public bool HasUnresolvedEvidence { get; init; }
+
+    #endregion
+
+
+    #region Methods
 
     public static DocumentSegmentProvenanceJsonContract FromModel(
         DocumentSegmentProvenance segment) =>
@@ -730,6 +773,8 @@ internal sealed class DocumentSegmentProvenanceJsonContract
                                 "structuralSegments[].textOrigins[]"))
                 .ToArray(),
             HasUnresolvedEvidence);
+
+    #endregion
 }
 
 internal sealed class DocumentIngestionQualityJsonContract
@@ -857,6 +902,8 @@ internal sealed class TextDehyphenationProvenanceJsonContract
 
 internal sealed class PreservedVisualProvenanceJsonContract
 {
+    #region Properties
+
     [JsonPropertyName("profileId"), JsonRequired]
     public string ProfileId { get; init; } =
         null!;
@@ -881,6 +928,11 @@ internal sealed class PreservedVisualProvenanceJsonContract
     [JsonPropertyName("contentSha256"), JsonRequired]
     public string ContentSha256 { get; init; } =
         null!;
+
+    #endregion
+
+
+    #region Methods
 
     public static PreservedVisualProvenanceJsonContract FromModel(
         PreservedVisualProvenance visual) =>
@@ -926,6 +978,8 @@ internal sealed class PreservedVisualProvenanceJsonContract
                 .RequireNonBlank(
                     ContentSha256,
                     "elements[].preservedVisual.contentSha256"));
+
+    #endregion
 }
 
 internal sealed class NormalizedRectangleJsonContract
@@ -1002,6 +1056,8 @@ internal sealed class PixelRectangleJsonContract
 
 internal static class JsonContractMapping
 {
+    #region Methods
+
     public static T Require<T>(
         T? value,
         string path)
@@ -1132,4 +1188,6 @@ internal static class JsonContractMapping
         throw new JsonException(
             $"JSON value '{actual}' is not a supported {typeof(TEnum).Name} at '{path}'.");
     }
+
+    #endregion
 }

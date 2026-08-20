@@ -15,6 +15,8 @@ namespace DocumentProcessing.Engine.Layout;
 /// </summary>
 public sealed class PpStructureV3ServingClient
 {
+    #region Variables and Constants
+
     public const long DefaultMaxInputBytes = 32L * 1024L * 1024L;
     public const long DefaultMaxResponseBytes = 16L * 1024L * 1024L;
 
@@ -27,6 +29,11 @@ public sealed class PpStructureV3ServingClient
     private readonly long _maxInputBytes;
     private readonly long _maxResponseBytes;
     private readonly PpStructureV3LayoutAdapter _adapter = new();
+
+    #endregion
+
+
+    #region ctor
 
     public PpStructureV3ServingClient(
         HttpClient httpClient,
@@ -88,6 +95,11 @@ public sealed class PpStructureV3ServingClient
         _maxInputBytes = maxInputBytes;
         _maxResponseBytes = maxResponseBytes;
     }
+
+    #endregion
+
+
+    #region Methods
 
     public async ValueTask<LayoutAnalysisResult> AnalyzeAsync(
         Stream rasterImage,
@@ -490,4 +502,6 @@ public sealed class PpStructureV3ServingClient
             }
         }
     }
+
+    #endregion
 }

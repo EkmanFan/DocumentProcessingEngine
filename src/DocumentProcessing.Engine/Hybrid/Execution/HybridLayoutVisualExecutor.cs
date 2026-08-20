@@ -18,9 +18,16 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// </summary>
 internal sealed class HybridLayoutVisualExecutor
 {
+    #region Variables and Constants
+
     private readonly DefaultLayoutVisualEvidenceAssessor _assessor =
         new();
     private readonly LayoutVisualRegionPreserver _regionPreserver;
+
+    #endregion
+
+
+    #region ctor
 
     public HybridLayoutVisualExecutor(
         VisualAssetPreserver visualAssetPreserver)
@@ -32,6 +39,11 @@ internal sealed class HybridLayoutVisualExecutor
             new LayoutVisualRegionPreserver(
                 visualAssetPreserver);
     }
+
+    #endregion
+
+
+    #region Methods
 
     public IReadOnlyDictionary<int, LayoutVisualEvidence> Assess(
         LayoutAnalysisResult layout)
@@ -134,4 +146,6 @@ internal sealed class HybridLayoutVisualExecutor
                     "Unsupported visual disposition.");
         }
     }
+
+    #endregion
 }

@@ -12,6 +12,8 @@ namespace DocumentProcessing.Engine.Normalization;
 /// </summary>
 internal static partial class DeterministicTextNormalizationRules
 {
+    #region Methods
+
     public static string Normalize(
         string sourceText)
     {
@@ -71,4 +73,6 @@ internal static partial class DeterministicTextNormalizationRules
         @"\d+",
         RegexOptions.CultureInvariant)]
     private static partial Regex DigitRunRegex();
+
+    #endregion
 }

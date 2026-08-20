@@ -16,8 +16,15 @@ namespace DocumentProcessing.Engine.Quality;
 /// </summary>
 public static class DocumentQualityObservationsBuilder
 {
+    #region Variables and Constants
+
     public const string QualityProfileId =
         "deterministic-document-quality-observations-v1";
+
+    #endregion
+
+
+    #region Methods
 
     public static DocumentQualityObservations Build(
         HybridDocumentSegmentationResult segmentation,
@@ -342,4 +349,6 @@ public static class DocumentQualityObservationsBuilder
                 "Quality projection requires provenance for the exact structural segment set.");
         }
     }
+
+    #endregion
 }
