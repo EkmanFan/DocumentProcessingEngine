@@ -349,6 +349,40 @@ public sealed class DocumentProcessor
             .ConfigureAwait(false);
     }
 
+    internal Task<DocumentIngestionResult> ProcessPreparedEvidenceAsync(
+        PreparedDocumentSource prepared,
+        DocumentFormatId selectedFormat,
+        NativeDocumentEvidence evidence,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            prepared);
+
+        ArgumentNullException.ThrowIfNull(
+            evidence);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (selectedFormat !=
+            _format)
+        {
+            throw new InvalidOperationException(
+                $"Selected document format '{selectedFormat}' does not match " +
+                $"the processor composition format '{_format}'.");
+        }
+
+        return ProcessPreparedEvidenceCoreAsync(
+            prepared,
+            selectedFormat,
+            evidence.Extraction,
+            evidence.RasterObservations,
+            evidence.RasterObservationFailure,
+            openVisualDestinationAsync,
+            cancellationToken);
+    }
+
     private async Task<DocumentIngestionResult>
         ProcessPreparedEvidenceCoreAsync(
             PreparedDocumentSource prepared,
