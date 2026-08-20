@@ -111,8 +111,7 @@ public sealed class DocumentProcessingHostPdfRoutingTests
                 new PaddleOcrOptions(
                     new Uri(
                         "http://127.0.0.1:1/ocr"),
-                    "test-ocr-profile"),
-                new PdfDocumentProcessingOptions()));
+                    "test-ocr-profile")));
 
     #endregion
 }

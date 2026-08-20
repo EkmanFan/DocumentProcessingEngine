@@ -1,6 +1,7 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Core.Visual;
 
 namespace DocumentProcessing.Pdf;
 
@@ -22,7 +23,7 @@ public sealed class PdfDocumentFormatProcessor
 
     private readonly IFormatValidator _validator;
     private readonly PdfDocumentExecution _executeAsync;
-    private readonly PdfPreservedVisualDestinationFactory?
+    private readonly PreservedLayoutVisualDestinationFactory?
         _openPreservedVisualDestinationAsync;
 
     #endregion
@@ -31,7 +32,7 @@ public sealed class PdfDocumentFormatProcessor
 
     public PdfDocumentFormatProcessor(
         PdfDocumentExecution executeAsync,
-        PdfPreservedVisualDestinationFactory?
+        PreservedLayoutVisualDestinationFactory?
             openPreservedVisualDestinationAsync = null)
     {
         _validator =

@@ -1,6 +1,6 @@
+using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
-using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing;
 
@@ -9,7 +9,8 @@ namespace DocumentProcessing;
 /// </summary>
 /// <remarks>
 /// The V1 composition root selects concrete shared Layout/OCR providers
-/// explicitly. Format-specific configuration remains separate.
+/// explicitly. The optional visual-destination callback is format-neutral and
+/// applies to layout-driven preserved visuals.
 /// </remarks>
 public sealed class DocumentProcessingHostOptions
 {
@@ -19,7 +20,8 @@ public sealed class DocumentProcessingHostOptions
         string engineVersion,
         PpStructureV3Options ppStructureV3,
         PaddleOcrOptions paddleOcr,
-        PdfDocumentProcessingOptions pdf)
+        PreservedLayoutVisualDestinationFactory?
+            openPreservedLayoutVisualDestinationAsync = null)
     {
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -42,10 +44,8 @@ public sealed class DocumentProcessingHostOptions
             throw new ArgumentNullException(
                 nameof(paddleOcr));
 
-        Pdf =
-            pdf ??
-            throw new ArgumentNullException(
-                nameof(pdf));
+        OpenPreservedLayoutVisualDestinationAsync =
+            openPreservedLayoutVisualDestinationAsync;
     }
 
     #endregion
@@ -68,9 +68,10 @@ public sealed class DocumentProcessingHostOptions
     public PaddleOcrOptions PaddleOcr { get; }
 
     /// <summary>
-    /// Gets the remaining V1 PDF-specific integration configuration.
+    /// Gets the optional destination factory for preserved layout visuals.
     /// </summary>
-    public PdfDocumentProcessingOptions Pdf { get; }
+    public PreservedLayoutVisualDestinationFactory?
+        OpenPreservedLayoutVisualDestinationAsync { get; }
 
     #endregion
 }

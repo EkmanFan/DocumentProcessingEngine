@@ -37,11 +37,11 @@ internal sealed class DocumentFormatProcessorResolver
 
         var pdfProcessor =
             PdfDocumentFormatProcessorComposition.Create(
-                options.Pdf,
                 options.EngineVersion,
                 sharedProcessingCapabilities.LayoutAnalyzer,
                 sharedProcessingCapabilities.TextRecognizer,
-                sharedProcessingCapabilities.LayoutAnalysisIdentity);
+                sharedProcessingCapabilities.LayoutAnalysisIdentity,
+                options.OpenPreservedLayoutVisualDestinationAsync);
 
         _formatProcessors =
             new Dictionary<DocumentFormatId, IDocumentFormatProcessor>

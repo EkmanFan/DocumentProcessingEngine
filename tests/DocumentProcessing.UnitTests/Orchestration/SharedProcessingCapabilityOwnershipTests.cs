@@ -1,4 +1,5 @@
 using System.Reflection;
+using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Pdf;
@@ -10,7 +11,7 @@ public sealed class SharedProcessingCapabilityOwnershipTests
     #region Methods Tests
 
     [Fact]
-    public void HostOptions_ExposeSharedProviderConfigurationOutsidePdfOptions()
+    public void HostOptions_ExposeSharedProviderConfiguration()
     {
         var hostOptionsType =
             typeof(global::DocumentProcessing.DocumentProcessingHostOptions);
@@ -32,35 +33,48 @@ public sealed class SharedProcessingCapabilityOwnershipTests
                         global::DocumentProcessing.DocumentProcessingHostOptions
                             .PaddleOcr))!
                 .PropertyType);
+    }
 
-        var pdfPropertyNames =
-            typeof(PdfDocumentProcessingOptions)
-                .GetProperties(
-                    BindingFlags.Public |
-                    BindingFlags.Instance)
-                .Select(property =>
-                    property.Name)
-                .ToArray();
+    [Fact]
+    public void HostOptions_ExposePortableLayoutVisualDestination()
+    {
+        var property =
+            typeof(global::DocumentProcessing.DocumentProcessingHostOptions)
+                .GetProperty(
+                    nameof(
+                        global::DocumentProcessing.DocumentProcessingHostOptions
+                            .OpenPreservedLayoutVisualDestinationAsync));
 
-        Assert.DoesNotContain(
-            "LayoutEndpoint",
-            pdfPropertyNames);
+        Assert.NotNull(
+            property);
 
-        Assert.DoesNotContain(
-            "LayoutRequestTimeout",
-            pdfPropertyNames);
+        Assert.Equal(
+            typeof(PreservedLayoutVisualDestinationFactory),
+            property.PropertyType);
+    }
 
-        Assert.DoesNotContain(
-            "OcrEndpoint",
-            pdfPropertyNames);
+    [Fact]
+    public void PdfAssembly_DoesNotDeclareOptionsOrVisualDestinationDelegate()
+    {
+        var pdfAssembly =
+            typeof(PdfDocumentFormatProcessor)
+                .Assembly;
 
-        Assert.DoesNotContain(
-            "OcrProfileId",
-            pdfPropertyNames);
+        const string obsoletePdfOptionsType =
+            "DocumentProcessing.Pdf.PdfDocumentProcessing" +
+            "Options";
 
-        Assert.DoesNotContain(
-            "OcrRequestTimeout",
-            pdfPropertyNames);
+        const string obsoletePdfVisualDestinationType =
+            "DocumentProcessing.Pdf.PdfPreservedVisualDestination" +
+            "Factory";
+
+        Assert.Null(
+            pdfAssembly.GetType(
+                obsoletePdfOptionsType));
+
+        Assert.Null(
+            pdfAssembly.GetType(
+                obsoletePdfVisualDestinationType));
     }
 
     [Fact]

@@ -3,6 +3,7 @@ using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Pdf;
 
@@ -14,7 +15,8 @@ namespace DocumentProcessing.Formats;
 /// </summary>
 /// <remarks>
 /// This type deliberately does not construct PP-StructureV3, PaddleOCR, service
-/// HTTP clients, or Engine-internal planner/hybrid/visual implementation details.
+/// HTTP clients, Engine-internal planner/hybrid/visual implementation details,
+/// or format-specific option containers that do not represent PDF semantics.
 /// </remarks>
 internal static class PdfDocumentFormatProcessorComposition
 {
@@ -30,15 +32,13 @@ internal static class PdfDocumentFormatProcessorComposition
     #region Methods Composition
 
     public static PdfDocumentFormatProcessor Create(
-        PdfDocumentProcessingOptions options,
         string engineVersion,
         IPageLayoutAnalyzer layoutAnalyzer,
         IRegionTextRecognizer textRecognizer,
-        ProcessingComponentIdentity layoutAnalysisIdentity)
+        ProcessingComponentIdentity layoutAnalysisIdentity,
+        PreservedLayoutVisualDestinationFactory?
+            openPreservedLayoutVisualDestinationAsync)
     {
-        ArgumentNullException.ThrowIfNull(
-            options);
-
         ArgumentNullException.ThrowIfNull(
             layoutAnalyzer);
 
@@ -73,11 +73,11 @@ internal static class PdfDocumentFormatProcessorComposition
 
         return new PdfDocumentFormatProcessor(
             ExecuteAsync,
-            options.OpenPreservedVisualDestinationAsync);
+            openPreservedLayoutVisualDestinationAsync);
 
         Task<DocumentIngestionResult> ExecuteAsync(
             DocumentSource source,
-            PdfPreservedVisualDestinationFactory?
+            PreservedLayoutVisualDestinationFactory?
                 openPreservedVisualDestinationAsync,
             CancellationToken cancellationToken)
         {

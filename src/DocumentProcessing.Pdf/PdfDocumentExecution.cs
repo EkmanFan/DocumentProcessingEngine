@@ -1,5 +1,6 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Core.Visual;
 
 namespace DocumentProcessing.Pdf;
 
@@ -15,6 +16,6 @@ namespace DocumentProcessing.Pdf;
 /// </remarks>
 public delegate Task<DocumentIngestionResult> PdfDocumentExecution(
     DocumentSource source,
-    PdfPreservedVisualDestinationFactory?
+    PreservedLayoutVisualDestinationFactory?
         openPreservedVisualDestinationAsync,
     CancellationToken cancellationToken);

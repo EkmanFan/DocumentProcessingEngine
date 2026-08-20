@@ -2,6 +2,7 @@ using System.Reflection;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Pdf;
+using DocumentProcessing.Core.Visual;
 
 namespace DocumentProcessing.UnitTests.Formats.Pdf;
 
@@ -37,7 +38,7 @@ public sealed class PdfDocumentFormatProcessorTests
             parameters[0].ParameterType);
 
         Assert.Equal(
-            typeof(PdfPreservedVisualDestinationFactory),
+            typeof(PreservedLayoutVisualDestinationFactory),
             Nullable.GetUnderlyingType(
                 parameters[1].ParameterType) ??
             parameters[1].ParameterType);
@@ -83,14 +84,14 @@ public sealed class PdfDocumentFormatProcessorTests
         var executeCalled =
             false;
 
-        PdfPreservedVisualDestinationFactory destinationFactory =
+        PreservedLayoutVisualDestinationFactory destinationFactory =
             static (_, _, _) =>
                 ValueTask.FromResult<Stream>(
                     new MemoryStream());
 
         Task<DocumentIngestionResult> ExecuteAsync(
             DocumentSource source,
-            PdfPreservedVisualDestinationFactory?
+            PreservedLayoutVisualDestinationFactory?
                 receivedDestinationFactory,
             CancellationToken cancellationToken)
         {
