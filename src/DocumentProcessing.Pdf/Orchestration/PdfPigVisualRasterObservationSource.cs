@@ -355,7 +355,7 @@ public sealed class PdfPigVisualRasterObservationSource
                     out raster))
             {
                 decodeSource =
-                    VisualRasterDecodeSource.PdfPigPng;
+                    VisualRasterDecodeSource.ConvertedPng;
 
                 return true;
             }

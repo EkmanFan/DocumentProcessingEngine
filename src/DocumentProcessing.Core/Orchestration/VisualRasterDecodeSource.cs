@@ -12,12 +12,13 @@ public enum VisualRasterDecodeSource
     Unavailable,
 
     /// <summary>
-    /// The PDF image's raw embedded bytes were directly decodable.
+    /// The source visual's raw embedded bytes were directly decodable.
     /// </summary>
     RawEmbeddedImage,
 
     /// <summary>
-    /// PdfPig converted the PDF image to PNG before RGBA decoding.
+    /// The format implementation converted the source visual to PNG before
+    /// RGBA decoding.
     /// </summary>
-    PdfPigPng
+    ConvertedPng
 }
