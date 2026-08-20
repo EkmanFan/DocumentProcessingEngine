@@ -336,6 +336,40 @@ public sealed class DocumentProcessor
                     .ConfigureAwait(false);
         }
 
+        return await ProcessPreparedEvidenceCoreAsync(
+                prepared,
+                format,
+                extraction,
+                coordinatedExtraction?
+                    .RasterObservations,
+                coordinatedExtraction?
+                    .RasterObservationFailure,
+                openVisualDestinationAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<DocumentIngestionResult>
+        ProcessPreparedEvidenceCoreAsync(
+            PreparedDocumentSource prepared,
+            DocumentFormatId format,
+            DocumentExtractionResult extraction,
+            IReadOnlyList<PageVisualRasterObservations>?
+                precomputedRasterObservations,
+            RasterObservationAcquisitionFailure?
+                rasterObservationFailure,
+            Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+                openVisualDestinationAsync,
+            CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(
+            prepared);
+
+        ArgumentNullException.ThrowIfNull(
+            extraction);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
         ValidateExtraction(
             format,
             extraction);
@@ -439,11 +473,9 @@ public sealed class DocumentProcessor
                         decisions,
                         prepared.Sha256,
                         precomputedRasterObservations:
-                            coordinatedExtraction?
-                                .RasterObservations,
+                            precomputedRasterObservations,
                         rasterObservationFailure:
-                            coordinatedExtraction?
-                                .RasterObservationFailure,
+                            rasterObservationFailure,
                         cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -626,8 +658,8 @@ public sealed class DocumentProcessor
                     prepared.Sha256,
                     prepared.ByteLength,
                     extraction.Pages.Count,
-                    source.FileName,
-                    source.DeclaredMediaType),
+                    prepared.Source.FileName,
+                    prepared.Source.DeclaredMediaType),
                 _engineVersion,
                 _nativeExtractionIdentity,
                 rasterization:
