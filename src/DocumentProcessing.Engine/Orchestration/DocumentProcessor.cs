@@ -48,7 +48,7 @@ public sealed class DocumentProcessor
     #region Variables and Constants
 
     private readonly DocumentFormatId _format;
-    private readonly IDocumentExtractor _nativeExtractor;
+    private readonly IDocumentExtractor? _nativeExtractor;
     private readonly IDocumentPreflightAnalyzer _preflightAnalyzer;
     private readonly DocumentPageProcessingPlanner _pageProcessingPlanner;
     private readonly DocumentHybridExecutionDependencies? _hybridExecution;
@@ -83,7 +83,9 @@ public sealed class DocumentProcessor
             dualRunCandidateTextExecution = null)
         : this(
             format,
-            nativeExtractor,
+            nativeExtractor ??
+                throw new ArgumentNullException(
+                    nameof(nativeExtractor)),
             preflightAnalyzer,
             DocumentPageProcessingPlanner.CreateDefault(),
             hybridExecution:
@@ -113,7 +115,9 @@ public sealed class DocumentProcessor
             dualRunCandidateTextExecution = null)
         : this(
             format,
-            nativeExtractor,
+            nativeExtractor ??
+                throw new ArgumentNullException(
+                    nameof(nativeExtractor)),
             preflightAnalyzer,
             pageProcessingPlanner,
             hybridExecution ??
@@ -128,9 +132,33 @@ public sealed class DocumentProcessor
     {
     }
 
+    /// <summary>
+    /// Engine-internal composition for already acquired native evidence.
+    /// </summary>
+    internal DocumentProcessor(
+        DocumentFormatId format,
+        IDocumentPreflightAnalyzer preflightAnalyzer,
+        DocumentPageProcessingPlanner pageProcessingPlanner,
+        DocumentHybridExecutionDependencies? hybridExecution,
+        string engineVersion,
+        ProcessingComponentIdentity nativeExtractionIdentity)
+        : this(
+            format,
+            nativeExtractor:
+                null,
+            preflightAnalyzer,
+            pageProcessingPlanner,
+            hybridExecution,
+            engineVersion,
+            nativeExtractionIdentity,
+            requireHybridExecution:
+                hybridExecution is not null)
+    {
+    }
+
     private DocumentProcessor(
         DocumentFormatId format,
-        IDocumentExtractor nativeExtractor,
+        IDocumentExtractor? nativeExtractor,
         IDocumentPreflightAnalyzer preflightAnalyzer,
         DocumentPageProcessingPlanner pageProcessingPlanner,
         DocumentHybridExecutionDependencies? hybridExecution,
@@ -153,9 +181,7 @@ public sealed class DocumentProcessor
             format;
 
         _nativeExtractor =
-            nativeExtractor ??
-            throw new ArgumentNullException(
-                nameof(nativeExtractor));
+            nativeExtractor;
 
         _preflightAnalyzer =
             preflightAnalyzer ??
@@ -269,6 +295,11 @@ public sealed class DocumentProcessor
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        var nativeExtractor =
+            _nativeExtractor ??
+            throw new InvalidOperationException(
+                "This document processor is configured for already acquired native evidence only.");
+
         await using var prepared =
             await PreparedDocumentSource
                 .CreateAsync(
@@ -279,7 +310,7 @@ public sealed class DocumentProcessor
         var format =
             _format;
 
-        if (!_nativeExtractor.CanExtract(
+        if (!nativeExtractor.CanExtract(
                 format))
         {
             throw new NotSupportedException(
@@ -302,7 +333,7 @@ public sealed class DocumentProcessor
         prepared.ResetForRead();
 
         if (_dualRunPlanningDependencies is not null &&
-            _nativeExtractor is
+            nativeExtractor is
                 IDocumentExtractorWithRasterObservations
                     coordinatedExtractor &&
             coordinatedExtractor
@@ -328,7 +359,7 @@ public sealed class DocumentProcessor
         else
         {
             extraction =
-                await _nativeExtractor
+                await nativeExtractor
                     .ExtractAsync(
                         prepared.Source,
                         format,

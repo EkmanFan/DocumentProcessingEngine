@@ -1,29 +1,41 @@
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Extraction;
+using DocumentProcessing.Core.Orchestration;
+using DocumentProcessing.Core.Provenance;
+using DocumentProcessing.Core.Raster;
 using UglyToad.PdfPig.Core;
 
 namespace DocumentProcessing.Pdf;
 
 /// <summary>
-/// PDF implementation of the neutral document-format acquisition contract.
+/// PDF implementation of the neutral document-format acquisition contract and
+/// the PDF-specific technical capabilities currently used by the Engine.
 /// </summary>
 /// <remarks>
-/// This boundary deliberately reuses the current validated PDF extraction
-/// implementation. It recognizes the source, acquires native text/structure
-/// evidence and low-level deterministic visual raster observations, and stops
-/// before Engine assessment, planning, OCR, layout, reconciliation or policy.
-///
-/// Existing PDF processor/validator/extractor contracts remain in place during
-/// this migration increment.
+/// This boundary recognizes PDF, acquires native evidence and exposes operations
+/// that exist because the source is PDF. It does not decide whether native
+/// evidence is sufficient, whether enrichment is required, or which processing
+/// route is authoritative.
 /// </remarks>
 public sealed class PdfDocumentFormat
-    : IDocumentFormat
+    : IDocumentFormat,
+      IDocumentRasterizer,
+      IVisualRasterObservationSource
 {
     #region Variables and Constants
+
+    private static readonly ProcessingComponentIdentity
+        NativeExtractionIdentity =
+            new(
+                "pdfpig",
+                "pdfpig-native-v1");
 
     private readonly PdfFormatValidator _validator;
     private readonly PdfPigDocumentExtractor _extractor;
     private readonly PdfPigVisualRasterObservationSource
         _visualRasterObservationSource;
+    private readonly PdftoppmDocumentRasterizer
+        _documentRasterizer;
 
     #endregion
 
@@ -39,6 +51,11 @@ public sealed class PdfDocumentFormat
 
         _visualRasterObservationSource =
             new PdfPigVisualRasterObservationSource();
+
+        _documentRasterizer =
+            new PdftoppmDocumentRasterizer(
+                dpi:
+                    300);
     }
 
     #endregion
@@ -89,7 +106,8 @@ public sealed class PdfDocumentFormat
             return new NativeEvidenceExtractionResult
                 .Success(
                     new NativeDocumentEvidence(
-                        currentEvidence));
+                        currentEvidence,
+                        NativeExtractionIdentity));
         }
         catch (OperationCanceledException)
             when (cancellationToken.IsCancellationRequested)
@@ -111,6 +129,49 @@ public sealed class PdfDocumentFormat
                 exception);
         }
     }
+
+    #endregion
+
+    #region Methods Rasterization Capability
+
+    public bool CanRasterize(
+        DocumentFormatId format) =>
+        _documentRasterizer
+            .CanRasterize(
+                format);
+
+    public ValueTask<IDocumentRasterizationSession> OpenAsync(
+        DocumentSource source,
+        DocumentFormatId format,
+        CancellationToken cancellationToken = default) =>
+        _documentRasterizer
+            .OpenAsync(
+                source,
+                format,
+                cancellationToken);
+
+    #endregion
+
+    #region Methods Native Visual Observation Capability
+
+    public bool CanObserve(
+        DocumentFormatId format) =>
+        _visualRasterObservationSource
+            .CanObserve(
+                format);
+
+    public ValueTask<IReadOnlyList<PageVisualRasterObservations>>
+        ObserveAsync(
+            DocumentSource source,
+            DocumentFormatId format,
+            DocumentExtractionResult extraction,
+            CancellationToken cancellationToken = default) =>
+        _visualRasterObservationSource
+            .ObserveAsync(
+                source,
+                format,
+                extraction,
+                cancellationToken);
 
     #endregion
 

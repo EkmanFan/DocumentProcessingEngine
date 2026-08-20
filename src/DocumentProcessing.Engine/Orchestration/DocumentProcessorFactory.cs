@@ -31,16 +31,8 @@ public static class DocumentProcessorFactory
     #region Methods Composition
 
     /// <summary>
-    /// Creates the current full hybrid processor from externally selected
-    /// format and shared processing capabilities.
+    /// Compatibility composition that still owns native extraction.
     /// </summary>
-    /// <remarks>
-    /// The caller supplies format-owned extraction/raster/visual capabilities
-    /// and shared layout/OCR implementations. Document preflight assessment,
-    /// planner selection, visual preservation, hybrid executors, visual planning
-    /// dependencies and reconciliation identity are Engine responsibilities and
-    /// are composed here.
-    /// </remarks>
     public static DocumentProcessor CreateHybrid(
         DocumentFormatId format,
         IDocumentExtractor nativeExtractor,
@@ -56,6 +48,91 @@ public static class DocumentProcessorFactory
             nativeExtractor);
 
         ArgumentNullException.ThrowIfNull(
+            nativeExtractionIdentity);
+
+        return new DocumentProcessor(
+            format,
+            nativeExtractor,
+            new DefaultDocumentPreflightAssessor(
+                format),
+            DocumentPageProcessingPlanner.CreateDefault(),
+            CreateHybridExecutionDependencies(
+                documentRasterizer,
+                visualRasterObservationSource,
+                layoutAnalyzer,
+                textRecognizer,
+                layoutAnalysisIdentity),
+            engineVersion,
+            nativeExtractionIdentity);
+    }
+
+    /// <summary>
+    /// Engine-owned paged/hybrid strategy for already acquired native evidence.
+    /// </summary>
+    internal static DocumentProcessor CreatePreparedHybrid(
+        DocumentFormatId format,
+        IDocumentRasterizer documentRasterizer,
+        IVisualRasterObservationSource visualRasterObservationSource,
+        IPageLayoutAnalyzer layoutAnalyzer,
+        IRegionTextRecognizer textRecognizer,
+        string engineVersion,
+        ProcessingComponentIdentity nativeExtractionIdentity,
+        ProcessingComponentIdentity layoutAnalysisIdentity)
+    {
+        ArgumentNullException.ThrowIfNull(
+            nativeExtractionIdentity);
+
+        return new DocumentProcessor(
+            format,
+            new DefaultDocumentPreflightAssessor(
+                format),
+            DocumentPageProcessingPlanner.CreateDefault(),
+            CreateHybridExecutionDependencies(
+                documentRasterizer,
+                visualRasterObservationSource,
+                layoutAnalyzer,
+                textRecognizer,
+                layoutAnalysisIdentity),
+            engineVersion,
+            nativeExtractionIdentity);
+    }
+
+    /// <summary>
+    /// Engine-owned native-only strategy for formats that expose no current
+    /// paged/raster enrichment capability.
+    /// </summary>
+    internal static DocumentProcessor CreatePreparedNative(
+        DocumentFormatId format,
+        string engineVersion,
+        ProcessingComponentIdentity nativeExtractionIdentity)
+    {
+        ArgumentNullException.ThrowIfNull(
+            nativeExtractionIdentity);
+
+        return new DocumentProcessor(
+            format,
+            new DefaultDocumentPreflightAssessor(
+                format),
+            DocumentPageProcessingPlanner.CreateDefault(),
+            hybridExecution:
+                null,
+            engineVersion,
+            nativeExtractionIdentity);
+    }
+
+    #endregion
+
+    #region Methods Hybrid Dependencies
+
+    private static DocumentHybridExecutionDependencies
+        CreateHybridExecutionDependencies(
+            IDocumentRasterizer documentRasterizer,
+            IVisualRasterObservationSource visualRasterObservationSource,
+            IPageLayoutAnalyzer layoutAnalyzer,
+            IRegionTextRecognizer textRecognizer,
+            ProcessingComponentIdentity layoutAnalysisIdentity)
+    {
+        ArgumentNullException.ThrowIfNull(
             documentRasterizer);
 
         ArgumentNullException.ThrowIfNull(
@@ -68,42 +145,28 @@ public static class DocumentProcessorFactory
             textRecognizer);
 
         ArgumentNullException.ThrowIfNull(
-            nativeExtractionIdentity);
-
-        ArgumentNullException.ThrowIfNull(
             layoutAnalysisIdentity);
 
         var visualPreserver =
             new VisualAssetPreserver();
 
-        var hybridExecution =
-            new DocumentHybridExecutionDependencies(
-                documentRasterizer,
-                new MissingNativeHybridPageExecutor(
-                    layoutAnalyzer,
-                    textRecognizer,
-                    visualPreserver),
-                new NativePresentHybridPageExecutor(
-                    layoutAnalyzer,
-                    textRecognizer,
-                    visualPreserver),
-                layoutAnalysisIdentity,
-                ReconciliationIdentity,
-                new DocumentAuthoritativeVisualPlanningDependencies(
-                    visualRasterObservationSource),
-                new HealthyNativeVisualPageExecutor(
-                    layoutAnalyzer,
-                    visualPreserver));
-
-        return new DocumentProcessor(
-            format,
-            nativeExtractor,
-            new DefaultDocumentPreflightAssessor(
-                format),
-            DocumentPageProcessingPlanner.CreateDefault(),
-            hybridExecution,
-            engineVersion,
-            nativeExtractionIdentity);
+        return new DocumentHybridExecutionDependencies(
+            documentRasterizer,
+            new MissingNativeHybridPageExecutor(
+                layoutAnalyzer,
+                textRecognizer,
+                visualPreserver),
+            new NativePresentHybridPageExecutor(
+                layoutAnalyzer,
+                textRecognizer,
+                visualPreserver),
+            layoutAnalysisIdentity,
+            ReconciliationIdentity,
+            new DocumentAuthoritativeVisualPlanningDependencies(
+                visualRasterObservationSource),
+            new HealthyNativeVisualPageExecutor(
+                layoutAnalyzer,
+                visualPreserver));
     }
 
     #endregion
