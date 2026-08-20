@@ -1,7 +1,5 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Processing;
-using DocumentProcessing.Formats.Pdf;
-
 namespace DocumentProcessing.Formats;
 
 /// <summary>
@@ -46,7 +44,7 @@ internal sealed class DocumentFormatProcessorResolver
         try
         {
             var pdfProcessor =
-                PdfDocumentFormatProcessor.CreateForHost(
+                PdfDocumentFormatProcessorComposition.Create(
                     options.Pdf,
                     options.EngineVersion,
                     _layoutHttpClient,

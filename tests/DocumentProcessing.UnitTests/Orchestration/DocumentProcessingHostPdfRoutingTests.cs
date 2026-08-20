@@ -1,7 +1,6 @@
 using System.Reflection;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Processing;
-using DocumentProcessing.Formats.Pdf;
 using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing.UnitTests.Orchestration;

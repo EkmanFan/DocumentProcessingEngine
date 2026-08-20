@@ -8,7 +8,6 @@ using DocumentProcessing.Core.Quality;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Core.Results;
-using DocumentProcessing.Formats.Pdf;
 using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing.UnitTests.Formats.Pdf;

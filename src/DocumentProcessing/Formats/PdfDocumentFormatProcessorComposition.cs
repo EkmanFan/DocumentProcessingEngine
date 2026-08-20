@@ -1,5 +1,4 @@
 using DocumentProcessing.Core.Documents;
-using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Engine.Hybrid;
@@ -10,18 +9,18 @@ using DocumentProcessing.Engine.Planning;
 using DocumentProcessing.Engine.Visual;
 using DocumentProcessing.Pdf;
 
-namespace DocumentProcessing.Formats.Pdf;
+namespace DocumentProcessing.Formats;
 
 /// <summary>
-/// PDF implementation of the generic document-format strategy.
+/// Composes the current authoritative Engine implementation used by the PDF
+/// format processor.
 /// </summary>
 /// <remarks>
-/// The strategy owns PDF format validation and the current authoritative PDF
-/// processing composition. Generic routing asks this processor whether it can
-/// handle a source and never sees the PDF validator directly.
+/// This type intentionally lives in the top-level composition assembly because
+/// it is the boundary allowed to know both generic Engine implementations and
+/// concrete PDF capabilities.
 /// </remarks>
-public sealed class PdfDocumentFormatProcessor
-    : IDocumentFormatProcessor
+internal static class PdfDocumentFormatProcessorComposition
 {
     #region Variables and Constants
 
@@ -40,44 +39,11 @@ public sealed class PdfDocumentFormatProcessor
             "native-ocr-text-reconciler",
             "native-ocr-reconciliation-v1");
 
-    private readonly IFormatValidator _validator;
-    private readonly DocumentProcessor _documentProcessor;
-    private readonly PdfPreservedVisualDestinationFactory?
-        _openPreservedVisualDestinationAsync;
-
-    #endregion
-
-    #region ctor
-
-    public PdfDocumentFormatProcessor(
-        DocumentProcessor documentProcessor,
-        PdfPreservedVisualDestinationFactory?
-            openPreservedVisualDestinationAsync = null)
-    {
-        _validator =
-            new PdfFormatValidator();
-
-        _documentProcessor =
-            documentProcessor ??
-            throw new ArgumentNullException(
-                nameof(documentProcessor));
-
-        _openPreservedVisualDestinationAsync =
-            openPreservedVisualDestinationAsync;
-    }
-
-    #endregion
-
-    #region Properties
-
-    public DocumentFormatId Format =>
-        DocumentFormatId.Pdf;
-
     #endregion
 
     #region Methods Composition
 
-    internal static PdfDocumentFormatProcessor CreateForHost(
+    public static PdfDocumentFormatProcessor Create(
         PdfDocumentProcessingOptions options,
         string engineVersion,
         HttpClient layoutHttpClient,
@@ -150,57 +116,33 @@ public sealed class PdfDocumentFormatProcessor
                 NativeIdentity);
 
         return new PdfDocumentFormatProcessor(
-            authoritativeProcessor,
+            ExecuteAsync,
             options.OpenPreservedVisualDestinationAsync);
-    }
 
-    #endregion
+        Task<DocumentIngestionResult> ExecuteAsync(
+            DocumentSource source,
+            PdfPreservedVisualDestinationFactory?
+                openPreservedVisualDestinationAsync,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(
+                source);
 
-    #region Methods Validation
+            cancellationToken.ThrowIfCancellationRequested();
 
-    public ValueTask<bool> ValidateAsync(
-        DocumentSource source,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(
-            source);
-
-        return _validator.ValidateAsync(
-            source,
-            cancellationToken);
-    }
-
-    #endregion
-
-    #region Methods Processing
-
-    public async Task<DocumentProcessingResult> ProcessDocumentAsync(
-        DocumentSource source,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(
-            source);
-
-        var legacyResult =
-            _openPreservedVisualDestinationAsync is null
-                ? await _documentProcessor
-                    .ProcessAsync(
-                        source,
-                        cancellationToken)
-                    .ConfigureAwait(false)
-                : await _documentProcessor
-                    .ProcessAsync(
-                        source,
-                        (visual, token) =>
-                            _openPreservedVisualDestinationAsync(
-                                source,
-                                visual,
-                                token),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-
-        return PdfDocumentProcessingResultAdapter.Adapt(
-            legacyResult);
+            return openPreservedVisualDestinationAsync is null
+                ? authoritativeProcessor.ProcessAsync(
+                    source,
+                    cancellationToken)
+                : authoritativeProcessor.ProcessAsync(
+                    source,
+                    (visual, token) =>
+                        openPreservedVisualDestinationAsync(
+                            source,
+                            visual,
+                            token),
+                    cancellationToken);
+        }
     }
 
     #endregion
