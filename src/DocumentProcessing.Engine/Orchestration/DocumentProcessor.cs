@@ -225,6 +225,13 @@ public sealed class DocumentProcessor
 
     #endregion
 
+    #region Properties
+
+    internal DocumentFormatId Format =>
+        _format;
+
+    #endregion
+
     #region Methods Public Processing
 
     public Task<DocumentIngestionResult> ProcessAsync(
