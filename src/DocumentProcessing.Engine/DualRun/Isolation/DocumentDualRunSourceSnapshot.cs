@@ -17,6 +17,20 @@ public sealed class DocumentDualRunSourceSnapshot
 
     #endregion
 
+    #region Properties
+
+    public Guid JobId { get; }
+
+    public string JobDirectoryPath { get; }
+
+    public string SourceSnapshotPath { get; }
+
+    public string SourceDocumentSha256 { get; }
+
+    public long SourceByteLength { get; }
+
+    #endregion
+
     #region ctor
 
     internal DocumentDualRunSourceSnapshot(
@@ -82,20 +96,6 @@ public sealed class DocumentDualRunSourceSnapshot
         SourceByteLength =
             sourceByteLength;
     }
-
-    #endregion
-
-    #region Properties
-
-    public Guid JobId { get; }
-
-    public string JobDirectoryPath { get; }
-
-    public string SourceSnapshotPath { get; }
-
-    public string SourceDocumentSha256 { get; }
-
-    public long SourceByteLength { get; }
 
     #endregion
 

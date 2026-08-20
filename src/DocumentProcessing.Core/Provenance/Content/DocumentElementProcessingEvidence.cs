@@ -19,6 +19,50 @@ namespace DocumentProcessing.Core.Provenance;
 /// </remarks>
 public sealed record DocumentElementProcessingEvidence
 {
+    #region Properties
+
+    public string ElementId { get; }
+
+    public DocumentTextSourceKind TextSource { get; }
+
+    public string? SelectedSourceText { get; }
+
+    public string? SelectedSourceTextSha256 { get; }
+
+    public int? NativeCandidateSequence { get; }
+
+    public int? LayoutCandidateSequence { get; }
+
+    /// <summary>
+    /// Gets the neutral role of the retained source layout observation.
+    /// </summary>
+    public LayoutObservationKind? LayoutKind { get; }
+
+    public string? OcrBackendId { get; }
+
+    public string? OcrProfileId { get; }
+
+    public TextReconciliationDecision? ReconciliationDecision { get; }
+
+    public bool? TextsEquivalent { get; }
+
+    public bool HasReconciliationDivergence { get; }
+
+    public TextDehyphenationProvenance? SelectedTextPreparation { get; }
+
+    public TextDehyphenationProvenance? NormalizationDehyphenation { get; }
+
+    public bool NormalizationChangedText { get; }
+
+    public DocumentBlockExclusionReason? ExclusionReason { get; }
+
+    public bool IsExcluded =>
+        ExclusionReason.HasValue;
+
+    public bool IsResolved { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -167,50 +211,6 @@ public sealed record DocumentElementProcessingEvidence
         IsResolved =
             isResolved;
     }
-
-    #endregion
-
-    #region Properties
-
-    public string ElementId { get; }
-
-    public DocumentTextSourceKind TextSource { get; }
-
-    public string? SelectedSourceText { get; }
-
-    public string? SelectedSourceTextSha256 { get; }
-
-    public int? NativeCandidateSequence { get; }
-
-    public int? LayoutCandidateSequence { get; }
-
-    /// <summary>
-    /// Gets the neutral role of the retained source layout observation.
-    /// </summary>
-    public LayoutObservationKind? LayoutKind { get; }
-
-    public string? OcrBackendId { get; }
-
-    public string? OcrProfileId { get; }
-
-    public TextReconciliationDecision? ReconciliationDecision { get; }
-
-    public bool? TextsEquivalent { get; }
-
-    public bool HasReconciliationDivergence { get; }
-
-    public TextDehyphenationProvenance? SelectedTextPreparation { get; }
-
-    public TextDehyphenationProvenance? NormalizationDehyphenation { get; }
-
-    public bool NormalizationChangedText { get; }
-
-    public DocumentBlockExclusionReason? ExclusionReason { get; }
-
-    public bool IsExcluded =>
-        ExclusionReason.HasValue;
-
-    public bool IsResolved { get; }
 
     #endregion
 

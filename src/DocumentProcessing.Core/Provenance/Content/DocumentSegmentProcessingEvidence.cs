@@ -10,6 +10,19 @@ namespace DocumentProcessing.Core.Provenance;
 /// </remarks>
 public sealed record DocumentSegmentProcessingEvidence
 {
+    #region Properties
+
+    public string SegmentId { get; }
+
+    public IReadOnlyList<DocumentTextSourceKind> TextSources { get; }
+
+    public bool IsMixedTextSource =>
+        TextSources.Count > 1;
+
+    public bool HasUnresolvedEvidence { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -59,19 +72,6 @@ public sealed record DocumentSegmentProcessingEvidence
         HasUnresolvedEvidence =
             hasUnresolvedEvidence;
     }
-
-    #endregion
-
-    #region Properties
-
-    public string SegmentId { get; }
-
-    public IReadOnlyList<DocumentTextSourceKind> TextSources { get; }
-
-    public bool IsMixedTextSource =>
-        TextSources.Count > 1;
-
-    public bool HasUnresolvedEvidence { get; }
 
     #endregion
 }

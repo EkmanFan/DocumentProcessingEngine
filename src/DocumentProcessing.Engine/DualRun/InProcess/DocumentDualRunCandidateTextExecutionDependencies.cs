@@ -20,6 +20,18 @@ public sealed class DocumentDualRunCandidateTextExecutionDependencies
 
     #endregion
 
+    #region Properties
+
+    public IDocumentDualRunCandidateTextExecutionObserver Observer { get; }
+
+    internal IDocumentRasterizer? DocumentRasterizer { get; }
+
+    internal IPageLayoutAnalyzer? LayoutAnalyzer { get; }
+
+    internal IRegionTextRecognizer? TextRecognizer { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunCandidateTextExecutionDependencies(
@@ -54,18 +66,6 @@ public sealed class DocumentDualRunCandidateTextExecutionDependencies
             throw new ArgumentNullException(
                 nameof(textRecognizer));
     }
-
-    #endregion
-
-    #region Properties
-
-    public IDocumentDualRunCandidateTextExecutionObserver Observer { get; }
-
-    internal IDocumentRasterizer? DocumentRasterizer { get; }
-
-    internal IPageLayoutAnalyzer? LayoutAnalyzer { get; }
-
-    internal IRegionTextRecognizer? TextRecognizer { get; }
 
     #endregion
 

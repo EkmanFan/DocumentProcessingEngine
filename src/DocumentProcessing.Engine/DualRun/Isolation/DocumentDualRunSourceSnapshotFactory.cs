@@ -38,6 +38,13 @@ public sealed class DocumentDualRunSourceSnapshotFactory
 
     #endregion
 
+    #region Properties
+
+    public string SpoolRootPath =>
+        _spoolRootPath;
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunSourceSnapshotFactory(
@@ -63,13 +70,6 @@ public sealed class DocumentDualRunSourceSnapshotFactory
             Path.GetFullPath(
                 spoolRootPath);
     }
-
-    #endregion
-
-    #region Properties
-
-    public string SpoolRootPath =>
-        _spoolRootPath;
 
     #endregion
 

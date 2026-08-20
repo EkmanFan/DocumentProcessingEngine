@@ -12,6 +12,23 @@ namespace DocumentProcessing.Engine.DualRun.Submission;
 /// </summary>
 public sealed record DocumentDualRunSelectedSubmission
 {
+    #region Properties
+
+    public DocumentSource Source { get; }
+
+    public string SourceDocumentSha256 { get; }
+
+    public long SourceByteLength { get; }
+
+    public DocumentFormatId Format { get; }
+
+    public string EngineVersion { get; }
+
+    public IReadOnlyList<DocumentDualRunAuthoritativePageBaseline>
+        AuthoritativePages { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunSelectedSubmission(
@@ -101,23 +118,6 @@ public sealed record DocumentDualRunSelectedSubmission
             Array.AsReadOnly(
                 pages);
     }
-
-    #endregion
-
-    #region Properties
-
-    public DocumentSource Source { get; }
-
-    public string SourceDocumentSha256 { get; }
-
-    public long SourceByteLength { get; }
-
-    public DocumentFormatId Format { get; }
-
-    public string EngineVersion { get; }
-
-    public IReadOnlyList<DocumentDualRunAuthoritativePageBaseline>
-        AuthoritativePages { get; }
 
     #endregion
 

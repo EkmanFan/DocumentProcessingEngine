@@ -18,6 +18,20 @@ namespace DocumentProcessing.Core.Locations;
 public sealed record PagedDocumentSourceLocation
     : DocumentSourceLocation
 {
+    #region Properties
+
+    /// <summary>
+    /// Gets the one-based physical page number.
+    /// </summary>
+    public int PhysicalPageNumber { get; }
+
+    /// <summary>
+    /// Gets the optional normalized region within the physical page.
+    /// </summary>
+    public NormalizedRectangle? Bounds { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -50,20 +64,6 @@ public sealed record PagedDocumentSourceLocation
         Bounds =
             bounds;
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the one-based physical page number.
-    /// </summary>
-    public int PhysicalPageNumber { get; }
-
-    /// <summary>
-    /// Gets the optional normalized region within the physical page.
-    /// </summary>
-    public NormalizedRectangle? Bounds { get; }
 
     #endregion
 }

@@ -48,6 +48,16 @@ internal sealed class PreparedDocumentSource
 
     #endregion
 
+    #region Properties
+
+    public DocumentSource Source { get; }
+
+    public string Sha256 { get; }
+
+    public long ByteLength { get; }
+
+    #endregion
+
     #region ctor
 
     private PreparedDocumentSource(
@@ -76,16 +86,6 @@ internal sealed class PreparedDocumentSource
         _borrowedOriginalPosition =
             borrowedOriginalPosition;
     }
-
-    #endregion
-
-    #region Properties
-
-    public DocumentSource Source { get; }
-
-    public string Sha256 { get; }
-
-    public long ByteLength { get; }
 
     #endregion
 

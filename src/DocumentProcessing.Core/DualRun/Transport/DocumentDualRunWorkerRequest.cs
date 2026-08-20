@@ -12,6 +12,24 @@ namespace DocumentProcessing.Core.DualRun.Transport;
 /// </summary>
 public sealed record DocumentDualRunAuthoritativePageBaseline
 {
+    #region Properties
+
+    public int PhysicalPageNumber { get; }
+
+    public NativeTextStatus NativeTextStatus { get; }
+
+    public PageProcessingRoute AuthoritativeRoute { get; }
+
+    public string SelectedTextSequenceSha256 { get; }
+
+    public string TextProjectionSha256 { get; }
+
+    public int AuthoritativeTextElementCount { get; }
+
+    public int AuthoritativeReconciliationEvidenceCount { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunAuthoritativePageBaseline(
@@ -90,24 +108,6 @@ public sealed record DocumentDualRunAuthoritativePageBaseline
 
     #endregion
 
-    #region Properties
-
-    public int PhysicalPageNumber { get; }
-
-    public NativeTextStatus NativeTextStatus { get; }
-
-    public PageProcessingRoute AuthoritativeRoute { get; }
-
-    public string SelectedTextSequenceSha256 { get; }
-
-    public string TextProjectionSha256 { get; }
-
-    public int AuthoritativeTextElementCount { get; }
-
-    public int AuthoritativeReconciliationEvidenceCount { get; }
-
-    #endregion
-
     #region Methods Factory
 
     public static DocumentDualRunAuthoritativePageBaseline From(
@@ -160,6 +160,31 @@ public sealed record DocumentDualRunAuthoritativePageBaseline
 /// </summary>
 public sealed record DocumentDualRunWorkerRequest
 {
+    #region Properties
+
+    public Guid JobId { get; }
+
+    public DocumentDualRunExecutionMode ExecutionMode { get; }
+
+    public string EngineVersion { get; }
+
+    public string SourceSnapshotPath { get; }
+
+    public string SourceDocumentSha256 { get; }
+
+    public long SourceByteLength { get; }
+
+    public DocumentFormatId Format { get; }
+
+    public string? FileName { get; }
+
+    public string? DeclaredMediaType { get; }
+
+    public IReadOnlyList<DocumentDualRunAuthoritativePageBaseline>
+        AuthoritativePages { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunWorkerRequest(
@@ -281,31 +306,6 @@ public sealed record DocumentDualRunWorkerRequest
             Array.AsReadOnly(
                 materialized);
     }
-
-    #endregion
-
-    #region Properties
-
-    public Guid JobId { get; }
-
-    public DocumentDualRunExecutionMode ExecutionMode { get; }
-
-    public string EngineVersion { get; }
-
-    public string SourceSnapshotPath { get; }
-
-    public string SourceDocumentSha256 { get; }
-
-    public long SourceByteLength { get; }
-
-    public DocumentFormatId Format { get; }
-
-    public string? FileName { get; }
-
-    public string? DeclaredMediaType { get; }
-
-    public IReadOnlyList<DocumentDualRunAuthoritativePageBaseline>
-        AuthoritativePages { get; }
 
     #endregion
 }

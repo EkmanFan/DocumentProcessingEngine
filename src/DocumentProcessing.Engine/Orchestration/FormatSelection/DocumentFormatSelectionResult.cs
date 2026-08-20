@@ -26,6 +26,14 @@ internal abstract record DocumentFormatSelectionResult
     internal sealed record Invalid
         : DocumentFormatSelectionResult
     {
+        #region Properties
+
+        public IDocumentFormat DocumentFormat { get; }
+
+        public string Reason { get; }
+
+        #endregion
+
         #region ctor
 
         public Invalid(
@@ -50,19 +58,19 @@ internal abstract record DocumentFormatSelectionResult
         }
 
         #endregion
-
-        #region Properties
-
-        public IDocumentFormat DocumentFormat { get; }
-
-        public string Reason { get; }
-
-        #endregion
     }
 
     internal sealed record Success
         : DocumentFormatSelectionResult
     {
+        #region Properties
+
+        public IDocumentFormat DocumentFormat { get; }
+
+        public NativeDocumentEvidence Evidence { get; }
+
+        #endregion
+
         #region ctor
 
         public Success(
@@ -81,14 +89,6 @@ internal abstract record DocumentFormatSelectionResult
         }
 
         #endregion
-
-        #region Properties
-
-        public IDocumentFormat DocumentFormat { get; }
-
-        public NativeDocumentEvidence Evidence { get; }
-
-        #endregion
     }
 
     internal sealed record Ambiguous
@@ -97,6 +97,13 @@ internal abstract record DocumentFormatSelectionResult
         #region Variables and Constants
 
         private readonly IReadOnlyList<DocumentFormatId>
+            _formats;
+
+        #endregion
+
+        #region Properties
+
+        public IReadOnlyList<DocumentFormatId> Formats =>
             _formats;
 
         #endregion
@@ -125,13 +132,6 @@ internal abstract record DocumentFormatSelectionResult
                         StringComparer.Ordinal)
                     .ToArray();
         }
-
-        #endregion
-
-        #region Properties
-
-        public IReadOnlyList<DocumentFormatId> Formats =>
-            _formats;
 
         #endregion
     }

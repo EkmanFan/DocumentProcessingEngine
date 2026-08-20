@@ -14,6 +14,31 @@ namespace DocumentProcessing;
 /// </remarks>
 public sealed class DocumentProcessingHostOptions
 {
+    #region Properties
+
+    /// <summary>
+    /// Gets the engine/build identity retained in processing provenance.
+    /// </summary>
+    public string EngineVersion { get; }
+
+    /// <summary>
+    /// Gets configuration for the selected shared layout provider.
+    /// </summary>
+    public PpStructureV3Options PpStructureV3 { get; }
+
+    /// <summary>
+    /// Gets configuration for the selected shared OCR provider.
+    /// </summary>
+    public PaddleOcrOptions PaddleOcr { get; }
+
+    /// <summary>
+    /// Gets the optional destination factory for preserved layout visuals.
+    /// </summary>
+    public PreservedLayoutVisualDestinationFactory?
+        OpenPreservedLayoutVisualDestinationAsync { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentProcessingHostOptions(
@@ -47,31 +72,6 @@ public sealed class DocumentProcessingHostOptions
         OpenPreservedLayoutVisualDestinationAsync =
             openPreservedLayoutVisualDestinationAsync;
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the engine/build identity retained in processing provenance.
-    /// </summary>
-    public string EngineVersion { get; }
-
-    /// <summary>
-    /// Gets configuration for the selected shared layout provider.
-    /// </summary>
-    public PpStructureV3Options PpStructureV3 { get; }
-
-    /// <summary>
-    /// Gets configuration for the selected shared OCR provider.
-    /// </summary>
-    public PaddleOcrOptions PaddleOcr { get; }
-
-    /// <summary>
-    /// Gets the optional destination factory for preserved layout visuals.
-    /// </summary>
-    public PreservedLayoutVisualDestinationFactory?
-        OpenPreservedLayoutVisualDestinationAsync { get; }
 
     #endregion
 }

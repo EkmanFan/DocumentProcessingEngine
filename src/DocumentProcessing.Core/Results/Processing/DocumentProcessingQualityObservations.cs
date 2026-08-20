@@ -25,6 +25,16 @@ public sealed record DocumentProcessingQualityObservations
 
     #endregion
 
+    #region Properties
+
+    /// <summary>
+    /// Gets the aggregated OCR-confidence observations.
+    /// </summary>
+    public IReadOnlyList<DocumentElementOcrQualityObservation>
+        OcrConfidenceObservations { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -70,16 +80,6 @@ public sealed record DocumentProcessingQualityObservations
         OcrConfidenceObservations =
             observations;
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the aggregated OCR-confidence observations.
-    /// </summary>
-    public IReadOnlyList<DocumentElementOcrQualityObservation>
-        OcrConfidenceObservations { get; }
 
     #endregion
 }

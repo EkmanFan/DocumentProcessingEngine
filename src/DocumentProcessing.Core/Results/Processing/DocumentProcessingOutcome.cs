@@ -9,6 +9,17 @@ namespace DocumentProcessing.Core.Results;
 /// </remarks>
 public sealed record DocumentProcessingOutcome
 {
+    #region Properties
+
+    public bool IsSuccess =>
+        Result is not null;
+
+    public DocumentProcessingResult? Result { get; }
+
+    public string? ErrorMessage { get; }
+
+    #endregion
+
     #region ctor
 
     private DocumentProcessingOutcome(
@@ -21,17 +32,6 @@ public sealed record DocumentProcessingOutcome
         ErrorMessage =
             errorMessage;
     }
-
-    #endregion
-
-    #region Properties
-
-    public bool IsSuccess =>
-        Result is not null;
-
-    public DocumentProcessingResult? Result { get; }
-
-    public string? ErrorMessage { get; }
 
     #endregion
 

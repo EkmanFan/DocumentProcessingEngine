@@ -18,6 +18,20 @@ public sealed class DocumentDualRunPlanningDependencies
 
     #endregion
 
+    #region Properties
+
+    public IVisualRasterObservationSource VisualRasterObservationSource { get; }
+
+    public IDocumentDualRunPlanningObserver Observer { get; }
+
+    public DocumentTextNormalizer NativeTextNormalizer { get; }
+
+    public DefaultVisualStructuralEvidenceEnricher StructuralEvidenceEnricher { get; }
+
+    public GuardedDocumentPageExecutionPlanner GuardedPlanner { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunPlanningDependencies(
@@ -50,20 +64,6 @@ public sealed class DocumentDualRunPlanningDependencies
             GuardedDocumentPageExecutionPlanner
                 .CreateDefault();
     }
-
-    #endregion
-
-    #region Properties
-
-    public IVisualRasterObservationSource VisualRasterObservationSource { get; }
-
-    public IDocumentDualRunPlanningObserver Observer { get; }
-
-    public DocumentTextNormalizer NativeTextNormalizer { get; }
-
-    public DefaultVisualStructuralEvidenceEnricher StructuralEvidenceEnricher { get; }
-
-    public GuardedDocumentPageExecutionPlanner GuardedPlanner { get; }
 
     #endregion
 

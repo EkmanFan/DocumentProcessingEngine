@@ -16,6 +16,25 @@ namespace DocumentProcessing.Core.Provenance;
 /// </remarks>
 public sealed record DocumentRasterVisualDerivationEvidence
 {
+    #region Properties
+
+    /// <summary>
+    /// Gets the source-raster width in pixels.
+    /// </summary>
+    public int SourcePixelWidth { get; }
+
+    /// <summary>
+    /// Gets the source-raster height in pixels.
+    /// </summary>
+    public int SourcePixelHeight { get; }
+
+    /// <summary>
+    /// Gets the exact pixel crop extracted from the source raster.
+    /// </summary>
+    public PixelRectangle Crop { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -64,25 +83,6 @@ public sealed record DocumentRasterVisualDerivationEvidence
         Crop =
             crop;
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the source-raster width in pixels.
-    /// </summary>
-    public int SourcePixelWidth { get; }
-
-    /// <summary>
-    /// Gets the source-raster height in pixels.
-    /// </summary>
-    public int SourcePixelHeight { get; }
-
-    /// <summary>
-    /// Gets the exact pixel crop extracted from the source raster.
-    /// </summary>
-    public PixelRectangle Crop { get; }
 
     #endregion
 }

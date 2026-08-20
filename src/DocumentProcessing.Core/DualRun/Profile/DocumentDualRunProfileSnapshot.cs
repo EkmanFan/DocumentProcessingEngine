@@ -9,6 +9,14 @@ namespace DocumentProcessing.Core.DualRun;
 /// </summary>
 public sealed record DocumentDualRunProfileSnapshot
 {
+    #region Properties
+
+    public DocumentDualRunProfile Profile { get; }
+
+    public int SampledBasisPoints { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunProfileSnapshot(
@@ -36,14 +44,6 @@ public sealed record DocumentDualRunProfileSnapshot
         SampledBasisPoints =
             sampledBasisPoints;
     }
-
-    #endregion
-
-    #region Properties
-
-    public DocumentDualRunProfile Profile { get; }
-
-    public int SampledBasisPoints { get; }
 
     #endregion
 

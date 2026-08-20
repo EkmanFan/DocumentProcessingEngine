@@ -5,6 +5,14 @@ namespace DocumentProcessing.Engine.Layout;
 /// </summary>
 public sealed class PpStructureV3Options
 {
+    #region Properties
+
+    public Uri Endpoint { get; }
+
+    public TimeSpan? RequestTimeout { get; }
+
+    #endregion
+
     #region ctor
 
     public PpStructureV3Options(
@@ -28,14 +36,6 @@ public sealed class PpStructureV3Options
         RequestTimeout =
             requestTimeout;
     }
-
-    #endregion
-
-    #region Properties
-
-    public Uri Endpoint { get; }
-
-    public TimeSpan? RequestTimeout { get; }
 
     #endregion
 

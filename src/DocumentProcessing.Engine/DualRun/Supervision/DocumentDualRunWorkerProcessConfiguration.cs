@@ -8,6 +8,22 @@ namespace DocumentProcessing.Engine.DualRun.Supervision;
 /// </summary>
 public sealed record DocumentDualRunWorkerProcessConfiguration
 {
+    #region Properties
+
+    public string WorkerExecutablePath { get; }
+
+    public TimeSpan? Timeout { get; }
+
+    public TimeSpan TerminationGracePeriod { get; }
+
+    public long MaximumRequestFileBytes { get; }
+
+    public long MaximumResultFileBytes { get; }
+
+    public int MaximumCapturedStandardErrorCharacters { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunWorkerProcessConfiguration(
@@ -88,22 +104,6 @@ public sealed record DocumentDualRunWorkerProcessConfiguration
         MaximumCapturedStandardErrorCharacters =
             maximumCapturedStandardErrorCharacters;
     }
-
-    #endregion
-
-    #region Properties
-
-    public string WorkerExecutablePath { get; }
-
-    public TimeSpan? Timeout { get; }
-
-    public TimeSpan TerminationGracePeriod { get; }
-
-    public long MaximumRequestFileBytes { get; }
-
-    public long MaximumResultFileBytes { get; }
-
-    public int MaximumCapturedStandardErrorCharacters { get; }
 
     #endregion
 }

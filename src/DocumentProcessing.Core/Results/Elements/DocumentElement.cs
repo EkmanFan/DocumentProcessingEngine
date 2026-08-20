@@ -19,6 +19,45 @@ namespace DocumentProcessing.Core.Results;
 /// </remarks>
 public sealed record DocumentElement
 {
+    #region Properties
+
+    /// <summary>
+    /// Gets the stable element identifier within the result.
+    /// </summary>
+    public string ElementId { get; }
+
+    /// <summary>
+    /// Gets the zero-based document-wide element order.
+    /// </summary>
+    public int Ordinal { get; }
+
+    /// <summary>
+    /// Gets the portable semantic element kind.
+    /// </summary>
+    public DocumentElementKind Kind { get; }
+
+    /// <summary>
+    /// Gets the format-appropriate location in the source document.
+    /// </summary>
+    public DocumentSourceLocation Location { get; }
+
+    /// <summary>
+    /// Gets the optional structural segment containing this element.
+    /// </summary>
+    public string? SegmentId { get; }
+
+    /// <summary>
+    /// Gets the authoritative final text, when this is a textual element.
+    /// </summary>
+    public string? Text { get; }
+
+    /// <summary>
+    /// Gets the SHA-256 of the exact UTF-8 <see cref="Text"/>, when present.
+    /// </summary>
+    public string? TextSha256 { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -128,45 +167,6 @@ public sealed record DocumentElement
             textSha256?.Trim()
                 .ToLowerInvariant();
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the stable element identifier within the result.
-    /// </summary>
-    public string ElementId { get; }
-
-    /// <summary>
-    /// Gets the zero-based document-wide element order.
-    /// </summary>
-    public int Ordinal { get; }
-
-    /// <summary>
-    /// Gets the portable semantic element kind.
-    /// </summary>
-    public DocumentElementKind Kind { get; }
-
-    /// <summary>
-    /// Gets the format-appropriate location in the source document.
-    /// </summary>
-    public DocumentSourceLocation Location { get; }
-
-    /// <summary>
-    /// Gets the optional structural segment containing this element.
-    /// </summary>
-    public string? SegmentId { get; }
-
-    /// <summary>
-    /// Gets the authoritative final text, when this is a textual element.
-    /// </summary>
-    public string? Text { get; }
-
-    /// <summary>
-    /// Gets the SHA-256 of the exact UTF-8 <see cref="Text"/>, when present.
-    /// </summary>
-    public string? TextSha256 { get; }
 
     #endregion
 }

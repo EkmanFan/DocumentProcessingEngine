@@ -5,6 +5,21 @@ namespace DocumentProcessing.Core.DualRun;
 /// </summary>
 public sealed record DocumentDualRunSelection
 {
+    #region Properties
+
+    public DocumentDualRunProfile Profile { get; }
+
+    public bool IsSelected { get; }
+
+    public DocumentDualRunExecutionMode? ExecutionMode { get; }
+
+    /// <summary>
+    /// Stable bucket in [0, 10000) for Sampled; null for all other profiles.
+    /// </summary>
+    public int? SamplingBucket { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunSelection(
@@ -91,21 +106,6 @@ public sealed record DocumentDualRunSelection
         SamplingBucket =
             samplingBucket;
     }
-
-    #endregion
-
-    #region Properties
-
-    public DocumentDualRunProfile Profile { get; }
-
-    public bool IsSelected { get; }
-
-    public DocumentDualRunExecutionMode? ExecutionMode { get; }
-
-    /// <summary>
-    /// Stable bucket in [0, 10000) for Sampled; null for all other profiles.
-    /// </summary>
-    public int? SamplingBucket { get; }
 
     #endregion
 }

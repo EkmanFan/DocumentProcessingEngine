@@ -16,6 +16,35 @@ namespace DocumentProcessing.Core.Provenance;
 /// </remarks>
 public sealed record DocumentSourceDescriptor
 {
+    #region Properties
+
+    /// <summary>
+    /// Gets the detected source document format.
+    /// </summary>
+    public DocumentFormatId Format { get; }
+
+    /// <summary>
+    /// Gets the normalized lowercase SHA-256 of the exact source bytes.
+    /// </summary>
+    public string Sha256 { get; }
+
+    /// <summary>
+    /// Gets the exact source byte length.
+    /// </summary>
+    public long ByteLength { get; }
+
+    /// <summary>
+    /// Gets the optional caller-provided file name.
+    /// </summary>
+    public string? FileName { get; }
+
+    /// <summary>
+    /// Gets the optional caller-provided media type.
+    /// </summary>
+    public string? DeclaredMediaType { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -70,35 +99,6 @@ public sealed record DocumentSourceDescriptor
             NormalizeOptional(
                 declaredMediaType);
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the detected source document format.
-    /// </summary>
-    public DocumentFormatId Format { get; }
-
-    /// <summary>
-    /// Gets the normalized lowercase SHA-256 of the exact source bytes.
-    /// </summary>
-    public string Sha256 { get; }
-
-    /// <summary>
-    /// Gets the exact source byte length.
-    /// </summary>
-    public long ByteLength { get; }
-
-    /// <summary>
-    /// Gets the optional caller-provided file name.
-    /// </summary>
-    public string? FileName { get; }
-
-    /// <summary>
-    /// Gets the optional caller-provided media type.
-    /// </summary>
-    public string? DeclaredMediaType { get; }
 
     #endregion
 

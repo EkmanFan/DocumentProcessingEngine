@@ -29,6 +29,12 @@ public abstract record NativeEvidenceExtractionResult
     /// </summary>
     public sealed record Invalid : NativeEvidenceExtractionResult
     {
+        #region Properties
+
+        public string Reason { get; }
+
+        #endregion
+
         #region ctor
 
         public Invalid(
@@ -47,12 +53,6 @@ public abstract record NativeEvidenceExtractionResult
         }
 
         #endregion
-
-        #region Properties
-
-        public string Reason { get; }
-
-        #endregion
     }
 
     /// <summary>
@@ -60,6 +60,12 @@ public abstract record NativeEvidenceExtractionResult
     /// </summary>
     public sealed record Success : NativeEvidenceExtractionResult
     {
+        #region Properties
+
+        public NativeDocumentEvidence Evidence { get; }
+
+        #endregion
+
         #region ctor
 
         public Success(
@@ -70,12 +76,6 @@ public abstract record NativeEvidenceExtractionResult
                 throw new ArgumentNullException(
                     nameof(evidence));
         }
-
-        #endregion
-
-        #region Properties
-
-        public NativeDocumentEvidence Evidence { get; }
 
         #endregion
     }

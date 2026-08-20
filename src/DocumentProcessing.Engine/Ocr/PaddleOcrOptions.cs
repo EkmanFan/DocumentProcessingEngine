@@ -5,6 +5,16 @@ namespace DocumentProcessing.Engine.Ocr;
 /// </summary>
 public sealed class PaddleOcrOptions
 {
+    #region Properties
+
+    public Uri Endpoint { get; }
+
+    public string ProfileId { get; }
+
+    public TimeSpan? RequestTimeout { get; }
+
+    #endregion
+
     #region ctor
 
     public PaddleOcrOptions(
@@ -40,16 +50,6 @@ public sealed class PaddleOcrOptions
         RequestTimeout =
             requestTimeout;
     }
-
-    #endregion
-
-    #region Properties
-
-    public Uri Endpoint { get; }
-
-    public string ProfileId { get; }
-
-    public TimeSpan? RequestTimeout { get; }
 
     #endregion
 

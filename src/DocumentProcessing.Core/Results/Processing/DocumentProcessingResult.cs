@@ -28,6 +28,68 @@ public sealed record DocumentProcessingResult
 
     #endregion
 
+    #region Properties
+
+    /// <summary>
+    /// Gets the portable result schema identifier.
+    /// </summary>
+    public string SchemaVersion =>
+        SchemaVersionId;
+
+    /// <summary>
+    /// Gets source identity and descriptive metadata.
+    /// </summary>
+    public DocumentSourceDescriptor Source { get; }
+
+    /// <summary>
+    /// Gets optional format-appropriate structural source custody.
+    /// </summary>
+    public DocumentSourceStructure? SourceStructure { get; }
+
+    /// <summary>
+    /// Gets deterministic processing-component custody.
+    /// </summary>
+    public DocumentProcessingManifest ProcessingManifest { get; }
+
+    /// <summary>
+    /// Gets document elements in exact document-wide order.
+    /// </summary>
+    public IReadOnlyList<DocumentElement> Elements { get; }
+
+    /// <summary>
+    /// Gets processing evidence for document elements.
+    /// </summary>
+    /// <remarks>
+    /// Evidence is mandatory for non-visual elements and optional for visual
+    /// elements. Visual evidence is used when a processor has neutral layout,
+    /// exclusion, or resolved-state custody to retain.
+    /// </remarks>
+    public IReadOnlyList<DocumentElementProcessingEvidence>
+        ElementProcessingEvidence { get; }
+
+    /// <summary>
+    /// Gets structural document segments in exact document-wide order.
+    /// </summary>
+    public IReadOnlyList<DocumentStructuralSegment> StructuralSegments { get; }
+
+    /// <summary>
+    /// Gets processing evidence for every structural segment.
+    /// </summary>
+    public IReadOnlyList<DocumentSegmentProcessingEvidence>
+        SegmentProcessingEvidence { get; }
+
+    /// <summary>
+    /// Gets preserved visual assets. Binary bytes remain caller-owned.
+    /// </summary>
+    public IReadOnlyList<DocumentVisualAsset> VisualAssets { get; }
+
+    /// <summary>
+    /// Gets non-duplicating quality observations.
+    /// </summary>
+    public DocumentProcessingQualityObservations QualityObservations { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -195,68 +257,6 @@ public sealed record DocumentProcessingResult
         VisualAssets =
             visualAssetArray;
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the portable result schema identifier.
-    /// </summary>
-    public string SchemaVersion =>
-        SchemaVersionId;
-
-    /// <summary>
-    /// Gets source identity and descriptive metadata.
-    /// </summary>
-    public DocumentSourceDescriptor Source { get; }
-
-    /// <summary>
-    /// Gets optional format-appropriate structural source custody.
-    /// </summary>
-    public DocumentSourceStructure? SourceStructure { get; }
-
-    /// <summary>
-    /// Gets deterministic processing-component custody.
-    /// </summary>
-    public DocumentProcessingManifest ProcessingManifest { get; }
-
-    /// <summary>
-    /// Gets document elements in exact document-wide order.
-    /// </summary>
-    public IReadOnlyList<DocumentElement> Elements { get; }
-
-    /// <summary>
-    /// Gets processing evidence for document elements.
-    /// </summary>
-    /// <remarks>
-    /// Evidence is mandatory for non-visual elements and optional for visual
-    /// elements. Visual evidence is used when a processor has neutral layout,
-    /// exclusion, or resolved-state custody to retain.
-    /// </remarks>
-    public IReadOnlyList<DocumentElementProcessingEvidence>
-        ElementProcessingEvidence { get; }
-
-    /// <summary>
-    /// Gets structural document segments in exact document-wide order.
-    /// </summary>
-    public IReadOnlyList<DocumentStructuralSegment> StructuralSegments { get; }
-
-    /// <summary>
-    /// Gets processing evidence for every structural segment.
-    /// </summary>
-    public IReadOnlyList<DocumentSegmentProcessingEvidence>
-        SegmentProcessingEvidence { get; }
-
-    /// <summary>
-    /// Gets preserved visual assets. Binary bytes remain caller-owned.
-    /// </summary>
-    public IReadOnlyList<DocumentVisualAsset> VisualAssets { get; }
-
-    /// <summary>
-    /// Gets non-duplicating quality observations.
-    /// </summary>
-    public DocumentProcessingQualityObservations QualityObservations { get; }
 
     #endregion
 

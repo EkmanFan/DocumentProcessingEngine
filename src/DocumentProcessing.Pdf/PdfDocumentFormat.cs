@@ -39,6 +39,13 @@ public sealed class PdfDocumentFormat
 
     #endregion
 
+    #region Properties
+
+    public DocumentFormatId Format =>
+        DocumentFormatId.Pdf;
+
+    #endregion
+
     #region ctor
 
     public PdfDocumentFormat()
@@ -57,13 +64,6 @@ public sealed class PdfDocumentFormat
                 dpi:
                     300);
     }
-
-    #endregion
-
-    #region Properties
-
-    public DocumentFormatId Format =>
-        DocumentFormatId.Pdf;
 
     #endregion
 

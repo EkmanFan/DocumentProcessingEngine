@@ -22,6 +22,28 @@ public sealed class NativeDocumentEvidence
 
     #endregion
 
+    #region Properties
+
+    public DocumentExtractionResult Extraction =>
+        _currentEvidence.Extraction;
+
+    public IReadOnlyList<PageVisualRasterObservations>?
+        RasterObservations =>
+        _currentEvidence.RasterObservations;
+
+    public RasterObservationAcquisitionFailure?
+        RasterObservationFailure =>
+        _currentEvidence.RasterObservationFailure;
+
+    /// <summary>
+    /// Stable factual identity of the native-evidence acquisition component when
+    /// the producer supplies it.
+    /// </summary>
+    public ProcessingComponentIdentity?
+        NativeExtractionIdentity { get; }
+
+    #endregion
+
     #region ctor
 
     public NativeDocumentEvidence(
@@ -45,28 +67,6 @@ public sealed class NativeDocumentEvidence
         NativeExtractionIdentity =
             nativeExtractionIdentity;
     }
-
-    #endregion
-
-    #region Properties
-
-    public DocumentExtractionResult Extraction =>
-        _currentEvidence.Extraction;
-
-    public IReadOnlyList<PageVisualRasterObservations>?
-        RasterObservations =>
-        _currentEvidence.RasterObservations;
-
-    public RasterObservationAcquisitionFailure?
-        RasterObservationFailure =>
-        _currentEvidence.RasterObservationFailure;
-
-    /// <summary>
-    /// Stable factual identity of the native-evidence acquisition component when
-    /// the producer supplies it.
-    /// </summary>
-    public ProcessingComponentIdentity?
-        NativeExtractionIdentity { get; }
 
     #endregion
 }

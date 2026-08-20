@@ -36,6 +36,17 @@ internal sealed class SharedProcessingCapabilities
 
     #endregion
 
+    #region Properties
+
+    public IPageLayoutAnalyzer LayoutAnalyzer { get; }
+
+    public IRegionTextRecognizer TextRecognizer { get; }
+
+    public ProcessingComponentIdentity LayoutAnalysisIdentity =>
+        PpStructureV3Identity;
+
+    #endregion
+
     #region ctor
 
     public SharedProcessingCapabilities(
@@ -79,17 +90,6 @@ internal sealed class SharedProcessingCapabilities
             throw;
         }
     }
-
-    #endregion
-
-    #region Properties
-
-    public IPageLayoutAnalyzer LayoutAnalyzer { get; }
-
-    public IRegionTextRecognizer TextRecognizer { get; }
-
-    public ProcessingComponentIdentity LayoutAnalysisIdentity =>
-        PpStructureV3Identity;
 
     #endregion
 

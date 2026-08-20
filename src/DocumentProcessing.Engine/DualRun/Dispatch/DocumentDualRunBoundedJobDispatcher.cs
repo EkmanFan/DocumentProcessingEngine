@@ -25,24 +25,6 @@ public sealed class DocumentDualRunBoundedJobDispatcher
 
     #endregion
 
-    #region ctor
-
-    public DocumentDualRunBoundedJobDispatcher(
-        int capacity)
-    {
-        if (capacity <=
-            0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(capacity));
-        }
-
-        _capacity =
-            capacity;
-    }
-
-    #endregion
-
     #region Properties
 
     public int Capacity =>
@@ -68,6 +50,24 @@ public sealed class DocumentDualRunBoundedJobDispatcher
                 return _stopped;
             }
         }
+    }
+
+    #endregion
+
+    #region ctor
+
+    public DocumentDualRunBoundedJobDispatcher(
+        int capacity)
+    {
+        if (capacity <=
+            0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(capacity));
+        }
+
+        _capacity =
+            capacity;
     }
 
     #endregion

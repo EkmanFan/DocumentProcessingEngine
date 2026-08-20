@@ -15,6 +15,40 @@ namespace DocumentProcessing.Core.Results;
 /// </remarks>
 public sealed record DocumentStructuralSegment
 {
+    #region Properties
+
+    /// <summary>
+    /// Gets the stable segment identifier within the result.
+    /// </summary>
+    public string SegmentId { get; }
+
+    /// <summary>
+    /// Gets the zero-based structural-segment order.
+    /// </summary>
+    public int Ordinal { get; }
+
+    /// <summary>
+    /// Gets the authoritative structural-segment text.
+    /// </summary>
+    public string Text { get; }
+
+    /// <summary>
+    /// Gets the SHA-256 of the exact UTF-8 <see cref="Text"/>.
+    /// </summary>
+    public string TextSha256 { get; }
+
+    /// <summary>
+    /// Gets the optional structural heading.
+    /// </summary>
+    public string? HeadingText { get; }
+
+    /// <summary>
+    /// Gets the ordered source-element membership for this segment.
+    /// </summary>
+    public IReadOnlyList<string> SourceElementIds { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -135,40 +169,6 @@ public sealed record DocumentStructuralSegment
         SourceElementIds =
             normalizedSourceElementIds;
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the stable segment identifier within the result.
-    /// </summary>
-    public string SegmentId { get; }
-
-    /// <summary>
-    /// Gets the zero-based structural-segment order.
-    /// </summary>
-    public int Ordinal { get; }
-
-    /// <summary>
-    /// Gets the authoritative structural-segment text.
-    /// </summary>
-    public string Text { get; }
-
-    /// <summary>
-    /// Gets the SHA-256 of the exact UTF-8 <see cref="Text"/>.
-    /// </summary>
-    public string TextSha256 { get; }
-
-    /// <summary>
-    /// Gets the optional structural heading.
-    /// </summary>
-    public string? HeadingText { get; }
-
-    /// <summary>
-    /// Gets the ordered source-element membership for this segment.
-    /// </summary>
-    public IReadOnlyList<string> SourceElementIds { get; }
 
     #endregion
 }

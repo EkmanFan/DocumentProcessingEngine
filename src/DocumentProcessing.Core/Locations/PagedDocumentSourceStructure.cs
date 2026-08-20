@@ -11,6 +11,21 @@ namespace DocumentProcessing.Core.Locations;
 public sealed record PagedDocumentSourceStructure
     : DocumentSourceStructure
 {
+    #region Properties
+
+    /// <summary>
+    /// Gets every physical page in exact source order.
+    /// </summary>
+    public IReadOnlyList<PagedDocumentPageDescriptor> Pages { get; }
+
+    /// <summary>
+    /// Gets the exact number of physical pages in the source.
+    /// </summary>
+    public int PhysicalPageCount =>
+        Pages.Count;
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -61,21 +76,6 @@ public sealed record PagedDocumentSourceStructure
         Pages =
             pageArray;
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets every physical page in exact source order.
-    /// </summary>
-    public IReadOnlyList<PagedDocumentPageDescriptor> Pages { get; }
-
-    /// <summary>
-    /// Gets the exact number of physical pages in the source.
-    /// </summary>
-    public int PhysicalPageCount =>
-        Pages.Count;
 
     #endregion
 }

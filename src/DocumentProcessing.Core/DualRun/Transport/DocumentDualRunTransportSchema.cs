@@ -33,6 +33,14 @@ public static class DocumentDualRunTransportSchema
 public sealed class UnsupportedDocumentDualRunTransportSchemaException
     : Exception
 {
+    #region Properties
+
+    public string? ObservedSchemaVersion { get; }
+
+    public string ExpectedSchemaVersion { get; }
+
+    #endregion
+
     #region ctor
 
     public UnsupportedDocumentDualRunTransportSchemaException(
@@ -49,14 +57,6 @@ public sealed class UnsupportedDocumentDualRunTransportSchemaException
         ExpectedSchemaVersion =
             expectedSchemaVersion;
     }
-
-    #endregion
-
-    #region Properties
-
-    public string? ObservedSchemaVersion { get; }
-
-    public string ExpectedSchemaVersion { get; }
 
     #endregion
 }

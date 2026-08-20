@@ -22,6 +22,23 @@ public sealed class DocumentDualRunPreparedJob
 
     #endregion
 
+    #region Properties
+
+    public Guid JobId =>
+        Request.JobId;
+
+    public string JobDirectoryPath =>
+        _sourceSnapshot.JobDirectoryPath;
+
+    public string SourceSnapshotPath =>
+        _sourceSnapshot.SourceSnapshotPath;
+
+    public string RequestFilePath { get; }
+
+    public DocumentDualRunWorkerRequest Request { get; }
+
+    #endregion
+
     #region ctor
 
     internal DocumentDualRunPreparedJob(
@@ -53,23 +70,6 @@ public sealed class DocumentDualRunPreparedJob
             Path.GetFullPath(
                 requestFilePath);
     }
-
-    #endregion
-
-    #region Properties
-
-    public Guid JobId =>
-        Request.JobId;
-
-    public string JobDirectoryPath =>
-        _sourceSnapshot.JobDirectoryPath;
-
-    public string SourceSnapshotPath =>
-        _sourceSnapshot.SourceSnapshotPath;
-
-    public string RequestFilePath { get; }
-
-    public DocumentDualRunWorkerRequest Request { get; }
 
     #endregion
 

@@ -16,6 +16,45 @@ namespace DocumentProcessing.Core.Results;
 /// </remarks>
 public sealed record DocumentVisualAsset
 {
+    #region Properties
+
+    /// <summary>
+    /// Gets the stable visual-asset identifier within the result.
+    /// </summary>
+    public string AssetId { get; }
+
+    /// <summary>
+    /// Gets the document-element identifier owning this visual asset.
+    /// </summary>
+    public string ElementId { get; }
+
+    /// <summary>
+    /// Gets the profile describing how the preserved asset was produced.
+    /// </summary>
+    public string PreservationProfileId { get; }
+
+    /// <summary>
+    /// Gets the normalized image media type.
+    /// </summary>
+    public string MediaType { get; }
+
+    /// <summary>
+    /// Gets the exact preserved byte length.
+    /// </summary>
+    public long ContentLength { get; }
+
+    /// <summary>
+    /// Gets the normalized lowercase SHA-256 of the preserved bytes.
+    /// </summary>
+    public string ContentSha256 { get; }
+
+    /// <summary>
+    /// Gets optional raster/crop derivation evidence.
+    /// </summary>
+    public DocumentRasterVisualDerivationEvidence? RasterDerivation { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -115,45 +154,6 @@ public sealed record DocumentVisualAsset
         RasterDerivation =
             rasterDerivation;
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the stable visual-asset identifier within the result.
-    /// </summary>
-    public string AssetId { get; }
-
-    /// <summary>
-    /// Gets the document-element identifier owning this visual asset.
-    /// </summary>
-    public string ElementId { get; }
-
-    /// <summary>
-    /// Gets the profile describing how the preserved asset was produced.
-    /// </summary>
-    public string PreservationProfileId { get; }
-
-    /// <summary>
-    /// Gets the normalized image media type.
-    /// </summary>
-    public string MediaType { get; }
-
-    /// <summary>
-    /// Gets the exact preserved byte length.
-    /// </summary>
-    public long ContentLength { get; }
-
-    /// <summary>
-    /// Gets the normalized lowercase SHA-256 of the preserved bytes.
-    /// </summary>
-    public string ContentSha256 { get; }
-
-    /// <summary>
-    /// Gets optional raster/crop derivation evidence.
-    /// </summary>
-    public DocumentRasterVisualDerivationEvidence? RasterDerivation { get; }
 
     #endregion
 

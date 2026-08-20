@@ -12,6 +12,20 @@ namespace DocumentProcessing.Core.Locations;
 /// </remarks>
 public sealed record PagedDocumentPageDescriptor
 {
+    #region Properties
+
+    /// <summary>
+    /// Gets the one-based physical page number.
+    /// </summary>
+    public int PhysicalPageNumber { get; }
+
+    /// <summary>
+    /// Gets the normalized content viewport for the physical page.
+    /// </summary>
+    public NormalizedRectangle ContentViewport { get; }
+
+    #endregion
+
     #region ctor
 
     /// <summary>
@@ -45,20 +59,6 @@ public sealed record PagedDocumentPageDescriptor
         ContentViewport =
             contentViewport;
     }
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gets the one-based physical page number.
-    /// </summary>
-    public int PhysicalPageNumber { get; }
-
-    /// <summary>
-    /// Gets the normalized content viewport for the physical page.
-    /// </summary>
-    public NormalizedRectangle ContentViewport { get; }
 
     #endregion
 }
