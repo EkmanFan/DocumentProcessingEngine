@@ -438,7 +438,12 @@ public sealed class DocumentProcessor
                         extraction,
                         decisions,
                         prepared.Sha256,
-                        coordinatedExtraction,
+                        precomputedRasterObservations:
+                            coordinatedExtraction?
+                                .RasterObservations,
+                        rasterObservationFailure:
+                            coordinatedExtraction?
+                                .RasterObservationFailure,
                         cancellationToken)
                     .ConfigureAwait(false);
             }

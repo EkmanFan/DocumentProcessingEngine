@@ -50,10 +50,34 @@ public sealed class DocumentDualRunPlanningRunner
             extraction,
             authoritativeDecisions,
             sourceDocumentSha256,
-            coordinatedExtraction:
+            precomputedRasterObservations:
+                null,
+            rasterObservationFailure:
                 null,
             cancellationToken:
                 cancellationToken);
+
+    internal ValueTask<DocumentDualRunPlanningReport> RunAsync(
+        DocumentSource source,
+        DocumentFormatId format,
+        DocumentExtractionResult extraction,
+        IReadOnlyList<PageProcessingDecision> authoritativeDecisions,
+        string sourceDocumentSha256,
+        DocumentExtractionWithRasterObservationsResult? coordinatedExtraction,
+        CancellationToken cancellationToken = default) =>
+        RunAsync(
+            source,
+            format,
+            extraction,
+            authoritativeDecisions,
+            sourceDocumentSha256,
+            precomputedRasterObservations:
+                coordinatedExtraction?
+                    .RasterObservations,
+            rasterObservationFailure:
+                coordinatedExtraction?
+                    .RasterObservationFailure,
+            cancellationToken);
 
     internal async ValueTask<DocumentDualRunPlanningReport> RunAsync(
         DocumentSource source,
@@ -61,7 +85,10 @@ public sealed class DocumentDualRunPlanningRunner
         DocumentExtractionResult extraction,
         IReadOnlyList<PageProcessingDecision> authoritativeDecisions,
         string sourceDocumentSha256,
-        DocumentExtractionWithRasterObservationsResult? coordinatedExtraction,
+        IReadOnlyList<PageVisualRasterObservations>?
+            precomputedRasterObservations,
+        RasterObservationAcquisitionFailure?
+            rasterObservationFailure,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
@@ -120,8 +147,7 @@ public sealed class DocumentDualRunPlanningRunner
             stage =
                 DocumentDualRunPlanningFailureStage.RasterObservation;
 
-            if (coordinatedExtraction?
-                    .RasterObservationFailure is { } rasterFailure)
+            if (rasterObservationFailure is { } rasterFailure)
             {
                 report =
                     new DocumentDualRunPlanningReport(
@@ -141,8 +167,7 @@ public sealed class DocumentDualRunPlanningRunner
                 IReadOnlyList<PageVisualRasterObservations>
                     rasterObservations;
 
-                if (coordinatedExtraction?
-                        .RasterObservations is { } precomputed)
+                if (precomputedRasterObservations is { } precomputed)
                 {
                     rasterObservations =
                         precomputed;
