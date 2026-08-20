@@ -10,8 +10,8 @@ using DocumentProcessing.Pdf;
 namespace DocumentProcessing.Formats;
 
 /// <summary>
-/// Composes the PDF format adapter from PDF-specific capabilities and already
-/// composed shared processing capabilities.
+/// Composes the current PDF format processor from PDF-specific capabilities and
+/// already composed shared processing capabilities.
 /// </summary>
 /// <remarks>
 /// This type deliberately does not construct PP-StructureV3, PaddleOCR, service
@@ -31,7 +31,7 @@ internal static class PdfDocumentFormatProcessorComposition
 
     #region Methods Composition
 
-    public static PdfDocumentProcessingComposition Create(
+    public static PdfDocumentFormatProcessor Create(
         string engineVersion,
         IPageLayoutAnalyzer layoutAnalyzer,
         IRegionTextRecognizer textRecognizer,
@@ -71,13 +71,9 @@ internal static class PdfDocumentFormatProcessorComposition
                 NativeIdentity,
                 layoutAnalysisIdentity);
 
-        var legacyProcessor =
-            new PdfDocumentFormatProcessor(
-                ExecuteAsync,
-                openPreservedLayoutVisualDestinationAsync);
-
-        return new PdfDocumentProcessingComposition(
-            legacyProcessor);
+        return new PdfDocumentFormatProcessor(
+            ExecuteAsync,
+            openPreservedLayoutVisualDestinationAsync);
 
         Task<DocumentIngestionResult> ExecuteAsync(
             DocumentSource source,

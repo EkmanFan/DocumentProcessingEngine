@@ -5,21 +5,20 @@ using DocumentProcessing.Core.Processing;
 namespace DocumentProcessing.Formats;
 
 /// <summary>
-/// Host-lifetime registry and resolver for document-format processors.
+/// Host-lifetime registry and resolver for the current document-format processor
+/// compatibility path.
 /// </summary>
 /// <remarks>
 /// V1 deliberately uses explicit hard-coded registration. No assembly scanning,
 /// reflection-based discovery, or hot loading is performed.
 ///
 /// Shared processing infrastructure is composed and owned outside this resolver.
-/// The resolver owns only processor registration and format selection.
+/// This resolver remains a temporary current-path format selection surface while
+/// the target Engine processing cycle is introduced.
 /// </remarks>
 internal sealed class DocumentFormatProcessorResolver
 {
     #region Variables and Constants
-
-    private readonly PdfDocumentProcessingComposition
-        _pdfComposition;
 
     private readonly IReadOnlyDictionary<DocumentFormatId, IDocumentFormatProcessor>
         _formatProcessors;
@@ -38,16 +37,13 @@ internal sealed class DocumentFormatProcessorResolver
         ArgumentNullException.ThrowIfNull(
             sharedProcessingCapabilities);
 
-        _pdfComposition =
+        var pdfProcessor =
             PdfDocumentFormatProcessorComposition.Create(
                 options.EngineVersion,
                 sharedProcessingCapabilities.LayoutAnalyzer,
                 sharedProcessingCapabilities.TextRecognizer,
                 sharedProcessingCapabilities.LayoutAnalysisIdentity,
                 options.OpenPreservedLayoutVisualDestinationAsync);
-
-        var pdfProcessor =
-            _pdfComposition.LegacyProcessor;
 
         _formatProcessors =
             new Dictionary<DocumentFormatId, IDocumentFormatProcessor>
