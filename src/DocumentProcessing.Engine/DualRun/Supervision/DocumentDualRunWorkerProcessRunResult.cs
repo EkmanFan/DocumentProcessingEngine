@@ -27,6 +27,26 @@ public sealed record DocumentDualRunWorkerProcessRunResult
 
     #endregion
 
+    #region Properties
+
+    public DocumentDualRunWorkerProcessOutcome Outcome { get; }
+
+    public int? ExitCode { get; }
+
+    public DocumentDualRunWorkerResult? WorkerResult { get; }
+
+    public string StandardError { get; }
+
+    public string? FailureType { get; }
+
+    public string? FailureMessage { get; }
+
+    public bool ProcessTreeKillAttempted { get; }
+
+    public bool ProcessTerminationConfirmed { get; }
+
+    #endregion
+
     #region ctor
 
     private DocumentDualRunWorkerProcessRunResult(
@@ -63,26 +83,6 @@ public sealed record DocumentDualRunWorkerProcessRunResult
         ProcessTerminationConfirmed =
             processTerminationConfirmed;
     }
-
-    #endregion
-
-    #region Properties
-
-    public DocumentDualRunWorkerProcessOutcome Outcome { get; }
-
-    public int? ExitCode { get; }
-
-    public DocumentDualRunWorkerResult? WorkerResult { get; }
-
-    public string StandardError { get; }
-
-    public string? FailureType { get; }
-
-    public string? FailureMessage { get; }
-
-    public bool ProcessTreeKillAttempted { get; }
-
-    public bool ProcessTerminationConfirmed { get; }
 
     #endregion
 

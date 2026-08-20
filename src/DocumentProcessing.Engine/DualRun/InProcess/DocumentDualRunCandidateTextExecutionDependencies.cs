@@ -16,10 +16,6 @@ namespace DocumentProcessing.Engine.DualRun.InProcess;
 /// </summary>
 public sealed class DocumentDualRunCandidateTextExecutionDependencies
 {
-    #region Variables and Constants
-
-    #endregion
-
     #region Properties
 
     public IDocumentDualRunCandidateTextExecutionObserver Observer { get; }
@@ -29,6 +25,11 @@ public sealed class DocumentDualRunCandidateTextExecutionDependencies
     internal IPageLayoutAnalyzer? LayoutAnalyzer { get; }
 
     internal IRegionTextRecognizer? TextRecognizer { get; }
+
+    internal bool CanExecuteOcrBackedText =>
+        DocumentRasterizer is not null &&
+        LayoutAnalyzer is not null &&
+        TextRecognizer is not null;
 
     #endregion
 
@@ -69,12 +70,4 @@ public sealed class DocumentDualRunCandidateTextExecutionDependencies
 
     #endregion
 
-    #region Methods
-
-    internal bool CanExecuteOcrBackedText =>
-        DocumentRasterizer is not null &&
-        LayoutAnalyzer is not null &&
-        TextRecognizer is not null;
-
-    #endregion
 }

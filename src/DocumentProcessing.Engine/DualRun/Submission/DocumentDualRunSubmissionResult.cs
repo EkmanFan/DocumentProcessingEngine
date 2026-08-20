@@ -33,6 +33,16 @@ public sealed record DocumentDualRunSubmissionFailure
 
     #endregion
 
+    #region Properties
+
+    public DocumentDualRunSubmissionFailureStage Stage { get; }
+
+    public string ExceptionType { get; }
+
+    public string Message { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunSubmissionFailure(
@@ -78,16 +88,6 @@ public sealed record DocumentDualRunSubmissionFailure
 
     #endregion
 
-    #region Properties
-
-    public DocumentDualRunSubmissionFailureStage Stage { get; }
-
-    public string ExceptionType { get; }
-
-    public string Message { get; }
-
-    #endregion
-
     #region Methods Factory
 
     internal static DocumentDualRunSubmissionFailure FromException(
@@ -112,6 +112,18 @@ public sealed record DocumentDualRunSubmissionFailure
 /// </summary>
 public sealed record DocumentDualRunSubmissionResult
 {
+    #region Properties
+
+    public DocumentDualRunSubmissionStatus Status { get; }
+
+    public DocumentDualRunSelection Selection { get; }
+
+    public Guid? JobId { get; }
+
+    public DocumentDualRunSubmissionFailure? Failure { get; }
+
+    #endregion
+
     #region ctor
 
     private DocumentDualRunSubmissionResult(
@@ -184,18 +196,6 @@ public sealed record DocumentDualRunSubmissionResult
         Failure =
             failure;
     }
-
-    #endregion
-
-    #region Properties
-
-    public DocumentDualRunSubmissionStatus Status { get; }
-
-    public DocumentDualRunSelection Selection { get; }
-
-    public Guid? JobId { get; }
-
-    public DocumentDualRunSubmissionFailure? Failure { get; }
 
     #endregion
 

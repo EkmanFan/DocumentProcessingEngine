@@ -24,6 +24,18 @@ public enum DocumentDualRunWorkerFailureStage
 /// </summary>
 public sealed record DocumentDualRunWorkerFailure
 {
+    #region Properties
+
+    public DocumentDualRunWorkerFailureStage Stage { get; }
+
+    public string ExceptionType { get; }
+
+    public string Message { get; }
+
+    public int? PhysicalPageNumber { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunWorkerFailure(
@@ -66,18 +78,6 @@ public sealed record DocumentDualRunWorkerFailure
     }
 
     #endregion
-
-    #region Properties
-
-    public DocumentDualRunWorkerFailureStage Stage { get; }
-
-    public string ExceptionType { get; }
-
-    public string Message { get; }
-
-    public int? PhysicalPageNumber { get; }
-
-    #endregion
 }
 
 /// <summary>
@@ -86,6 +86,29 @@ public sealed record DocumentDualRunWorkerFailure
 /// </summary>
 public sealed record DocumentDualRunWorkerVisualEvidenceSummary
 {
+    #region Properties
+
+    public int ObservationSequence { get; }
+
+    public int? ReadingOrder { get; }
+
+    public NormalizedRectangle Bounds { get; }
+
+    public VisualEvidenceKind EvidenceKind { get; }
+
+    public string? PreservedProfileId { get; }
+
+    public string? PreservedMediaType { get; }
+
+    public long? PreservedContentLength { get; }
+
+    public string? PreservedContentSha256 { get; }
+
+    public bool IsPreserved =>
+        PreservedContentSha256 is not null;
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunWorkerVisualEvidenceSummary(
@@ -200,29 +223,6 @@ public sealed record DocumentDualRunWorkerVisualEvidenceSummary
     }
 
     #endregion
-
-    #region Properties
-
-    public int ObservationSequence { get; }
-
-    public int? ReadingOrder { get; }
-
-    public NormalizedRectangle Bounds { get; }
-
-    public VisualEvidenceKind EvidenceKind { get; }
-
-    public string? PreservedProfileId { get; }
-
-    public string? PreservedMediaType { get; }
-
-    public long? PreservedContentLength { get; }
-
-    public string? PreservedContentSha256 { get; }
-
-    public bool IsPreserved =>
-        PreservedContentSha256 is not null;
-
-    #endregion
 }
 
 /// <summary>
@@ -230,6 +230,44 @@ public sealed record DocumentDualRunWorkerVisualEvidenceSummary
 /// </summary>
 public sealed record DocumentDualRunWorkerPageResult
 {
+    #region Properties
+
+    public int PhysicalPageNumber { get; }
+
+    public bool AuthoritativePlanningAgreement { get; }
+
+    public TextExecutionMode CandidateTextMode { get; }
+
+    public bool CandidateRemovesAuthoritativeTextMl { get; }
+
+    public bool CandidateRequiresVisualAnalysis { get; }
+
+    public bool CandidateRequiresMeaningfulVisualPreservation { get; }
+
+    public bool CandidateHasIndependentVisualWork =>
+        CandidateRequiresVisualAnalysis ||
+        CandidateRequiresMeaningfulVisualPreservation;
+
+    public DocumentDualRunCandidateTextPageStatus?
+        CandidateExecutionStatus { get; }
+
+    public bool? SelectedTextSequenceExact { get; }
+
+    public bool? TextProjectionExact { get; }
+
+    public int? AuthoritativeTextElementCount { get; }
+
+    public int? CandidateTextElementCount { get; }
+
+    public int? AuthoritativeReconciliationEvidenceCount { get; }
+
+    public int? CandidateReconciliationEvidenceCount { get; }
+
+    public IReadOnlyList<DocumentDualRunWorkerVisualEvidenceSummary>
+        CandidateVisualEvidence { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunWorkerPageResult(
@@ -489,44 +527,6 @@ public sealed record DocumentDualRunWorkerPageResult
 
     #endregion
 
-    #region Properties
-
-    public int PhysicalPageNumber { get; }
-
-    public bool AuthoritativePlanningAgreement { get; }
-
-    public TextExecutionMode CandidateTextMode { get; }
-
-    public bool CandidateRemovesAuthoritativeTextMl { get; }
-
-    public bool CandidateRequiresVisualAnalysis { get; }
-
-    public bool CandidateRequiresMeaningfulVisualPreservation { get; }
-
-    public bool CandidateHasIndependentVisualWork =>
-        CandidateRequiresVisualAnalysis ||
-        CandidateRequiresMeaningfulVisualPreservation;
-
-    public DocumentDualRunCandidateTextPageStatus?
-        CandidateExecutionStatus { get; }
-
-    public bool? SelectedTextSequenceExact { get; }
-
-    public bool? TextProjectionExact { get; }
-
-    public int? AuthoritativeTextElementCount { get; }
-
-    public int? CandidateTextElementCount { get; }
-
-    public int? AuthoritativeReconciliationEvidenceCount { get; }
-
-    public int? CandidateReconciliationEvidenceCount { get; }
-
-    public IReadOnlyList<DocumentDualRunWorkerVisualEvidenceSummary>
-        CandidateVisualEvidence { get; }
-
-    #endregion
-
     #region Methods Validation
 
     private static void ValidateCount(
@@ -550,6 +550,24 @@ public sealed record DocumentDualRunWorkerPageResult
 /// </summary>
 public sealed record DocumentDualRunWorkerResult
 {
+    #region Properties
+
+    public Guid JobId { get; }
+
+    public DocumentDualRunExecutionMode ExecutionMode { get; }
+
+    public string WorkerEngineVersion { get; }
+
+    public string SourceDocumentSha256 { get; }
+
+    public DocumentDualRunWorkerResultStatus Status { get; }
+
+    public IReadOnlyList<DocumentDualRunWorkerPageResult> Pages { get; }
+
+    public DocumentDualRunWorkerFailure? Failure { get; }
+
+    #endregion
+
     #region ctor
 
     public DocumentDualRunWorkerResult(
@@ -705,24 +723,6 @@ public sealed record DocumentDualRunWorkerResult
         Failure =
             failure;
     }
-
-    #endregion
-
-    #region Properties
-
-    public Guid JobId { get; }
-
-    public DocumentDualRunExecutionMode ExecutionMode { get; }
-
-    public string WorkerEngineVersion { get; }
-
-    public string SourceDocumentSha256 { get; }
-
-    public DocumentDualRunWorkerResultStatus Status { get; }
-
-    public IReadOnlyList<DocumentDualRunWorkerPageResult> Pages { get; }
-
-    public DocumentDualRunWorkerFailure? Failure { get; }
 
     #endregion
 }

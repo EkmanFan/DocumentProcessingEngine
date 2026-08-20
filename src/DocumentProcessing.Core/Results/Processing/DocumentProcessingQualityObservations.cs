@@ -14,7 +14,7 @@ namespace DocumentProcessing.Core.Results;
 /// </remarks>
 public sealed record DocumentProcessingQualityObservations
 {
-    #region Variables and Constants
+    #region Properties
 
     /// <summary>
     /// Gets an empty immutable quality-observation collection.
@@ -22,10 +22,6 @@ public sealed record DocumentProcessingQualityObservations
     public static DocumentProcessingQualityObservations Empty { get; } =
         new(
             []);
-
-    #endregion
-
-    #region Properties
 
     /// <summary>
     /// Gets the aggregated OCR-confidence observations.
