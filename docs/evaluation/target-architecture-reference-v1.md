@@ -2,7 +2,12 @@
 
 ## Status
 
-**PASS — frozen reference**
+**PASS — frozen acceptance evidence**
+
+This document is pinned to the implementation commit recorded below. It is not
+a description of every later code-level change. The responsibility boundaries
+remain active and are summarized in the
+[Current architecture](../architecture/current-architecture.md).
 
 Implementation commit:
 

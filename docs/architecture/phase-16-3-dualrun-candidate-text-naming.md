@@ -1,5 +1,9 @@
 # Phase 16.3 — Dual Run candidate text naming
 
+> **Historical implementation record.** Statements are relative to the
+> baseline below. See [Current architecture](current-architecture.md) for active
+> repository invariants.
+
 **Baseline:** `029bc84`
 
 ## Decision

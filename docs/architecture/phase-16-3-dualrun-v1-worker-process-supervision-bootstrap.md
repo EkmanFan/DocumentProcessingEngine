@@ -1,5 +1,9 @@
 # Phase 16.3 — Dual Run V1 worker process supervision bootstrap
 
+> **Historical implementation record.** Statements are relative to the
+> baseline below. See [Current architecture](current-architecture.md) for active
+> repository invariants.
+
 **Baseline:** `371b395`
 
 ## Scope

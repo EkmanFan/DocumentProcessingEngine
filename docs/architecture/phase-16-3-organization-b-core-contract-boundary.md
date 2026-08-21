@@ -1,5 +1,9 @@
 # Phase 16.3 — Organization B Core contract boundary
 
+> **Historical implementation record.** Statements are relative to the
+> baseline below. See [Current architecture](current-architecture.md) for active
+> repository invariants.
+
 **Baseline:** `2be116e`
 
 **Behavioral intent:** physical organization and namespace alignment only.

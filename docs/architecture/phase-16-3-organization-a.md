@@ -1,5 +1,9 @@
 # Phase 16.3 — Organization A: Authoritative / Planning / Dual Run code layout
 
+> **Historical implementation record.** Statements are relative to the
+> baseline below. See [Current architecture](current-architecture.md) for active
+> repository invariants.
+
 **Baseline:** `c12aa64`
 **Behavioral intent:** no runtime behavior change
 **Purpose:** make the architecture discoverable from the filesystem and Rider project tree before introducing the production Dual Run V1 runtime.

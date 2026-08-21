@@ -1,5 +1,9 @@
 # Phase 16.3 — Organization B: namespace alignment
 
+> **Historical implementation record.** Statements are relative to the
+> baseline below. See [Current architecture](current-architecture.md) for active
+> repository invariants.
+
 **Baseline:** `b96167f`
 **Behavioral intent:** no runtime behavior change
 **Purpose:** align C# namespaces with the physical Planning and DualRun/InProcess boundaries introduced by Organization A.
