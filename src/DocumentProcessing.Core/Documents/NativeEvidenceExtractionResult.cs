@@ -33,12 +33,19 @@ public abstract record NativeEvidenceExtractionResult
 
         public string Reason { get; }
 
+        /// <summary>
+        /// Gets whether the reason is already a complete consumer-facing
+        /// message and must not receive technical format-selection context.
+        /// </summary>
+        public bool IsConsumerSafeReason { get; }
+
         #endregion
 
         #region ctor
 
         public Invalid(
-            string reason)
+            string reason,
+            bool isConsumerSafeReason = false)
         {
             if (string.IsNullOrWhiteSpace(
                     reason))
@@ -50,6 +57,9 @@ public abstract record NativeEvidenceExtractionResult
 
             Reason =
                 reason;
+
+            IsConsumerSafeReason =
+                isConsumerSafeReason;
         }
 
         #endregion
@@ -106,6 +116,32 @@ public abstract record NativeEvidenceExtractionResult
 
         public Success(
             NativeDocumentEvidence evidence)
+        {
+            Evidence =
+                evidence ??
+                throw new ArgumentNullException(
+                    nameof(evidence));
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// The source is recognized and its structured, non-paged native evidence
+    /// was acquired.
+    /// </summary>
+    public sealed record StructuredSuccess : NativeEvidenceExtractionResult
+    {
+        #region Properties
+
+        public StructuredNativeDocumentEvidence Evidence { get; }
+
+        #endregion
+
+        #region ctor
+
+        public StructuredSuccess(
+            StructuredNativeDocumentEvidence evidence)
         {
             Evidence =
                 evidence ??

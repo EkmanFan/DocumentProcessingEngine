@@ -10,7 +10,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Engine\DocumentProcessing.Engine.csproj" />
+    <ProjectReference Include="..\..\src\DocumentProcessing.Epub\DocumentProcessing.Epub.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Pdf\DocumentProcessing.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\DocumentProcessing\DocumentProcessing.csproj" />
   </ItemGroup>
 
 </Project>

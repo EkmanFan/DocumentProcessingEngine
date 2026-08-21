@@ -7,10 +7,10 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// registered format against the same prepared, replayable source.
 /// </summary>
 /// <remarks>
-/// <see cref="NativeEvidenceExtractionResult.Success"/> and
-/// <see cref="NativeEvidenceExtractionResult.Invalid"/> both mean that a format
-/// recognized the source. More than one recognition claim therefore fails
-/// closed as an ambiguous format selection rather than using registration order.
+/// Every result other than <see cref="NativeEvidenceExtractionResult.NotRecognized"/>
+/// means that a format recognized the source. More than one recognition claim
+/// therefore fails closed as an ambiguous format selection rather than using
+/// registration order.
 /// </remarks>
 internal sealed class DocumentFormatSelector
 {
@@ -121,6 +121,7 @@ internal sealed class DocumentFormatSelector
                     case NativeEvidenceExtractionResult.Invalid:
                     case NativeEvidenceExtractionResult.Unavailable:
                     case NativeEvidenceExtractionResult.Success:
+                    case NativeEvidenceExtractionResult.StructuredSuccess:
                         recognitionClaims.Add(
                             (
                                 format,
@@ -167,7 +168,8 @@ internal sealed class DocumentFormatSelector
             NativeEvidenceExtractionResult.Invalid invalid =>
                 new DocumentFormatSelectionResult.Invalid(
                     selected.Format,
-                    invalid.Reason),
+                    invalid.Reason,
+                    invalid.IsConsumerSafeReason),
 
             NativeEvidenceExtractionResult.Unavailable unavailable =>
                 new DocumentFormatSelectionResult.Unavailable(
@@ -179,9 +181,14 @@ internal sealed class DocumentFormatSelector
                     selected.Format,
                     success.Evidence),
 
+            NativeEvidenceExtractionResult.StructuredSuccess success =>
+                new DocumentFormatSelectionResult.StructuredSuccess(
+                    selected.Format,
+                    success.Evidence),
+
             _ =>
                 throw new InvalidOperationException(
-                    "A recorded format-recognition claim must be Invalid, Unavailable or Success.")
+                    "A recorded format-recognition claim must be Invalid, Unavailable or a supported Success shape.")
         };
     }
 

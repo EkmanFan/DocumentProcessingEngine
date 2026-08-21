@@ -101,16 +101,16 @@ internal sealed class EpubCheckConformanceValidator
                     .ToString(
                         "N"));
 
-        Directory.CreateDirectory(
-            workDirectory);
-
-        var reportPath =
-            Path.Combine(
-                workDirectory,
-                "report.json");
-
         try
         {
+            Directory.CreateDirectory(
+                workDirectory);
+
+            var reportPath =
+                Path.Combine(
+                    workDirectory,
+                    "report.json");
+
             var processResult =
                 await _processRunner
                     .RunAsync(
@@ -151,6 +151,24 @@ internal sealed class EpubCheckConformanceValidator
                         EpubCheckConformanceStatus.Failed,
                         processResult)
             };
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+            when (exception is IOException or
+                  UnauthorizedAccessException or
+                  InvalidOperationException or
+                  ArgumentException)
+        {
+            _logger.LogError(
+                exception,
+                "EPUBCheck validation failed before a conformance result was available.");
+
+            return Result(
+                EpubCheckConformanceStatus.Failed);
         }
         finally
         {

@@ -2,12 +2,12 @@
 
 ## Status
 
-**EPUB-1 — First native EPUB processing: validation slice complete**
+**EPUB-1 — First native EPUB processing: complete**
 
-This first EPUB-1 slice establishes the mandatory conformance gate and its
-failure contract. It does not yet register EPUB in the production Host because
-native reflowable-content acquisition and portable non-paged projection are the
-next slice.
+The first EPUB-1 slice established the mandatory conformance gate and its
+failure contract. The completed increment now registers EPUB in the production
+Host and continues conformant sources through native package, spine and XHTML
+acquisition and Engine-owned non-paged projection.
 
 ## Official dependency
 
@@ -81,16 +81,17 @@ The production adapter has also been exercised locally against the pinned
 EPUBCheck 5.3.0 distribution and the exact Habermas reference EPUB established
 by EPUB-0; the result was `Conformant`.
 
-## Next slice
+## Native processing continuation
 
-The next EPUB-1 slice must add:
+After a `Conformant` result, the registered format now performs:
 
-1. secure recognition and temporary materialization of EPUB sources;
-2. native package, spine and XHTML acquisition;
+1. bounded recognition and temporary materialization of EPUB sources;
+2. package, spine and XHTML acquisition with guarded archive/XML parsing;
 3. EPUB-specific non-paged source structure and locations;
-4. Engine-owned projection to `DocumentProcessingResult`;
-5. production Host registration only when a conformant EPUB can complete that
-   path.
+4. Engine-owned whitespace normalization, content-unit segmentation and
+   projection to `DocumentProcessingResult`.
 
-It must not represent EPUB spine items as physical pages merely to reuse the
-current PDF projector.
+The accepted Habermas result is frozen in
+`docs/evaluation/habermas-epub-native-reference-v1.json` and reproduced by
+`scripts/run-epub-native-regression.sh`. EPUB spine items are not represented
+as physical pages merely to reuse the PDF projector.

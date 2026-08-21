@@ -167,6 +167,45 @@ public sealed class DocumentProcessingEngineOwnedPathTests
             StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task ProcessDocumentAsync_ConsumerSafeInvalidReasonIsNotPrefixed()
+    {
+        const string publicReason =
+            "Le fichier EPUB n’est pas conforme.";
+
+        var format =
+            new StubDocumentFormat(
+                new NativeEvidenceExtractionResult.Invalid(
+                    publicReason,
+                    isConsumerSafeReason:
+                        true));
+
+        var engine =
+            new DocumentProcessingEngine(
+                [format],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity);
+
+        await using var stream =
+            new MemoryStream(
+                [1, 2, 3],
+                writable:
+                    false);
+
+        var exception =
+            await Assert.ThrowsAsync<DocumentFormatSelectionException>(
+                () =>
+                    engine.ProcessDocumentAsync(
+                        new DocumentSource(
+                            stream)));
+
+        Assert.Equal(
+            publicReason,
+            exception.Message);
+    }
+
     #endregion
 
     #region Methods Fixtures

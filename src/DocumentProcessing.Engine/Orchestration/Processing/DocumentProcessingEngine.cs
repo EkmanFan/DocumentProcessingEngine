@@ -6,6 +6,7 @@ using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Core.Visual;
+using DocumentProcessing.Engine.Results;
 
 namespace DocumentProcessing.Engine.Orchestration;
 
@@ -143,7 +144,9 @@ public sealed class DocumentProcessingEngine
 
             case DocumentFormatSelectionResult.Invalid invalid:
                 throw new DocumentFormatSelectionException(
-                    $"Document format '{invalid.DocumentFormat.Format}' recognized the source but rejected it: {invalid.Reason}");
+                    invalid.IsConsumerSafeReason
+                        ? invalid.Reason
+                        : $"Document format '{invalid.DocumentFormat.Format}' recognized the source but rejected it: {invalid.Reason}");
 
             case DocumentFormatSelectionResult.Unavailable unavailable:
                 throw new DocumentFormatSelectionException(
@@ -169,6 +172,13 @@ public sealed class DocumentProcessingEngine
                         layoutAnalysisIdentity,
                         cancellationToken)
                     .ConfigureAwait(false);
+
+            case DocumentFormatSelectionResult.StructuredSuccess success:
+                return StructuredNativeDocumentProjector.Project(
+                    prepared,
+                    success.DocumentFormat.Format,
+                    success.Evidence,
+                    engineVersion);
 
             default:
                 throw new InvalidDataException(

@@ -14,5 +14,8 @@ public sealed class SolutionStructureTests
         Assert.Equal(
             "DocumentProcessing.Pdf",
             typeof(DocumentProcessing.Pdf.AssemblyMarker).Assembly.GetName().Name);
+        Assert.Equal(
+            "DocumentProcessing.Epub",
+            typeof(DocumentProcessing.Epub.AssemblyMarker).Assembly.GetName().Name);
     }
 }

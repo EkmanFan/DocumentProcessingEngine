@@ -3,6 +3,8 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Engine.Orchestration;
+using DocumentProcessing.Epub;
+using DocumentProcessing.UnitTests.Epub;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 
@@ -80,6 +82,57 @@ public sealed class DocumentProcessingHostPdfRoutingTests
 
         Assert.Contains(
             "not supported",
+            outcome.ErrorMessage!,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ProcessDocumentAsync_RecognizedEpubWithMissingCheckerReturnsSafeFailure()
+    {
+        var missingDistribution =
+            Path.Combine(
+                Path.GetTempPath(),
+                "missing-epubcheck",
+                Guid.NewGuid()
+                    .ToString(
+                        "N"));
+
+        using var host =
+            new global::DocumentProcessing.DocumentProcessingHost(
+                new global::DocumentProcessing.DocumentProcessingHostOptions(
+                    "test-engine-v1",
+                    new PpStructureV3Options(
+                        new Uri(
+                            "http://127.0.0.1:1/layout-parsing")),
+                    new PaddleOcrOptions(
+                        new Uri(
+                            "http://127.0.0.1:1/ocr"),
+                        "test-ocr-profile"),
+                    epub:
+                        new EpubDocumentFormatOptions(
+                            new EpubCheckOptions(
+                                missingDistribution))));
+
+        await using var stream =
+            new MemoryStream(
+                TestEpubFactory.Create());
+
+        var outcome =
+            await host.ProcessDocumentAsync(
+                new DocumentSource(
+                    stream,
+                    "book.epub",
+                    "application/epub+zip"));
+
+        Assert.False(
+            outcome.IsSuccess);
+
+        Assert.Equal(
+            "La validation EPUB est temporairement indisponible.",
+            outcome.ErrorMessage);
+
+        Assert.DoesNotContain(
+            "java",
             outcome.ErrorMessage!,
             StringComparison.OrdinalIgnoreCase);
     }

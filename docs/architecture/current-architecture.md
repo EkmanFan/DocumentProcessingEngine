@@ -109,7 +109,7 @@ DocumentProcessing.Core
         └── DocumentProcessing.Epub
 
 DocumentProcessing
-        └── Core + Engine + Pdf
+        └── Core + Engine + Pdf + Epub
 
 DocumentProcessing.DualRunWorker
         └── Core + Engine + Pdf
@@ -124,10 +124,12 @@ Required constraints:
 
 ## Current format and execution status
 
-- PDF is the only registered production format.
-- `DocumentProcessing.Epub` contains the EPUBCheck 5.3.0 conformance boundary;
-  EPUB production registration waits for the native non-paged acquisition and
-  projection slice.
+- PDF and EPUB are registered production formats.
+- `DocumentProcessing.Epub` owns EPUB recognition, the EPUBCheck 5.3.0
+  conformance boundary, package/spine/XHTML acquisition and EPUB source-location
+  facts.
+- the Engine projects structured EPUB evidence through its native non-paged
+  assembly path; EPUB spine items are never represented as physical pages.
 - PdfPig supplies native extraction and native visual measurements.
 - `pdftoppm` supplies document-scoped rasterization.
 - PP-StructureV3 supplies layout observations when planned.

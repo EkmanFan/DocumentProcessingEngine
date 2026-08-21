@@ -29,7 +29,9 @@ internal static class EpubConformanceOutcomeMapper
 
             EpubCheckConformanceStatus.NonConformant =>
                 new NativeEvidenceExtractionResult.Invalid(
-                    NonConformantMessage),
+                    NonConformantMessage,
+                    isConsumerSafeReason:
+                        true),
 
             EpubCheckConformanceStatus.Unavailable or
                 EpubCheckConformanceStatus.Failed or

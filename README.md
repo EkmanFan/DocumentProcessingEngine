@@ -115,11 +115,11 @@ The first EPUB reference can be checked independently of the Engine with
 `scripts/run-epub-reference-validation.sh`. It uses the official EPUBCheck tool
 plus exact Habermas source and p18/p28 observations.
 
-The first EPUB-1 production slice is documented in
+The EPUB-1 production path is documented in
 [`docs/epub/epub-1-validation-boundary-v1.md`](docs/epub/epub-1-validation-boundary-v1.md).
-It adds the pinned EPUBCheck runtime boundary and consumer-safe failure mapping.
-EPUB is not registered in `DocumentProcessingHost` until the next slice adds
-native reflowable acquisition and non-paged portable projection.
+It adds the pinned EPUBCheck runtime boundary, consumer-safe failure mapping,
+native reflowable acquisition and non-paged portable projection. The Habermas
+result is reproduced by `scripts/run-epub-native-regression.sh`.
 
 ## Consumer entry point
 

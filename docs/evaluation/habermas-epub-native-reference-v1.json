@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "document-processing-native-epub-analysis-v1",
+  "source": {
+    "sha256": "038c0e5a8ca13c93f4da0e0095ca73da5974e8d24aa9313f0781e110a641cbf5",
+    "byteLength": 6053124,
+    "packagePath": "OEBPS/content.opf",
+    "title": "The Case for the Resurrection of Jesus",
+    "identifier": "urn:asin:B001QOGJY0",
+    "language": "en-US",
+    "spineItemCount": 36,
+    "linearSpineItemCount": 36
+  },
+  "processing": {
+    "elementCount": 1729,
+    "textElementCount": 1729,
+    "headingElementCount": 0,
+    "captionElementCount": 0,
+    "segmentCount": 32,
+    "authoritativeTextSha256": "dfb083541b3983f4fa31f5198d244cfda7efe204769ec0dc17061ee015ab178d",
+    "allElementLocationsAreEpub": true,
+    "hasPagedElementLocation": false,
+    "nativeExtractionBackendId": "epub-xhtml",
+    "nativeExtractionProfileId": "epub-xhtml-native-v1+epubcheck-5.3.0",
+    "assemblyProfileId": "structured-native-assembly-v1",
+    "normalizationProfileId": "structured-native-whitespace-v1",
+    "segmentationProfileId": "structured-native-content-unit-v1"
+  }
+}

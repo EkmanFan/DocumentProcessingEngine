@@ -1,6 +1,8 @@
 using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
+using DocumentProcessing.Epub;
+using Microsoft.Extensions.Logging;
 
 namespace DocumentProcessing;
 
@@ -8,9 +10,9 @@ namespace DocumentProcessing;
 /// Consumer configuration for one <see cref="DocumentProcessingHost"/>.
 /// </summary>
 /// <remarks>
-/// The V1 composition root selects concrete shared Layout/OCR providers
-/// explicitly. The optional visual-destination callback is format-neutral and
-/// applies to layout-driven preserved visuals.
+/// The V1 composition root selects concrete shared Layout/OCR providers and
+/// bounded EPUB acquisition explicitly. The optional visual-destination
+/// callback is format-neutral and applies to Engine-selected preserved visuals.
 /// </remarks>
 public sealed class DocumentProcessingHostOptions
 {
@@ -38,6 +40,17 @@ public sealed class DocumentProcessingHostOptions
     public UserVisualAssetWriter?
         UserVisualAssetWriter { get; }
 
+    /// <summary>
+    /// Gets bounded EPUB validation and native-acquisition configuration.
+    /// </summary>
+    public EpubDocumentFormatOptions Epub { get; }
+
+    /// <summary>
+    /// Gets the optional application logger factory for internal technical
+    /// diagnostics. Diagnostic details never enter processing results.
+    /// </summary>
+    public ILoggerFactory? LoggerFactory { get; }
+
     #endregion
 
     #region ctor
@@ -47,7 +60,11 @@ public sealed class DocumentProcessingHostOptions
         PpStructureV3Options ppStructureV3,
         PaddleOcrOptions paddleOcr,
         UserVisualAssetWriter?
-            userVisualAssetWriter = null)
+            userVisualAssetWriter = null,
+        EpubDocumentFormatOptions?
+            epub = null,
+        ILoggerFactory?
+            loggerFactory = null)
     {
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -72,6 +89,13 @@ public sealed class DocumentProcessingHostOptions
 
         UserVisualAssetWriter =
             userVisualAssetWriter;
+
+        Epub =
+            epub ??
+            new EpubDocumentFormatOptions();
+
+        LoggerFactory =
+            loggerFactory;
     }
 
     #endregion

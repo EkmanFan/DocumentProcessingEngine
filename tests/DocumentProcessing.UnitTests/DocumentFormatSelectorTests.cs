@@ -220,6 +220,9 @@ public sealed class DocumentFormatSelectorTests
             "recognized but malformed",
             invalid.Reason);
 
+        Assert.False(
+            invalid.IsConsumerSafeReason);
+
         Assert.Equal(
             0,
             prepared.Source.Content.Position);

@@ -32,13 +32,16 @@ internal abstract record DocumentFormatSelectionResult
 
         public string Reason { get; }
 
+        public bool IsConsumerSafeReason { get; }
+
         #endregion
 
         #region ctor
 
         public Invalid(
             IDocumentFormat documentFormat,
-            string reason)
+            string reason,
+            bool isConsumerSafeReason)
         {
             DocumentFormat =
                 documentFormat ??
@@ -55,6 +58,9 @@ internal abstract record DocumentFormatSelectionResult
 
             Reason =
                 reason;
+
+            IsConsumerSafeReason =
+                isConsumerSafeReason;
         }
 
         #endregion
@@ -123,6 +129,37 @@ internal abstract record DocumentFormatSelectionResult
 
             Reason =
                 reason.Trim();
+        }
+
+        #endregion
+    }
+
+    internal sealed record StructuredSuccess
+        : DocumentFormatSelectionResult
+    {
+        #region Properties
+
+        public IDocumentFormat DocumentFormat { get; }
+
+        public StructuredNativeDocumentEvidence Evidence { get; }
+
+        #endregion
+
+        #region ctor
+
+        public StructuredSuccess(
+            IDocumentFormat documentFormat,
+            StructuredNativeDocumentEvidence evidence)
+        {
+            DocumentFormat =
+                documentFormat ??
+                throw new ArgumentNullException(
+                    nameof(documentFormat));
+
+            Evidence =
+                evidence ??
+                throw new ArgumentNullException(
+                    nameof(evidence));
         }
 
         #endregion

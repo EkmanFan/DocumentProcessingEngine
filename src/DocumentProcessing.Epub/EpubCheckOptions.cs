@@ -42,6 +42,13 @@ public sealed class EpubCheckOptions
 
     #region ctor
 
+    public static EpubCheckOptions CreateDefault() =>
+        new(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "epubcheck",
+                SupportedVersion));
+
     public EpubCheckOptions(
         string distributionDirectoryPath,
         string javaExecutablePath = "java",

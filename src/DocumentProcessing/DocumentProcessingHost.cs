@@ -2,6 +2,7 @@ using DocumentProcessing.Shared;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Engine.Orchestration;
+using DocumentProcessing.Epub;
 using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing;
@@ -50,7 +51,10 @@ public sealed class DocumentProcessingHost
             _engine =
                 new DocumentProcessingEngine(
                     [
-                        new PdfDocumentFormat()
+                        new PdfDocumentFormat(),
+                        new EpubDocumentFormat(
+                            options.Epub,
+                            options.LoggerFactory)
                     ],
                     _sharedProcessingCapabilities.LayoutAnalyzer,
                     _sharedProcessingCapabilities.TextRecognizer,

@@ -7,6 +7,7 @@ using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Pdf;
+using DocumentProcessing.Epub;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 
@@ -90,6 +91,7 @@ public sealed class SharedProcessingCapabilityOwnershipTests
                 typeof(IDocumentFormat).Assembly,
                 typeof(DocumentProcessingEngine).Assembly,
                 typeof(PdfDocumentFormat).Assembly,
+                typeof(EpubDocumentFormat).Assembly,
                 typeof(global::DocumentProcessing.DocumentProcessingHost).Assembly
             };
 
