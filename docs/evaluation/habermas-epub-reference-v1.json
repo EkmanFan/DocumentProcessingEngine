@@ -2,7 +2,7 @@
   "schemaVersion": "habermas-epub-reference-v1",
   "date": "2026-08-21",
   "source": {
-    "localRelativePath": "tests/epub_test/habermas-case-for-resurrection.epub",
+    "localRelativePath": "tests/document_corpus/epub/habermas-case-for-resurrection.epub",
     "sha256": "038c0e5a8ca13c93f4da0e0095ca73da5974e8d24aa9313f0781e110a641cbf5",
     "byteLength": 6053124
   },

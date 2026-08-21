@@ -3,10 +3,10 @@ set -Eeuo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REFERENCE="$REPO/docs/evaluation/epub-multi-corpus-reference-v1.json"
-CALVIN_EPUB_FILE="${CALVIN_EPUB_FILE:-$REPO/tests/epub_test/Institution de la Religion Chretienne.epub}"
-BAUCKHAM_EPUB_FILE="${BAUCKHAM_EPUB_FILE:-$REPO/tests/epub_test/Jesus and the Eyewitnesses - The Gospels as Eyewitness Testimony - Richard Bauckham.epub}"
-BRENNER_EPUB_FILE="${BRENNER_EPUB_FILE:-$REPO/tests/epub_test/Logic and Philosophy - William H. Brenner.epub}"
-SEPTANTE_EPUB_FILE="${SEPTANTE_EPUB_FILE:-$REPO/tests/epub_test/La Septante Grec-Francais - Ouvrage Collectif.epub}"
+CALVIN_EPUB_FILE="${CALVIN_EPUB_FILE:-$REPO/tests/document_corpus/epub/Institution de la Religion Chretienne.epub}"
+BAUCKHAM_EPUB_FILE="${BAUCKHAM_EPUB_FILE:-$REPO/tests/document_corpus/epub/Jesus and the Eyewitnesses - The Gospels as Eyewitness Testimony - Richard Bauckham.epub}"
+BRENNER_EPUB_FILE="${BRENNER_EPUB_FILE:-$REPO/tests/document_corpus/epub/Logic and Philosophy - William H. Brenner.epub}"
+SEPTANTE_EPUB_FILE="${SEPTANTE_EPUB_FILE:-$REPO/tests/document_corpus/epub/La Septante Grec-Francais - Ouvrage Collectif.epub}"
 EPUBCHECK_ZIP="${EPUBCHECK_ZIP:-$REPO/scripts/tmp/tool-cache/epubcheck-5.3.0.zip}"
 OUT="$REPO/scripts/tmp/epub-multi-corpus-regression"
 

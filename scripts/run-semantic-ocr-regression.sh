@@ -4,7 +4,7 @@ export LC_ALL=C
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GROUND_TRUTH="$REPO/docs/evaluation/semantic-regression-ground-truth-v1.json"
-FIXTURES="$REPO/tests/pdf_pages_test"
+FIXTURES="$REPO/tests/document_corpus/pdf/pages"
 OUT="$REPO/scripts/tmp/semantic-ocr-regression"
 STATE="$OUT/state"
 TRANSITION="$OUT/transition"

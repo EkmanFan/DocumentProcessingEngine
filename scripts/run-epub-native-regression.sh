@@ -4,7 +4,7 @@ set -Eeuo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REFERENCE="$REPO/docs/evaluation/habermas-epub-native-reference-v1.json"
 EPUB_ZERO_REFERENCE="$REPO/docs/evaluation/habermas-epub-reference-v1.json"
-EPUB_FILE="${HABERMAS_EPUB_FILE:-$REPO/tests/epub_test/habermas-case-for-resurrection.epub}"
+EPUB_FILE="${HABERMAS_EPUB_FILE:-$REPO/tests/document_corpus/epub/habermas-case-for-resurrection.epub}"
 EPUBCHECK_ZIP="${EPUBCHECK_ZIP:-$REPO/scripts/tmp/tool-cache/epubcheck-5.3.0.zip}"
 OUT="$REPO/scripts/tmp/epub-native-regression"
 REPORT="$OUT/report.json"

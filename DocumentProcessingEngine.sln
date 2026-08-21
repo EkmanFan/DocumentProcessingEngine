@@ -18,7 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.EvaluationCli", "tools\DocumentProcessing.EvaluationCli\DocumentProcessing.EvaluationCli.csproj", "{2E711910-FD50-46FF-9806-B50EC797403C}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pdf_pages_test", "pdf_pages_test", "{0C6F0A54-2F9C-4D21-9996-18AA021DF803}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "document_corpus", "document_corpus", "{0C6F0A54-2F9C-4D21-9996-18AA021DF803}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.DualRunWorker", "src\DocumentProcessing.DualRunWorker\DocumentProcessing.DualRunWorker.csproj", "{7477DD45-06B0-4848-8D0D-B7E48B28323F}"
 EndProject

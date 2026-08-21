@@ -4,17 +4,25 @@
 
 **Current — operational guidance**
 
-The PDF test documents are local-only and excluded from Git. The repository
-commits their expected identities and semantic results, but not the copyrighted
-source files themselves.
+The PDF and EPUB test documents share one local-only corpus excluded from Git.
+The repository commits their expected identities and processing results, but
+not the copyrighted source files themselves.
+
+```text
+tests/document_corpus/
+├── epub/
+└── pdf/
+    ├── pages/
+    └── supplemental/
+```
 
 ## Main 67-document test set
 
-The root of `tests/pdf_pages_test/` contains exactly the 67 one-page PDFs used
-by the frozen native/provenance regression:
+The `tests/document_corpus/pdf/pages/` directory contains exactly the 67
+one-page PDFs used by the frozen native/provenance regression:
 
 ```text
-tests/pdf_pages_test/
+tests/document_corpus/pdf/pages/
 ├── fixtures-manifest.tsv
 ├── ehrman-*.pdf
 ├── habermas-*.pdf
@@ -34,7 +42,7 @@ is intentionally being replaced and reviewed.
 Documents used by later, narrower investigations belong in a subdirectory:
 
 ```text
-tests/pdf_pages_test/supplemental/
+tests/document_corpus/pdf/supplemental/
 ├── habermas-p0018.pdf
 └── habermas-p0028.pdf
 ```
@@ -43,18 +51,23 @@ The main regression scans only the root directory. Supplementary documents
 remain available for their targeted evaluations without changing the frozen
 67-document set.
 
-## EPUB reference document
+## EPUB test documents
 
-The copyrighted Habermas EPUB is also local-only:
+The EPUB corpus is local-only:
 
 ```text
-tests/epub_test/
-└── habermas-case-for-resurrection.epub
+tests/document_corpus/epub/
+├── habermas-case-for-resurrection.epub
+├── Institution de la Religion Chretienne.epub
+├── Jesus and the Eyewitnesses - The Gospels as Eyewitness Testimony - Richard Bauckham.epub
+├── Logic and Philosophy - William H. Brenner.epub
+└── La Septante Grec-Francais - Ouvrage Collectif.epub
 ```
 
-Its exact identity and selected structural observations are committed in
-`habermas-epub-reference-v1.json`. The EPUB itself remains excluded from Git.
-Run `scripts/run-epub-reference-validation.sh` to validate it with the pinned
+Their exact identities and selected structural observations are committed in
+the EPUB evaluation references. The EPUB files remain excluded from Git. Run
+`scripts/run-epub-reference-validation.sh` and
+`scripts/run-epub-multi-corpus-regression.sh` to validate them with the pinned
 official EPUBCheck version and the corpus-specific controls.
 
 ## Exact PNG reference

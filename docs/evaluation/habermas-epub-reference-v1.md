@@ -11,7 +11,7 @@ copyrighted publication remains local and is excluded from Git.
 ## Source identity
 
 ```text
-local file   tests/epub_test/habermas-case-for-resurrection.epub
+local file   tests/document_corpus/epub/habermas-case-for-resurrection.epub
 bytes        6,053,124
 SHA-256      038c0e5a8ca13c93f4da0e0095ca73da5974e8d24aa9313f0781e110a641cbf5
 title        The Case for the Resurrection of Jesus
