@@ -8,8 +8,8 @@ EHRMAN_BYTES="233369762"
 DE_SHA="de5e95573b7910292b4b07c02b5cfd834fe63dd5daf4056e9a947c96cb81bc75"
 DE_BYTES="11963985"
 
-EHRMAN="${DOCUMENT_PROCESSING_EHRMAN_PDF:-}"
-DE="${DOCUMENT_PROCESSING_DE_DECRETIS_PDF:-}"
+EHRMAN="${DOCUMENT_PROCESSING_EHRMAN_PDF:-${REPO}/tests/document_corpus/pdf/full/the-new-testament-a-historical-introduction-to-the-early-christian-writings.pdf}"
+DE="${DOCUMENT_PROCESSING_DE_DECRETIS_PDF:-${REPO}/tests/document_corpus/pdf/full/Nicene and Post Nicene Fathers Series II Vol 4.pdf}"
 
 fail() {
   printf 'ERROR: %s\n' "$*" >&2

@@ -78,3 +78,7 @@ post-normalization Ehrman targets remain deferred until then:
 - 229 multi-column candidate pages;
 - 144 interleaved-column pages;
 - 10 vertical reading-order reversal pages.
+
+Those numbers remain the historical ApologiaStudio comparison. The current
+coordinate-corrected Engine baseline is documented by the recurring-margin
+regression rather than retroactively replacing this historical reference.

@@ -113,6 +113,7 @@ if [[ -z "${EHRMAN_PATH}" ]]; then
   EHRMAN_PATH="$(
     discover_by_sha \
       "${EHRMAN_SHA}" \
+      "${ROOT_DIRECTORY}/tests/document_corpus/pdf/full" \
       "${HOME}/Downloads" \
       "${HOME}/Documents"
   )" ||
@@ -123,6 +124,7 @@ if [[ -z "${DE_DECRETIS_PATH}" ]]; then
   DE_DECRETIS_PATH="$(
     discover_by_sha \
       "${DE_DECRETIS_SHA}" \
+      "${ROOT_DIRECTORY}/tests/document_corpus/pdf/full" \
       "${HOME}/Documents" \
       "${HOME}/Downloads"
   )" ||

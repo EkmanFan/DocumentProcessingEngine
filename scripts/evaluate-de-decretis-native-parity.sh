@@ -66,13 +66,17 @@ discover_source() {
   local actual_sha
   local -a matches=()
 
-  for root in "${HOME}/Documents" "${HOME}/Downloads"; do
+  for root in \
+    "${ROOT_DIRECTORY}/tests/document_corpus/pdf/full" \
+    "${HOME}/Documents" \
+    "${HOME}/Downloads"; do
     [[ -d "${root}" ]] || continue
 
     while IFS= read -r -d '' candidate; do
       name="$(basename "${candidate}" | tr '[:upper:]' '[:lower:]')"
 
-      if [[ "${name}" != *"npnf204"* &&
+      if [[ "${root}" != "${ROOT_DIRECTORY}/tests/document_corpus/pdf/full" &&
+            "${name}" != *"npnf204"* &&
             "${name}" != *"npnf2-04"* &&
             "${name}" != *"npnf2_04"* ]]; then
         continue

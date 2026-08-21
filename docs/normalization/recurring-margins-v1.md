@@ -77,10 +77,14 @@ raw blocks                 3179
 included blocks            2648
 excluded recurring headers 531
 excluded recurring footers 0
-multi-column pages          229
-interleaved pages           144
-vertical reversal pages     10
+multi-column pages          235
+interleaved pages           154
+vertical reversal pages     19
 ```
+
+The layout counters are the current coordinate-corrected Engine baseline. The
+historical ApologiaStudio comparison remains `229 / 144 / 10`; it is not the
+current Engine output.
 
 Normalized block probe counts:
 

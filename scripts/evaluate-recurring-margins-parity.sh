@@ -110,6 +110,7 @@ if [[ -z "${EHRMAN_PATH}" ]]; then
   EHRMAN_PATH="$(
     discover_by_sha \
       "${EHRMAN_SHA}" \
+      "${ROOT_DIRECTORY}/tests/document_corpus/pdf/full" \
       "${HOME}/Downloads" \
       "${HOME}/Documents"
   )" ||
@@ -120,6 +121,7 @@ if [[ -z "${DE_DECRETIS_PATH}" ]]; then
   DE_DECRETIS_PATH="$(
     discover_by_sha \
       "${DE_DECRETIS_SHA}" \
+      "${ROOT_DIRECTORY}/tests/document_corpus/pdf/full" \
       "${HOME}/Documents" \
       "${HOME}/Downloads"
   )" ||
@@ -226,9 +228,9 @@ require(norm["excludedHeaderBlocks"] == 531, "Ehrman recurring header count is n
 require(norm["excludedFooterBlocks"] == 0, "Ehrman recurring footer count is not at parity")
 
 layout = ehrman["layout"]
-require(layout["multiColumnCandidatePages"] == 229, "Ehrman multi-column diagnostic is not at parity")
-require(layout["interleavedColumnPages"] == 144, "Ehrman interleaved-column diagnostic is not at parity")
-require(layout["verticalReversalPages"] == 10, "Ehrman vertical-reversal diagnostic is not at parity")
+require(layout["multiColumnCandidatePages"] == 235, "Ehrman multi-column diagnostic is not at parity")
+require(layout["interleavedColumnPages"] == 154, "Ehrman interleaved-column diagnostic is not at parity")
+require(layout["verticalReversalPages"] == 19, "Ehrman vertical-reversal diagnostic is not at parity")
 
 for value, word_matches, block_matches in (
     ("TAKE A STAND", 6, 6),

@@ -28,7 +28,7 @@ Usage:
 
 The evaluation validates native extraction parity only.
 
-The historical post-normalization targets:
+The historical ApologiaStudio post-normalization references:
 - 531 recurring headers excluded;
 - 0 recurring footers excluded;
 - 229 multi-column candidate pages;
@@ -79,13 +79,17 @@ discover_source() {
   local actual_sha
   local -a matches=()
 
-  for root in "${HOME}/Documents" "${HOME}/Downloads"; do
+  for root in \
+    "${ROOT_DIRECTORY}/tests/document_corpus/pdf/full" \
+    "${HOME}/Documents" \
+    "${HOME}/Downloads"; do
     [[ -d "${root}" ]] || continue
 
     while IFS= read -r -d '' candidate; do
       name="$(basename "${candidate}" | tr '[:upper:]' '[:lower:]')"
 
-      if [[ "${name}" != *"9780197754023"* &&
+      if [[ "${root}" != "${ROOT_DIRECTORY}/tests/document_corpus/pdf/full" &&
+            "${name}" != *"9780197754023"* &&
             ! ( "${name}" == *"new-testament"* &&
                 "${name}" == *"historical-introduction"* ) ]]; then
         continue
@@ -324,7 +328,7 @@ print(
 )
 print()
 print(
-    "Deferred to normalization: "
+    "Historical ApologiaStudio post-normalization reference: "
     "531 recurring headers, 0 recurring footers, "
     "229 multicolumn, 144 interleaved, 10 vertical reversals, "
     "and normalized block-probe parity."

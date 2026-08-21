@@ -72,7 +72,8 @@ This is deliberately a no-OCR baseline.
 
 ## Deferred post-normalization parity
 
-The following historical ApologiaStudio values are not native-stage assertions:
+The following historical ApologiaStudio values are comparison references, not
+native-stage assertions or the current coordinate-corrected Engine baseline:
 
 - 531 recurring header blocks excluded;
 - 0 recurring footer blocks excluded;
@@ -83,12 +84,14 @@ The following historical ApologiaStudio values are not native-stage assertions:
 
 After the Phase 17C MediaBox coordinate-space correction, the current raw
 geometry observation is 258 multi-column candidates, 156 interleaved pages, and
-17 vertical-reversal pages before recurring margins are excluded.
+19 vertical-reversal pages before recurring margins are excluded.
 
 These raw geometry values are observations rather than post-normalization
-acceptance gates. The normalized production regression remains the authoritative
-structural guard: 531 recurring headers, 229 multi-column candidates,
-144 interleaved pages, and 10 vertical reversals after normalization.
+acceptance gates. The current normalized Engine regression remains the
+authoritative structural guard: 531 recurring headers, 235 multi-column
+candidates, 154 interleaved pages, and 19 vertical reversals after
+normalization. The historical `229 / 144 / 10` values remain documented above
+for comparison; they must not be presented as the current Engine output.
 
 These post-normalization assertions belong to the normalization increment and
 must not be forced into the PDF extractor.
