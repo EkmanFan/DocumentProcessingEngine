@@ -12,6 +12,33 @@ public sealed class EpubDocumentFormatTests
     #region Methods Tests
 
     [Fact]
+    public void DocumentFormatOptions_DefaultsDoNotImposeProductSizeBoundaries()
+    {
+        var options =
+            new EpubDocumentFormatOptions();
+
+        Assert.Equal(
+            long.MaxValue,
+            options.MaximumSourceBytes);
+
+        Assert.Equal(
+            int.MaxValue,
+            options.MaximumArchiveEntries);
+
+        Assert.Equal(
+            long.MaxValue,
+            options.MaximumTotalUncompressedBytes);
+
+        Assert.Equal(
+            long.MaxValue,
+            options.MaximumTextResourceBytes);
+
+        Assert.Equal(
+            long.MaxValue,
+            options.MaximumVisualResourceBytes);
+    }
+
+    [Fact]
     public void Recognizer_ValidContainerSignatureRecognizesEpubAndRestoresPosition()
     {
         using var stream =

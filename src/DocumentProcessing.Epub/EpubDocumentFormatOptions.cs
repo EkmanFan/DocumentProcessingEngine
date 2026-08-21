@@ -26,11 +26,11 @@ public sealed class EpubDocumentFormatOptions
 
     public EpubDocumentFormatOptions(
         EpubCheckOptions? epubCheck = null,
-        long maximumSourceBytes = 256L * 1024 * 1024,
-        int maximumArchiveEntries = 10000,
-        long maximumTotalUncompressedBytes = 1024L * 1024 * 1024,
-        long maximumTextResourceBytes = 16L * 1024 * 1024,
-        long maximumVisualResourceBytes = 64L * 1024 * 1024)
+        long maximumSourceBytes = long.MaxValue,
+        int maximumArchiveEntries = int.MaxValue,
+        long maximumTotalUncompressedBytes = long.MaxValue,
+        long maximumTextResourceBytes = long.MaxValue,
+        long maximumVisualResourceBytes = long.MaxValue)
     {
         if (maximumSourceBytes <=
             0)

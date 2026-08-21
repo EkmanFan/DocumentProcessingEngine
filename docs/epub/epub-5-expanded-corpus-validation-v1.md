@@ -56,6 +56,11 @@ materializes only EPUBCheck validation messages and skips the potentially large
 package inventory, with a focused regression test for conformant reports larger
 than one MiB.
 
+The EPUB source, archive-entry, total-uncompressed-size, text-resource and
+visual-resource options remain configurable, but their defaults impose no
+product-level size boundary. A finite production limit will be introduced only
+from observed operational evidence.
+
 ## Reproduction
 
 ```bash

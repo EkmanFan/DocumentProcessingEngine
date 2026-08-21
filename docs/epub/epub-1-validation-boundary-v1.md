@@ -41,8 +41,9 @@ TimedOut
 
 The supervised invocation has a configurable timeout, kills the Java process
 tree when that timeout expires, drains stdout and stderr without deadlock,
-retains at most 8,192 diagnostic characters per stream, limits the JSON report
-to 1 MiB, verifies the pinned JAR identity and removes its temporary report.
+retains at most 8,192 diagnostic characters per stream, reads only validation
+messages from the JSON report, verifies the pinned JAR identity and removes its
+temporary report. The report reader imposes no fixed size limit.
 
 Explicit caller cancellation remains cancellation. A checker timeout or an
 unexpected checker termination is not caller cancellation.
@@ -85,7 +86,7 @@ by EPUB-0; the result was `Conformant`.
 
 After a `Conformant` result, the registered format now performs:
 
-1. bounded recognition and temporary materialization of EPUB sources;
+1. recognition and temporary materialization of EPUB sources;
 2. package, spine and XHTML acquisition with guarded archive/XML parsing;
 3. EPUB-specific non-paged source structure and locations;
 4. Engine-owned whitespace normalization, content-unit segmentation and
@@ -95,3 +96,8 @@ The accepted Habermas result is frozen in
 `docs/evaluation/habermas-epub-native-reference-v1.json` and reproduced by
 `scripts/run-epub-native-regression.sh`. EPUB spine items are not represented
 as physical pages merely to reuse the PDF projector.
+
+The source-size, archive-entry, total-uncompressed-size, text-resource and
+visual-resource options remain available for an operator who needs explicit
+production limits. Their defaults use the maximum values of their .NET types
+and therefore impose no product-level size boundary.
