@@ -929,6 +929,9 @@ internal sealed class PreservedVisualProvenanceJsonContract
     public string ContentSha256 { get; init; } =
         null!;
 
+    [JsonPropertyName("qualification")]
+    public string? Qualification { get; init; }
+
     #endregion
 
 
@@ -953,7 +956,11 @@ internal sealed class PreservedVisualProvenanceJsonContract
             ContentLength =
                 visual.ContentLength,
             ContentSha256 =
-                visual.ContentSha256
+                visual.ContentSha256,
+            Qualification =
+                JsonContractMapping
+                    .EnumName(
+                        visual.Qualification)
         };
 
     public PreservedVisualProvenance ToModel() =>
@@ -977,7 +984,13 @@ internal sealed class PreservedVisualProvenanceJsonContract
             JsonContractMapping
                 .RequireNonBlank(
                     ContentSha256,
-                    "elements[].preservedVisual.contentSha256"));
+                    "elements[].preservedVisual.contentSha256"),
+            Qualification is null
+                ? DocumentVisualQualification.Meaningful
+                : JsonContractMapping
+                    .ParseEnum<DocumentVisualQualification>(
+                        Qualification,
+                        "elements[].preservedVisual.qualification"));
 
     #endregion
 }

@@ -54,6 +54,9 @@ internal static class VisualEvidenceDispositionPolicy
             VisualEvidenceKind.StructuredContentMeaningfulVisual =>
                 VisualDisposition.PreserveMeaningfulVisual,
 
+            VisualEvidenceKind.SourceBackedUnqualifiedVisual =>
+                VisualDisposition.PreserveUnqualifiedVisual,
+
             _ =>
                 throw new ArgumentOutOfRangeException(
                     nameof(evidenceKind),

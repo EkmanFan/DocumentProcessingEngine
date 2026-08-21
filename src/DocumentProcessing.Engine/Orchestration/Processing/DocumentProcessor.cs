@@ -871,11 +871,7 @@ public sealed class DocumentProcessor
             var page =
                 extraction.Pages[index];
 
-            if (decision.Plan.Route ==
-                    PageProcessingRoute.NativeOnly &&
-                decision.Assessment.NativeTextStatus ==
-                    NativeTextStatus.Healthy &&
-                page.RasterImageCount >
+            if (page.RasterImageCount >
                     0)
             {
                 return true;
@@ -948,8 +944,10 @@ public sealed class DocumentProcessor
                candidate.TextMode ==
                    TextExecutionMode.NativeText &&
                !candidate.RequiresTargetedOcr &&
-               !candidate.RequiresVisualAnalysis &&
-               candidate.RequiresMeaningfulVisualPreservation;
+               (
+                   candidate.RequiresVisualAnalysis ||
+                   candidate.RequiresVisualPreservation
+               );
     }
 
     private DocumentHybridExecutionDependencies? ResolveHybridExecution(
@@ -1161,6 +1159,12 @@ public sealed class DocumentProcessor
                     .ExecuteWithPrecomputedLayoutAsync(
                         page,
                         decision,
+                        authoritativeVisualDecision?
+                            .Candidate
+                            .Plan,
+                        authoritativeVisualRasterObservations?
+                            .VisualElements ??
+                        [],
                         rasterSession!,
                         preparedLayout!.PageRaster,
                         preparedLayout!.Layout,
@@ -1177,6 +1181,12 @@ public sealed class DocumentProcessor
                     .ExecuteWithPrecomputedLayoutAsync(
                         page,
                         decision,
+                        authoritativeVisualDecision?
+                            .Candidate
+                            .Plan,
+                        authoritativeVisualRasterObservations?
+                            .VisualElements ??
+                        [],
                         rasterSession!,
                         preparedLayout!.PageRaster,
                         preparedLayout!.Layout,

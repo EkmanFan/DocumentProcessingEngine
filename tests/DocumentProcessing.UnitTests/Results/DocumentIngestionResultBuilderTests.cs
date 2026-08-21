@@ -272,6 +272,41 @@ public sealed class DocumentIngestionResultBuilderTests
     }
 
     [Fact]
+    public void BuildAndPortableProjection_RetainUnqualifiedVisualStatus()
+    {
+        var ingestion =
+            DocumentIngestionResultBuilder
+                .Build(
+                    BuildRepresentativeSegmentation(
+                        SourceSha,
+                        DocumentVisualQualification.Unqualified),
+                    CompleteContext(
+                        SourceSha));
+
+        var preserved =
+            Assert.Single(
+                ingestion.Elements,
+                element =>
+                    element.PreservedVisual is not null)
+                .PreservedVisual!;
+
+        Assert.Equal(
+            DocumentVisualQualification.Unqualified,
+            preserved.Qualification);
+
+        var portable =
+            DocumentProcessingResultProjector
+                .Project(
+                    ingestion);
+
+        Assert.Equal(
+            DocumentVisualQualification.Unqualified,
+            Assert.Single(
+                    portable.VisualAssets)
+                .Qualification);
+    }
+
+    [Fact]
     public void Build_RejectsMissingReconciliationIdentity()
     {
         var segmentation =
@@ -387,7 +422,9 @@ public sealed class DocumentIngestionResultBuilderTests
     private static DocumentProcessing.Core.Hybrid.Segmentation
         .HybridDocumentSegmentationResult
         BuildRepresentativeSegmentation(
-        string sourceShaForVisual)
+        string sourceShaForVisual,
+        DocumentVisualQualification visualQualification =
+            DocumentVisualQualification.Meaningful)
     {
         var headingLayout =
             Layout(
@@ -493,7 +530,9 @@ public sealed class DocumentIngestionResultBuilderTests
                         contentLength:
                             500,
                         contentSha256:
-                            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
+                            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                        qualification:
+                            visualQualification));
 
         var deferred =
             HybridDocumentElementFactory

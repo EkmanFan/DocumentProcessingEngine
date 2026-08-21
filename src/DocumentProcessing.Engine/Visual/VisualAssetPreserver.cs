@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Raster;
+using DocumentProcessing.Core.Results;
 using DocumentProcessing.Core.Visual;
 
 namespace DocumentProcessing.Engine.Visual;
@@ -57,7 +58,9 @@ public sealed class VisualAssetPreserver
         PixelRectangle crop,
         int pagePixelWidth,
         int pagePixelHeight,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        DocumentVisualQualification qualification =
+            DocumentVisualQualification.Meaningful)
     {
         ArgumentNullException.ThrowIfNull(visualContent);
         ArgumentNullException.ThrowIfNull(destination);
@@ -94,6 +97,13 @@ public sealed class VisualAssetPreserver
         if (pagePixelHeight <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(pagePixelHeight));
+        }
+
+        if (!Enum.IsDefined(
+                qualification))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(qualification));
         }
 
 
@@ -224,7 +234,8 @@ public sealed class VisualAssetPreserver
                 pagePixelHeight,
                 crop,
                 total,
-                contentSha256);
+                contentSha256,
+                qualification);
         }
         catch
         {

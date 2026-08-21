@@ -283,7 +283,7 @@ public sealed class HealthyNativeVisualPageExecutorTests
                                 null));
 
         Assert.Contains(
-            "resolved meaningful-visual preservation",
+            "source-visual observations",
             exception.Message,
             StringComparison.Ordinal);
 

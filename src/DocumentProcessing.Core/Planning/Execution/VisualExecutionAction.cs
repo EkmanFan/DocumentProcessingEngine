@@ -21,6 +21,12 @@ public enum VisualExecutionAction
     PreserveMeaningfulVisual,
 
     /// <summary>
+    /// Preserve the visual while reporting that the Engine could not qualify
+    /// it as meaningful or presentational.
+    /// </summary>
+    PreserveUnqualifiedVisual,
+
+    /// <summary>
     /// The visual remains unresolved and requires visual analysis.
     ///
     /// Source evidence must remain available until the analysis is resolved.

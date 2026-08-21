@@ -60,6 +60,13 @@ public enum VisualEvidenceKind
     SourceBackedMeaningfulVisual,
 
     /// <summary>
+    /// A source visual remains available after best-effort analysis, but the
+    /// available evidence did not qualify it as meaningful or presentational.
+    /// Conservative policy preserves it with an explicit unqualified status.
+    /// </summary>
+    SourceBackedUnqualifiedVisual,
+
+    /// <summary>
     /// A strong caption association identifies a meaningful visual candidate.
     /// </summary>
     CaptionedMeaningfulVisual,

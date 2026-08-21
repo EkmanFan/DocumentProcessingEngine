@@ -67,6 +67,13 @@ public sealed class HealthyNativeVisualPageExecutor
             openVisualDestinationAsync,
         CancellationToken cancellationToken = default)
     {
+        if (candidatePlan.RequiresVisualAnalysis)
+        {
+            throw new InvalidOperationException(
+                "Healthy native unresolved visual analysis requires aligned " +
+                "source-visual observations.");
+        }
+
         var prepared =
             await PrepareLayoutAsync(
                     sourcePage,
@@ -209,6 +216,15 @@ public sealed class HealthyNativeVisualPageExecutor
         ArgumentNullException.ThrowIfNull(
             sourceVisualObservations);
 
+        if (candidatePlan.RequiresVisualAnalysis &&
+            sourceVisualObservations.Count ==
+                0)
+        {
+            throw new InvalidOperationException(
+                "Healthy native unresolved visual analysis requires aligned " +
+                "source-visual observations.");
+        }
+
         cancellationToken.ThrowIfCancellationRequested();
 
         ValidatePageRaster(
@@ -275,7 +291,9 @@ public sealed class HealthyNativeVisualPageExecutor
                 executionLayout,
                 visualEvidence);
 
-        if (openVisualDestinationAsync is null)
+        if (preserving.Length >
+                0 &&
+            openVisualDestinationAsync is null)
         {
             throw new InvalidOperationException(
                 "Healthy native meaningful visual preservation requires a " +
@@ -335,8 +353,9 @@ public sealed class HealthyNativeVisualPageExecutor
                     evidence =>
                         VisualEvidenceDispositionPolicy
                             .Decide(
-                                evidence.Kind) ==
-                        VisualDisposition.PreserveMeaningfulVisual)
+                                evidence.Kind) is
+                            VisualDisposition.PreserveMeaningfulVisual or
+                            VisualDisposition.PreserveUnqualifiedVisual)
                 .ToArray();
 
         var unresolved =
@@ -519,13 +538,14 @@ public sealed class HealthyNativeVisualPageExecutor
         if (candidatePlan.TextMode !=
                 TextExecutionMode.NativeText ||
             candidatePlan.RequiresTargetedOcr ||
-            candidatePlan.RequiresVisualAnalysis ||
-            !candidatePlan.RequiresMeaningfulVisualPreservation)
+            (
+                !candidatePlan.RequiresVisualAnalysis &&
+                !candidatePlan.RequiresVisualPreservation
+            ))
         {
             throw new InvalidOperationException(
                 "Healthy native visual execution requires candidate NativeText " +
-                "plus resolved meaningful-visual preservation and no OCR or " +
-                "unresolved visual analysis.");
+                "plus visual analysis or preservation and no OCR.");
         }
 
         if (sourcePage.Blocks.Count ==

@@ -1,4 +1,5 @@
 using DocumentProcessing.Core.Raster;
+using DocumentProcessing.Core.Results;
 using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Engine.Orchestration;
@@ -63,8 +64,9 @@ public sealed class LayoutVisualRegionPreserver
             VisualEvidenceDispositionPolicy.Decide(
                 evidence.Kind);
 
-        if (disposition !=
-            VisualDisposition.PreserveMeaningfulVisual)
+        if (disposition is not
+                VisualDisposition.PreserveMeaningfulVisual and not
+                VisualDisposition.PreserveUnqualifiedVisual)
         {
             throw new InvalidOperationException(
                 $"Layout visual observation " +
@@ -118,7 +120,11 @@ public sealed class LayoutVisualRegionPreserver
                 crop,
                 pageRaster.OutputPixelWidth,
                 pageRaster.OutputPixelHeight,
-                cancellationToken)
+                cancellationToken,
+                disposition ==
+                    VisualDisposition.PreserveMeaningfulVisual
+                    ? DocumentVisualQualification.Meaningful
+                    : DocumentVisualQualification.Unqualified)
             .ConfigureAwait(false);
     }
 

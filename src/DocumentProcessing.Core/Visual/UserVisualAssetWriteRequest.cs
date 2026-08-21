@@ -37,7 +37,9 @@ public sealed record UserLayoutVisualAssetWriteRequest
 {
     public UserLayoutVisualAssetWriteRequest(
         DocumentFormatId format,
-        LayoutObservation layoutObservation)
+        LayoutObservation layoutObservation,
+        DocumentVisualQualification qualification =
+            DocumentVisualQualification.Meaningful)
         : base(
             format,
             new PagedDocumentSourceLocation(
@@ -49,9 +51,21 @@ public sealed record UserLayoutVisualAssetWriteRequest
     {
         LayoutObservation =
             layoutObservation;
+
+        if (!Enum.IsDefined(
+                qualification))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(qualification));
+        }
+
+        Qualification =
+            qualification;
     }
 
     public LayoutObservation LayoutObservation { get; }
+
+    public DocumentVisualQualification Qualification { get; }
 }
 
 /// <summary>

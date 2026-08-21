@@ -19,7 +19,13 @@ The validated product rule is:
 - a PP `formula` region without a corresponding source image is discarded as
   visual evidence and native text remains authoritative;
 - the source image is the preservation unit, so several PP regions intersecting
-  one source image still produce one asset.
+  one source image still produce one asset;
+- a source image confidently overlapping a PP `formula` or `table` region is
+  reported as meaningful;
+- a source image that cannot be qualified confidently is still preserved and
+  reported as unqualified;
+- a full-page first-page image associated with the document title is treated as
+  publication presentation and excluded.
 
 Human-reviewed physical-page controls are:
 
@@ -37,12 +43,16 @@ All four public-Host executions pass with these exact counts. On page 65,
 
 The complete PDF processing succeeds:
 
-- 1,321 portable elements;
+- 1,351 portable elements;
 - 1,222 text elements;
-- 99 visual assets;
+- 129 visual assets;
 - 73,484 normalized tokens;
-- 83 PP-StructureV3 calls;
+- 84 PP-StructureV3 calls;
 - 5 targeted OCR calls.
+
+The authoritative, normalized, and tokenized PDF text artifacts are
+byte-identical to the previous complete-run reference. The visual-policy
+increment therefore changes visual output without changing recovered text.
 
 A separate page-isolated sweep covers all 68 Healthy Native pages whose
 full-document source plan requests meaningful preservation. Every isolated
@@ -64,36 +74,54 @@ The normalized sequences are not byte-identical. Reviewed differences include
 PDF table-of-contents duplication, front-matter order, joined/split compounds,
 hyphenation, and isolated PDF extraction errors.
 
+## Human-reviewed unresolved source visuals
+
+The PDF contains 130 embedded image occurrences. Before this increment, 106
+were already planned as meaningful and 24 required visual analysis.
+
+The 24 reviewed cases now resolve as follows:
+
+- 1 first-page cover is excluded;
+- 5 source images receive strong `formula` or `table` evidence and are reported
+  as meaningful;
+- 18 source images are preserved and explicitly reported as unqualified.
+
+The complete PDF result therefore contains 111 meaningful and 18 unqualified
+visual assets. This includes the optional portraits: conservative preservation
+keeps them available to the user without claiming that they are meaningful.
+
+Mixed pages no longer suppress already-qualified source images merely because
+another source image on the same page remains unresolved. Unqualified source
+images are appended after the existing layout observations when inserting them
+geometrically would split an indivisible native text block. This keeps native
+text order unchanged while preserving the visual.
+
 ## Visual comparison
 
-The EPUB result contains 129 visual assets; the PDF result contains 99.
+The EPUB and PDF results both contain 129 visual assets.
 
-An order-constrained normalized-image comparison aligns every PDF asset with
-one EPUB asset in the same sequence, leaving 30 EPUB assets without a PDF
-result counterpart. Manual review of the lowest-scoring aligned pairs confirms
-that they depict the same logical formulas or diagrams despite resolution,
-margin, and rasterization differences.
+An order-constrained normalized-image comparison aligns all 129 PDF assets with
+the 129 EPUB assets in the same sequence. Manual review covers the 18 pairs with
+the largest normalized pixel differences. Every reviewed pair depicts the same
+formula, table, diagram, portrait, or supporting illustration despite
+resolution, margin, JPEG, and rasterization differences.
 
-The full PDF contains 130 embedded image occurrences:
-
-- 106 are planned as `PreserveMeaningfulVisual`;
-- 24 remain `AnalyzeVisual`;
-- mixed pages containing both actions currently skip 7 otherwise-preservable
-  source images because Healthy Native visual execution requires every visual
-  action on the page to be resolved.
-
-The 30-result visual gap is therefore established and remains unresolved. This
-increment does not broaden visual qualification beyond the approved
-source-image/formula rule.
+The previous 30-asset result gap is closed without treating every retained
+source image as meaningful.
 
 ## Performance
 
 One complete PDF-then-EPUB run measured:
 
-- elapsed time: 391.63 seconds;
-- Engine maximum resident memory: 505,076 KiB (about 493 MiB);
-- PP-StructureV3 container peak: 9,908,191,232 bytes (about 9.3 GiB);
-- PaddleOCR container peak: 3,558,096,896 bytes (about 3.4 GiB).
+- elapsed time: 522.98 seconds;
+- Engine maximum resident memory: 607,344 KiB (about 593 MiB);
+- PP-StructureV3 container peak: 9,691,389,952 bytes (about 9.03 GiB);
+- PaddleOCR container peak: 3,348,385,792 bytes (about 3.12 GiB).
+
+These are single-pass observations, not a benchmark. Compared with the earlier
+run, elapsed time increased while PP and OCR peak memory remained in the same
+operational range. The run includes one additional PP request and preservation
+of 30 additional PDF assets.
 
 The 68-page isolated sweep measured 382.25 seconds cumulatively and a maximum
 Engine resident memory of 131,992 KiB (about 129 MiB). PP-StructureV3 peaked at
@@ -106,10 +134,14 @@ Established:
 - the source-image/formula rule produces the four human-approved page results;
 - the complete PDF and EPUB text sequences have 99.3007% symmetric ordered
   token overlap;
-- every emitted PDF visual has an ordered EPUB counterpart.
+- the PDF text result is exactly unchanged by the visual-policy increment;
+- all 129 PDF visuals have an ordered EPUB counterpart;
+- uncertain source visuals remain available with an explicit unqualified
+  status, while the cover is excluded.
 
 Unresolved:
 
-- the PDF result emits 30 fewer meaningful visuals than the EPUB result;
-- qualification of the remaining `AnalyzeVisual` source images and execution
-  of mixed visual-action pages require a separate, explicit increment.
+- visual qualification remains deliberately best-effort; an unqualified asset
+  requires the user to make the final content decision;
+- the performance figures require repeated runs before they can support a
+  stable performance claim.

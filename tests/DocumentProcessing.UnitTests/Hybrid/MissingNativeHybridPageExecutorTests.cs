@@ -2,8 +2,10 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
+using DocumentProcessing.Core.Results;
 using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Visual;
@@ -364,6 +366,196 @@ public sealed class MissingNativeHybridPageExecutorTests
     }
 
     [Fact]
+    public async Task ExecuteWithPrecomputedLayoutAsync_TextBackedSourceVisual_PreservesUnqualifiedAndOcrsText()
+    {
+        const int physicalPageNumber =
+            77;
+
+        var text =
+            new LayoutObservation(
+                physicalPageNumber,
+                observationSequence:
+                    0,
+                readingOrder:
+                    0,
+                LayoutObservationKind.Text,
+                new NormalizedRectangle(
+                    0.10,
+                    0.10,
+                    0.90,
+                    0.40),
+                "text");
+
+        var recognizer =
+            new FakeRegionTextRecognizer(
+                "Recovered logical formula.");
+
+        var executor =
+            new MissingNativeHybridPageExecutor(
+                new FakePageLayoutAnalyzer(
+                    []),
+                recognizer,
+                new VisualAssetPreserver());
+
+        await using var raster =
+            new FakeRasterizationSession();
+
+        await using var pageBytes =
+            new MemoryStream();
+
+        var pageRaster =
+            await raster.RenderPageAsync(
+                physicalPageNumber,
+                pageBytes);
+
+        await using var destination =
+            new MemoryStream();
+
+        var page =
+            await executor.ExecuteWithPrecomputedLayoutAsync(
+                MissingPage(
+                    physicalPageNumber),
+                MissingDecision(
+                    physicalPageNumber),
+                new PageExecutionPlan(
+                    physicalPageNumber,
+                    TextExecutionMode.TargetedOcrRecovery,
+                    [
+                        new VisualElementExecutionPlan(
+                            sourceVisualIndex:
+                                0,
+                            VisualExecutionAction.AnalyzeVisual)
+                    ]),
+                [
+                    SourceVisual(
+                        sourceVisualIndex:
+                            0,
+                        text.Bounds)
+                ],
+                raster,
+                pageRaster,
+                new LayoutAnalysisResult(
+                    "fake-layout",
+                    physicalPageNumber,
+                    [text]),
+                SourceSha256,
+                (observation, cancellationToken) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return ValueTask.FromResult<Stream>(
+                        destination);
+                });
+
+        Assert.Equal(
+            2,
+            page.Elements.Count);
+
+        var visual =
+            Assert.Single(
+                page.Elements,
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Visual);
+
+        Assert.Equal(
+            DocumentVisualQualification.Unqualified,
+            visual.PreservedVisual?.Qualification);
+
+        Assert.Equal(
+            "Recovered logical formula.",
+            Assert.Single(
+                    page.Elements,
+                    element =>
+                        element.Kind ==
+                        HybridDocumentElementKind.Text)
+                .Text);
+
+        Assert.Equal(
+            1,
+            recognizer.CallCount);
+    }
+
+    [Fact]
+    public async Task ExecuteWithPrecomputedLayoutAsync_FullFirstPageDocumentTitle_ExcludesCover()
+    {
+        const int physicalPageNumber =
+            1;
+
+        var title =
+            new LayoutObservation(
+                physicalPageNumber,
+                observationSequence:
+                    0,
+                readingOrder:
+                    0,
+                LayoutObservationKind.Heading,
+                new NormalizedRectangle(
+                    0.10,
+                    0.10,
+                    0.90,
+                    0.30),
+                "doc_title");
+
+        var executor =
+            new MissingNativeHybridPageExecutor(
+                new FakePageLayoutAnalyzer(
+                    []),
+                new FakeRegionTextRecognizer(
+                    "Recovered title."),
+                new VisualAssetPreserver());
+
+        await using var raster =
+            new FakeRasterizationSession();
+
+        await using var pageBytes =
+            new MemoryStream();
+
+        var pageRaster =
+            await raster.RenderPageAsync(
+                physicalPageNumber,
+                pageBytes);
+
+        var page =
+            await executor.ExecuteWithPrecomputedLayoutAsync(
+                MissingPage(
+                    physicalPageNumber),
+                MissingDecision(
+                    physicalPageNumber),
+                new PageExecutionPlan(
+                    physicalPageNumber,
+                    TextExecutionMode.TargetedOcrRecovery,
+                    [
+                        new VisualElementExecutionPlan(
+                            sourceVisualIndex:
+                                0,
+                            VisualExecutionAction.AnalyzeVisual)
+                    ]),
+                [
+                    SourceVisual(
+                        sourceVisualIndex:
+                            0,
+                        new NormalizedRectangle(
+                            0,
+                            0,
+                            1,
+                            1))
+                ],
+                raster,
+                pageRaster,
+                new LayoutAnalysisResult(
+                    "fake-layout",
+                    physicalPageNumber,
+                    [title]),
+                SourceSha256);
+
+        Assert.DoesNotContain(
+            page.Elements,
+            element =>
+                element.Kind ==
+                HybridDocumentElementKind.Visual);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_FutureNonTextKind_IsDeferred()
     {
         var futureKind =
@@ -451,6 +643,31 @@ public sealed class MissingNativeHybridPageExecutorTests
                 NativeTextStatus.Missing),
             new PageProcessingPlan(
                 PageProcessingRoute.LayoutWithTargetedOcrRecovery));
+
+    private static VisualRasterObservation SourceVisual(
+        int sourceVisualIndex,
+        NormalizedRectangle bounds) =>
+        new(
+            sourceVisualIndex,
+            declaredPageBounds:
+                bounds,
+            VisualRasterDecodeSource.RawEmbeddedImage,
+            pixelWidth:
+                100,
+            pixelHeight:
+                100,
+            backgroundUniformity:
+                1,
+            VisualForegroundState.Measured,
+            foregroundPixelRatio:
+                0.25,
+            VisualPixelInteractionKind.NoForegroundWordIntersection,
+            nativeWordsTouchedRatio:
+                0,
+            significantComponentCount:
+                1,
+            effectiveVisualBounds:
+                bounds);
 
     private sealed class FakePageLayoutAnalyzer(
         IReadOnlyList<LayoutObservation> observations)

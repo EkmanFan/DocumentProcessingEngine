@@ -2,6 +2,7 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Core.Planning;
@@ -78,6 +79,10 @@ public sealed class NativePresentHybridPageExecutor
         return await ExecutePreparedAsync(
                 sourcePage,
                 decision,
+                sourceVisualPlan:
+                    null,
+                sourceVisualObservations:
+                    [],
                 rasterSession,
                 prepared.PageRaster,
                 prepared.Layout,
@@ -163,6 +168,35 @@ public sealed class NativePresentHybridPageExecutor
             openVisualDestinationAsync = null,
         CancellationToken cancellationToken = default)
     {
+        return await ExecuteWithPrecomputedLayoutAsync(
+                sourcePage,
+                decision,
+                sourceVisualPlan:
+                    null,
+                sourceVisualObservations:
+                    [],
+                rasterSession,
+                pageRaster,
+                layout,
+                sourceDocumentSha256,
+                openVisualDestinationAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async ValueTask<HybridDocumentPage> ExecuteWithPrecomputedLayoutAsync(
+        DocumentExtractionPage sourcePage,
+        PageProcessingDecision decision,
+        PageExecutionPlan? sourceVisualPlan,
+        IReadOnlyList<VisualRasterObservation> sourceVisualObservations,
+        IDocumentRasterizationSession rasterSession,
+        RasterRenderResult pageRaster,
+        LayoutAnalysisResult layout,
+        string sourceDocumentSha256,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync = null,
+        CancellationToken cancellationToken = default)
+    {
         ValidateRequest(
             sourcePage,
             decision,
@@ -174,6 +208,9 @@ public sealed class NativePresentHybridPageExecutor
 
         ArgumentNullException.ThrowIfNull(
             layout);
+
+        ArgumentNullException.ThrowIfNull(
+            sourceVisualObservations);
 
         cancellationToken
             .ThrowIfCancellationRequested();
@@ -189,6 +226,8 @@ public sealed class NativePresentHybridPageExecutor
         return await ExecutePreparedAsync(
                 sourcePage,
                 decision,
+                sourceVisualPlan,
+                sourceVisualObservations,
                 rasterSession,
                 pageRaster,
                 layout,
@@ -201,6 +240,8 @@ public sealed class NativePresentHybridPageExecutor
     private async ValueTask<HybridDocumentPage> ExecutePreparedAsync(
         DocumentExtractionPage sourcePage,
         PageProcessingDecision decision,
+        PageExecutionPlan? sourceVisualPlan,
+        IReadOnlyList<VisualRasterObservation> sourceVisualObservations,
         IDocumentRasterizationSession rasterSession,
         RasterRenderResult pageRaster,
         LayoutAnalysisResult layout,
@@ -209,22 +250,56 @@ public sealed class NativePresentHybridPageExecutor
             openVisualDestinationAsync,
         CancellationToken cancellationToken)
     {
+        var executionLayout =
+            layout;
+
+        LayoutVisualEvidence[] sourceBacked =
+            [];
+
+        if (sourceVisualPlan is not null &&
+            sourceVisualObservations.Count >
+                0 &&
+            !SourceBackedLayoutVisualMatcher
+                .TryResolveWithSourceFigures(
+                    sourceVisualPlan,
+                    sourceVisualObservations,
+                    layout,
+                    out executionLayout,
+                    out sourceBacked))
+        {
+            throw new InvalidDataException(
+                $"Physical page {sourcePage.PhysicalPageNumber} could not " +
+                "resolve every source-backed visual after layout analysis.");
+        }
+
         var pairings =
             _textExecutor
                 .CreateNativePresentPairings(
                     sourcePage,
-                    layout);
+                    executionLayout);
 
         var ocrTargets =
             _textExecutor
                 .CreateOcrTargets(
-                    layout,
+                    executionLayout,
                     pageRaster);
 
         var visualEvidence =
             _visualExecutor
                 .Assess(
-                    layout);
+                    executionLayout)
+                .ToDictionary(
+                    pair =>
+                        pair.Key,
+                    pair =>
+                        pair.Value);
+
+        foreach (var evidence in
+                 sourceBacked)
+        {
+            visualEvidence[evidence.Observation.ObservationSequence] =
+                evidence;
+        }
 
         if (HybridLayoutVisualExecutor
                 .RequiresPreservationDestination(
@@ -238,10 +313,10 @@ public sealed class NativePresentHybridPageExecutor
 
         var elements =
             new List<HybridDocumentElement>(
-                layout.Observations.Count);
+                executionLayout.Observations.Count);
 
         foreach (var observation in
-                 layout.Observations
+                 executionLayout.Observations
                      .OrderBy(
                          item =>
                              item.ReadingOrder ??
@@ -286,6 +361,14 @@ public sealed class NativePresentHybridPageExecutor
             if (observation.Kind ==
                 LayoutObservationKind.Figure)
             {
+                if (SourceBackedLayoutVisualMatcher
+                    .IsBackendFigureCoveredBySourceVisual(
+                        observation,
+                        sourceBacked))
+                {
+                    continue;
+                }
+
                 if (!visualEvidence.TryGetValue(
                         observation.ObservationSequence,
                         out var evidence))

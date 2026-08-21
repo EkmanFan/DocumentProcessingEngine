@@ -251,7 +251,8 @@ internal static class DocumentProcessingResultProjector
                 visual.ContentLength,
             contentSha256:
                 visual.ContentSha256,
-            rasterDerivation);
+            rasterDerivation,
+            visual.Qualification);
     }
 
     private static DocumentElementKind MapElementKind(

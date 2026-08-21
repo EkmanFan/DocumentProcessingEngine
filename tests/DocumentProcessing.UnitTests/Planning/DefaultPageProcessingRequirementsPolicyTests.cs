@@ -452,6 +452,9 @@ public sealed class DefaultPageProcessingRequirementsPolicyTests
             VisualEvidenceKind.StructuredContentMeaningfulVisual =>
                 VisualDisposition.PreserveMeaningfulVisual,
 
+            VisualEvidenceKind.SourceBackedUnqualifiedVisual =>
+                VisualDisposition.PreserveUnqualifiedVisual,
+
             _ =>
                 throw new ArgumentOutOfRangeException(
                     nameof(visualEvidence),

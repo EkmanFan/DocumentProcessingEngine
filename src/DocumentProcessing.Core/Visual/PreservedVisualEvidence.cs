@@ -1,5 +1,6 @@
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Raster;
+using DocumentProcessing.Core.Results;
 
 namespace DocumentProcessing.Core.Visual;
 
@@ -21,7 +22,9 @@ public sealed record PreservedVisualEvidence
         int sourceRasterPixelHeight,
         PixelRectangle crop,
         long contentLength,
-        string contentSha256)
+        string contentSha256,
+        DocumentVisualQualification qualification =
+            DocumentVisualQualification.Meaningful)
     {
         ArgumentNullException.ThrowIfNull(sourceLayoutObservation);
 
@@ -75,6 +78,13 @@ public sealed record PreservedVisualEvidence
                 "Preserved visual content length must be greater than zero.");
         }
 
+        if (!Enum.IsDefined(
+                qualification))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(qualification));
+        }
+
         ProfileId = profileId.Trim();
         MediaType = mediaType.Trim().ToLowerInvariant();
         SourceLayoutObservation = sourceLayoutObservation;
@@ -86,6 +96,9 @@ public sealed record PreservedVisualEvidence
             NormalizeSha256(
                 contentSha256,
                 nameof(contentSha256));
+
+        Qualification =
+            qualification;
     }
 
     public string SourceDocumentSha256 { get; }
@@ -105,6 +118,8 @@ public sealed record PreservedVisualEvidence
     public long ContentLength { get; }
 
     public string ContentSha256 { get; }
+
+    public DocumentVisualQualification Qualification { get; }
 
     private static string NormalizeSha256(
         string value,

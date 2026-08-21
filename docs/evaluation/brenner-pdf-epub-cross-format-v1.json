@@ -35,25 +35,33 @@
     "symmetricOverlapPercent": 99.3007
   },
   "visuals": {
-    "pdfAssets": 99,
+    "pdfAssets": 129,
     "epubAssets": 129,
-    "orderedPdfAssetsWithEpubCounterpart": 99,
-    "epubOnlyAssets": 30,
+    "orderedPdfAssetsWithEpubCounterpart": 129,
+    "epubOnlyAssets": 0,
+    "pdfMeaningfulAssets": 111,
+    "pdfUnqualifiedAssets": 18,
+    "pdfPublicationPresentationExcluded": 1,
     "pdfEmbeddedImageOccurrences": 130,
     "pdfPlannedPreserve": 106,
-    "pdfPlannedAnalyze": 24
+    "pdfPlannedAnalyze": 24,
+    "reviewedAnalyzeResolvedMeaningful": 5,
+    "reviewedAnalyzeResolvedUnqualified": 18,
+    "reviewedAnalyzeResolvedPresentation": 1
   },
   "performance": {
-    "elapsedSeconds": 391.63,
-    "engineMaximumResidentMemoryKiB": 505076,
-    "ppStructurePeakBytes": 9908191232,
-    "paddleOcrPeakBytes": 3558096896,
-    "ppStructureCalls": 83,
+    "elapsedSeconds": 522.98,
+    "engineMaximumResidentMemoryKiB": 607344,
+    "ppStructurePeakBytes": 9691389952,
+    "paddleOcrPeakBytes": 3348385792,
+    "ppStructureCalls": 84,
     "paddleOcrCalls": 5
   },
   "outcome": {
     "sourceBackedFormulaRule": "PASS",
     "completeProcessing": "PASS",
+    "pdfTextUnchangedFromPriorReference": true,
+    "orderedVisualCorrespondence": "PASS",
     "textExactMatch": false,
     "visualExactMatch": false
   }

@@ -26,6 +26,12 @@ public enum VisualDisposition
     PreserveMeaningfulVisual,
 
     /// <summary>
+    /// The visual could not be qualified confidently after analysis, but must
+    /// remain available to the consumer rather than being discarded.
+    /// </summary>
+    PreserveUnqualifiedVisual,
+
+    /// <summary>
     /// Deterministic evidence is insufficient for a safe disposition.
     /// Processing must remain conservative.
     /// </summary>

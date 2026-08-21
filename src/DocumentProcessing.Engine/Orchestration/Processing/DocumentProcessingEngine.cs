@@ -7,6 +7,7 @@ using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Results;
+using DocumentProcessing.Engine.Hybrid;
 
 namespace DocumentProcessing.Engine.Orchestration;
 
@@ -271,7 +272,10 @@ public sealed class DocumentProcessingEngine
                             prepared.Source,
                             new UserLayoutVisualAssetWriteRequest(
                                 selection.DocumentFormat.Format,
-                                visual),
+                                visual,
+                                SourceBackedLayoutVisualMatcher
+                                    .GetQualification(
+                                        visual)),
                             token);
 
         return await processor

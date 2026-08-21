@@ -2,6 +2,7 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Planning;
+using DocumentProcessing.Core.Results;
 
 namespace DocumentProcessing.Engine.Hybrid;
 
@@ -16,6 +17,74 @@ internal static class SourceBackedLayoutVisualMatcher
 {
     private const string SyntheticRawLabelPrefix =
         "source_visual:";
+
+    private const string SyntheticUnqualifiedRawLabelPrefix =
+        "source_visual_unqualified:";
+
+    private const double MinimumStrongOverlapRatio =
+        0.5;
+
+    public static bool TryResolveWithSourceFigures(
+        PageExecutionPlan candidatePlan,
+        IReadOnlyList<VisualRasterObservation> sourceVisualObservations,
+        LayoutAnalysisResult layout,
+        out LayoutAnalysisResult executionLayout,
+        out LayoutVisualEvidence[] resolved)
+    {
+        executionLayout =
+            AddSourceFigures(
+                candidatePlan,
+                sourceVisualObservations,
+                layout);
+
+        return TryResolve(
+            candidatePlan,
+            sourceVisualObservations,
+            executionLayout,
+            out resolved);
+    }
+
+    public static bool IsBackendFigureCoveredBySourceVisual(
+        LayoutObservation observation,
+        IReadOnlyList<LayoutVisualEvidence> sourceBacked)
+    {
+        ArgumentNullException.ThrowIfNull(
+            observation);
+
+        ArgumentNullException.ThrowIfNull(
+            sourceBacked);
+
+        return observation.Kind ==
+                   LayoutObservationKind.Figure &&
+               observation.RawLabel?.StartsWith(
+                   SyntheticRawLabelPrefix,
+                   StringComparison.Ordinal) !=
+                   true &&
+               observation.RawLabel?.StartsWith(
+                   SyntheticUnqualifiedRawLabelPrefix,
+                   StringComparison.Ordinal) !=
+                   true &&
+               sourceBacked.Any(
+                   evidence =>
+                       SmallerAreaOverlapRatio(
+                           observation.Bounds,
+                           evidence.Observation.Bounds) >=
+                       MinimumStrongOverlapRatio);
+    }
+
+    public static DocumentVisualQualification GetQualification(
+        LayoutObservation observation)
+    {
+        ArgumentNullException.ThrowIfNull(
+            observation);
+
+        return observation.RawLabel?.StartsWith(
+                   SyntheticUnqualifiedRawLabelPrefix,
+                   StringComparison.Ordinal) ==
+               true
+            ? DocumentVisualQualification.Unqualified
+            : DocumentVisualQualification.Meaningful;
+    }
 
     public static LayoutAnalysisResult AddSourceFigures(
         PageExecutionPlan candidatePlan,
@@ -48,8 +117,8 @@ internal static class SourceBackedLayoutVisualMatcher
             candidatePlan.VisualElements
                 .Where(
                     visual =>
-                        visual.Action ==
-                        VisualExecutionAction.PreserveMeaningfulVisual)
+                        IsSourcePreservationCandidate(
+                            visual.Action))
                 .OrderBy(
                     visual =>
                         visual.SourceVisualIndex)
@@ -58,21 +127,14 @@ internal static class SourceBackedLayoutVisualMatcher
                         sourceByIndex.TryGetValue(
                             visual.SourceVisualIndex,
                             out var source)
-                            ? source
+                            ? new PlannedSourceVisual(
+                                visual,
+                                source)
                             : null)
                 .Where(
                     source =>
                         source is not null)
-                .Cast<VisualRasterObservation>()
-                .Where(
-                    source =>
-                        !layout.Observations.Any(
-                            observation =>
-                                string.Equals(
-                                    observation.RawLabel,
-                                    SyntheticRawLabelPrefix +
-                                    source.SourceVisualIndex,
-                                    StringComparison.Ordinal)))
+                .Cast<PlannedSourceVisual>()
                 .ToArray();
 
         if (sources.Length ==
@@ -107,14 +169,50 @@ internal static class SourceBackedLayoutVisualMatcher
         foreach (var source in
                  sources)
         {
+            var evidenceKind =
+                ResolveSourceBackedEvidenceKind(
+                    candidatePlan.PhysicalPageNumber,
+                    source.Plan.Action,
+                    source.Observation,
+                    layout);
+
+            if (evidenceKind ==
+                VisualEvidenceKind.PublicationPresentationVisual)
+            {
+                continue;
+            }
+
+            var rawLabel =
+                CreateSyntheticRawLabel(
+                    evidenceKind,
+                    source.Observation.SourceVisualIndex);
+
+            if (layout.Observations.Any(
+                    observation =>
+                        string.Equals(
+                            observation.RawLabel,
+                            rawLabel,
+                            StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
             var bounds =
                 ResolveSourceBounds(
-                    source);
+                    source.Observation);
 
-            if (!TryResolveInsertionIndex(
-                    originals,
-                    bounds,
-                    out var insertionIndex))
+            int insertionIndex;
+
+            if (evidenceKind ==
+                VisualEvidenceKind.SourceBackedUnqualifiedVisual)
+            {
+                insertionIndex =
+                    originals.Length;
+            }
+            else if (!TryResolveInsertionIndex(
+                         originals,
+                         bounds,
+                         out insertionIndex))
             {
                 return layout;
             }
@@ -122,7 +220,7 @@ internal static class SourceBackedLayoutVisualMatcher
             insertions.Add(
                 new SourceFigureInsertion(
                     insertionIndex,
-                    source.SourceVisualIndex,
+                    source.Observation.SourceVisualIndex,
                     new LayoutObservation(
                         layout.PhysicalPageNumber,
                         nextSequence,
@@ -130,8 +228,7 @@ internal static class SourceBackedLayoutVisualMatcher
                             0,
                         LayoutObservationKind.Figure,
                         bounds,
-                        SyntheticRawLabelPrefix +
-                        source.SourceVisualIndex)));
+                        rawLabel)));
 
             nextSequence++;
         }
@@ -214,8 +311,8 @@ internal static class SourceBackedLayoutVisualMatcher
             candidatePlan.VisualElements
                 .Where(
                     visual =>
-                        visual.Action ==
-                        VisualExecutionAction.PreserveMeaningfulVisual)
+                        IsSourcePreservationCandidate(
+                            visual.Action))
                 .OrderBy(
                     visual =>
                         visual.SourceVisualIndex)
@@ -247,9 +344,23 @@ internal static class SourceBackedLayoutVisualMatcher
                 return false;
             }
 
+            var evidenceKind =
+                ResolveSourceBackedEvidenceKind(
+                    candidatePlan.PhysicalPageNumber,
+                    plan.Action,
+                    source,
+                    layout);
+
+            if (evidenceKind ==
+                VisualEvidenceKind.PublicationPresentationVisual)
+            {
+                continue;
+            }
+
             var rawLabel =
-                SyntheticRawLabelPrefix +
-                plan.SourceVisualIndex;
+                CreateSyntheticRawLabel(
+                    evidenceKind,
+                    plan.SourceVisualIndex);
 
             var matches =
                 layout.Observations
@@ -276,7 +387,7 @@ internal static class SourceBackedLayoutVisualMatcher
             sourceBacked.Add(
                 new LayoutVisualEvidence(
                     matches[0],
-                    VisualEvidenceKind.SourceBackedMeaningfulVisual));
+                    evidenceKind));
         }
 
         resolved =
@@ -289,9 +400,168 @@ internal static class SourceBackedLayoutVisualMatcher
                         evidence.Observation.ObservationSequence)
                 .ToArray();
 
-        return resolved.Length ==
-               preservingPlans.Length;
+        return true;
     }
+
+    private static bool IsSourcePreservationCandidate(
+        VisualExecutionAction action) =>
+        action is
+            VisualExecutionAction.PreserveMeaningfulVisual or
+            VisualExecutionAction.PreserveUnqualifiedVisual or
+            VisualExecutionAction.AnalyzeVisual;
+
+    private static VisualEvidenceKind ResolveSourceBackedEvidenceKind(
+        int physicalPageNumber,
+        VisualExecutionAction action,
+        VisualRasterObservation source,
+        LayoutAnalysisResult layout) =>
+        action switch
+        {
+            VisualExecutionAction.PreserveMeaningfulVisual =>
+                VisualEvidenceKind.SourceBackedMeaningfulVisual,
+
+            VisualExecutionAction.PreserveUnqualifiedVisual =>
+                VisualEvidenceKind.SourceBackedUnqualifiedVisual,
+
+            VisualExecutionAction.AnalyzeVisual
+                when IsPublicationPresentationVisual(
+                    physicalPageNumber,
+                    source,
+                    layout) =>
+                VisualEvidenceKind.PublicationPresentationVisual,
+
+            VisualExecutionAction.AnalyzeVisual
+                when HasStrongMeaningfulLayoutEvidence(
+                    source,
+                    layout) =>
+                VisualEvidenceKind.SourceBackedMeaningfulVisual,
+
+            VisualExecutionAction.AnalyzeVisual =>
+                VisualEvidenceKind.SourceBackedUnqualifiedVisual,
+
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(action),
+                    action,
+                    "Unsupported source-visual preservation action.")
+        };
+
+    private static bool IsPublicationPresentationVisual(
+        int physicalPageNumber,
+        VisualRasterObservation source,
+        LayoutAnalysisResult layout)
+    {
+        if (physicalPageNumber !=
+            1)
+        {
+            return false;
+        }
+
+        var bounds =
+            ResolveSourceBounds(
+                source);
+
+        var coversPage =
+            bounds.Left <=
+                0.01 &&
+            bounds.Top <=
+                0.01 &&
+            bounds.Right >=
+                0.99 &&
+            bounds.Bottom >=
+                0.99;
+
+        return coversPage &&
+               layout.Observations.Any(
+                   observation =>
+                       string.Equals(
+                           observation.RawLabel,
+                           "doc_title",
+                           StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool HasStrongMeaningfulLayoutEvidence(
+        VisualRasterObservation source,
+        LayoutAnalysisResult layout)
+    {
+        var sourceBounds =
+            ResolveSourceBounds(
+                source);
+
+        return layout.Observations.Any(
+            observation =>
+                (
+                    observation.Kind ==
+                        LayoutObservationKind.Table ||
+                    string.Equals(
+                        observation.RawLabel,
+                        "formula",
+                        StringComparison.OrdinalIgnoreCase)
+                ) &&
+                SmallerAreaOverlapRatio(
+                    sourceBounds,
+                    observation.Bounds) >=
+                MinimumStrongOverlapRatio);
+    }
+
+    private static double SmallerAreaOverlapRatio(
+        NormalizedRectangle first,
+        NormalizedRectangle second)
+    {
+        var intersectionWidth =
+            Math.Max(
+                0,
+                Math.Min(
+                    first.Right,
+                    second.Right) -
+                Math.Max(
+                    first.Left,
+                    second.Left));
+
+        var intersectionHeight =
+            Math.Max(
+                0,
+                Math.Min(
+                    first.Bottom,
+                    second.Bottom) -
+                Math.Max(
+                    first.Top,
+                    second.Top));
+
+        var smallerArea =
+            Math.Min(
+                (first.Right - first.Left) *
+                (first.Bottom - first.Top),
+                (second.Right - second.Left) *
+                (second.Bottom - second.Top));
+
+        return smallerArea <=
+                0
+            ? 0
+            : intersectionWidth *
+              intersectionHeight /
+              smallerArea;
+    }
+
+    private static string CreateSyntheticRawLabel(
+        VisualEvidenceKind evidenceKind,
+        int sourceVisualIndex) =>
+        evidenceKind switch
+        {
+            VisualEvidenceKind.SourceBackedMeaningfulVisual =>
+                SyntheticRawLabelPrefix +
+                sourceVisualIndex,
+
+            VisualEvidenceKind.SourceBackedUnqualifiedVisual =>
+                SyntheticUnqualifiedRawLabelPrefix +
+                sourceVisualIndex,
+
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(evidenceKind),
+                    evidenceKind,
+                    "Synthetic source Figure requires preserved source evidence.")
+        };
 
     private static bool TryResolveInsertionIndex(
         IReadOnlyList<LayoutObservation> originals,
@@ -365,4 +635,8 @@ internal static class SourceBackedLayoutVisualMatcher
         int Index,
         int SourceVisualIndex,
         LayoutObservation Observation);
+
+    private sealed record PlannedSourceVisual(
+        VisualElementExecutionPlan Plan,
+        VisualRasterObservation Observation);
 }

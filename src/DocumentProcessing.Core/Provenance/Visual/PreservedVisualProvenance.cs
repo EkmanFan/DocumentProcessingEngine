@@ -1,4 +1,5 @@
 using DocumentProcessing.Core.Raster;
+using DocumentProcessing.Core.Results;
 
 namespace DocumentProcessing.Core.Provenance;
 
@@ -16,7 +17,9 @@ public sealed record PreservedVisualProvenance
         int sourceRasterPixelHeight,
         PixelRectangle crop,
         long contentLength,
-        string contentSha256)
+        string contentSha256,
+        DocumentVisualQualification qualification =
+            DocumentVisualQualification.Meaningful)
     {
         if (string.IsNullOrWhiteSpace(
                 profileId))
@@ -52,6 +55,13 @@ public sealed record PreservedVisualProvenance
                 nameof(contentLength));
         }
 
+        if (!Enum.IsDefined(
+                qualification))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(qualification));
+        }
+
         ProfileId =
             profileId.Trim();
 
@@ -72,6 +82,9 @@ public sealed record PreservedVisualProvenance
             NormalizeSha256(
                 contentSha256,
                 nameof(contentSha256));
+
+        Qualification =
+            qualification;
     }
 
     public string ProfileId { get; }
@@ -87,6 +100,8 @@ public sealed record PreservedVisualProvenance
     public long ContentLength { get; }
 
     public string ContentSha256 { get; }
+
+    public DocumentVisualQualification Qualification { get; }
 
     private static string NormalizeSha256(
         string value,

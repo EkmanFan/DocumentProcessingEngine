@@ -209,6 +209,155 @@ public sealed class SourceBackedLayoutVisualMatcherTests
             resolved);
     }
 
+    [Fact]
+    public void TryResolve_AnalyzeVisualWithFormula_QualifiesSourceAsMeaningful()
+    {
+        var source =
+            Source(
+                0,
+                0.10,
+                0.10,
+                0.90,
+                0.40);
+
+        var actual =
+            SourceBackedLayoutVisualMatcher
+                .TryResolveWithSourceFigures(
+                    Plan(
+                        Analyze(0)),
+                    [source],
+                    Layout(
+                        Figure(
+                            0,
+                            0,
+                            0.20,
+                            0.15,
+                            0.80,
+                            0.35,
+                            "formula")),
+                    out _,
+                    out var resolved);
+
+        Assert.True(
+            actual);
+
+        var evidence =
+            Assert.Single(
+                resolved);
+
+        Assert.Equal(
+            VisualEvidenceKind.SourceBackedMeaningfulVisual,
+            evidence.Kind);
+
+        Assert.Equal(
+            "source_visual:0",
+            evidence.Observation.RawLabel);
+    }
+
+    [Fact]
+    public void TryResolve_AnalyzeVisualWithoutStrongCategory_PreservesUnqualified()
+    {
+        var source =
+            Source(
+                0,
+                0.10,
+                0.10,
+                0.90,
+                0.40);
+
+        var actual =
+            SourceBackedLayoutVisualMatcher
+                .TryResolveWithSourceFigures(
+                    Plan(
+                        Analyze(0)),
+                    [source],
+                    Layout(
+                        Figure(
+                            0,
+                            0,
+                            0.20,
+                            0.15,
+                            0.80,
+                            0.35,
+                            "image")),
+                    out var executionLayout,
+                    out var resolved);
+
+        Assert.True(
+            actual);
+
+        var evidence =
+            Assert.Single(
+                resolved);
+
+        Assert.Equal(
+            VisualEvidenceKind.SourceBackedUnqualifiedVisual,
+            evidence.Kind);
+
+        Assert.Equal(
+            "source_visual_unqualified:0",
+            evidence.Observation.RawLabel);
+
+        Assert.Equal(
+            "source_visual_unqualified:0",
+            executionLayout.Observations[^1].RawLabel);
+    }
+
+    [Fact]
+    public void TryResolve_FirstPageFullCanvasWithDocumentTitle_ExcludesCover()
+    {
+        var source =
+            Source(
+                0,
+                0,
+                0,
+                1,
+                1);
+
+        var actual =
+            SourceBackedLayoutVisualMatcher
+                .TryResolveWithSourceFigures(
+                    Plan(
+                        Analyze(0)),
+                    [source],
+                    new LayoutAnalysisResult(
+                        "fake-layout",
+                        physicalPageNumber:
+                            1,
+                        [
+                            new LayoutObservation(
+                                physicalPageNumber:
+                                    1,
+                                observationSequence:
+                                    0,
+                                readingOrder:
+                                    0,
+                                LayoutObservationKind.Heading,
+                                new NormalizedRectangle(
+                                    0.10,
+                                    0.10,
+                                    0.90,
+                                    0.30),
+                                "doc_title")
+                        ]),
+                    out var executionLayout,
+                    out var resolved);
+
+        Assert.True(
+            actual);
+
+        Assert.Empty(
+            resolved);
+
+        Assert.DoesNotContain(
+            executionLayout.Observations,
+            observation =>
+                observation.RawLabel?.StartsWith(
+                    "source_visual",
+                    StringComparison.Ordinal) ==
+                true);
+    }
+
     private static PageExecutionPlan Plan(
         params VisualElementExecutionPlan[] visuals) =>
         new(
@@ -222,6 +371,12 @@ public sealed class SourceBackedLayoutVisualMatcherTests
         new(
             sourceVisualIndex,
             VisualExecutionAction.PreserveMeaningfulVisual);
+
+    private static VisualElementExecutionPlan Analyze(
+        int sourceVisualIndex) =>
+        new(
+            sourceVisualIndex,
+            VisualExecutionAction.AnalyzeVisual);
 
     private static LayoutAnalysisResult Layout(
         params LayoutObservation[] observations) =>

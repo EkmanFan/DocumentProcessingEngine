@@ -14,7 +14,8 @@ namespace DocumentProcessing.Engine.Hybrid;
 ///
 /// A raw Figure label never authorizes preservation. Unknown evidence remains
 /// deferred, presentation-only evidence is omitted from the semantic hybrid
-/// stream, and only PreserveMeaningfulVisual opens a caller-owned destination.
+/// stream, and resolved meaningful or source-backed unqualified evidence opens
+/// a caller-owned destination with its exact qualification retained.
 /// </summary>
 internal sealed class HybridLayoutVisualExecutor
 {
@@ -68,8 +69,9 @@ internal sealed class HybridLayoutVisualExecutor
         return visualEvidence.Any(
             evidence =>
                 VisualEvidenceDispositionPolicy.Decide(
-                    evidence.Kind) ==
-                VisualDisposition.PreserveMeaningfulVisual);
+                    evidence.Kind) is
+                    VisualDisposition.PreserveMeaningfulVisual or
+                    VisualDisposition.PreserveUnqualifiedVisual);
     }
 
     public async ValueTask<HybridDocumentElement?> ExecuteAsync(
@@ -105,10 +107,11 @@ internal sealed class HybridLayoutVisualExecutor
                         evidence.Observation);
 
             case VisualDisposition.PreserveMeaningfulVisual:
+            case VisualDisposition.PreserveUnqualifiedVisual:
                 if (openVisualDestinationAsync is null)
                 {
                     throw new InvalidOperationException(
-                        "Meaningful layout visual preservation requires a " +
+                        "Layout visual preservation requires a " +
                         "caller-owned destination.");
                 }
 

@@ -465,6 +465,7 @@ public sealed class DefaultPageExecutionPlanCompilerTests
                 {
                     VisualDisposition.PresentationOnly,
                     VisualDisposition.PreserveMeaningfulVisual,
+                    VisualDisposition.PreserveUnqualifiedVisual,
                     VisualDisposition.RequiresVisualAnalysis
                 };
 
@@ -537,6 +538,9 @@ public sealed class DefaultPageExecutionPlanCompilerTests
 
             VisualDisposition.PreserveMeaningfulVisual =>
                 VisualExecutionAction.PreserveMeaningfulVisual,
+
+            VisualDisposition.PreserveUnqualifiedVisual =>
+                VisualExecutionAction.PreserveUnqualifiedVisual,
 
             VisualDisposition.RequiresVisualAnalysis =>
                 VisualExecutionAction.AnalyzeVisual,

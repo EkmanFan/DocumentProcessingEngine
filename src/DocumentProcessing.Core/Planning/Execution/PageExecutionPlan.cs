@@ -128,9 +128,19 @@ public sealed record PageExecutionPlan
                 visual.Action ==
                 VisualExecutionAction.PreserveMeaningfulVisual);
 
+    public bool RequiresUnqualifiedVisualPreservation =>
+        VisualElements.Any(
+            visual =>
+                visual.Action ==
+                VisualExecutionAction.PreserveUnqualifiedVisual);
+
+    public bool RequiresVisualPreservation =>
+        RequiresMeaningfulVisualPreservation ||
+        RequiresUnqualifiedVisualPreservation;
+
     public bool HasAdditionalSemanticWork =>
         TextMode !=
             TextExecutionMode.NativeText ||
         RequiresVisualAnalysis ||
-        RequiresMeaningfulVisualPreservation;
+        RequiresVisualPreservation;
 }

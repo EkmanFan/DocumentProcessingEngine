@@ -3,6 +3,7 @@ using System.Text;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Raster;
+using DocumentProcessing.Core.Results;
 using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Engine.Visual;
 
@@ -142,6 +143,34 @@ public sealed class LayoutVisualRegionPreserverTests
             Hash(
                 RegionBytes),
             preserved.ContentSha256);
+    }
+
+    [Fact]
+    public async Task PreserveAsync_SourceBackedUnqualifiedVisual_RetainsQualification()
+    {
+        await using var rasterSession =
+            new RecordingRasterizationSession();
+
+        await using var destination =
+            new MemoryStream();
+
+        var preserved =
+            await new LayoutVisualRegionPreserver()
+                .PreserveAsync(
+                    Evidence(
+                        VisualEvidenceKind.SourceBackedUnqualifiedVisual),
+                    rasterSession,
+                    FullPageRaster(),
+                    SourceSha,
+                    destination);
+
+        Assert.Equal(
+            DocumentVisualQualification.Unqualified,
+            preserved.Qualification);
+
+        Assert.Equal(
+            RegionBytes,
+            destination.ToArray());
     }
 
     [Fact]

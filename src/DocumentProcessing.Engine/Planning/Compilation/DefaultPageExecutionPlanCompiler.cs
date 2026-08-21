@@ -83,6 +83,9 @@ public sealed class DefaultPageExecutionPlanCompiler
                 VisualDisposition.PreserveMeaningfulVisual =>
                     VisualExecutionAction.PreserveMeaningfulVisual,
 
+                VisualDisposition.PreserveUnqualifiedVisual =>
+                    VisualExecutionAction.PreserveUnqualifiedVisual,
+
                 VisualDisposition.RequiresVisualAnalysis =>
                     VisualExecutionAction.AnalyzeVisual,
 

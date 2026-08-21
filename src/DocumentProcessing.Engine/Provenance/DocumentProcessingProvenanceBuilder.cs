@@ -205,7 +205,8 @@ public static class DocumentProcessingProvenanceBuilder
                     element.PreservedVisual.SourceRasterPixelHeight,
                     element.PreservedVisual.Crop,
                     element.PreservedVisual.ContentLength,
-                    element.PreservedVisual.ContentSha256);
+                    element.PreservedVisual.ContentSha256,
+                    element.PreservedVisual.Qualification);
 
         return new DocumentElementProvenance(
             sourceDocumentSha256,
