@@ -5,14 +5,15 @@ documents into structured, normalized, traceable, and quality-assessed
 `DocumentProcessingResult` instances.
 
 The primary product is the in-process `DocumentProcessingHost` API. The current
-runtime supports PDF sources. Its contracts and processing model are
-format-neutral so that future formats can supply native evidence and explicit
-technical capabilities without taking ownership of the processing policy.
+runtime supports PDF and EPUB sources. Its contracts and processing model are
+format-neutral so that additional formats can supply native evidence and
+explicit technical capabilities without taking ownership of the processing
+policy.
 
 ## Current status
 
 - Runtime: .NET 10.
-- Supported source format: PDF.
+- Supported source formats: PDF and EPUB.
 - Native extraction: PdfPig.
 - Optional paged enrichment: `pdftoppm`, PP-StructureV3 and PaddleOCR.
 - Consumer result: format-neutral `DocumentProcessingResult`.
@@ -52,6 +53,8 @@ Ownership is intentionally separated:
 - `DocumentProcessing.Engine` owns format selection and all processing policy.
 - `DocumentProcessing.Pdf` understands PDF representation and exposes native
   evidence, rasterization and native visual observations.
+- `DocumentProcessing.Epub` understands EPUB representation, owns the EPUBCheck
+  boundary and can write a reflowable EPUB from a completed portable result.
 - `DocumentProcessing.Core` contains format-neutral contracts and portable
   models.
 - layout and OCR providers execute technical operations; they do not decide
@@ -63,10 +66,11 @@ Dependency direction:
 DocumentProcessing.Core
         ↑
         ├── DocumentProcessing.Engine
-        └── DocumentProcessing.Pdf
+        ├── DocumentProcessing.Pdf
+        └── DocumentProcessing.Epub
 
 DocumentProcessing
-        └── Core + Engine + Pdf
+        └── Core + Engine + Pdf + Epub
 ```
 
 See [Current architecture](docs/architecture/current-architecture.md) for the
@@ -80,6 +84,7 @@ src/
   DocumentProcessing.Core/          neutral contracts and portable models
   DocumentProcessing.Engine/        assessment, planning and processing policy
   DocumentProcessing.Pdf/           PDF acquisition and technical capabilities
+  DocumentProcessing.Epub/          EPUB acquisition, validation and export
   DocumentProcessing/               consumer-facing Host and composition root
   DocumentProcessing.DualRunWorker/ isolated non-authoritative worker
 
@@ -147,6 +152,14 @@ The Habermas PDF/EPUB comparison subsequently identified standard XHTML
 V3 retains those notes exactly once, with cross-format and multi-corpus evidence
 in
 [`docs/evaluation/habermas-pdf-epub-text-comparison-v1.md`](docs/evaluation/habermas-pdf-epub-text-comparison-v1.md).
+
+The first reflowable publication-export increment lives in
+`DocumentProcessing.Epub`. `EpubPublicationExporter` consumes the canonical
+`DocumentProcessingResult`; the caller supplies publication metadata and a
+reader for the caller-owned visual bytes. The exporter verifies every visual
+against the result before packaging it. Current scope and the first Ehrman
+experiment are documented in
+[`docs/epub/epub-publication-export-prototype-v1.md`](docs/epub/epub-publication-export-prototype-v1.md).
 
 ## Consumer entry point
 

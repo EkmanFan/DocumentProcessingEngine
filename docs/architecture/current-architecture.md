@@ -127,7 +127,13 @@ Required constraints:
 - PDF and EPUB are registered production formats.
 - `DocumentProcessing.Epub` owns EPUB recognition, the EPUBCheck 5.3.0
   conformance boundary, package/spine/XHTML acquisition, EPUB source-location
-  facts and exact packaged-image materialization.
+  facts, exact packaged-image materialization and physical EPUB publication
+  writing.
+- `EpubPublicationExporter` writes a completed portable
+  `DocumentProcessingResult` as reflowable EPUB. The Engine remains the owner of
+  content meaning and selection; the format project owns only EPUB packaging.
+  Caller-owned visual bytes are reopened by an explicit reader and verified
+  against their portable length and SHA-256 custody before packaging.
 - the Engine projects structured EPUB evidence through its native non-paged
   assembly path, qualifies visuals from publication facts, optionally analyzes
   only unresolved raster images through PP-Structure when the user requests
@@ -156,6 +162,8 @@ Required constraints:
   `formula` region is discarded as visual evidence and native text remains.
 - PaddleOCR supplies targeted text recognition when planned.
 - the Engine returns the portable `DocumentProcessingResult` through the Host.
+- publication export is currently a direct `DocumentProcessing.Epub` API and is
+  not yet exposed through `DocumentProcessingHost`.
 
 Unsupported, invalid, ambiguous or temporarily unavailable formats are
 consumer-facing functional failures. Expected failures of a required external
