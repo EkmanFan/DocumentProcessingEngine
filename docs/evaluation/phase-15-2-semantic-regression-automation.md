@@ -96,7 +96,7 @@ At minimum:
 ```text
 Ehrman p233
   Missing → targeted OCR recovery
-  exact papyrus crop/hash
+  exact papyrus dimensions/decoded pixels
   Figure OCR = 0
   Imagine → for example
 
@@ -114,7 +114,7 @@ Ehrman p405
   Figure OCR = 0
 
 Habermas p40 / p43
-  exact meaningful visual crop/hash
+  exact meaningful visual dimensions/decoded pixels
 
 Habermas p70 / p78 / p79
   Healthy / NativeOnly
@@ -198,6 +198,18 @@ scripts/run-semantic-layout-regression.sh
 ```
 
 The runner evaluates the meaningful-visual controls from the versioned oracle against live PP-StructureV3 evidence and deterministic regional preservation.
+
+Visual custody and historical visual equality are deliberately separate:
+
+- the bytes written during the current run must exactly match their current
+  length and SHA-256 custody metadata;
+- the historical oracle requires exact dimensions and an exact SHA-256 over
+  the decoded RGBA pixels;
+- historical encoded length and SHA-256 remain in the oracle and report as
+  diagnostics, but do not fail a visually identical PNG that was recompressed.
+
+This remains an exact-pixel gate. It tolerates only a different lossless PNG
+encoding, not a changed pixel, crop, dimension, or visual.
 
 Initial baseline expectation:
 

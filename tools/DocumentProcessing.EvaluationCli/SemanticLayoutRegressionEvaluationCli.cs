@@ -10,6 +10,7 @@ using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Visual;
 using DocumentProcessing.Pdf;
 using DocumentProcessing.Engine.Planning;
+using StbImageSharp;
 
 namespace DocumentProcessing.EvaluationCli;
 
@@ -299,12 +300,30 @@ internal static class SemanticLayoutRegressionEvaluationCli
                     "does not match the preserved destination bytes.");
             }
 
+            var decodedIdentity =
+                ComputeDecodedRgbaIdentity(
+                    control.Id,
+                    destinationBytes);
+
+            if (decodedIdentity.Width !=
+                    preserved.Crop.Width ||
+                decodedIdentity.Height !=
+                    preserved.Crop.Height)
+            {
+                throw new InvalidDataException(
+                    $"Semantic control '{control.Id}' preserved visual decoded " +
+                    $"to {decodedIdentity.Width}x{decodedIdentity.Height}, but " +
+                    $"the preserved crop is {preserved.Crop.Width}x" +
+                    $"{preserved.Crop.Height}.");
+            }
+
             exactObserved =
                 new ExactVisualObservation(
-                    preserved.Crop.Width,
-                    preserved.Crop.Height,
+                    decodedIdentity.Width,
+                    decodedIdentity.Height,
                     preserved.ContentLength,
-                    preserved.ContentSha256);
+                    preserved.ContentSha256,
+                    decodedIdentity.RgbaSha256);
 
             preservationAuthorized =
                 true;
@@ -318,11 +337,9 @@ internal static class SemanticLayoutRegressionEvaluationCli
                       expectedExact.Width &&
                   exactObserved.Height ==
                       expectedExact.Height &&
-                  exactObserved.Bytes ==
-                      expectedExact.Bytes &&
                   string.Equals(
-                      exactObserved.Sha256,
-                      expectedExact.Sha256,
+                      exactObserved.DecodedRgbaSha256,
+                      expectedExact.DecodedRgbaSha256,
                       StringComparison.Ordinal);
 
         var semanticPass =
@@ -402,7 +419,10 @@ internal static class SemanticLayoutRegressionEvaluationCli
                 control.ExpectedExactVisual.Bytes,
                 NormalizeSha256(
                     control.Id,
-                    control.ExpectedExactVisual.Sha256));
+                    control.ExpectedExactVisual.Sha256),
+                NormalizeSha256(
+                    control.Id,
+                    control.ExpectedExactVisual.DecodedRgbaSha256));
         }
 
         if (control.Expected?.PreservedVisual is not null)
@@ -413,7 +433,10 @@ internal static class SemanticLayoutRegressionEvaluationCli
                 control.Expected.PreservedVisual.Bytes,
                 NormalizeSha256(
                     control.Id,
-                    control.Expected.PreservedVisual.Sha256));
+                    control.Expected.PreservedVisual.Sha256),
+                NormalizeSha256(
+                    control.Id,
+                    control.Expected.PreservedVisual.DecodedRgbaSha256));
         }
 
         return null;
@@ -543,6 +566,40 @@ internal static class SemanticLayoutRegressionEvaluationCli
         }
 
         return normalized;
+    }
+
+    private static DecodedRgbaIdentity ComputeDecodedRgbaIdentity(
+        string controlId,
+        byte[] encodedImage)
+    {
+        ImageResult decoded;
+
+        try
+        {
+            decoded =
+                ImageResult.FromMemory(
+                    encodedImage,
+                    ColorComponents.RedGreenBlueAlpha);
+        }
+        catch (OutOfMemoryException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidDataException(
+                $"Semantic control '{controlId}' preserved visual cannot be " +
+                "decoded for pixel comparison.",
+                exception);
+        }
+
+        return new DecodedRgbaIdentity(
+            decoded.Width,
+            decoded.Height,
+            Convert.ToHexString(
+                    SHA256.HashData(
+                        decoded.Data))
+                .ToLowerInvariant());
     }
 
     private static async Task<string> ComputeSha256Async(
@@ -877,7 +934,8 @@ internal static class SemanticLayoutRegressionEvaluationCli
         int Width,
         int Height,
         long Bytes,
-        string Sha256);
+        string Sha256,
+        string DecodedRgbaSha256);
 
     private sealed record LayoutSemanticRegressionReport(
         string SchemaVersion,
@@ -913,9 +971,15 @@ internal static class SemanticLayoutRegressionEvaluationCli
         int ObservationSequence,
         string Kind);
 
+    private sealed record DecodedRgbaIdentity(
+        int Width,
+        int Height,
+        string RgbaSha256);
+
     private sealed record ExactVisualObservation(
         int Width,
         int Height,
         long Bytes,
-        string Sha256);
+        string Sha256,
+        string DecodedRgbaSha256);
 }

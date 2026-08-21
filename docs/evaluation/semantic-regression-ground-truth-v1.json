@@ -29,7 +29,8 @@
           "width": 841,
           "height": 1398,
           "bytes": 1505768,
-          "sha256": "c4170e36da6d0bfdec419f8db199ba972baf3075887a264aa2e9e4d46e6e4e77"
+          "sha256": "c4170e36da6d0bfdec419f8db199ba972baf3075887a264aa2e9e4d46e6e4e77",
+          "decodedRgbaSha256": "85ebacec1b89ec1f1ecff65fd609eb32b831d5db5a0bb65b160df5365c5d65ba"
         }
       },
       "baselineClassification": "PASS"
@@ -148,7 +149,8 @@
         "width": 1678,
         "height": 1928,
         "bytes": 798598,
-        "sha256": "bffd8d7fd27462ab530f50c483aa39bad7849653c81960d15e8cf73c8c829f03"
+        "sha256": "bffd8d7fd27462ab530f50c483aa39bad7849653c81960d15e8cf73c8c829f03",
+        "decodedRgbaSha256": "0b121a8dc1a485f6591ca5ae1f4131110c02fbaa88514434719fb710669c0018"
       },
       "baselineClassification": "PASS"
     },
@@ -165,7 +167,8 @@
         "width": 1702,
         "height": 1173,
         "bytes": 878872,
-        "sha256": "bf20176970e097a3d20d1142db44488f7aba4e7ca8e76c5c8bf7b6b799b813f2"
+        "sha256": "bf20176970e097a3d20d1142db44488f7aba4e7ca8e76c5c8bf7b6b799b813f2",
+        "decodedRgbaSha256": "eea27d271d4361c44310a99396ddacce4af2681fe3a5f177f52fd1ff14577ccf"
       },
       "baselineClassification": "PASS"
     },
