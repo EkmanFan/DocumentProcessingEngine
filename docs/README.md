@@ -27,6 +27,7 @@ The root [README](../README.md) is the current operational entry point.
 | `architecture/phase-*.md` | Historical | Increment decisions pinned to the `Baseline` recorded in each file. |
 | `evaluation/target-architecture-reference-v1.md` | Frozen evidence | Proof that the cutover baseline satisfied the target architecture. |
 | `evaluation/local-fixture-layout.md` | Current | Local test-document organization and pinned PNG toolchain. |
+| `evaluation/habermas-epub-reference-v1.md` | Frozen evidence | Exact EPUB identity, official conformance result and p18/p28 structural controls. |
 | `evaluation/` | Historical evidence | Reproducible corpus, diagnostic, performance and semantic observations. |
 | Domain folders such as `orchestration/`, `reconciliation/`, `result/` | Versioned decision records | Design rationale and acceptance evidence for individual increments. |
 

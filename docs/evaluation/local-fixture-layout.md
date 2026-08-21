@@ -43,6 +43,20 @@ The main regression scans only the root directory. Supplementary documents
 remain available for their targeted evaluations without changing the frozen
 67-document set.
 
+## EPUB reference document
+
+The copyrighted Habermas EPUB is also local-only:
+
+```text
+tests/epub_test/
+└── habermas-case-for-resurrection.epub
+```
+
+Its exact identity and selected structural observations are committed in
+`habermas-epub-reference-v1.json`. The EPUB itself remains excluded from Git.
+Run `scripts/run-epub-reference-validation.sh` to validate it with the pinned
+official EPUBCheck version and the corpus-specific controls.
+
 ## Exact PNG reference
 
 The p233 visual reference was encoded by `pdftoppm` 26.01.0. Later Poppler

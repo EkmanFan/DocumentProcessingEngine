@@ -111,6 +111,10 @@ the corresponding records under `docs/evaluation/`. Local copyrighted test
 documents must follow the
 [test-document layout](docs/evaluation/local-fixture-layout.md).
 
+The first EPUB reference can be checked independently of the Engine with
+`scripts/run-epub-reference-validation.sh`. It uses the official EPUBCheck tool
+plus exact Habermas source and p18/p28 observations.
+
 ## Consumer entry point
 
 Consumers configure the shared providers once and process a `DocumentSource`
