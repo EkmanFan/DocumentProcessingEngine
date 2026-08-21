@@ -4,6 +4,7 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Epub;
@@ -17,6 +18,9 @@ internal static class EpubNativeAnalysisCli
 
     private const string SchemaVersion =
         "document-processing-native-epub-analysis-v1";
+
+    private const string VisualSchemaVersion =
+        "document-processing-epub-visual-analysis-v1";
 
     private static readonly JsonSerializerOptions JsonOptions =
         new()
@@ -59,6 +63,9 @@ internal static class EpubNativeAnalysisCli
             File.OpenRead(
                 sourcePath);
 
+        var visualWrites =
+            new List<VisualWrite>();
+
         using var host =
             new global::DocumentProcessing.DocumentProcessingHost(
                 new global::DocumentProcessing.DocumentProcessingHostOptions(
@@ -70,6 +77,20 @@ internal static class EpubNativeAnalysisCli
                         new Uri(
                             "http://127.0.0.1:1/ocr"),
                         "unused-epub-native-evaluation"),
+                    userVisualAssetWriter:
+                        (_, request, _) =>
+                        {
+                            var destination =
+                                new MemoryStream();
+
+                            visualWrites.Add(
+                                new VisualWrite(
+                                    request,
+                                    destination));
+
+                            return ValueTask.FromResult<Stream>(
+                                destination);
+                        },
                     epub:
                         new EpubDocumentFormatOptions(
                             new EpubCheckOptions(
@@ -124,6 +145,30 @@ internal static class EpubNativeAnalysisCli
                 JsonOptions) +
             Environment.NewLine);
 
+        if (options.VisualReportPath is not null)
+        {
+            var visualReportPath =
+                Path.GetFullPath(
+                    options.VisualReportPath);
+
+            Directory.CreateDirectory(
+                Path.GetDirectoryName(
+                    visualReportPath) ??
+                Environment.CurrentDirectory);
+
+            await File.WriteAllTextAsync(
+                visualReportPath,
+                JsonSerializer.Serialize(
+                    CreateVisualReport(
+                        result,
+                        visualWrites),
+                    JsonOptions) +
+                Environment.NewLine);
+
+            Console.WriteLine(
+                $"Visual report: {visualReportPath}");
+        }
+
         Console.WriteLine(
             $"EPUB native analysis: {report.Processing.ElementCount} elements, " +
             $"{report.Processing.SegmentCount} segments, " +
@@ -131,6 +176,12 @@ internal static class EpubNativeAnalysisCli
 
         Console.WriteLine(
             $"Report: {reportPath}");
+
+        foreach (var visualWrite in
+                 visualWrites)
+        {
+            await visualWrite.Destination.DisposeAsync();
+        }
 
         return 0;
     }
@@ -168,7 +219,10 @@ internal static class EpubNativeAnalysisCli
                     item =>
                         item.IsLinear)),
             new ProcessingReport(
-                result.Elements.Count,
+                result.Elements.Count(
+                    element =>
+                        element.Kind !=
+                        DocumentElementKind.Visual),
                 result.Elements.Count(
                     element =>
                         element.Kind ==
@@ -184,7 +238,12 @@ internal static class EpubNativeAnalysisCli
                 result.StructuralSegments.Count,
                 ProvenanceTextHashing.ComputeUtf8Sha256(
                     authoritativeText),
-                result.Elements.All(
+                result.Elements
+                    .Where(
+                        element =>
+                            element.Kind !=
+                            DocumentElementKind.Visual)
+                    .All(
                     element =>
                         element.Location is
                             EpubDocumentSourceLocation),
@@ -197,6 +256,57 @@ internal static class EpubNativeAnalysisCli
                 result.ProcessingManifest.AssemblyProfileId,
                 result.ProcessingManifest.NormalizationProfileId,
                 result.ProcessingManifest.SegmentationProfileId));
+    }
+
+    private static VisualReport CreateVisualReport(
+        DocumentProcessingResult result,
+        IReadOnlyList<VisualWrite> visualWrites)
+    {
+        if (visualWrites.Count !=
+            result.VisualAssets.Count)
+        {
+            throw new InvalidDataException(
+                "EPUB visual writer calls do not match portable visual assets.");
+        }
+
+        var assets =
+            visualWrites
+                .Zip(
+                    result.VisualAssets,
+                    (write, asset) =>
+                    {
+                        var request =
+                            write.Request as
+                                UserSourceVisualAssetWriteRequest ??
+                            throw new InvalidDataException(
+                                "EPUB visual processing emitted a non-source visual request.");
+
+                        return new VisualAssetReport(
+                            request.VisualId,
+                            request.SourceResourceId,
+                            request.MediaType,
+                            request.IsAuxiliary,
+                            asset.ContentLength,
+                            asset.ContentSha256,
+                            asset.PreservationProfileId,
+                            asset.RasterDerivation is not null);
+                    })
+                .ToArray();
+
+        return new VisualReport(
+            VisualSchemaVersion,
+            result.Source.Sha256,
+            assets.Length,
+            assets.Count(
+                asset =>
+                    asset.IsAuxiliary),
+            result.Elements.Count(
+                element =>
+                    element.Kind ==
+                    DocumentElementKind.Visual),
+            result.VisualAssets.Count,
+            result.ProcessingManifest.VisualPreservationProfileIds,
+            assets);
     }
 
     #endregion
@@ -233,10 +343,35 @@ internal static class EpubNativeAnalysisCli
         string NormalizationProfileId,
         string SegmentationProfileId);
 
+    private sealed record VisualReport(
+        string SchemaVersion,
+        string SourceSha256,
+        int SelectedVisualCount,
+        int AuxiliaryVisualCount,
+        int VisualElementCount,
+        int VisualAssetCount,
+        IReadOnlyList<string> PreservationProfileIds,
+        IReadOnlyList<VisualAssetReport> Assets);
+
+    private sealed record VisualAssetReport(
+        string VisualId,
+        string SourceResourceId,
+        string MediaType,
+        bool IsAuxiliary,
+        long ContentLength,
+        string ContentSha256,
+        string PreservationProfileId,
+        bool HasRasterDerivation);
+
+    private sealed record VisualWrite(
+        UserVisualAssetWriteRequest Request,
+        MemoryStream Destination);
+
     private sealed record Options(
         string SourcePath,
         string EpubCheckDistributionPath,
-        string ReportPath)
+        string ReportPath,
+        string? VisualReportPath)
     {
         public static Options Parse(
             IReadOnlyList<string> args)
@@ -248,6 +383,9 @@ internal static class EpubNativeAnalysisCli
                 null;
 
             string? report =
+                null;
+
+            string? visualReport =
                 null;
 
             for (var index = 0;
@@ -277,6 +415,13 @@ internal static class EpubNativeAnalysisCli
                                 ref index);
                         break;
 
+                    case "--visual-report":
+                        visualReport =
+                            ReadValue(
+                                args,
+                                ref index);
+                        break;
+
                     default:
                         throw new ArgumentException(
                             $"Unknown analyze-epub option '{args[index]}'.");
@@ -292,7 +437,8 @@ internal static class EpubNativeAnalysisCli
                     "--epubcheck-distribution"),
                 Required(
                     report,
-                    "--report"));
+                    "--report"),
+                visualReport);
         }
 
         private static string ReadValue(

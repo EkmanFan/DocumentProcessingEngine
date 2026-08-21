@@ -1,4 +1,5 @@
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Epub;
 using DocumentProcessing.Epub.Extraction;
 using DocumentProcessing.Epub.Locations;
@@ -150,6 +151,108 @@ public sealed class EpubDocumentFormatTests
                     .Extract(
                         stream,
                         new EpubDocumentFormatOptions()));
+    }
+
+    [Fact]
+    public void Extractor_AcquiresReferencedImageFactsAndRetainsAuxiliaryUsage()
+    {
+        using var stream =
+            new MemoryStream(
+                TestEpubFactory.Create(
+                    includeVisuals:
+                        true));
+
+        var evidence =
+            new EpubPackageExtractor()
+                .Extract(
+                    stream,
+                    new EpubDocumentFormatOptions());
+
+        var visuals =
+            evidence.Visuals.ToDictionary(
+                visual =>
+                    visual.SourceResourceId,
+                StringComparer.Ordinal);
+
+        Assert.Equal(
+            4,
+            visuals.Count);
+
+        Assert.True(
+            visuals["OEBPS/images/cover.png"]
+                .IsPublicationCover);
+
+        Assert.False(
+            visuals["OEBPS/images/diagram.png"]
+                .IsPublicationCover);
+
+        Assert.True(
+            visuals["OEBPS/images/decoration.png"]
+                .IsExplicitlyPresentationOnly);
+
+        Assert.True(
+            visuals["OEBPS/images/auxiliary.png"]
+                .IsAuxiliary);
+
+        Assert.All(
+            evidence.Visuals,
+            visual =>
+                Assert.IsType<EpubVisualSourceLocation>(
+                    visual.Location));
+
+        Assert.DoesNotContain(
+            "OEBPS/images/unused.png",
+            visuals.Keys);
+    }
+
+    [Fact]
+    public async Task VisualMaterializer_CopiesExactPackagedBytesAndRestoresSourcePosition()
+    {
+        using var stream =
+            new MemoryStream(
+                TestEpubFactory.Create(
+                    includeVisuals:
+                        true));
+
+        var evidence =
+            new EpubPackageExtractor()
+                .Extract(
+                    stream,
+                    new EpubDocumentFormatOptions());
+
+        var visual =
+            evidence.Visuals.Single(
+                candidate =>
+                    candidate.SourceResourceId ==
+                    "OEBPS/images/diagram.png");
+
+        stream.Position =
+            11;
+
+        await using var destination =
+            new MemoryStream();
+
+        var result =
+            await ((IStructuredNativeVisualMaterializer)
+                    new EpubDocumentFormat())
+                .MaterializeAsync(
+                    new DocumentSource(
+                        stream),
+                    DocumentFormatId.Epub,
+                    visual,
+                    destination);
+
+        Assert.Equal(
+            new byte[] { 10, 20, 30, 40, 50 },
+            destination.ToArray());
+
+        Assert.Equal(
+            "epub-package-image-raw-v1",
+            result.ProfileId);
+
+        Assert.Equal(
+            11,
+            stream.Position);
     }
 
     [Fact]

@@ -126,10 +126,12 @@ Required constraints:
 
 - PDF and EPUB are registered production formats.
 - `DocumentProcessing.Epub` owns EPUB recognition, the EPUBCheck 5.3.0
-  conformance boundary, package/spine/XHTML acquisition and EPUB source-location
-  facts.
+  conformance boundary, package/spine/XHTML acquisition, EPUB source-location
+  facts and exact packaged-image materialization.
 - the Engine projects structured EPUB evidence through its native non-paged
-  assembly path; EPUB spine items are never represented as physical pages.
+  assembly path, selects retained native visuals and invokes
+  `UserVisualAssetWriter`; EPUB spine items and images are never represented as
+  physical pages.
 - PdfPig supplies native extraction and native visual measurements.
 - `pdftoppm` supplies document-scoped rasterization.
 - PP-StructureV3 supplies layout observations when planned.

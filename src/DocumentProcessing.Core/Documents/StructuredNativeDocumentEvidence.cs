@@ -15,6 +15,8 @@ public sealed record StructuredNativeDocumentEvidence
 
     public IReadOnlyList<StructuredNativeContentUnit> ContentUnits { get; }
 
+    public IReadOnlyList<StructuredNativeVisual> Visuals { get; }
+
     public ProcessingComponentIdentity NativeExtractionIdentity { get; }
 
     #endregion
@@ -24,7 +26,8 @@ public sealed record StructuredNativeDocumentEvidence
     public StructuredNativeDocumentEvidence(
         DocumentSourceStructure sourceStructure,
         IReadOnlyList<StructuredNativeContentUnit> contentUnits,
-        ProcessingComponentIdentity nativeExtractionIdentity)
+        ProcessingComponentIdentity nativeExtractionIdentity,
+        IReadOnlyList<StructuredNativeVisual>? visuals = null)
     {
         SourceStructure =
             sourceStructure ??
@@ -62,6 +65,36 @@ public sealed record StructuredNativeDocumentEvidence
 
         ContentUnits =
             units;
+
+        var nativeVisuals =
+            visuals?.ToArray() ??
+            [];
+
+        if (nativeVisuals.Any(
+                visual =>
+                    visual is null))
+        {
+            throw new ArgumentException(
+                "Structured native evidence cannot contain null visuals.",
+                nameof(visuals));
+        }
+
+        if (nativeVisuals
+                .Select(
+                    visual =>
+                        visual.VisualId)
+                .Distinct(
+                    StringComparer.Ordinal)
+                .Count() !=
+            nativeVisuals.Length)
+        {
+            throw new ArgumentException(
+                "Structured native evidence cannot contain duplicate visual IDs.",
+                nameof(visuals));
+        }
+
+        Visuals =
+            nativeVisuals;
 
         NativeExtractionIdentity =
             nativeExtractionIdentity ??

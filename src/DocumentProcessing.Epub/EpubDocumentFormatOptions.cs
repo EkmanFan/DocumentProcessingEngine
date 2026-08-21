@@ -18,6 +18,8 @@ public sealed class EpubDocumentFormatOptions
 
     public long MaximumTextResourceBytes { get; }
 
+    public long MaximumVisualResourceBytes { get; }
+
     #endregion
 
     #region ctor
@@ -27,7 +29,8 @@ public sealed class EpubDocumentFormatOptions
         long maximumSourceBytes = 256L * 1024 * 1024,
         int maximumArchiveEntries = 10000,
         long maximumTotalUncompressedBytes = 1024L * 1024 * 1024,
-        long maximumTextResourceBytes = 16L * 1024 * 1024)
+        long maximumTextResourceBytes = 16L * 1024 * 1024,
+        long maximumVisualResourceBytes = 64L * 1024 * 1024)
     {
         if (maximumSourceBytes <=
             0)
@@ -57,6 +60,13 @@ public sealed class EpubDocumentFormatOptions
                 nameof(maximumTextResourceBytes));
         }
 
+        if (maximumVisualResourceBytes <=
+            0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maximumVisualResourceBytes));
+        }
+
         EpubCheck =
             epubCheck ??
             EpubCheckOptions.CreateDefault();
@@ -72,6 +82,9 @@ public sealed class EpubDocumentFormatOptions
 
         MaximumTextResourceBytes =
             maximumTextResourceBytes;
+
+        MaximumVisualResourceBytes =
+            maximumVisualResourceBytes;
     }
 
     #endregion

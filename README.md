@@ -121,6 +121,12 @@ It adds the pinned EPUBCheck runtime boundary, consumer-safe failure mapping,
 native reflowable acquisition and non-paged portable projection. The Habermas
 result is reproduced by `scripts/run-epub-native-regression.sh`.
 
+EPUB-2 adds deterministic image discovery and exact packaged-byte preservation
+without inventing page geometry. Its policy and Habermas evidence are
+documented in
+[`docs/epub/epub-2-visual-preservation-v1.md`](docs/epub/epub-2-visual-preservation-v1.md)
+and reproduced by `scripts/run-epub-visual-regression.sh`.
+
 ## Consumer entry point
 
 Consumers configure the shared providers once and process a `DocumentSource`

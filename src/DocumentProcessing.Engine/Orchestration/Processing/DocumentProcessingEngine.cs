@@ -174,11 +174,15 @@ public sealed class DocumentProcessingEngine
                     .ConfigureAwait(false);
 
             case DocumentFormatSelectionResult.StructuredSuccess success:
-                return StructuredNativeDocumentProjector.Project(
-                    prepared,
-                    success.DocumentFormat.Format,
-                    success.Evidence,
-                    engineVersion);
+                return await StructuredNativeDocumentProjector
+                    .ProjectAsync(
+                        prepared,
+                        success.DocumentFormat,
+                        success.Evidence,
+                        engineVersion,
+                        _userVisualAssetWriter,
+                        cancellationToken)
+                    .ConfigureAwait(false);
 
             default:
                 throw new InvalidDataException(
@@ -247,7 +251,9 @@ public sealed class DocumentProcessingEngine
                     : (visual, token) =>
                         _userVisualAssetWriter(
                             prepared.Source,
-                            visual,
+                            new UserLayoutVisualAssetWriteRequest(
+                                selection.DocumentFormat.Format,
+                                visual),
                             token);
 
         return await processor

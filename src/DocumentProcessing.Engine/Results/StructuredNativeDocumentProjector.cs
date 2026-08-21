@@ -2,7 +2,9 @@ using System.Text;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Orchestration;
+using DocumentProcessing.Engine.Planning;
 
 namespace DocumentProcessing.Engine.Results;
 
@@ -27,17 +29,27 @@ internal static class StructuredNativeDocumentProjector
 
     #region Methods Projection
 
-    public static DocumentProcessingResult Project(
+    public static async Task<DocumentProcessingResult> ProjectAsync(
         PreparedDocumentSource prepared,
-        DocumentFormatId format,
+        IDocumentFormat documentFormat,
         StructuredNativeDocumentEvidence evidence,
-        string engineVersion)
+        string engineVersion,
+        UserVisualAssetWriter? userVisualAssetWriter,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(
             prepared);
 
         ArgumentNullException.ThrowIfNull(
             evidence);
+
+        ArgumentNullException.ThrowIfNull(
+            documentFormat);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var format =
+            documentFormat.Format;
 
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -58,6 +70,13 @@ internal static class StructuredNativeDocumentProjector
 
         var segmentEvidence =
             new List<DocumentSegmentProcessingEvidence>();
+
+        var visualAssets =
+            new List<DocumentVisualAsset>();
+
+        var visualPreservationProfileIds =
+            new HashSet<string>(
+                StringComparer.Ordinal);
 
         foreach (var unit in
                  evidence.ContentUnits)
@@ -193,6 +212,99 @@ internal static class StructuredNativeDocumentProjector
                         false));
         }
 
+        var selectedVisuals =
+            evidence.Visuals
+                .Where(
+                    StructuredNativeVisualSelectionPolicy
+                        .ShouldPreserve)
+                .ToArray();
+
+        if (selectedVisuals.Length >
+            0)
+        {
+            if (userVisualAssetWriter is null)
+            {
+                throw new InvalidOperationException(
+                    "Meaningful structured-document visual preservation requires the user's visual asset writer.");
+            }
+
+            if (documentFormat is not
+                    IStructuredNativeVisualMaterializer materializer ||
+                !materializer.CanMaterialize(
+                    format))
+            {
+                throw new InvalidOperationException(
+                    $"Document format '{format}' selected structured visuals without exposing their materialization capability.");
+            }
+
+            foreach (var visual in
+                     selectedVisuals)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var destination =
+                    await userVisualAssetWriter(
+                            prepared.Source,
+                            new UserSourceVisualAssetWriteRequest(
+                                format,
+                                visual),
+                            cancellationToken)
+                        .ConfigureAwait(false);
+
+                if (destination is null)
+                {
+                    throw new InvalidOperationException(
+                        "User visual asset writer returned null.");
+                }
+
+                var materialization =
+                    await materializer.MaterializeAsync(
+                            prepared.Source,
+                            format,
+                            visual,
+                            destination,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+
+                if (!string.Equals(
+                        materialization.MediaType,
+                        visual.MediaType,
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidDataException(
+                        $"Structured visual '{visual.VisualId}' materialized with a media type that differs from its selected native evidence.");
+                }
+
+                var elementId =
+                    $"element-{elements.Count + 1:D6}";
+
+                elements.Add(
+                    new DocumentElement(
+                        elementId,
+                        elements.Count,
+                        DocumentElementKind.Visual,
+                        visual.Location,
+                        segmentId:
+                            null,
+                        text:
+                            null,
+                        textSha256:
+                            null));
+
+                visualAssets.Add(
+                    new DocumentVisualAsset(
+                        $"{elementId}:preserved-visual",
+                        elementId,
+                        materialization.ProfileId,
+                        materialization.MediaType,
+                        materialization.ContentLength,
+                        materialization.ContentSha256));
+
+                visualPreservationProfileIds.Add(
+                    materialization.ProfileId);
+            }
+        }
+
         var source =
             new DocumentSourceDescriptor(
                 format,
@@ -214,7 +326,7 @@ internal static class StructuredNativeDocumentProjector
                 reconciliation:
                     null,
                 visualPreservationProfileIds:
-                    [],
+                    visualPreservationProfileIds.ToArray(),
                 AssemblyProfileId,
                 NormalizationProfileId,
                 SegmentationProfileId);
@@ -226,8 +338,7 @@ internal static class StructuredNativeDocumentProjector
             elementEvidence,
             segments,
             segmentEvidence,
-            visualAssets:
-                [],
+            visualAssets,
             DocumentProcessingQualityObservations.Empty,
             evidence.SourceStructure);
     }

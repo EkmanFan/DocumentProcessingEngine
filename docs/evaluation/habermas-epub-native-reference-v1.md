@@ -54,9 +54,9 @@ EPUBCheck distribution into temporary storage, builds the evaluation command
 in Release with warnings as errors, processes the EPUB through the production
 Host, and compares the complete report with the frozen JSON reference.
 
-## Current boundary
+## EPUB-2 continuation
 
-EPUB-1 currently returns native textual structure. Native EPUB image discovery,
-selection of meaningful visual assets and writing through
-`UserVisualAssetWriter` remain a later EPUB increment. No PDF behavior or
-result has been changed by this path.
+EPUB-1 remains the frozen textual baseline. EPUB-2 now discovers and preserves
+EPUB image resources through `UserVisualAssetWriter` while the EPUB-1 text
+report remains byte-for-byte identical. Its independent visual evidence is
+documented in `docs/epub/epub-2-visual-preservation-v1.md`.

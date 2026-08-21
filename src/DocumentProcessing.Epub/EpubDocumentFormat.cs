@@ -2,6 +2,7 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Epub.Extraction;
 using DocumentProcessing.Epub.Recognition;
 using DocumentProcessing.Epub.Validation;
+using DocumentProcessing.Core.Visual;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -12,7 +13,8 @@ namespace DocumentProcessing.Epub;
 /// acquisition boundary.
 /// </summary>
 public sealed class EpubDocumentFormat
-    : IDocumentFormat
+    : IDocumentFormat,
+      IStructuredNativeVisualMaterializer
 {
     #region Variables and Constants
 
@@ -26,6 +28,8 @@ public sealed class EpubDocumentFormat
     private readonly EpubFormatRecognizer _recognizer;
     private readonly EpubCheckConformanceValidator _validator;
     private readonly EpubPackageExtractor _extractor;
+    private readonly EpubStructuredNativeVisualMaterializer
+        _visualMaterializer;
     private readonly ILogger<EpubDocumentFormat> _logger;
 
     #endregion
@@ -59,6 +63,10 @@ public sealed class EpubDocumentFormat
 
         _extractor =
             new EpubPackageExtractor();
+
+        _visualMaterializer =
+            new EpubStructuredNativeVisualMaterializer(
+                _options.MaximumVisualResourceBytes);
 
         _logger =
             loggerFactory?
@@ -183,6 +191,28 @@ public sealed class EpubDocumentFormat
             }
         }
     }
+
+    #endregion
+
+    #region Methods Visual Materialization
+
+    public bool CanMaterialize(
+        DocumentFormatId format) =>
+        _visualMaterializer.CanMaterialize(
+            format);
+
+    public ValueTask<StructuredNativeVisualMaterialization> MaterializeAsync(
+        DocumentSource source,
+        DocumentFormatId format,
+        StructuredNativeVisual visual,
+        Stream destination,
+        CancellationToken cancellationToken = default) =>
+        _visualMaterializer.MaterializeAsync(
+            source,
+            format,
+            visual,
+            destination,
+            cancellationToken);
 
     #endregion
 }

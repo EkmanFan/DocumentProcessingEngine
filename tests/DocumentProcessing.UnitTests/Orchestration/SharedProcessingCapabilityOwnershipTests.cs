@@ -56,6 +56,14 @@ public sealed class SharedProcessingCapabilityOwnershipTests
         Assert.Equal(
             typeof(UserVisualAssetWriter),
             property.PropertyType);
+
+        Assert.Equal(
+            typeof(UserVisualAssetWriteRequest),
+            typeof(UserVisualAssetWriter)
+                .GetMethod(
+                    "Invoke")!
+                .GetParameters()[1]
+                .ParameterType);
     }
 
     [Fact]

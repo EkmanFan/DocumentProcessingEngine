@@ -5,6 +5,7 @@ using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Engine.Orchestration;
@@ -152,6 +153,154 @@ public sealed class StructuredNativeDocumentProcessingTests
             result.ProcessingManifest.Ocr);
     }
 
+    [Fact]
+    public async Task ProcessDocumentAsync_SelectedNativeVisualUsesUserWriterAndPortableCustody()
+    {
+        var visualBytes =
+            new byte[] { 10, 20, 30, 40, 50 };
+
+        var visualLocation =
+            new EpubVisualSourceLocation(
+                0,
+                "OEBPS/chapter1.xhtml",
+                "OEBPS/images/diagram.png",
+                0,
+                "diagram",
+                isAuxiliary:
+                    false);
+
+        var evidence =
+            new StructuredNativeDocumentEvidence(
+                new EpubDocumentSourceStructure(
+                    "OEBPS/content.opf",
+                    [
+                        new EpubSpineItemDescriptor(
+                            0,
+                            "chapter-1",
+                            "OEBPS/chapter1.xhtml",
+                            "application/xhtml+xml",
+                            isLinear:
+                                true)
+                    ]),
+                [],
+                new ProcessingComponentIdentity(
+                    "test-epub",
+                    "test-epub-native-v1"),
+                [
+                    new StructuredNativeVisual(
+                        "structured-visual-cover",
+                        visualLocation,
+                        "OEBPS/images/cover.png",
+                        "image/png",
+                        isAuxiliary:
+                            false,
+                        isPublicationCover:
+                            true),
+                    new StructuredNativeVisual(
+                        "structured-visual-000001",
+                        visualLocation,
+                        "OEBPS/images/diagram.png",
+                        "image/png",
+                        isAuxiliary:
+                            false),
+                    new StructuredNativeVisual(
+                        "structured-visual-decoration",
+                        visualLocation,
+                        "OEBPS/images/decoration.png",
+                        "image/png",
+                        isAuxiliary:
+                            false,
+                        isExplicitlyPresentationOnly:
+                            true)
+                ]);
+
+        UserVisualAssetWriteRequest? observedRequest =
+            null;
+
+        var writerCalls =
+            0;
+
+        var destination =
+            new MemoryStream();
+
+        var engine =
+            new DocumentProcessingEngine(
+                [
+                    new StubStructuredFormat(
+                        evidence,
+                        visualBytes)
+                ],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity,
+                userVisualAssetWriter:
+                    (_, request, _) =>
+                    {
+                        writerCalls++;
+
+                        observedRequest =
+                            request;
+
+                        return ValueTask.FromResult<Stream>(
+                            destination);
+                    });
+
+        await using var stream =
+            new MemoryStream(
+                "structured source"u8.ToArray());
+
+        var result =
+            await engine.ProcessDocumentAsync(
+                new DocumentSource(
+                    stream));
+
+        var request =
+            Assert.IsType<UserSourceVisualAssetWriteRequest>(
+                observedRequest);
+
+        Assert.Equal(
+            "OEBPS/images/diagram.png",
+            request.SourceResourceId);
+
+        Assert.Equal(
+            1,
+            writerCalls);
+
+        Assert.Same(
+            visualLocation,
+            request.Location);
+
+        var element =
+            Assert.Single(
+                result.Elements);
+
+        Assert.Equal(
+            DocumentElementKind.Visual,
+            element.Kind);
+
+        var asset =
+            Assert.Single(
+                result.VisualAssets);
+
+        Assert.Equal(
+            element.ElementId,
+            asset.ElementId);
+
+        Assert.Null(
+            asset.RasterDerivation);
+
+        Assert.Equal(
+            visualBytes,
+            destination.ToArray());
+
+        Assert.Contains(
+            "test-structured-visual-raw-v1",
+            result.ProcessingManifest.VisualPreservationProfileIds);
+
+        await destination.DisposeAsync();
+    }
+
     #endregion
 
     #region Methods Fixtures
@@ -173,8 +322,10 @@ public sealed class StructuredNativeDocumentProcessingTests
     #region Test Types
 
     private sealed class StubStructuredFormat(
-        StructuredNativeDocumentEvidence evidence)
-        : IDocumentFormat
+        StructuredNativeDocumentEvidence evidence,
+        byte[]? visualBytes = null)
+        : IDocumentFormat,
+          IStructuredNativeVisualMaterializer
     {
         public DocumentFormatId Format =>
             DocumentFormatId.Epub;
@@ -189,6 +340,38 @@ public sealed class StructuredNativeDocumentProcessingTests
             return ValueTask.FromResult<NativeEvidenceExtractionResult>(
                 new NativeEvidenceExtractionResult.StructuredSuccess(
                     evidence));
+        }
+
+        public bool CanMaterialize(
+            DocumentFormatId format) =>
+            format ==
+            DocumentFormatId.Epub;
+
+        public async ValueTask<StructuredNativeVisualMaterialization>
+            MaterializeAsync(
+                DocumentSource source,
+                DocumentFormatId format,
+                StructuredNativeVisual visual,
+                Stream destination,
+                CancellationToken cancellationToken = default)
+        {
+            var content =
+                visualBytes ??
+                throw new InvalidOperationException(
+                    "No structured visual bytes were configured for this test.");
+
+            await destination.WriteAsync(
+                content,
+                cancellationToken);
+
+            return new StructuredNativeVisualMaterialization(
+                "test-structured-visual-raw-v1",
+                visual.MediaType,
+                content.Length,
+                Convert.ToHexString(
+                        System.Security.Cryptography.SHA256.HashData(
+                            content))
+                    .ToLowerInvariant());
         }
     }
 

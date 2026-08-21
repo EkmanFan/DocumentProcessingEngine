@@ -138,6 +138,27 @@ internal sealed class EpubPackageExtractor
                 package,
                 packagePath);
 
+        var manifestByResourcePath =
+            manifest.Values
+                .ToDictionary(
+                    item =>
+                        item.ResourcePath,
+                    StringComparer.Ordinal);
+
+        var excludedImageResourcePaths =
+            ReadCoverImageResourcePaths(
+                package,
+                manifest);
+
+        var navigationContentResourcePaths =
+            ReadNavigationContentResourcePaths(
+                manifest);
+
+        var coverContentResourcePaths =
+            ReadCoverContentResourcePaths(
+                package,
+                packagePath);
+
         var spineItems =
             ReadSpine(
                 package,
@@ -147,16 +168,29 @@ internal sealed class EpubPackageExtractor
             new List<StructuredNativeContentUnit>(
                 spineItems.Count);
 
+        var visualUsages =
+            new List<VisualUsage>();
+
         foreach (var spineItem in
                  spineItems)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            contentUnits.Add(
-                ExtractContentUnit(
+            var extracted =
+                ExtractSpineResource(
                     entries,
                     spineItem,
-                    options.MaximumTextResourceBytes));
+                    manifestByResourcePath,
+                    excludedImageResourcePaths,
+                    navigationContentResourcePaths,
+                    coverContentResourcePaths,
+                    options.MaximumTextResourceBytes);
+
+            contentUnits.Add(
+                extracted.ContentUnit);
+
+            visualUsages.AddRange(
+                extracted.VisualUsages);
         }
 
         var structure =
@@ -179,7 +213,9 @@ internal sealed class EpubPackageExtractor
         return new StructuredNativeDocumentEvidence(
             structure,
             contentUnits,
-            NativeExtractionIdentity);
+            NativeExtractionIdentity,
+            BuildVisualCandidates(
+                visualUsages));
     }
 
     #endregion
@@ -311,12 +347,18 @@ internal sealed class EpubPackageExtractor
                     item,
                     "media-type");
 
+            var properties =
+                ReadTokenAttribute(
+                    item,
+                    "properties");
+
             if (!manifest.TryAdd(
                     id,
                     new ManifestItem(
                         id,
                         resourcePath,
-                        mediaType)))
+                        mediaType,
+                        properties)))
             {
                 throw new InvalidDataException(
                     "EPUB manifest contains duplicate item IDs.");
@@ -324,6 +366,113 @@ internal sealed class EpubPackageExtractor
         }
 
         return manifest;
+    }
+
+    private static IReadOnlySet<string> ReadCoverImageResourcePaths(
+        XDocument package,
+        IReadOnlyDictionary<string, ManifestItem> manifest)
+    {
+        var coverIds =
+            new HashSet<string>(
+                manifest.Values
+                    .Where(
+                        item =>
+                            item.Properties.Contains(
+                                "cover-image"))
+                    .Select(
+                        item =>
+                            item.Id),
+                StringComparer.Ordinal);
+
+        foreach (var metadataCoverId in
+                 package.Descendants()
+                     .Where(
+                         element =>
+                             string.Equals(
+                                 element.Name.LocalName,
+                                 "meta",
+                                 StringComparison.Ordinal) &&
+                             string.Equals(
+                                 AttributeValue(
+                                     element,
+                                     "name"),
+                                 "cover",
+                                 StringComparison.OrdinalIgnoreCase))
+                     .Select(
+                         element =>
+                             AttributeValue(
+                                 element,
+                                 "content"))
+                     .Where(
+                         value =>
+                             !string.IsNullOrWhiteSpace(
+                                 value)))
+        {
+            coverIds.Add(
+                metadataCoverId!);
+        }
+
+        return coverIds
+            .Where(
+                manifest.ContainsKey)
+            .Select(
+                id =>
+                    manifest[id].ResourcePath)
+            .ToHashSet(
+                StringComparer.Ordinal);
+    }
+
+    private static IReadOnlySet<string> ReadNavigationContentResourcePaths(
+        IReadOnlyDictionary<string, ManifestItem> manifest)
+        => manifest.Values
+            .Where(
+                item =>
+                    item.Properties.Contains(
+                        "nav"))
+            .Select(
+                item =>
+                    item.ResourcePath)
+            .ToHashSet(
+                StringComparer.Ordinal);
+
+    private static IReadOnlySet<string> ReadCoverContentResourcePaths(
+        XDocument package,
+        string packagePath)
+    {
+        var paths =
+            new HashSet<string>(
+                StringComparer.Ordinal);
+
+        foreach (var reference in
+                 package.Descendants()
+                     .Where(
+                         element =>
+                             string.Equals(
+                                 element.Name.LocalName,
+                                 "reference",
+                                 StringComparison.Ordinal) &&
+                             HasToken(
+                                 AttributeValue(
+                                     element,
+                                     "type"),
+                                 "cover")))
+        {
+            var href =
+                AttributeValue(
+                    reference,
+                    "href");
+
+            if (!string.IsNullOrWhiteSpace(
+                    href))
+            {
+                paths.Add(
+                    EpubArchivePath.Resolve(
+                        packagePath,
+                        href));
+            }
+        }
+
+        return paths;
     }
 
     private static IReadOnlyList<EpubSpineItemDescriptor> ReadSpine(
@@ -422,9 +571,13 @@ internal sealed class EpubPackageExtractor
 
     #region Methods XHTML
 
-    private static StructuredNativeContentUnit ExtractContentUnit(
+    private static SpineResourceExtraction ExtractSpineResource(
         IReadOnlyDictionary<string, ZipArchiveEntry> entries,
         EpubSpineItemDescriptor spineItem,
+        IReadOnlyDictionary<string, ManifestItem> manifestByResourcePath,
+        IReadOnlySet<string> excludedImageResourcePaths,
+        IReadOnlySet<string> navigationContentResourcePaths,
+        IReadOnlySet<string> coverContentResourcePaths,
         long maximumTextResourceBytes)
     {
         if (!string.Equals(
@@ -432,8 +585,10 @@ internal sealed class EpubPackageExtractor
                 "application/xhtml+xml",
                 StringComparison.OrdinalIgnoreCase))
         {
-            return new StructuredNativeContentUnit(
-                spineItem.ResourcePath,
+            return new SpineResourceExtraction(
+                new StructuredNativeContentUnit(
+                    spineItem.ResourcePath,
+                    []),
                 []);
         }
 
@@ -491,10 +646,249 @@ internal sealed class EpubPackageExtractor
                     body.Value));
         }
 
-        return new StructuredNativeContentUnit(
-            spineItem.ResourcePath,
-            blocks);
+        var visualUsages =
+            ReadVisualUsages(
+                document,
+                spineItem,
+                manifestByResourcePath,
+                excludedImageResourcePaths,
+                isNavigationContentResource:
+                    navigationContentResourcePaths.Contains(
+                        spineItem.ResourcePath),
+                isCoverContentResource:
+                    coverContentResourcePaths.Contains(
+                        spineItem.ResourcePath));
+
+        return new SpineResourceExtraction(
+            new StructuredNativeContentUnit(
+                spineItem.ResourcePath,
+                blocks),
+            visualUsages);
     }
+
+    private static IReadOnlyList<VisualUsage> ReadVisualUsages(
+        XDocument document,
+        EpubSpineItemDescriptor spineItem,
+        IReadOnlyDictionary<string, ManifestItem> manifestByResourcePath,
+        IReadOnlySet<string> excludedImageResourcePaths,
+        bool isNavigationContentResource,
+        bool isCoverContentResource)
+    {
+        var usages =
+            new List<VisualUsage>();
+
+        var occurrenceIndex =
+            0;
+
+        foreach (var element in
+                 document.Descendants()
+                     .Where(
+                         element =>
+                             element.Name.LocalName is
+                                 "img" or
+                                 "image"))
+        {
+            var currentOccurrence =
+                occurrenceIndex++;
+
+            var reference =
+                element.Name.LocalName ==
+                "img"
+                    ? AttributeValue(
+                        element,
+                        "src")
+                    : AttributeValue(
+                        element,
+                        "href");
+
+            if (!TryResolvePackagedResource(
+                    spineItem.ResourcePath,
+                    reference,
+                    out var resourcePath) ||
+                !manifestByResourcePath.TryGetValue(
+                    resourcePath,
+                    out var manifestItem) ||
+                !manifestItem.MediaType.StartsWith(
+                    "image/",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            usages.Add(
+                new VisualUsage(
+                    manifestItem.ResourcePath,
+                    manifestItem.MediaType,
+                    new EpubVisualSourceLocation(
+                        spineItem.SpineIndex,
+                        spineItem.ResourcePath,
+                        manifestItem.ResourcePath,
+                        currentOccurrence,
+                        FragmentId(
+                            element),
+                        isAuxiliary:
+                            !spineItem.IsLinear),
+                    IsAuxiliary:
+                        !spineItem.IsLinear,
+                    IsPublicationCover:
+                        excludedImageResourcePaths.Contains(
+                            resourcePath) ||
+                        isCoverContentResource ||
+                        IsCoverContent(
+                            element),
+                    IsNavigation:
+                        isNavigationContentResource,
+                    IsExplicitlyPresentationOnly:
+                        IsPresentationOnly(
+                            element)));
+        }
+
+        return usages;
+    }
+
+    private static IReadOnlyList<StructuredNativeVisual> BuildVisualCandidates(
+        IReadOnlyList<VisualUsage> usages)
+    {
+        var candidates =
+            new List<StructuredNativeVisual>();
+
+        foreach (var group in
+                 usages.GroupBy(
+                     usage =>
+                         usage.ResourcePath,
+                     StringComparer.Ordinal))
+        {
+            var preferredUsage =
+                group.FirstOrDefault(
+                    usage =>
+                        !usage.IsPublicationCover &&
+                        !usage.IsNavigation &&
+                        !usage.IsExplicitlyPresentationOnly &&
+                        !usage.IsAuxiliary) ??
+                group.First();
+
+            candidates.Add(
+                new StructuredNativeVisual(
+                    $"structured-visual-{candidates.Count + 1:D6}",
+                    preferredUsage.Location,
+                    preferredUsage.ResourcePath,
+                    preferredUsage.MediaType,
+                    isAuxiliary:
+                        group.All(
+                            usage =>
+                                usage.IsAuxiliary),
+                    isPublicationCover:
+                        group.Any(
+                            usage =>
+                                usage.IsPublicationCover),
+                    isNavigation:
+                        group.All(
+                            usage =>
+                                usage.IsNavigation),
+                    isExplicitlyPresentationOnly:
+                        group.All(
+                            usage =>
+                                usage.IsExplicitlyPresentationOnly)));
+        }
+
+        return candidates;
+    }
+
+    private static bool IsPresentationOnly(
+        XElement element) =>
+        element.AncestorsAndSelf()
+            .Any(
+                candidate =>
+                    string.Equals(
+                        AttributeValue(
+                            candidate,
+                            "aria-hidden"),
+                        "true",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    HasToken(
+                        AttributeValue(
+                            candidate,
+                            "role"),
+                        "presentation") ||
+                    HasToken(
+                        AttributeValue(
+                            candidate,
+                            "role"),
+                        "none"));
+
+    private static bool IsCoverContent(
+        XElement element) =>
+        element.AncestorsAndSelf()
+            .Any(
+                candidate =>
+                    HasToken(
+                        AttributeValue(
+                            candidate,
+                            "type"),
+                        "cover"));
+
+    private static bool TryResolvePackagedResource(
+        string baseResourcePath,
+        string? reference,
+        out string resourcePath)
+    {
+        resourcePath =
+            string.Empty;
+
+        if (string.IsNullOrWhiteSpace(
+                reference) ||
+            Uri.TryCreate(
+                reference,
+                UriKind.Absolute,
+                out _))
+        {
+            return false;
+        }
+
+        resourcePath =
+            EpubArchivePath.Resolve(
+                baseResourcePath,
+                reference);
+
+        return true;
+    }
+
+    private static IReadOnlySet<string> ReadTokenAttribute(
+        XElement element,
+        string localName) =>
+        (AttributeValue(
+                element,
+                localName) ??
+         string.Empty)
+        .Split(
+            (char[]?)null,
+            StringSplitOptions.RemoveEmptyEntries)
+        .ToHashSet(
+            StringComparer.Ordinal);
+
+    private static bool HasToken(
+        string? value,
+        string expected) =>
+        (value ??
+         string.Empty)
+        .Split(
+            (char[]?)null,
+            StringSplitOptions.RemoveEmptyEntries)
+        .Contains(
+            expected,
+            StringComparer.OrdinalIgnoreCase);
+
+    private static string? AttributeValue(
+        XElement element,
+        string localName) =>
+        element.Attributes()
+            .FirstOrDefault(
+                attribute =>
+                    string.Equals(
+                        attribute.Name.LocalName,
+                        localName,
+                        StringComparison.Ordinal))?
+            .Value;
 
     private static void VisitElement(
         XElement element,
@@ -599,7 +993,21 @@ internal sealed class EpubPackageExtractor
     private sealed record ManifestItem(
         string Id,
         string ResourcePath,
-        string MediaType);
+        string MediaType,
+        IReadOnlySet<string> Properties);
+
+    private sealed record VisualUsage(
+        string ResourcePath,
+        string MediaType,
+        EpubVisualSourceLocation Location,
+        bool IsAuxiliary,
+        bool IsPublicationCover,
+        bool IsNavigation,
+        bool IsExplicitlyPresentationOnly);
+
+    private sealed record SpineResourceExtraction(
+        StructuredNativeContentUnit ContentUnit,
+        IReadOnlyList<VisualUsage> VisualUsages);
 
     #endregion
 }
