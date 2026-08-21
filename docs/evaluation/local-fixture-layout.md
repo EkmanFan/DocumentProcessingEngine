@@ -12,9 +12,26 @@ not the copyrighted source files themselves.
 tests/document_corpus/
 ├── epub/
 └── pdf/
+    ├── full/
     ├── pages/
     └── supplemental/
 ```
+
+## Complete PDF source documents
+
+The `tests/document_corpus/pdf/full/` directory contains the complete works
+from which the one-page PDF controls were selected:
+
+```text
+tests/document_corpus/pdf/full/
+├── Nicene and Post Nicene Fathers Series II Vol 4.pdf
+├── The Case for the Resurrection of Jesus - Gary R. Habernas.pdf
+└── the-new-testament-a-historical-introduction-to-the-early-christian-writings.pdf
+```
+
+These files support full-document processing and the reproducible regeneration
+of page-level controls. They are not scanned implicitly by the frozen
+67-document regression.
 
 ## Main 67-document test set
 
