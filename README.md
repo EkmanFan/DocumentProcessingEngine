@@ -132,10 +132,15 @@ Paddle only for unresolved images when the user explicitly enables the
 per-request fallback. See
 [`docs/epub/epub-3-visual-qualification-v1.md`](docs/epub/epub-3-visual-qualification-v1.md).
 
-EPUB-4 hardens semantic extraction across the Habermas, Calvin and Bauckham
+EPUB-4 hardens structural extraction across the Habermas, Calvin and Bauckham
 corpora by using EPUB navigation targets for headings and local XHTML context
 for visual qualification. See
 [`docs/epub/epub-4-multi-corpus-hardening-v1.md`](docs/epub/epub-4-multi-corpus-hardening-v1.md).
+
+EPUB-5 validates the V1 boundary on the structurally different Brenner and
+Septante corpora, including a large conformant EPUB with 1,181 spine items.
+See
+[`docs/epub/epub-5-expanded-corpus-validation-v1.md`](docs/epub/epub-5-expanded-corpus-validation-v1.md).
 
 ## Consumer entry point
 

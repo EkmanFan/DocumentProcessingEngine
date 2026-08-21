@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -11,10 +12,6 @@ namespace DocumentProcessing.Epub.Validation;
 internal sealed class EpubCheckConformanceValidator
 {
     #region Variables and Constants
-
-    private const long MaximumReportBytes =
-        1024 *
-        1024;
 
     private readonly EpubCheckOptions _options;
     private readonly IEpubCheckProcessRunner _processRunner;
@@ -193,9 +190,7 @@ internal sealed class EpubCheckConformanceValidator
 
             if (!report.Exists ||
                 report.Length <=
-                    0 ||
-                report.Length >
-                    MaximumReportBytes)
+                    0)
             {
                 return LogAndReturn(
                     EpubCheckConformanceStatus.Failed,
@@ -206,15 +201,11 @@ internal sealed class EpubCheckConformanceValidator
                 File.OpenRead(
                     reportPath);
 
-            using var document =
-                JsonDocument.Parse(
+            var reportContent =
+                JsonSerializer.Deserialize<EpubCheckReport>(
                     stream);
 
-            if (!document.RootElement.TryGetProperty(
-                    "messages",
-                    out var messages) ||
-                messages.ValueKind !=
-                    JsonValueKind.Array)
+            if (reportContent?.Messages is null)
             {
                 return LogAndReturn(
                     EpubCheckConformanceStatus.Failed,
@@ -222,7 +213,7 @@ internal sealed class EpubCheckConformanceValidator
             }
 
             if (!TryClassifyMessages(
-                    messages,
+                    reportContent.Messages,
                     out var hasConformanceProblem))
             {
                 return LogAndReturn(
@@ -262,25 +253,22 @@ internal sealed class EpubCheckConformanceValidator
     }
 
     private static bool TryClassifyMessages(
-        JsonElement messages,
+        IReadOnlyList<EpubCheckMessage> messages,
         out bool hasConformanceProblem)
     {
         hasConformanceProblem =
             false;
 
         foreach (var message in
-                 messages.EnumerateArray())
+                 messages)
         {
-            if (!message.TryGetProperty(
-                    "severity",
-                    out var severity) ||
-                severity.ValueKind !=
-                    JsonValueKind.String)
+            if (string.IsNullOrWhiteSpace(
+                    message.Severity))
             {
                 return false;
             }
 
-            switch (severity.GetString())
+            switch (message.Severity)
             {
                 case "FATAL":
                 case "ERROR":
@@ -359,6 +347,18 @@ internal sealed class EpubCheckConformanceValidator
         {
         }
     }
+
+    #endregion
+
+    #region Types
+
+    private sealed record EpubCheckReport(
+        [property: JsonPropertyName("messages")]
+        IReadOnlyList<EpubCheckMessage>? Messages);
+
+    private sealed record EpubCheckMessage(
+        [property: JsonPropertyName("severity")]
+        string? Severity);
 
     #endregion
 }

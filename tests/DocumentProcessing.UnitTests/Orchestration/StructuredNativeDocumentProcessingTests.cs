@@ -295,7 +295,10 @@ public sealed class StructuredNativeDocumentProcessingTests
         var result =
             await engine.ProcessDocumentAsync(
                 new DocumentSource(
-                    stream));
+                    stream),
+                new DocumentProcessingRequestOptions(
+                    qualifyUnresolvedVisuals:
+                        true));
 
         var request =
             Assert.IsType<UserSourceVisualAssetWriteRequest>(
@@ -347,6 +350,9 @@ public sealed class StructuredNativeDocumentProcessingTests
         Assert.Contains(
             "test-structured-visual-raw-v1",
             result.ProcessingManifest.VisualPreservationProfileIds);
+
+        Assert.Null(
+            result.ProcessingManifest.LayoutAnalysis);
 
         await destination.DisposeAsync();
     }

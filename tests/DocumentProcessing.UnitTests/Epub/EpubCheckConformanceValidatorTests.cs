@@ -31,6 +31,41 @@ public sealed class EpubCheckConformanceValidatorTests
     }
 
     [Fact]
+    public async Task ValidateAsync_ConformantReportLargerThanOneMegabyte_ReturnsConformant()
+    {
+        var publicationDescription =
+            new string(
+                'x',
+                1024 *
+                1024 +
+                256 *
+                1024);
+
+        using var fixture =
+            new ValidationFixture(
+                CompletedWithReport(
+                    exitCode:
+                        0,
+                    $$"""
+                    {
+                      "publication": {
+                        "description": "{{publicationDescription}}"
+                      },
+                      "messages": []
+                    }
+                    """));
+
+        var result =
+            await fixture.Validator
+                .ValidateAsync(
+                    fixture.EpubPath);
+
+        Assert.Equal(
+            EpubCheckConformanceStatus.Conformant,
+            result.Status);
+    }
+
+    [Fact]
     public async Task ValidateAsync_WarningReport_ReturnsNonConformant()
     {
         using var fixture =

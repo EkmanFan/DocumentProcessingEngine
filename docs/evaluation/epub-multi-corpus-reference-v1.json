@@ -61,6 +61,835 @@
           }
         ]
       }
+    },
+    "brenner": {
+      "source": {
+        "sha256": "c560893a5b69be6ba300053ac31c26529a069a2ca3836cc08099e9c66f92fddc",
+        "byteLength": 7515876,
+        "packagePath": "OEBPS/content.opf",
+        "title": "Logic and Philosophy",
+        "identifier": "urn:asin:B01L7GKFEQ",
+        "language": "en-US",
+        "spineItemCount": 22,
+        "linearSpineItemCount": 22
+      },
+      "processing": {
+        "elementCount": 2580,
+        "textElementCount": 2530,
+        "headingElementCount": 50,
+        "captionElementCount": 0,
+        "segmentCount": 21,
+        "authoritativeTextSha256": "a60fdddb8b1705e5d4b367b772549f8c595348123a2f3cddbb5a73ca7d5a6fec",
+        "nativeExtractionProfileId": "epub-xhtml-native-v2+epubcheck-5.3.0"
+      },
+      "visuals": {
+        "bodyMatterStartSpineIndex": 6,
+        "selectedVisualCount": 129,
+        "visualAssetCount": 129,
+        "assets": [
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3UR.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 61185,
+            "contentSha256": "d89d8cc66ca2565446443226148dfe5a1a34e68d83ca3698037c1ef88b8b9cf2"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3US.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 10734,
+            "contentSha256": "dff93d51313aa8cd4ced87c348bfa1e15ee58388810135a6fdc28028c6b3c0ff"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3UT.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 3922,
+            "contentSha256": "7194a8b8ea069b836268be2892150914822801c0d4c7ce4022089ce8f7d16c0a"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3UU.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 5213,
+            "contentSha256": "8b602399ae072b49a4d4a506e46718f46f6c7e216016346f9b4372d85e88fd71"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3UV.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 5355,
+            "contentSha256": "9ca9733fe0e1e26bb7c66e44310ad66b0bf78ab6a06c02e202e9e4dc50989a7c"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3UW.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 3954,
+            "contentSha256": "63b91b19f6c8832a5f0d1516888a25a250c476466c7d6bb77e18c38eeeece3d4"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3UX.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 1406,
+            "contentSha256": "45c49cb8d038bdb8d28aceaa91ae22f2843388fd6d89fe4bd8c5dc9ed0adaec9"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3UY.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 2859,
+            "contentSha256": "f7cd0963219fa060bd9185717044044605ab53c454b6190e9509e065b4345f4c"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3UZ.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 77483,
+            "contentSha256": "aada8d433d6de31d29319d66a1ab2dbd9b7c42bd591de76175e3d8dcff2f93cc"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V0.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 33535,
+            "contentSha256": "99505b541ea0ce4b6df630323eb4519da7ccdf0fc87fce05e564f15baad15397"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V1.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 85468,
+            "contentSha256": "da6975c8e255fde1f4523db73342ddf200e654d924c96307271a6de3a7b59d5b"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V2.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 46468,
+            "contentSha256": "bd191024eb97b4d6be07ae9290f0d5085138cf81b7722bbc95ac4930fb2f21b2"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V3.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 33584,
+            "contentSha256": "6655feb31d76f6009615ee55ed5b7bd7efc5cefcb1ea0fa8d5c5cb5b1fee42e4"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V4.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 37905,
+            "contentSha256": "701b0b018dcfc0e525ec5e10c545693641038e9c5adf686e3bc85de1871e9ac4"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V5.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 24595,
+            "contentSha256": "c387bcd0c1bcad94da8e185b0f756e69c794773b00a32d71f123a873b5d478d9"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V6.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 6888,
+            "contentSha256": "be19cccb0897d7d5e97990c80fc5d958c5148af04687d1d76f65c7a9e90628e5"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V7.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 57972,
+            "contentSha256": "7321220b45707fcae3c0e111893028a632f37e2bf85990c1221381c66fb47427"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V8.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 27244,
+            "contentSha256": "44e6873cfe50354d8f63af93599cd6ddc6a939570e8d977f447fae2ae0418f7e"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3V9.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 23903,
+            "contentSha256": "aed2ce56b5aaaee522778959115b6d77f91b1285c994e5a2367149d2d4448054"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VA.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 25788,
+            "contentSha256": "cf532cd71b4d3240694cf65d6acea86b973c57e78ae751d9824bbd611895ef74"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VB.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 18181,
+            "contentSha256": "80054f19607ed6a22cefe4735f8d5b8d7ad3c7310723ca20ebac738aa40f0c11"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VC.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 23376,
+            "contentSha256": "40c4ee12ec29a79976890ba4e3b3b75106bf4f13d1edd46c6f190d061dd47c70"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VD.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 37371,
+            "contentSha256": "879ad9ae44707f670a0d5aaf0fb49dec265fb410b33c8092bbe1ab5c245c5884"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VE.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 3336,
+            "contentSha256": "92248880f62c39923e36da43bd314caab1ab45aa8aa17d3d17fb484a6f628884"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VF.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 8492,
+            "contentSha256": "989497389dad2fbe93b6bda0794f0d89a9875074003377b7a8a601e4075e2683"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VG.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 16274,
+            "contentSha256": "455d237e6cb1888081b9342c53d0c4f7fd19c2f2f4e9fadf381f497a0b69dcdf"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VH.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 16327,
+            "contentSha256": "1a6a12e77aaa4c47a93eb470ca2f62c299b73c2bbef9fcfaa74a5d318d6deb2f"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VJ.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 17218,
+            "contentSha256": "db3f821391360e1bff9be9f516d95dcb205cf17c79c1820269c4989b82f4c2ed"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VK.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 25893,
+            "contentSha256": "8ea51622c81cd93f57cedcfbf7c8caafe1e05a935534440b14030d92778dee0d"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VM.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 27961,
+            "contentSha256": "74bbbdb8969b9e4bea225132b4fd3bcf97075399f22316d3b6cf1ad0b3428698"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VN.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 162959,
+            "contentSha256": "6bb7b6822c61988c7d73083caa803da374a7082377451d9372a8b80e303c38e2"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VP.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 11926,
+            "contentSha256": "9c0b900096754d906e834cddedc1335c18664a22179ad4bb0ac438ee68d21073"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VR.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 4348,
+            "contentSha256": "1044684a6b1281ffb991ffa5089b940ef10f3239ef5ca694f7f2c6122cb846a1"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VS.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 9281,
+            "contentSha256": "7635baf408311952777fa5889cb886e80474e9fbc9f831709b8255ec35d573b5"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VT.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 13892,
+            "contentSha256": "652abe589c5155ce15595774b80017e325580e236411e9730e2278fff48c21a2"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VU.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 23235,
+            "contentSha256": "094f69964dd1a6b3ba0de26aa0808c857f8c73977f49f382af3a104f801d9d77"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VV.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 2606,
+            "contentSha256": "9013a46b97acd86b8763a56027a79180da3aaf5303b6ef6cb40ed35961f57c3f"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VW.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 14130,
+            "contentSha256": "7a412fb4cae578bf756d86f29275ecf051d025d5931c65db922de4a6d3ce6f0b"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VX.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 16272,
+            "contentSha256": "02b17b17764b94e1f7c9b7b21b77962ad1df1a21d3e7f1b5767612ebd132ad9d"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VY.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 13522,
+            "contentSha256": "27157d0b3269327619729e4e8c089e5db38daf3f7ad3d2eb06e98b492251c54e"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3VZ.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 19986,
+            "contentSha256": "b91eadd440db7738ea80a73d372af9ba93418cbadc72aed60647cbfce6ea58a7"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W0.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 3182,
+            "contentSha256": "726160b6ad148b61a2ac42ccc30f9941725d514cbfc32cc788672147bdc1ab36"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W1.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 3056,
+            "contentSha256": "82d7a4ab92f12d34c7ef8b68cda54bab895a2c2abc785c5526b55c896cab1437"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W2.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 2221,
+            "contentSha256": "ade2b1860bc21cbddf379c89908945ead74fa40d734d452e25e024e92c857ea5"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W3.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 15388,
+            "contentSha256": "76ce03468f66371e1ddd0d10cf3302d5528b35cb8be2de874568baf57cbfa392"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W4.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 4017,
+            "contentSha256": "59dfdd91b1c21e70334546e7e9e405da197acdd1e3c8cb12e23a640b33b4a6be"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W5.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 14323,
+            "contentSha256": "31ce893c5ab4daa0172e4d049b80cafe74c92cf40d515f1061a72a648217cf52"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W6.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 16035,
+            "contentSha256": "05788135287ae5ab552451b1edb02391133bd18b59a97a90c8f79ea8e98a4b66"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W7.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 48673,
+            "contentSha256": "66706115bd7b05cb1fa8bcfe695227ff70cb99179c4ad3380bbcf7712ec63de6"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W8.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 95604,
+            "contentSha256": "2f584392b77ab2abac0795c32f80720208e6f626462b41b27bf8edc88792700b"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3W9.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 48761,
+            "contentSha256": "36b3eb88c86e155623bf45dfcdad94a9d534c6e338511a0f8f2dae1fa35a5da4"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WA.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 32089,
+            "contentSha256": "057d5382a1560c7f64a357142782554713a7221a9a251bea178c4c5162d0f2d3"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WB.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 18463,
+            "contentSha256": "a95fe51af3ad866848975c5d1eacb8089262705a2601e3400d8a7f87b613b7bc"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WC.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 20432,
+            "contentSha256": "1a58b3584ee2b49b3a1f8ae05afdf75256ee96829a394bb4baba76b075c77bd9"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WD.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 4654,
+            "contentSha256": "653892277e344020c793ee4544d6b36092711655edb930a57df9ad3783868962"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WE.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 9917,
+            "contentSha256": "4294877ed04a2f4e10b72d641bbafa00a2a63e72c88759635395273a4bf49a4c"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WF.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 7856,
+            "contentSha256": "dbfa609a422cc9b87134a2dbf67fb10c0491a9cc9d0d617c6dc53feb9a6f0e52"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WG.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 13771,
+            "contentSha256": "9a362623ca67ef1a9cd6502e48990ea40b530f608cf98825c3f665b5081fd5d9"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WH.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 6264,
+            "contentSha256": "05bf4b7475002b92ac8461f7ceda4eeba5d5971a763baa646225af0129a363fb"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WJ.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 51469,
+            "contentSha256": "e858d3aeb684dd4a60890c89c5010368ca7e8e50c7a569e9bb99c9bca0f20847"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WK.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 20681,
+            "contentSha256": "f46f75564bad8d700df9c93899e01a4fea0e6a817f52a001d39e6c970877ce08"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WM.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 19697,
+            "contentSha256": "3b57d1606c9e659594b0bdcc16a9bfa79f194b6ea90aaf3ebec893c59c6568a4"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WN.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 29462,
+            "contentSha256": "b89f2f935199c28e21519fb36518e296e3ef9b5955357f66fea1707b6ae084ce"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WP.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 15375,
+            "contentSha256": "1aeff966a6b1ac1a488c533403050e2e79994234bb2217217a6d6a074340ffbd"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WR.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 77486,
+            "contentSha256": "a3268a4abba702cc57ced7145dc8a07ddc351243513905477dd0431d362862b0"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WS.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 19928,
+            "contentSha256": "b001914e264e2264fbe971609537d54ce973125e4b35cd4a2ab7e1526c0b122e"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WT.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 21327,
+            "contentSha256": "0a59a7daf43d45c07417d1bc4206a293ba6ee31a685a4ef9b6cd17a2a8ed9b8c"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WU.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 28240,
+            "contentSha256": "8c9fe22c7f1f1e1c8fd3a76b5beffceaea48bcf2a1798915c9c1b119926a9bfa"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WV.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 34797,
+            "contentSha256": "456070cdef388633923a7a027cd3118e2d71fbf7c5315ab68ba6f877e5496469"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WW.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 55407,
+            "contentSha256": "11add91bbdf6d8a01331826a4131f533e05c2a387d0797ba67370bb6fe81d11d"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WX.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 57935,
+            "contentSha256": "307bcfd016da2c515dfe61546e9e5f0ff1cd0d88ad636b93f0e9465dc32126fd"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WY.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 10660,
+            "contentSha256": "21a84d3e3a665921a0a35bc5640ab3503d866ed443bfc2b91166be665982c937"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3WZ.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 23624,
+            "contentSha256": "1f7b1029864fdaf85abee6f382da8c95869ad3aaabbc4e2d32c41a2aedb8819b"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X0.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 5503,
+            "contentSha256": "67303653ad6ca7ff6452d3761afd14e1d879d28a60cf721a65fca861134c717f"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X1.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 12200,
+            "contentSha256": "4d14175722af85f026732bb8a9024f5f44c2d4f0de496e4e1ce3168332b25a0a"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X2.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 78832,
+            "contentSha256": "b73010c3cf327ae5b6b2ea650f12d9f07b4f16e8268cec4b4d4f3669460bacef"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X3.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 38264,
+            "contentSha256": "489c9970af97010963e43387fc22fa288798ad1f130b83da187aefeff71a8859"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X4.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 111028,
+            "contentSha256": "3466a9e8e7f5ab2ae115e484331b32004b2a60dddb54a9599bf5e281e56fa4d8"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X5.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 14966,
+            "contentSha256": "078ccb06eedbd260d2f89e2e85937e940fb979d905541fb10fb9ca284b5f1c58"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X6.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 13770,
+            "contentSha256": "0bc65716b7393d8590fca5bc64ff2c4f9bb163fbbe954d7bdeef21ef6cd95b76"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X7.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 98502,
+            "contentSha256": "525c02173a43919de2919c38a72b9d93f30f65244418b8e917d170007322d3c8"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X8.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 1488,
+            "contentSha256": "a33dcdf80384c75f9cb79d296bfcc43d2082bacefcf7eb71405389da855c028f"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3X9.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 709,
+            "contentSha256": "fc043e9d8d75c0f6068a8c7adb9ab24efb6d895c4f198c15afd0b1808fb19dbe"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XA.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 15370,
+            "contentSha256": "46887e1424d3ae97d1c3b144ec6f9508db3b2d666bc63a991d69b81f6a6159ea"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XB.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 17842,
+            "contentSha256": "391d8b5f421fcde409414aeb999eedbd43b5ce8dbe4375ac236fd2d87988d876"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XC.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 20349,
+            "contentSha256": "46558475f8604aebb5770aedced1931eb56023ff6f5333595c9f0dbf9bba3297"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XD.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 3492,
+            "contentSha256": "9326d6f8fceea9552e10f8674e4b5afe0984cd831ac58a46ab244fd3afefa719"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XE.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 13596,
+            "contentSha256": "ca98fcf74441a8c9ff1e8c94452436dac5d0f2a0aac5b0ea38b3ebc954197426"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XF.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 157686,
+            "contentSha256": "a8473246d7d61157a9374c6a75d1bac7ac1ef0c143d5e1762edda42db14fbb15"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XG.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 8035,
+            "contentSha256": "ccdd8075e481f12270d92bca5eb7be5599258d3ae6fae9f035f85bb86a432bcf"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XH.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 22225,
+            "contentSha256": "3d6da2091320d2c8657698ae6f2128ddb15ee309b7daa19b3d5ed3936937beba"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XJ.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 123818,
+            "contentSha256": "51c3912f111461a4c54da6b1b0522c798b740d4703c33da8e0e9b934ea279d4f"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XK.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 51697,
+            "contentSha256": "332ada8d981366bc27b8bf76cf24d9df6f107d254f8f67b9655629f8b34b0936"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XM.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 83947,
+            "contentSha256": "fda38020c5e037730cc8ccc508f354bc0a5c5bab33967a11f5007cdbcbc07315"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XN.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 24948,
+            "contentSha256": "b406a1c0e1bb39a6fac0c40e10b8746244a5d28129167743e77ba19cba7b97e1"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XP.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 24465,
+            "contentSha256": "32d37afdb94075a7d37d90851f6f538c66162a1a6f10f97625cfc409f42eb38e"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XR.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 71385,
+            "contentSha256": "33f4519a83bb9a9de251b8bdc8e9b1067168d8932cdd17d861bf681c6731289d"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XS.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 160657,
+            "contentSha256": "33b619b75c70f336079b807720b5da5e5fc85925639352fae32c5a7737089b2d"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XT.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 23737,
+            "contentSha256": "11bd389fc40469957162a3cb27c92a433793e2b23d6b2f9cba2e7491748fce81"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XU.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 152910,
+            "contentSha256": "efcc8cc620435a6085c5641a92cdf55cbb3f3ef1750582102ac2458cd930e43c"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XV.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 396296,
+            "contentSha256": "5ee50c3e029467bbe76038b504e42ac82e7dd9629b3572e6bcc5690dc75eb9fb"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XW.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 3532,
+            "contentSha256": "f904e7af6c92aaa4a4d68261ea0853549d60b7b068520d81b1973095a9dc68c8"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XX.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 20993,
+            "contentSha256": "587451b79f84e1fa719c6f1506f589c3c4910a2175fb58c8d9e10deb62f99afb"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XY.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 14180,
+            "contentSha256": "693796e675d44f17120ce47fc759d85c280f360bf6c3d8c067c22449b252e25b"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3XZ.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 7260,
+            "contentSha256": "0175d09b023c913dfe5264de8c228b9a86a7c4854d3c4946fce37d6f679131e0"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y0.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 9090,
+            "contentSha256": "3d76d53945823ae3e50799ebeb1436f8bc5fc88c7f7f3b035d0310ad52afd1b4"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y1.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 12504,
+            "contentSha256": "d65cdd9446ac20b0f18e7dd40b30bdf814246c1b00d9f76d0b46accf0e2e91d9"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y2.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 12429,
+            "contentSha256": "b49e0a49e4b40b336ff8a00a6f87f1a88e6eb05dd28e1605bd318176c5745999"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y3.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 12249,
+            "contentSha256": "76b9010bce41c8e232dc29491a292c02d48a180f9ca41e0efbac139eb833a244"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y4.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 12149,
+            "contentSha256": "3b3bf925ba924fd33396f82ee01632b4bfdf1a604d8369028b812d80c28c7b9b"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y5.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 12165,
+            "contentSha256": "51cbca85483e0b34dc6ff330711abaed2ecde7394d517bd28d014b857c7bee4a"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y6.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 28112,
+            "contentSha256": "10f0499f7e7a20bb83fe905111bf9400461caeafee4456c5a2f74c41d42ab421"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y7.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 23508,
+            "contentSha256": "98461d3c2638e662f8ee13cb3e4473ba0e1fc721b77a79c0ddeb98843dc1078a"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y8.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 28465,
+            "contentSha256": "143d9a85660ff66e48f1e0433a764730a6d82302abee29d9e9ab65c8b0a1f86a"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3Y9.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 4802,
+            "contentSha256": "86814f5077133f38830a83e32f2ff2501ba87d7424dccea0845495cce96d29eb"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YA.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 27833,
+            "contentSha256": "dea1afe1e87217e94b0645efce76adc6785db77d07ea384bd637958ae58e8e5c"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YB.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 34627,
+            "contentSha256": "ed951e55f812ab8735e38f8c7bbf7a2732b5939701541a917df4a205bb88e6b6"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YC.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 32233,
+            "contentSha256": "31213234f1a7665cbc1ab4a6d46f7215f01cf8c9279c74ea3d139d553bfa3c3d"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YD.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 185805,
+            "contentSha256": "6e8af62bad0f4c50ed02367207d5398176e74c097015be4ed1459632684983ba"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YE.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 181935,
+            "contentSha256": "6c4a4ce5044d748aaa569b3263191e49ecd41a9922c484f631b06ce275045245"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YF.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 13342,
+            "contentSha256": "e5ca48b70c945b3ae1f4141af4a42e3a657cf167e733e2fd55c882f76278af88"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YG.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 21688,
+            "contentSha256": "5b9a26afab1331e9cb92e20b8c534f4e89b242d056cf3684edd2fa0785cfe54b"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YH.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 41161,
+            "contentSha256": "a740be7ebed97ac52c64c9627c96e02f82111b31e4e1a98fdd768d4056c7fe6e"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YJ.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 3590,
+            "contentSha256": "10092624ac1745d749a8a9362dcb29ec460a84490f7122fbb7f97402bfcdc15d"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YK.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 2501,
+            "contentSha256": "b09c2dfb2bacc1cf6c80d085e4ee2878d8eebd8b672c4cd691ed9ebbd2f9ef66"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YM.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 2161,
+            "contentSha256": "a83ba71786aa0f3bc9ed80b8ddacbd818a2f3ae726a1f428fd78ac957968dc27"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YN.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 64258,
+            "contentSha256": "904066b1a962a96277afa2a05c22112e538c9db2071cd67d560f7f3a742e40a3"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YP.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 12999,
+            "contentSha256": "18f921216e28f7b714d546966e70771e2907582388387132ce8126e2db288c17"
+          },
+          {
+            "sourceResourceId": "OEBPS/image_rsrc3YR.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 36246,
+            "contentSha256": "39c70ee36c505dc27ecaf1441c5911a42bf6d5658ea7c83287230784df7b2654"
+          }
+        ]
+      }
+    },
+    "septante": {
+      "source": {
+        "sha256": "89550bb5f83953934eec9dd22fc90d4552bab4baa6be95953497668ed968738b",
+        "byteLength": 6330210,
+        "packagePath": "OEBPS/content.opf",
+        "title": "La Septante Grec-Français (French Edition)",
+        "identifier": "urn:asin:B0C341928N",
+        "language": "fr",
+        "spineItemCount": 1181,
+        "linearSpineItemCount": 1181
+      },
+      "processing": {
+        "elementCount": 60366,
+        "textElementCount": 60311,
+        "headingElementCount": 55,
+        "captionElementCount": 0,
+        "segmentCount": 1179,
+        "authoritativeTextSha256": "eef90b7e36d9ad326f9ddec68dd751962390464e14d1c70fb2c4f9431ecef6b1",
+        "nativeExtractionProfileId": "epub-xhtml-native-v2+epubcheck-5.3.0"
+      },
+      "visuals": {
+        "bodyMatterStartSpineIndex": null,
+        "selectedVisualCount": 0,
+        "visualAssetCount": 0,
+        "assets": []
+      }
     }
   }
 }

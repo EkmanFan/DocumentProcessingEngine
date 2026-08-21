@@ -1,4 +1,4 @@
-# EPUB-4 multi-corpus semantic hardening V1
+# EPUB-4 multi-corpus structural hardening V1
 
 ## Status
 

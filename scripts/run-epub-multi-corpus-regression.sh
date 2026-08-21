@@ -5,6 +5,8 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REFERENCE="$REPO/docs/evaluation/epub-multi-corpus-reference-v1.json"
 CALVIN_EPUB_FILE="${CALVIN_EPUB_FILE:-$REPO/tests/epub_test/Institution de la Religion Chretienne.epub}"
 BAUCKHAM_EPUB_FILE="${BAUCKHAM_EPUB_FILE:-$REPO/tests/epub_test/Jesus and the Eyewitnesses - The Gospels as Eyewitness Testimony - Richard Bauckham.epub}"
+BRENNER_EPUB_FILE="${BRENNER_EPUB_FILE:-$REPO/tests/epub_test/Logic and Philosophy - William H. Brenner.epub}"
+SEPTANTE_EPUB_FILE="${SEPTANTE_EPUB_FILE:-$REPO/tests/epub_test/La Septante Grec-Francais - Ouvrage Collectif.epub}"
 EPUBCHECK_ZIP="${EPUBCHECK_ZIP:-$REPO/scripts/tmp/tool-cache/epubcheck-5.3.0.zip}"
 OUT="$REPO/scripts/tmp/epub-multi-corpus-regression"
 
@@ -20,6 +22,8 @@ done
 [[ -f "$REFERENCE" ]] || fail "Multi-corpus EPUB reference is missing: $REFERENCE"
 [[ -f "$CALVIN_EPUB_FILE" ]] || fail "Calvin EPUB is missing: $CALVIN_EPUB_FILE"
 [[ -f "$BAUCKHAM_EPUB_FILE" ]] || fail "Bauckham EPUB is missing: $BAUCKHAM_EPUB_FILE"
+[[ -f "$BRENNER_EPUB_FILE" ]] || fail "Brenner EPUB is missing: $BRENNER_EPUB_FILE"
+[[ -f "$SEPTANTE_EPUB_FILE" ]] || fail "Septante EPUB is missing: $SEPTANTE_EPUB_FILE"
 [[ -f "$EPUBCHECK_ZIP" ]] || fail "EPUBCheck distribution is missing: $EPUBCHECK_ZIP"
 
 mkdir -p "$OUT"
@@ -131,5 +135,7 @@ printf 'Reference: %s\n\n' "$REFERENCE"
 
 run_corpus "calvin" "$CALVIN_EPUB_FILE"
 run_corpus "bauckham" "$BAUCKHAM_EPUB_FILE"
+run_corpus "brenner" "$BRENNER_EPUB_FILE"
+run_corpus "septante" "$SEPTANTE_EPUB_FILE"
 
 printf '\nEPUB MULTI-CORPUS REGRESSION: PASS\n'
