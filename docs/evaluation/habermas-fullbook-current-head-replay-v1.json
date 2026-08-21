@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "document-processing-habermas-fullbook-current-head-replay-v1",
+  "qualification": "Strict current-Host full-book replay; not exhaustive page-by-page human acceptance.",
+  "implementationCommit": "dc5e8848114be8fed23e53cb8cff0ee47de6c3cc",
+  "historicalReferenceCommit": "f456e59cf527349736f459bf4c16b20b9efd7111",
+  "source": {
+    "fileName": "The Case for the Resurrection of Jesus - Gary R. Habernas.pdf",
+    "sha256": "f367a503f298337ec589eb1ad5ec5fe956999e49205a486d50798bfeee6d0399",
+    "byteLength": 7792311,
+    "pageCount": 170
+  },
+  "method": {
+    "publicDocumentProcessingHostPath": true,
+    "portableDocumentProcessingResult": true,
+    "livePpStructureV3": true,
+    "livePaddleOcr": true,
+    "concurrentResidentModels": true,
+    "diagnosticSourcePatch": false,
+    "semanticBypass": false,
+    "failClosedInterruption": false,
+    "pdftoppmVersion": "26.05.0"
+  },
+  "result": {
+    "nativeOnlyPages": 159,
+    "ocrBackedPlannedPages": 11,
+    "routeCounts": {
+      "LayoutWithTargetedOcrRecovery": 11,
+      "NativeOnly": 159
+    },
+    "ppHttpRequests": 28,
+    "ocrHttpRequests": 17,
+    "ocrExecutedPages": 4,
+    "figureOcrCalls": 0,
+    "preservedVisuals": 22,
+    "resultElements": 1217,
+    "totalProcessMilliseconds": 239874.4359,
+    "peakWorkingSetBytes": 657207296,
+    "managedAllocatedBytes": 4981954320
+  },
+  "historicalComparison": {
+    "routeAccountingMatches": true,
+    "ppRequestCountMatches": true,
+    "ocrRequestCountMatches": true,
+    "ocrExecutedPageCountMatches": true,
+    "figureOcrCountMatches": true,
+    "preservedVisualCountMatches": true,
+    "resultElementCountMatches": true,
+    "visualIdentifiersMatch": 22,
+    "visualDimensionsMatch": 22,
+    "decodedPixelExactMatches": 22,
+    "decodedPixelDifferences": 0,
+    "historicalEncodedVisualBytes": 23984612,
+    "currentEncodedVisualBytes": 24265773,
+    "encodedBytesMatch": false,
+    "encodedDifferenceInterpretation": "PNG encoding differs; decoded RGB pixels are exact for all 22 visuals."
+  },
+  "localEvidenceArtifacts": {
+    "reportSha256": "719cc91e446f1ac8f00be01b916da35203c9f006eeddc0479dfa9986315c80b2",
+    "consoleSha256": "f5e22bffe3858690a50d9ec2b51cce4c394823ea00e3e2653d3a2f957a96cf15",
+    "ppLogSha256": "ad98f5a6abc1586b44dc07f406fe25109cb3cb5f631f5b064780036e4cd70e56",
+    "paddleLogSha256": "cb58fea5b6502f65c4cb3ef16412fc333f25c0b187c5b0690edf5cc379f5907a",
+    "hostHarnessSha256": "85982eb78f14d3422c10786b888676e9d2db0d86fcca8c47b6fc9489be050409"
+  },
+  "scopeBoundary": {
+    "completeHistoricalTextResultAvailable": false,
+    "exactWholeResultTextEqualityProven": false,
+    "permanentPageLevelRegressionsRemainAuthoritative": true,
+    "performanceGate": false,
+    "knownP28FigureTitleWeaknessClosed": false
+  }
+}

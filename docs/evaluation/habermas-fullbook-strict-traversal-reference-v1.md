@@ -6,6 +6,11 @@
 
 This reference freezes a strict full-book traversal of the 170-page Habermas source on commit `f456e59cf527349736f459bf4c16b20b9efd7111`.
 
+The public Host/Engine architecture was replayed later on current commit
+`dc5e8848114be8fed23e53cb8cff0ee47de6c3cc`. See
+`habermas-fullbook-current-head-replay-v1.md` for the separate current-HEAD
+evidence and historical comparison.
+
 It is a **fail-closed coverage/traversal reference**, not exhaustive human semantic acceptance of every element on every page.
 
 ## Execution contract
