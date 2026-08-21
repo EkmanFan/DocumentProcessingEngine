@@ -39,11 +39,12 @@ Failed
 TimedOut
 ```
 
-The supervised invocation has a configurable timeout, kills the Java process
-tree when that timeout expires, drains stdout and stderr without deadlock,
-retains at most 8,192 diagnostic characters per stream, reads only validation
-messages from the JSON report, verifies the pinned JAR identity and removes its
-temporary report. The report reader imposes no fixed size limit.
+The supervised invocation has a two-minute default timeout configurable by the
+Host through `EpubCheckOptions`, kills the Java process tree when that timeout
+expires, drains stdout and stderr without deadlock, retains at most 8,192
+diagnostic characters per stream, reads only validation messages from the JSON
+report, verifies the pinned JAR identity and removes its temporary report. The
+report reader imposes no fixed size limit.
 
 Explicit caller cancellation remains cancellation. A checker timeout or an
 unexpected checker termination is not caller cancellation.

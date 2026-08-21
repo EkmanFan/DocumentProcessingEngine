@@ -9,6 +9,38 @@ public sealed class EpubCheckConformanceValidatorTests
     #region Methods Tests
 
     [Fact]
+    public void EpubCheckOptions_DefaultTimeoutIsTwoMinutesAndCanBeOverridden()
+    {
+        var distributionDirectory =
+            Path.Combine(
+                Path.GetTempPath(),
+                "epubcheck-options");
+
+        var defaultOptions =
+            new EpubCheckOptions(
+                distributionDirectory);
+
+        Assert.Equal(
+            TimeSpan.FromMinutes(
+                2),
+            defaultOptions.Timeout);
+
+        var configuredTimeout =
+            TimeSpan.FromMinutes(
+                7);
+
+        var configuredOptions =
+            new EpubCheckOptions(
+                distributionDirectory,
+                timeout:
+                    configuredTimeout);
+
+        Assert.Equal(
+            configuredTimeout,
+            configuredOptions.Timeout);
+    }
+
+    [Fact]
     public async Task ValidateAsync_ConformantReport_ReturnsConformant()
     {
         using var fixture =

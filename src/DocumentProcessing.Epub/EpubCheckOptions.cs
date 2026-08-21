@@ -11,8 +11,8 @@ public sealed class EpubCheckOptions
         "5.3.0";
 
     public static readonly TimeSpan DefaultTimeout =
-        TimeSpan.FromSeconds(
-            30);
+        TimeSpan.FromMinutes(
+            2);
 
     #endregion
 

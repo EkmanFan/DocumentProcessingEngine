@@ -61,6 +61,10 @@ visual-resource options remain configurable, but their defaults impose no
 product-level size boundary. A finite production limit will be introduced only
 from observed operational evidence.
 
+EPUBCheck retains a separate two-minute execution timeout by default. The Host
+can override it through `EpubCheckOptions`; this operational safeguard does
+not impose a document-size boundary.
+
 ## Reproduction
 
 ```bash
