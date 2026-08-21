@@ -88,12 +88,27 @@ public sealed class DocumentProcessingEngine
     /// <summary>
     /// Processes one source through the Engine-owned universal entry path.
     /// </summary>
+    public Task<DocumentProcessingResult> ProcessDocumentAsync(
+        DocumentSource source,
+        CancellationToken cancellationToken = default) =>
+        ProcessDocumentAsync(
+            source,
+            DocumentProcessingRequestOptions.Default,
+            cancellationToken);
+
+    /// <summary>
+    /// Processes one source with explicit user-selected request options.
+    /// </summary>
     public async Task<DocumentProcessingResult> ProcessDocumentAsync(
         DocumentSource source,
+        DocumentProcessingRequestOptions options,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
             source);
+
+        ArgumentNullException.ThrowIfNull(
+            options);
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -181,6 +196,9 @@ public sealed class DocumentProcessingEngine
                         success.Evidence,
                         engineVersion,
                         _userVisualAssetWriter,
+                        layoutAnalyzer,
+                        layoutAnalysisIdentity,
+                        options.QualifyUnresolvedVisuals,
                         cancellationToken)
                     .ConfigureAwait(false);
 

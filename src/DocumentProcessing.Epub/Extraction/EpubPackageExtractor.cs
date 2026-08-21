@@ -164,6 +164,29 @@ internal sealed class EpubPackageExtractor
                 package,
                 manifest);
 
+        var bodyMatterResourcePath =
+            ReadBodyMatterResourcePath(
+                entries,
+                package,
+                packagePath,
+                manifest,
+                options.MaximumTextResourceBytes);
+
+        var bodyMatterStartSpineIndex =
+            bodyMatterResourcePath is null
+                ? (int?)null
+                : spineItems
+                    .Where(
+                        item =>
+                            string.Equals(
+                                item.ResourcePath,
+                                bodyMatterResourcePath,
+                                StringComparison.Ordinal))
+                    .Select(
+                        item =>
+                            (int?)item.SpineIndex)
+                    .FirstOrDefault();
+
         var contentUnits =
             new List<StructuredNativeContentUnit>(
                 spineItems.Count);
@@ -184,6 +207,7 @@ internal sealed class EpubPackageExtractor
                     excludedImageResourcePaths,
                     navigationContentResourcePaths,
                     coverContentResourcePaths,
+                    bodyMatterStartSpineIndex,
                     options.MaximumTextResourceBytes);
 
             contentUnits.Add(
@@ -205,7 +229,8 @@ internal sealed class EpubPackageExtractor
                     "identifier"),
                 ReadMetadata(
                     package,
-                    "language"));
+                    "language"),
+                bodyMatterStartSpineIndex);
 
         source.Position =
             0;
@@ -540,6 +565,103 @@ internal sealed class EpubPackageExtractor
         return items;
     }
 
+    private static string? ReadBodyMatterResourcePath(
+        IReadOnlyDictionary<string, ZipArchiveEntry> entries,
+        XDocument package,
+        string packagePath,
+        IReadOnlyDictionary<string, ManifestItem> manifest,
+        long maximumTextResourceBytes)
+    {
+        foreach (var navigationItem in
+                 manifest.Values.Where(
+                     item =>
+                         item.Properties.Contains(
+                             "nav") &&
+                         string.Equals(
+                             item.MediaType,
+                             "application/xhtml+xml",
+                             StringComparison.OrdinalIgnoreCase)))
+        {
+            var navigation =
+                LoadXml(
+                    GetRequiredEntry(
+                        entries,
+                        navigationItem.ResourcePath),
+                    maximumTextResourceBytes);
+
+            var bodyMatterReference =
+                navigation.Descendants()
+                    .Where(
+                        element =>
+                            string.Equals(
+                                element.Name.LocalName,
+                                "nav",
+                                StringComparison.OrdinalIgnoreCase) &&
+                            HasToken(
+                                AttributeValue(
+                                    element,
+                                    "type"),
+                                "landmarks"))
+                    .SelectMany(
+                        element =>
+                            element.Descendants())
+                    .FirstOrDefault(
+                        element =>
+                            string.Equals(
+                                element.Name.LocalName,
+                                "a",
+                                StringComparison.OrdinalIgnoreCase) &&
+                            HasToken(
+                                AttributeValue(
+                                    element,
+                                    "type"),
+                                "bodymatter"));
+
+            var href =
+                bodyMatterReference is null
+                    ? null
+                    : AttributeValue(
+                        bodyMatterReference,
+                        "href");
+
+            if (!string.IsNullOrWhiteSpace(
+                    href))
+            {
+                return EpubArchivePath.Resolve(
+                    navigationItem.ResourcePath,
+                    href);
+            }
+        }
+
+        var guideReference =
+            package.Descendants()
+                .FirstOrDefault(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "reference",
+                            StringComparison.Ordinal) &&
+                        HasToken(
+                            AttributeValue(
+                                element,
+                                "type"),
+                            "text"));
+
+        var guideHref =
+            guideReference is null
+                ? null
+                : AttributeValue(
+                    guideReference,
+                    "href");
+
+        return string.IsNullOrWhiteSpace(
+            guideHref)
+            ? null
+            : EpubArchivePath.Resolve(
+                packagePath,
+                guideHref);
+    }
+
     private static string? ReadMetadata(
         XDocument package,
         string localName) =>
@@ -578,6 +700,7 @@ internal sealed class EpubPackageExtractor
         IReadOnlySet<string> excludedImageResourcePaths,
         IReadOnlySet<string> navigationContentResourcePaths,
         IReadOnlySet<string> coverContentResourcePaths,
+        int? bodyMatterStartSpineIndex,
         long maximumTextResourceBytes)
     {
         if (!string.Equals(
@@ -657,7 +780,13 @@ internal sealed class EpubPackageExtractor
                         spineItem.ResourcePath),
                 isCoverContentResource:
                     coverContentResourcePaths.Contains(
-                        spineItem.ResourcePath));
+                        spineItem.ResourcePath),
+                isPreliminaryMatter:
+                    bodyMatterStartSpineIndex.HasValue &&
+                    spineItem.SpineIndex <
+                    bodyMatterStartSpineIndex.Value,
+                hasBodyMatterBoundary:
+                    bodyMatterStartSpineIndex.HasValue);
 
         return new SpineResourceExtraction(
             new StructuredNativeContentUnit(
@@ -672,7 +801,9 @@ internal sealed class EpubPackageExtractor
         IReadOnlyDictionary<string, ManifestItem> manifestByResourcePath,
         IReadOnlySet<string> excludedImageResourcePaths,
         bool isNavigationContentResource,
-        bool isCoverContentResource)
+        bool isCoverContentResource,
+        bool isPreliminaryMatter,
+        bool hasBodyMatterBoundary)
     {
         var usages =
             new List<VisualUsage>();
@@ -740,7 +871,11 @@ internal sealed class EpubPackageExtractor
                         isNavigationContentResource,
                     IsExplicitlyPresentationOnly:
                         IsPresentationOnly(
-                            element)));
+                            element),
+                    IsPreliminaryMatter:
+                        isPreliminaryMatter,
+                    HasBodyMatterBoundary:
+                        hasBodyMatterBoundary));
         }
 
         return usages;
@@ -788,7 +923,15 @@ internal sealed class EpubPackageExtractor
                     isExplicitlyPresentationOnly:
                         group.All(
                             usage =>
-                                usage.IsExplicitlyPresentationOnly)));
+                                usage.IsExplicitlyPresentationOnly),
+                    isPreliminaryMatter:
+                        group.All(
+                            usage =>
+                                usage.IsPreliminaryMatter),
+                    hasBodyMatterBoundary:
+                        group.All(
+                            usage =>
+                                usage.HasBodyMatterBoundary)));
         }
 
         return candidates;
@@ -1003,7 +1146,9 @@ internal sealed class EpubPackageExtractor
         bool IsAuxiliary,
         bool IsPublicationCover,
         bool IsNavigation,
-        bool IsExplicitlyPresentationOnly);
+        bool IsExplicitlyPresentationOnly,
+        bool IsPreliminaryMatter,
+        bool HasBodyMatterBoundary);
 
     private sealed record SpineResourceExtraction(
         StructuredNativeContentUnit ContentUnit,

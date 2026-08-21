@@ -442,12 +442,14 @@ public sealed class DefaultPageProcessingRequirementsPolicyTests
             VisualEvidenceKind.TinyOrNoise or
             VisualEvidenceKind.SmallHeadingAssociatedVisual or
             VisualEvidenceKind.HeadingBackplateOrPresentation or
-            VisualEvidenceKind.NativeTextContainerOrFrame =>
+            VisualEvidenceKind.NativeTextContainerOrFrame or
+            VisualEvidenceKind.PublicationPresentationVisual =>
                 VisualDisposition.PresentationOnly,
 
             VisualEvidenceKind.CaptionedMeaningfulVisual or
             VisualEvidenceKind.LargeIndependentVisual or
-            VisualEvidenceKind.SourceBackedMeaningfulVisual =>
+            VisualEvidenceKind.SourceBackedMeaningfulVisual or
+            VisualEvidenceKind.StructuredContentMeaningfulVisual =>
                 VisualDisposition.PreserveMeaningfulVisual,
 
             _ =>

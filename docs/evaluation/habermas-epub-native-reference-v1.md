@@ -56,7 +56,7 @@ Host, and compares the complete report with the frozen JSON reference.
 
 ## EPUB-2 continuation
 
-EPUB-1 remains the frozen textual baseline. EPUB-2 now discovers and preserves
-EPUB image resources through `UserVisualAssetWriter` while the EPUB-1 text
-report remains byte-for-byte identical. Its independent visual evidence is
-documented in `docs/epub/epub-2-visual-preservation-v1.md`.
+EPUB-1 remains the frozen textual baseline. EPUB-2 discovers and preserves EPUB
+image resources, while EPUB-3 qualifies them from publication structure with
+an optional user-controlled Paddle fallback. The EPUB-1 text report remains
+byte-for-byte identical.

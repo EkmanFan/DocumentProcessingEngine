@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Locations;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Core.Visual;
@@ -20,7 +21,7 @@ internal static class EpubNativeAnalysisCli
         "document-processing-native-epub-analysis-v1";
 
     private const string VisualSchemaVersion =
-        "document-processing-epub-visual-analysis-v1";
+        "document-processing-epub-visual-analysis-v2";
 
     private static readonly JsonSerializerOptions JsonOptions =
         new()
@@ -104,7 +105,10 @@ internal static class EpubNativeAnalysisCli
                 new DocumentSource(
                     sourceStream,
                     sourceFile.Name,
-                    "application/epub+zip"));
+                    "application/epub+zip"),
+                new DocumentProcessingRequestOptions(
+                    qualifyUnresolvedVisuals:
+                        options.AnalyzeUnresolvedVisualsWithPaddle));
 
         if (!outcome.IsSuccess)
         {
@@ -286,6 +290,7 @@ internal static class EpubNativeAnalysisCli
                             request.SourceResourceId,
                             request.MediaType,
                             request.IsAuxiliary,
+                            request.Qualification.ToString(),
                             asset.ContentLength,
                             asset.ContentSha256,
                             asset.PreservationProfileId,
@@ -296,6 +301,9 @@ internal static class EpubNativeAnalysisCli
         return new VisualReport(
             VisualSchemaVersion,
             result.Source.Sha256,
+            (result.SourceStructure as
+                EpubDocumentSourceStructure)?
+            .BodyMatterStartSpineIndex,
             assets.Length,
             assets.Count(
                 asset =>
@@ -346,6 +354,7 @@ internal static class EpubNativeAnalysisCli
     private sealed record VisualReport(
         string SchemaVersion,
         string SourceSha256,
+        int? BodyMatterStartSpineIndex,
         int SelectedVisualCount,
         int AuxiliaryVisualCount,
         int VisualElementCount,
@@ -358,6 +367,7 @@ internal static class EpubNativeAnalysisCli
         string SourceResourceId,
         string MediaType,
         bool IsAuxiliary,
+        string Qualification,
         long ContentLength,
         string ContentSha256,
         string PreservationProfileId,
@@ -371,7 +381,8 @@ internal static class EpubNativeAnalysisCli
         string SourcePath,
         string EpubCheckDistributionPath,
         string ReportPath,
-        string? VisualReportPath)
+        string? VisualReportPath,
+        bool AnalyzeUnresolvedVisualsWithPaddle)
     {
         public static Options Parse(
             IReadOnlyList<string> args)
@@ -387,6 +398,9 @@ internal static class EpubNativeAnalysisCli
 
             string? visualReport =
                 null;
+
+            var analyzeUnresolvedVisualsWithPaddle =
+                false;
 
             for (var index = 0;
                  index < args.Count;
@@ -422,6 +436,11 @@ internal static class EpubNativeAnalysisCli
                                 ref index);
                         break;
 
+                    case "--analyze-unresolved-visuals-with-paddle":
+                        analyzeUnresolvedVisualsWithPaddle =
+                            true;
+                        break;
+
                     default:
                         throw new ArgumentException(
                             $"Unknown analyze-epub option '{args[index]}'.");
@@ -438,7 +457,8 @@ internal static class EpubNativeAnalysisCli
                 Required(
                     report,
                     "--report"),
-                visualReport);
+                visualReport,
+                analyzeUnresolvedVisualsWithPaddle);
         }
 
         private static string ReadValue(

@@ -1,6 +1,7 @@
 using DocumentProcessing.Shared;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Epub;
 using DocumentProcessing.Pdf;
@@ -74,14 +75,29 @@ public sealed class DocumentProcessingHost
 
     #region Methods Processing
 
+    public Task<DocumentProcessingOutcome> ProcessDocumentAsync(
+        DocumentSource source,
+        CancellationToken cancellationToken = default) =>
+        ProcessDocumentAsync(
+            source,
+            DocumentProcessingRequestOptions.Default,
+            cancellationToken);
+
+    /// <summary>
+    /// Processes one document with explicit user-selected request options.
+    /// </summary>
     public async Task<DocumentProcessingOutcome> ProcessDocumentAsync(
         DocumentSource source,
+        DocumentProcessingRequestOptions options,
         CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
 
         ArgumentNullException.ThrowIfNull(
             source);
+
+        ArgumentNullException.ThrowIfNull(
+            options);
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -91,6 +107,7 @@ public sealed class DocumentProcessingHost
                 await _engine
                     .ProcessDocumentAsync(
                         source,
+                        options,
                         cancellationToken)
                     .ConfigureAwait(false);
 

@@ -2,6 +2,7 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Results;
@@ -202,7 +203,20 @@ public sealed class StructuredNativeDocumentProcessingTests
                         "OEBPS/images/diagram.png",
                         "image/png",
                         isAuxiliary:
-                            false),
+                            false,
+                        hasBodyMatterBoundary:
+                            true),
+                    new StructuredNativeVisual(
+                        "structured-visual-front",
+                        visualLocation,
+                        "OEBPS/images/title-page.png",
+                        "image/png",
+                        isAuxiliary:
+                            false,
+                        isPreliminaryMatter:
+                            true,
+                        hasBodyMatterBoundary:
+                            true),
                     new StructuredNativeVisual(
                         "structured-visual-decoration",
                         visualLocation,
@@ -264,6 +278,10 @@ public sealed class StructuredNativeDocumentProcessingTests
             request.SourceResourceId);
 
         Assert.Equal(
+            DocumentVisualQualification.Meaningful,
+            request.Qualification);
+
+        Assert.Equal(
             1,
             writerCalls);
 
@@ -291,12 +309,172 @@ public sealed class StructuredNativeDocumentProcessingTests
             asset.RasterDerivation);
 
         Assert.Equal(
+            DocumentVisualQualification.Meaningful,
+            asset.Qualification);
+
+        Assert.Equal(
             visualBytes,
             destination.ToArray());
 
         Assert.Contains(
             "test-structured-visual-raw-v1",
             result.ProcessingManifest.VisualPreservationProfileIds);
+
+        await destination.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ProcessDocumentAsync_UnknownVisualUsesPaddleOnlyWhenUserEnablesIt()
+    {
+        var pngBytes =
+            Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
+
+        var visual =
+            new StructuredNativeVisual(
+                "structured-visual-unknown",
+                new EpubVisualSourceLocation(
+                    0,
+                    "OEBPS/chapter.xhtml",
+                    "OEBPS/images/unknown.png",
+                    0,
+                    fragmentId:
+                        null,
+                    isAuxiliary:
+                        false),
+                "OEBPS/images/unknown.png",
+                "image/png",
+                isAuxiliary:
+                    false);
+
+        var evidence =
+            new StructuredNativeDocumentEvidence(
+                new EpubDocumentSourceStructure(
+                    "OEBPS/content.opf",
+                    [
+                        new EpubSpineItemDescriptor(
+                            0,
+                            "chapter",
+                            "OEBPS/chapter.xhtml",
+                            "application/xhtml+xml",
+                            isLinear:
+                                true)
+                    ]),
+                [],
+                new ProcessingComponentIdentity(
+                    "test-epub",
+                    "test-epub-native-v1"),
+                [
+                    visual
+                ]);
+
+        var unqualifiedDestination =
+            new MemoryStream();
+
+        var defaultEngine =
+            new DocumentProcessingEngine(
+                [
+                    new StubStructuredFormat(
+                        evidence,
+                        pngBytes)
+                ],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity,
+                userVisualAssetWriter:
+                    (_, request, _) =>
+                    {
+                        Assert.Equal(
+                            DocumentVisualQualification.Unqualified,
+                            Assert.IsType<UserSourceVisualAssetWriteRequest>(
+                                    request)
+                                .Qualification);
+
+                        return ValueTask.FromResult<Stream>(
+                            unqualifiedDestination);
+                    });
+
+        await using (var defaultStream =
+                     new MemoryStream(
+                         "structured source"u8.ToArray()))
+        {
+            var defaultResult =
+                await defaultEngine.ProcessDocumentAsync(
+                    new DocumentSource(
+                        defaultStream));
+
+            Assert.Equal(
+                DocumentVisualQualification.Unqualified,
+                Assert.Single(
+                        defaultResult.VisualAssets)
+                    .Qualification);
+
+            Assert.Null(
+                defaultResult.ProcessingManifest.LayoutAnalysis);
+        }
+
+        await unqualifiedDestination.DisposeAsync();
+
+        var layoutAnalyzer =
+            new RecordingFigureLayoutAnalyzer();
+
+        var destination =
+            new MemoryStream();
+
+        var engine =
+            new DocumentProcessingEngine(
+                [
+                    new StubStructuredFormat(
+                        evidence,
+                        pngBytes)
+                ],
+                layoutAnalyzer,
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity,
+                userVisualAssetWriter:
+                    (_, request, _) =>
+                    {
+                        Assert.Equal(
+                            DocumentVisualQualification.Meaningful,
+                            Assert.IsType<UserSourceVisualAssetWriteRequest>(
+                                    request)
+                                .Qualification);
+
+                        return ValueTask.FromResult<Stream>(
+                            destination);
+                    });
+
+        await using var stream =
+            new MemoryStream(
+                "structured source"u8.ToArray());
+
+        var result =
+            await engine.ProcessDocumentAsync(
+                new DocumentSource(
+                    stream),
+                new DocumentProcessingRequestOptions(
+                    qualifyUnresolvedVisuals:
+                        true));
+
+        Assert.Equal(
+            1,
+            layoutAnalyzer.CallCount);
+
+        Assert.Equal(
+            DocumentVisualQualification.Meaningful,
+            Assert.Single(
+                    result.VisualAssets)
+                .Qualification);
+
+        Assert.Equal(
+            LayoutIdentity,
+            result.ProcessingManifest.LayoutAnalysis);
+
+        Assert.Equal(
+            pngBytes,
+            destination.ToArray());
 
         await destination.DisposeAsync();
     }
@@ -386,6 +564,41 @@ public sealed class StructuredNativeDocumentProcessingTests
             CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException(
                 "Layout analysis must not run for structured native evidence.");
+    }
+
+    private sealed class RecordingFigureLayoutAnalyzer
+        : IPageLayoutAnalyzer
+    {
+        public int CallCount { get; private set; }
+
+        public ValueTask<LayoutAnalysisResult> AnalyzeAsync(
+            Stream rasterImage,
+            int physicalPageNumber,
+            int pixelWidth,
+            int pixelHeight,
+            CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+
+            return ValueTask.FromResult(
+                new LayoutAnalysisResult(
+                    "paddle-test",
+                    physicalPageNumber,
+                    [
+                        new LayoutObservation(
+                            physicalPageNumber,
+                            observationSequence:
+                                0,
+                            readingOrder:
+                                0,
+                            LayoutObservationKind.Figure,
+                            new NormalizedRectangle(
+                                0,
+                                0,
+                                1,
+                                1))
+                    ]));
+        }
     }
 
     private sealed class UnexpectedTextRecognizer

@@ -50,6 +50,8 @@ internal static class TestEpubFactory
                     <dc:language>en</dc:language>
                   </metadata>
                   <manifest>
+                    <item id="front" href="front.xhtml" media-type="application/xhtml+xml" />
+                    <item id="navigation" href="navigation.xhtml" media-type="application/xhtml+xml" properties="nav" />
                     <item id="chapter-1" href="chapter1.xhtml" media-type="application/xhtml+xml" />
                     <item id="chapter-2" href="chapter2.xhtml" media-type="application/xhtml+xml" />
                     <item id="cover-image" href="images/cover.png" media-type="image/png" properties="cover-image" />
@@ -57,11 +59,16 @@ internal static class TestEpubFactory
                     <item id="decoration" href="images/decoration.png" media-type="image/png" />
                     <item id="auxiliary" href="images/auxiliary.png" media-type="image/png" />
                     <item id="unused" href="images/unused.png" media-type="image/png" />
+                    <item id="front-image" href="images/front.png" media-type="image/png" />
                   </manifest>
                   <spine>
+                    <itemref idref="front" />
                     <itemref idref="chapter-1" />
                     <itemref idref="chapter-2" linear="no" />
                   </spine>
+                  <guide>
+                    <reference type="text" title="Legacy beginning" href="front.xhtml" />
+                  </guide>
                 </package>
                 """
                     : """
@@ -117,6 +124,36 @@ internal static class TestEpubFactory
                 </html>
                 """);
 
+            if (includeVisuals)
+            {
+                Write(
+                    archive,
+                    "OEBPS/navigation.xhtml",
+                    """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <html xmlns="http://www.w3.org/1999/xhtml"
+                          xmlns:epub="http://www.idpf.org/2007/ops">
+                      <head><title>Navigation</title></head>
+                      <body>
+                        <nav epub:type="landmarks">
+                          <ol><li><a epub:type="bodymatter" href="chapter1.xhtml#body">Beginning</a></li></ol>
+                        </nav>
+                      </body>
+                    </html>
+                    """);
+
+                Write(
+                    archive,
+                    "OEBPS/front.xhtml",
+                    """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <html xmlns="http://www.w3.org/1999/xhtml">
+                      <head><title>Front matter</title></head>
+                      <body><img id="front-use" src="images/front.png" alt="Title page" /></body>
+                    </html>
+                    """);
+            }
+
             Write(
                 archive,
                 "OEBPS/chapter2.xhtml",
@@ -162,6 +199,11 @@ internal static class TestEpubFactory
                     archive,
                     "OEBPS/images/unused.png",
                     [100, 110]);
+
+                Write(
+                    archive,
+                    "OEBPS/images/front.png",
+                    [120, 130, 140]);
             }
 
             if (includeUnsafeEntry)

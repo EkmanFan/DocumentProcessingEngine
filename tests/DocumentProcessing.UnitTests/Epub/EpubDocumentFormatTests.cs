@@ -175,8 +175,16 @@ public sealed class EpubDocumentFormatTests
                 StringComparer.Ordinal);
 
         Assert.Equal(
-            4,
+            5,
             visuals.Count);
+
+        var structure =
+            Assert.IsType<EpubDocumentSourceStructure>(
+                evidence.SourceStructure);
+
+        Assert.Equal(
+            1,
+            structure.BodyMatterStartSpineIndex);
 
         Assert.True(
             visuals["OEBPS/images/cover.png"]
@@ -193,6 +201,18 @@ public sealed class EpubDocumentFormatTests
         Assert.True(
             visuals["OEBPS/images/auxiliary.png"]
                 .IsAuxiliary);
+
+        Assert.True(
+            visuals["OEBPS/images/front.png"]
+                .IsPreliminaryMatter);
+
+        Assert.True(
+            visuals["OEBPS/images/diagram.png"]
+                .HasBodyMatterBoundary);
+
+        Assert.False(
+            visuals["OEBPS/images/diagram.png"]
+                .IsPreliminaryMatter);
 
         Assert.All(
             evidence.Visuals,

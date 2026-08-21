@@ -18,12 +18,15 @@ public sealed record EpubDocumentSourceStructure
 
     public string? Language { get; }
 
+    public int? BodyMatterStartSpineIndex { get; }
+
     public EpubDocumentSourceStructure(
         string packagePath,
         IReadOnlyList<EpubSpineItemDescriptor> spineItems,
         string? title = null,
         string? identifier = null,
-        string? language = null)
+        string? language = null,
+        int? bodyMatterStartSpineIndex = null)
     {
         if (string.IsNullOrWhiteSpace(
                 packagePath))
@@ -69,6 +72,15 @@ public sealed record EpubDocumentSourceStructure
             }
         }
 
+        if (bodyMatterStartSpineIndex is <
+                0 ||
+            bodyMatterStartSpineIndex >=
+                items.Length)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(bodyMatterStartSpineIndex));
+        }
+
         PackagePath =
             packagePath.Trim();
 
@@ -86,6 +98,9 @@ public sealed record EpubDocumentSourceStructure
         Language =
             NormalizeOptional(
                 language);
+
+        BodyMatterStartSpineIndex =
+            bodyMatterStartSpineIndex;
     }
 
     private static string? NormalizeOptional(

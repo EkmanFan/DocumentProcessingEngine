@@ -46,6 +46,13 @@ public enum VisualEvidenceKind
     NativeTextContainerOrFrame,
 
     /// <summary>
+    /// Publication structure identifies the visual as cover, navigation,
+    /// preliminary matter or explicitly presentational content rather than
+    /// documentary body content.
+    /// </summary>
+    PublicationPresentationVisual,
+
+    /// <summary>
     /// A source visual has already been deterministically resolved as meaningful
     /// and exactly one compatible layout Figure provides its crop/order custody.
     /// The raw Figure label alone is not sufficient for this evidence kind.
@@ -61,5 +68,11 @@ public enum VisualEvidenceKind
     /// A substantial visual is spatially independent from native text and is a
     /// meaningful-visual candidate.
     /// </summary>
-    LargeIndependentVisual
+    LargeIndependentVisual,
+
+    /// <summary>
+    /// A referenced visual belongs to the publication body and has no
+    /// deterministic presentation-only marker.
+    /// </summary>
+    StructuredContentMeaningfulVisual
 }

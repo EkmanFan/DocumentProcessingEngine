@@ -685,7 +685,7 @@ internal static class Program
         Console.WriteLine(
             """
             Usage:
-              dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-epub --source /absolute/path/document.epub --epubcheck-distribution /absolute/path/epubcheck-5.3.0 --report /absolute/path/report.json
+              dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-epub --source /absolute/path/document.epub --epubcheck-distribution /absolute/path/epubcheck-5.3.0 --report /absolute/path/report.json [--visual-report /absolute/path/visual-report.json] [--analyze-unresolved-visuals-with-paddle]
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 [--probe "text"]
 
               dotnet run --project tools/DocumentProcessing.EvaluationCli -- analyze-normalized-pdf --source /absolute/path/document.pdf --report /absolute/path/report.json --pages 512-561 [--probe "text"]

@@ -32,9 +32,9 @@ proof of decoration would silently lose documentary content.
 An image referenced only from a spine item with `linear="no"` remains selected
 and is marked auxiliary. Non-linear content is not silently discarded.
 
-V1 is deliberately conservative: a referenced image that has no deterministic
-exclusion is preservation-worthy. This prevents data loss but does not claim
-that every retained image has already received a richer semantic label.
+EPUB-2 was deliberately conservative: a referenced image with no deterministic
+exclusion was preservation-worthy. EPUB-3 now adds the separate semantic
+qualification described in `docs/epub/epub-3-visual-qualification-v1.md`.
 
 ## Engine and callback contract
 
@@ -55,7 +55,7 @@ closed instead of claiming that visual preservation succeeded.
 
 ## Habermas reference
 
-The exact conformant Habermas EPUB produces:
+The EPUB-2 discovery inventory for the exact conformant Habermas EPUB was:
 
 ```text
 manifest image resources       27
@@ -67,10 +67,10 @@ portable visual assets         26
 raster derivations              0
 ```
 
-All 26 selected JPEG files are copied byte-for-byte. Their paths, lengths and
-SHA-256 values are frozen in
-`docs/evaluation/habermas-epub-visual-reference-v1.json`. The EPUB-1 text
-reference is checked in the same workflow and remains unchanged.
+EPUB-3 subsequently identifies `U6` and `U7` as preliminary title matter and
+returns the remaining 24 body images as `Meaningful`. The current frozen visual
+reference therefore contains 24 assets. The EPUB-1 text reference remains
+unchanged.
 
 Run:
 
@@ -81,6 +81,4 @@ Run:
 ## Current boundary
 
 V1 does not discover CSS background images, video poster frames or generic
-`object` resources. It also does not infer a richer visual taxonomy from image
-pixels or nearby prose. Those are later semantic-enrichment decisions, not
-reasons to invent geometry or discard source assets now.
+`object` resources. Those remain later acquisition extensions.

@@ -44,12 +44,14 @@ internal static class VisualEvidenceDispositionPolicy
             VisualEvidenceKind.TinyOrNoise or
             VisualEvidenceKind.SmallHeadingAssociatedVisual or
             VisualEvidenceKind.HeadingBackplateOrPresentation or
-            VisualEvidenceKind.NativeTextContainerOrFrame =>
+            VisualEvidenceKind.NativeTextContainerOrFrame or
+            VisualEvidenceKind.PublicationPresentationVisual =>
                 VisualDisposition.PresentationOnly,
 
             VisualEvidenceKind.SourceBackedMeaningfulVisual or
             VisualEvidenceKind.CaptionedMeaningfulVisual or
-            VisualEvidenceKind.LargeIndependentVisual =>
+            VisualEvidenceKind.LargeIndependentVisual or
+            VisualEvidenceKind.StructuredContentMeaningfulVisual =>
                 VisualDisposition.PreserveMeaningfulVisual,
 
             _ =>

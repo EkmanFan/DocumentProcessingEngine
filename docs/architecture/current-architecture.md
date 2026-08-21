@@ -129,9 +129,10 @@ Required constraints:
   conformance boundary, package/spine/XHTML acquisition, EPUB source-location
   facts and exact packaged-image materialization.
 - the Engine projects structured EPUB evidence through its native non-paged
-  assembly path, selects retained native visuals and invokes
-  `UserVisualAssetWriter`; EPUB spine items and images are never represented as
-  physical pages.
+  assembly path, qualifies visuals from publication facts, optionally analyzes
+  only unresolved raster images through PP-Structure when the user requests
+  it, and invokes `UserVisualAssetWriter`; EPUB spine items and images are never
+  represented as physical pages.
 - PdfPig supplies native extraction and native visual measurements.
 - `pdftoppm` supplies document-scoped rasterization.
 - PP-StructureV3 supplies layout observations when planned.

@@ -53,6 +53,11 @@ public sealed record DocumentVisualAsset
     /// </summary>
     public DocumentRasterVisualDerivationEvidence? RasterDerivation { get; }
 
+    /// <summary>
+    /// Gets the Engine's semantic qualification of the preserved visual.
+    /// </summary>
+    public DocumentVisualQualification Qualification { get; }
+
     #endregion
 
     #region ctor
@@ -77,6 +82,9 @@ public sealed record DocumentVisualAsset
     /// <param name="rasterDerivation">
     /// Optional raster/crop evidence when the asset was derived from a raster.
     /// </param>
+    /// <param name="qualification">
+    /// Engine semantic qualification of the preserved visual.
+    /// </param>
     public DocumentVisualAsset(
         string assetId,
         string elementId,
@@ -84,7 +92,9 @@ public sealed record DocumentVisualAsset
         string mediaType,
         long contentLength,
         string contentSha256,
-        DocumentRasterVisualDerivationEvidence? rasterDerivation = null)
+        DocumentRasterVisualDerivationEvidence? rasterDerivation = null,
+        DocumentVisualQualification qualification =
+            DocumentVisualQualification.Meaningful)
     {
         if (string.IsNullOrWhiteSpace(
                 assetId))
@@ -130,6 +140,13 @@ public sealed record DocumentVisualAsset
                 "Visual asset content length must be greater than zero.");
         }
 
+        if (!Enum.IsDefined(
+                qualification))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(qualification));
+        }
+
         AssetId =
             assetId.Trim();
 
@@ -153,6 +170,9 @@ public sealed record DocumentVisualAsset
 
         RasterDerivation =
             rasterDerivation;
+
+        Qualification =
+            qualification;
     }
 
     #endregion

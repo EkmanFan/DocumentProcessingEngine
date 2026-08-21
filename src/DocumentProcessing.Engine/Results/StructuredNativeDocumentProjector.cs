@@ -1,5 +1,7 @@
 using System.Text;
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
 using DocumentProcessing.Core.Visual;
@@ -35,6 +37,9 @@ internal static class StructuredNativeDocumentProjector
         StructuredNativeDocumentEvidence evidence,
         string engineVersion,
         UserVisualAssetWriter? userVisualAssetWriter,
+        IPageLayoutAnalyzer layoutAnalyzer,
+        ProcessingComponentIdentity layoutAnalysisIdentity,
+        bool qualifyUnresolvedVisuals,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(
@@ -45,6 +50,12 @@ internal static class StructuredNativeDocumentProjector
 
         ArgumentNullException.ThrowIfNull(
             documentFormat);
+
+        ArgumentNullException.ThrowIfNull(
+            layoutAnalyzer);
+
+        ArgumentNullException.ThrowIfNull(
+            layoutAnalysisIdentity);
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -77,6 +88,9 @@ internal static class StructuredNativeDocumentProjector
         var visualPreservationProfileIds =
             new HashSet<string>(
                 StringComparer.Ordinal);
+
+        var usedPaddleVisualAnalysis =
+            false;
 
         foreach (var unit in
                  evidence.ContentUnits)
@@ -212,20 +226,29 @@ internal static class StructuredNativeDocumentProjector
                         false));
         }
 
-        var selectedVisuals =
+        var preservableVisuals =
             evidence.Visuals
+                .Select(
+                    visual =>
+                        (Visual: visual,
+                            EvidenceKind:
+                            StructuredNativeVisualEvidenceAssessor.Assess(
+                                visual)))
                 .Where(
-                    StructuredNativeVisualSelectionPolicy
-                        .ShouldPreserve)
+                    candidate =>
+                        VisualEvidenceDispositionPolicy.Decide(
+                            candidate.EvidenceKind) is
+                            VisualDisposition.PreserveMeaningfulVisual or
+                            VisualDisposition.RequiresVisualAnalysis)
                 .ToArray();
 
-        if (selectedVisuals.Length >
+        if (preservableVisuals.Length >
             0)
         {
             if (userVisualAssetWriter is null)
             {
                 throw new InvalidOperationException(
-                    "Meaningful structured-document visual preservation requires the user's visual asset writer.");
+                    "Structured-document visual preservation requires the user's visual asset writer.");
             }
 
             if (documentFormat is not
@@ -237,34 +260,104 @@ internal static class StructuredNativeDocumentProjector
                     $"Document format '{format}' selected structured visuals without exposing their materialization capability.");
             }
 
-            foreach (var visual in
-                     selectedVisuals)
+            var paddleAnalyzer =
+                new PaddleStructuredVisualEvidenceAnalyzer(
+                    layoutAnalyzer);
+
+            foreach (var candidate in
+                     preservableVisuals)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var destination =
-                    await userVisualAssetWriter(
-                            prepared.Source,
-                            new UserSourceVisualAssetWriteRequest(
-                                format,
-                                visual),
-                            cancellationToken)
-                        .ConfigureAwait(false);
+                var visual =
+                    candidate.Visual;
 
-                if (destination is null)
+                var evidenceKind =
+                    candidate.EvidenceKind;
+
+                var qualification =
+                    evidenceKind ==
+                    VisualEvidenceKind.StructuredContentMeaningfulVisual
+                        ? DocumentVisualQualification.Meaningful
+                        : DocumentVisualQualification.Unqualified;
+
+                StructuredNativeVisualMaterialization materialization;
+
+                if (evidenceKind ==
+                        VisualEvidenceKind.Unknown &&
+                    qualifyUnresolvedVisuals)
                 {
-                    throw new InvalidOperationException(
-                        "User visual asset writer returned null.");
-                }
+                    await using var analysisBuffer =
+                        new MemoryStream();
 
-                var materialization =
-                    await materializer.MaterializeAsync(
-                            prepared.Source,
-                            format,
-                            visual,
-                            destination,
+                    materialization =
+                        await materializer.MaterializeAsync(
+                                prepared.Source,
+                                format,
+                                visual,
+                                analysisBuffer,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+
+                    var paddleAnalysis =
+                        await paddleAnalyzer.AnalyzeAsync(
+                                analysisBuffer,
+                                visual.MediaType,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+
+                    evidenceKind =
+                        paddleAnalysis.EvidenceKind;
+
+                    usedPaddleVisualAnalysis |=
+                        paddleAnalysis.WasPaddleInvoked;
+
+                    qualification =
+                        evidenceKind ==
+                        VisualEvidenceKind.StructuredContentMeaningfulVisual
+                            ? DocumentVisualQualification.Meaningful
+                            : DocumentVisualQualification.Unqualified;
+
+                    var analyzedDestination =
+                        await OpenUserDestinationAsync(
+                                prepared.Source,
+                                format,
+                                visual,
+                                qualification,
+                                userVisualAssetWriter,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+
+                    analysisBuffer.Position =
+                        0;
+
+                    await CopyBufferedVisualAsync(
+                            analysisBuffer,
+                            analyzedDestination,
                             cancellationToken)
                         .ConfigureAwait(false);
+                }
+                else
+                {
+                    var destination =
+                        await OpenUserDestinationAsync(
+                                prepared.Source,
+                                format,
+                                visual,
+                                qualification,
+                                userVisualAssetWriter,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+
+                    materialization =
+                        await materializer.MaterializeAsync(
+                                prepared.Source,
+                                format,
+                                visual,
+                                destination,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                }
 
                 if (!string.Equals(
                         materialization.MediaType,
@@ -298,7 +391,11 @@ internal static class StructuredNativeDocumentProjector
                         materialization.ProfileId,
                         materialization.MediaType,
                         materialization.ContentLength,
-                        materialization.ContentSha256));
+                        materialization.ContentSha256,
+                        rasterDerivation:
+                            null,
+                        qualification:
+                            qualification));
 
                 visualPreservationProfileIds.Add(
                     materialization.ProfileId);
@@ -320,7 +417,9 @@ internal static class StructuredNativeDocumentProjector
                 rasterization:
                     null,
                 layoutAnalysis:
-                    null,
+                    usedPaddleVisualAnalysis
+                        ? layoutAnalysisIdentity
+                        : null,
                 ocr:
                     [],
                 reconciliation:
@@ -341,6 +440,89 @@ internal static class StructuredNativeDocumentProjector
             visualAssets,
             DocumentProcessingQualityObservations.Empty,
             evidence.SourceStructure);
+    }
+
+    #endregion
+
+    #region Methods Visual Preservation
+
+    private static async ValueTask<Stream> OpenUserDestinationAsync(
+        DocumentSource source,
+        DocumentFormatId format,
+        StructuredNativeVisual visual,
+        DocumentVisualQualification qualification,
+        UserVisualAssetWriter userVisualAssetWriter,
+        CancellationToken cancellationToken)
+    {
+        var destination =
+            await userVisualAssetWriter(
+                    source,
+                    new UserSourceVisualAssetWriteRequest(
+                        format,
+                        visual,
+                        qualification),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return destination ??
+               throw new InvalidOperationException(
+                   "User visual asset writer returned null.");
+    }
+
+    private static async ValueTask CopyBufferedVisualAsync(
+        Stream source,
+        Stream destination,
+        CancellationToken cancellationToken)
+    {
+        if (!destination.CanWrite)
+        {
+            throw new ArgumentException(
+                "Visual destination stream must be writable.",
+                nameof(destination));
+        }
+
+        if (destination.CanSeek &&
+            (destination.Position !=
+                 0 ||
+             destination.Length !=
+                 0))
+        {
+            throw new ArgumentException(
+                "Seekable visual destinations must be empty and positioned at zero.",
+                nameof(destination));
+        }
+
+        try
+        {
+            await source.CopyToAsync(
+                    destination,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            await destination.FlushAsync(
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            if (destination.CanSeek)
+            {
+                try
+                {
+                    destination.SetLength(
+                        0);
+
+                    destination.Position =
+                        0;
+                }
+                catch
+                {
+                    // Preserve the transfer failure.
+                }
+            }
+
+            throw;
+        }
     }
 
     #endregion

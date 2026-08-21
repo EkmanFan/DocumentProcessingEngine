@@ -1,6 +1,7 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Locations;
+using DocumentProcessing.Core.Results;
 
 namespace DocumentProcessing.Core.Visual;
 
@@ -61,7 +62,8 @@ public sealed record UserSourceVisualAssetWriteRequest
 {
     public UserSourceVisualAssetWriteRequest(
         DocumentFormatId format,
-        StructuredNativeVisual visual)
+        StructuredNativeVisual visual,
+        DocumentVisualQualification qualification)
         : base(
             format,
             (visual ??
@@ -80,6 +82,16 @@ public sealed record UserSourceVisualAssetWriteRequest
 
         IsAuxiliary =
             visual.IsAuxiliary;
+
+        if (!Enum.IsDefined(
+                qualification))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(qualification));
+        }
+
+        Qualification =
+            qualification;
     }
 
     public string VisualId { get; }
@@ -89,4 +101,6 @@ public sealed record UserSourceVisualAssetWriteRequest
     public string MediaType { get; }
 
     public bool IsAuxiliary { get; }
+
+    public DocumentVisualQualification Qualification { get; }
 }

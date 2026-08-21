@@ -10,6 +10,8 @@ EPUBCHECK_ZIP="${EPUBCHECK_ZIP:-$REPO/scripts/tmp/tool-cache/epubcheck-5.3.0.zip
 OUT="$REPO/scripts/tmp/epub-visual-regression"
 NATIVE_REPORT="$OUT/native-report.json"
 VISUAL_REPORT="$OUT/visual-report.json"
+NATIVE_OPT_IN_REPORT="$OUT/native-opt-in-report.json"
+VISUAL_OPT_IN_REPORT="$OUT/visual-opt-in-report.json"
 
 fail() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -37,7 +39,11 @@ observed_checker_sha="$(sha256sum "$EPUBCHECK_ZIP" | awk '{print $1}')"
 [[ "$observed_checker_sha" == "$expected_checker_sha" ]] || fail "EPUBCheck distribution SHA-256 differs from the frozen reference."
 
 mkdir -p "$OUT"
-rm -f "$NATIVE_REPORT" "$VISUAL_REPORT"
+rm -f \
+  "$NATIVE_REPORT" \
+  "$VISUAL_REPORT" \
+  "$NATIVE_OPT_IN_REPORT" \
+  "$VISUAL_OPT_IN_REPORT"
 
 WORK="$(mktemp -d "$OUT/work.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
@@ -47,7 +53,7 @@ EPUBCHECK_DIRECTORY="$WORK/epubcheck-$expected_checker_version"
 
 [[ -f "$EPUBCHECK_DIRECTORY/epubcheck.jar" ]] || fail "Pinned EPUBCheck JAR is missing after extraction."
 
-printf 'DPEngine EPUB-2 visual regression\n'
+printf 'DPEngine EPUB-3 visual qualification regression\n'
 printf 'Reference: %s\n' "$REFERENCE"
 printf 'EPUB: %s\n' "$EPUB_FILE"
 printf 'EPUBCheck: %s\n\n' "$expected_checker_version"
@@ -68,15 +74,37 @@ dotnet run \
   --report "$NATIVE_REPORT" \
   --visual-report "$VISUAL_REPORT"
 
+dotnet run \
+  --project "$REPO/tools/DocumentProcessing.EvaluationCli/DocumentProcessing.EvaluationCli.csproj" \
+  -c Release \
+  --no-build \
+  -- \
+  analyze-epub \
+  --source "$EPUB_FILE" \
+  --epubcheck-distribution "$EPUBCHECK_DIRECTORY" \
+  --report "$NATIVE_OPT_IN_REPORT" \
+  --visual-report "$VISUAL_OPT_IN_REPORT" \
+  --analyze-unresolved-visuals-with-paddle
+
 jq -e \
   --slurpfile expected "$NATIVE_REFERENCE" \
   '. == $expected[0]' \
   "$NATIVE_REPORT" >/dev/null || fail "Native EPUB processing report differs from the EPUB-1 reference."
 
 jq -e \
+  --slurpfile expected "$NATIVE_REFERENCE" \
+  '. == $expected[0]' \
+  "$NATIVE_OPT_IN_REPORT" >/dev/null || fail "Opt-in native EPUB report differs from the EPUB-1 reference."
+
+jq -e \
   --slurpfile expected "$REFERENCE" \
   '. == $expected[0]' \
   "$VISUAL_REPORT" >/dev/null || fail "EPUB visual report differs from the frozen reference."
 
-printf '\nEPUB-2 VISUAL REGRESSION: PASS\n'
+jq -e \
+  --slurpfile expected "$REFERENCE" \
+  '. == $expected[0]' \
+  "$VISUAL_OPT_IN_REPORT" >/dev/null || fail "Opt-in EPUB visual report differs from the frozen reference."
+
+printf '\nEPUB-3 VISUAL QUALIFICATION REGRESSION: PASS\n'
 printf 'Report: %s\n' "$VISUAL_REPORT"

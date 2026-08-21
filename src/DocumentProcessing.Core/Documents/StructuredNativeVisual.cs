@@ -26,6 +26,10 @@ public sealed record StructuredNativeVisual
 
     public bool IsExplicitlyPresentationOnly { get; }
 
+    public bool IsPreliminaryMatter { get; }
+
+    public bool HasBodyMatterBoundary { get; }
+
     #endregion
 
     #region ctor
@@ -38,7 +42,9 @@ public sealed record StructuredNativeVisual
         bool isAuxiliary,
         bool isPublicationCover = false,
         bool isNavigation = false,
-        bool isExplicitlyPresentationOnly = false)
+        bool isExplicitlyPresentationOnly = false,
+        bool isPreliminaryMatter = false,
+        bool hasBodyMatterBoundary = false)
     {
         if (string.IsNullOrWhiteSpace(
                 visualId))
@@ -94,6 +100,12 @@ public sealed record StructuredNativeVisual
 
         IsExplicitlyPresentationOnly =
             isExplicitlyPresentationOnly;
+
+        IsPreliminaryMatter =
+            isPreliminaryMatter;
+
+        HasBodyMatterBoundary =
+            hasBodyMatterBoundary;
     }
 
     #endregion

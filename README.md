@@ -127,6 +127,11 @@ documented in
 [`docs/epub/epub-2-visual-preservation-v1.md`](docs/epub/epub-2-visual-preservation-v1.md)
 and reproduced by `scripts/run-epub-visual-regression.sh`.
 
+EPUB-3 qualifies body images through deterministic EPUB landmarks and invokes
+Paddle only for unresolved images when the user explicitly enables the
+per-request fallback. See
+[`docs/epub/epub-3-visual-qualification-v1.md`](docs/epub/epub-3-visual-qualification-v1.md).
+
 ## Consumer entry point
 
 Consumers configure the shared providers once and process a `DocumentSource`
