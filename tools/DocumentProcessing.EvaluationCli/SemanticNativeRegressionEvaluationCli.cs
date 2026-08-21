@@ -108,7 +108,8 @@ internal static class SemanticNativeRegressionEvaluationCli
                          StringComparer.Ordinal))
         {
             provenanceMismatches.Add(
-                $"Manifest fixture is missing from disk: {missing}");
+                $"PDF listed in fixtures-manifest.tsv is missing from the " +
+                $"main test folder: {missing}");
         }
 
         foreach (var extra in
@@ -122,7 +123,9 @@ internal static class SemanticNativeRegressionEvaluationCli
                          StringComparer.Ordinal))
         {
             provenanceMismatches.Add(
-                $"Fixture exists on disk but not in manifest: {extra}");
+                $"PDF is in the main test folder but is not listed in " +
+                $"fixtures-manifest.tsv: {extra}. Add it to the official test " +
+                $"set or move it to the supplemental subfolder.");
         }
 
         var duplicateFixtures =
@@ -168,8 +171,8 @@ internal static class SemanticNativeRegressionEvaluationCli
             expected.Provenance.FixtureCount)
         {
             provenanceMismatches.Add(
-                $"Expected {expected.Provenance.FixtureCount} fixture rows, " +
-                $"observed {manifestRows.Count}.");
+                $"Expected {expected.Provenance.FixtureCount} PDFs in the " +
+                $"official test list, observed {manifestRows.Count}.");
         }
 
         CompareCorpusCount(

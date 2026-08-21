@@ -26,6 +26,7 @@ The root [README](../README.md) is the current operational entry point.
 | `architecture/current-architecture.md` | Current | Active ownership, dependency and extension rules. |
 | `architecture/phase-*.md` | Historical | Increment decisions pinned to the `Baseline` recorded in each file. |
 | `evaluation/target-architecture-reference-v1.md` | Frozen evidence | Proof that the cutover baseline satisfied the target architecture. |
+| `evaluation/local-fixture-layout.md` | Current | Local test-document organization and pinned PNG toolchain. |
 | `evaluation/` | Historical evidence | Reproducible corpus, diagnostic, performance and semantic observations. |
 | Domain folders such as `orchestration/`, `reconciliation/`, `result/` | Versioned decision records | Design rationale and acceptance evidence for individual increments. |
 

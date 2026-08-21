@@ -107,7 +107,9 @@ dotnet test DocumentProcessingEngine.sln -c Release --no-build
 Real layout/OCR semantic scripts have additional Docker, model-cache, memory
 and corpus prerequisites. They are evidence workflows, not substitutes for the
 deterministic .NET regression. See `scripts/run-semantic-*-regression.sh` and
-the corresponding records under `docs/evaluation/`.
+the corresponding records under `docs/evaluation/`. Local copyrighted test
+documents must follow the
+[test-document layout](docs/evaluation/local-fixture-layout.md).
 
 ## Consumer entry point
 

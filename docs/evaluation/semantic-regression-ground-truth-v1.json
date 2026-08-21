@@ -3,6 +3,9 @@
   "date": "2026-08-17",
   "baselineObserved": "62fc51e",
   "phase": "15.2",
+  "toolchain": {
+    "pdftoppmVersion": "26.01.0"
+  },
   "principles": {
     "historicalParityIsGroundTruth": false,
     "figureOcrAllowed": false,
@@ -55,7 +58,7 @@
         "route": "LayoutWithTargetedOcrReconciliation",
         "targetSequence": 9,
         "reconciliationDecision": "Agreement",
-        "selectedOrigin": "NativePdf",
+        "selectedOrigin": "Native",
         "resolved": true,
         "divergence": false,
         "nativeBlockSourceSequence": 6,

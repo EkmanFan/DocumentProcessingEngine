@@ -21,6 +21,9 @@ OCR_CACHE="$REPO/scripts/tmp/model-cache/paddleocr-3.7.0-paddle3.2.2"
 
 OCR_PROFILE_ID="paddleocr-3.7.0-ppocrv6-medium-cpu-v1"
 
+PDFTOPPM_EXECUTABLE="${PDFTOPPM_EXECUTABLE:-/usr/bin/pdftoppm}"
+PDFTOPPM_REQUIRED_VERSION="26.01.0"
+
 MODEL_MEMORY_LIMIT="12g"
 MIN_AVAILABLE_MB="12288"
 
@@ -62,6 +65,25 @@ for command in \
     fail "$command is required."
 done
 
+[[ "$PDFTOPPM_EXECUTABLE" = /* ]] ||
+  fail "PDFTOPPM_EXECUTABLE must be an absolute path."
+
+[[ -x "$PDFTOPPM_EXECUTABLE" ]] ||
+  fail "The required pdftoppm executable is unavailable: $PDFTOPPM_EXECUTABLE"
+
+observed_pdftoppm_version="$(
+  "$PDFTOPPM_EXECUTABLE" -v 2>&1 |
+    awk 'NR == 1 { print $3 }'
+)"
+
+[[ "$observed_pdftoppm_version" == "$PDFTOPPM_REQUIRED_VERSION" ]] ||
+  fail "pdftoppm $PDFTOPPM_REQUIRED_VERSION is required for exact PNG output; observed $observed_pdftoppm_version at $PDFTOPPM_EXECUTABLE"
+
+export PATH="${PDFTOPPM_EXECUTABLE%/*}:$PATH"
+
+[[ "$(command -v pdftoppm)" == "$PDFTOPPM_EXECUTABLE" ]] ||
+  fail "The pinned pdftoppm executable is not first on PATH."
+
 [[ -f "$GROUND_TRUTH" ]] ||
   fail "Ground-truth manifest is missing: $GROUND_TRUTH"
 
@@ -81,6 +103,9 @@ printf 'DPEngine semantic real-OCR regression\n'
 printf 'Ground truth: %s\n' "$GROUND_TRUTH"
 printf 'Controls: Ehrman p233 / p380 / p405\n'
 printf 'Model residency: PP-StructureV3 then PaddleOCR, never concurrent\n\n'
+printf 'Pinned rasterizer: %s (%s)\n\n' \
+  "$PDFTOPPM_EXECUTABLE" \
+  "$observed_pdftoppm_version"
 
 printf '[1/5] Building EvaluationCli before model startup...\n'
 dotnet build \
