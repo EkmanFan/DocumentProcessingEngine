@@ -32,10 +32,11 @@ public sealed class DocumentProcessingHostOptions
     public PaddleOcrOptions PaddleOcr { get; }
 
     /// <summary>
-    /// Gets the optional destination factory for preserved layout visuals.
+    /// Gets the optional user-provided writer for visual assets selected by the
+    /// Engine for preservation.
     /// </summary>
-    public PreservedLayoutVisualDestinationFactory?
-        OpenPreservedLayoutVisualDestinationAsync { get; }
+    public UserVisualAssetWriter?
+        UserVisualAssetWriter { get; }
 
     #endregion
 
@@ -45,8 +46,8 @@ public sealed class DocumentProcessingHostOptions
         string engineVersion,
         PpStructureV3Options ppStructureV3,
         PaddleOcrOptions paddleOcr,
-        PreservedLayoutVisualDestinationFactory?
-            openPreservedLayoutVisualDestinationAsync = null)
+        UserVisualAssetWriter?
+            userVisualAssetWriter = null)
     {
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -69,8 +70,8 @@ public sealed class DocumentProcessingHostOptions
             throw new ArgumentNullException(
                 nameof(paddleOcr));
 
-        OpenPreservedLayoutVisualDestinationAsync =
-            openPreservedLayoutVisualDestinationAsync;
+        UserVisualAssetWriter =
+            userVisualAssetWriter;
     }
 
     #endregion

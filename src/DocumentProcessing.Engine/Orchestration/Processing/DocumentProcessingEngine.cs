@@ -26,8 +26,8 @@ public sealed class DocumentProcessingEngine
     private readonly string? _engineVersion;
     private readonly ProcessingComponentIdentity?
         _layoutAnalysisIdentity;
-    private readonly PreservedLayoutVisualDestinationFactory?
-        _openPreservedLayoutVisualDestinationAsync;
+    private readonly UserVisualAssetWriter?
+        _userVisualAssetWriter;
 
     #endregion
 
@@ -43,8 +43,8 @@ public sealed class DocumentProcessingEngine
         IRegionTextRecognizer textRecognizer,
         string engineVersion,
         ProcessingComponentIdentity layoutAnalysisIdentity,
-        PreservedLayoutVisualDestinationFactory?
-            openPreservedLayoutVisualDestinationAsync = null)
+        UserVisualAssetWriter?
+            userVisualAssetWriter = null)
     {
         _formatSelector =
             new DocumentFormatSelector(
@@ -76,8 +76,8 @@ public sealed class DocumentProcessingEngine
             throw new ArgumentNullException(
                 nameof(layoutAnalysisIdentity));
 
-        _openPreservedLayoutVisualDestinationAsync =
-            openPreservedLayoutVisualDestinationAsync;
+        _userVisualAssetWriter =
+            userVisualAssetWriter;
     }
 
     #endregion
@@ -228,10 +228,10 @@ public sealed class DocumentProcessingEngine
 
         Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
             openVisualDestinationAsync =
-                _openPreservedLayoutVisualDestinationAsync is null
+                _userVisualAssetWriter is null
                     ? null
                     : (visual, token) =>
-                        _openPreservedLayoutVisualDestinationAsync(
+                        _userVisualAssetWriter(
                             prepared.Source,
                             visual,
                             token);

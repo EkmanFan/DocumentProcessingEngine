@@ -56,7 +56,7 @@ public sealed class DocumentProcessingHost
                     _sharedProcessingCapabilities.TextRecognizer,
                     options.EngineVersion,
                     _sharedProcessingCapabilities.LayoutAnalysisIdentity,
-                    options.OpenPreservedLayoutVisualDestinationAsync);
+                    options.UserVisualAssetWriter);
         }
         catch
         {

@@ -40,20 +40,20 @@ public sealed class SharedProcessingCapabilityOwnershipTests
     }
 
     [Fact]
-    public void HostOptions_ExposePortableLayoutVisualDestination()
+    public void HostOptions_ExposeUserVisualAssetWriter()
     {
         var property =
             typeof(global::DocumentProcessing.DocumentProcessingHostOptions)
                 .GetProperty(
                     nameof(
                         global::DocumentProcessing.DocumentProcessingHostOptions
-                            .OpenPreservedLayoutVisualDestinationAsync));
+                            .UserVisualAssetWriter));
 
         Assert.NotNull(
             property);
 
         Assert.Equal(
-            typeof(PreservedLayoutVisualDestinationFactory),
+            typeof(UserVisualAssetWriter),
             property.PropertyType);
     }
 
