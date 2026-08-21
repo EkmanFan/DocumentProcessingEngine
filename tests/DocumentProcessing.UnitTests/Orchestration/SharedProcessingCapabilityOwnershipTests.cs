@@ -1,7 +1,11 @@
 using System.Reflection;
+using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Orchestration;
+using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Visual;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
+using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Pdf;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
@@ -75,6 +79,48 @@ public sealed class SharedProcessingCapabilityOwnershipTests
         Assert.Null(
             pdfAssembly.GetType(
                 obsoletePdfVisualDestinationType));
+    }
+
+    [Fact]
+    public void DocumentFormats_PairRasterAndVisualObservationCapabilities()
+    {
+        var productionAssemblies =
+            new[]
+            {
+                typeof(IDocumentFormat).Assembly,
+                typeof(DocumentProcessingEngine).Assembly,
+                typeof(PdfDocumentFormat).Assembly,
+                typeof(global::DocumentProcessing.DocumentProcessingHost).Assembly
+            };
+
+        var documentFormatTypes =
+            productionAssemblies
+                .Distinct()
+                .SelectMany(
+                    assembly =>
+                        assembly.GetTypes())
+                .Where(
+                    type =>
+                        !type.IsAbstract &&
+                        !type.IsInterface &&
+                        typeof(IDocumentFormat)
+                            .IsAssignableFrom(
+                                type))
+                .ToArray();
+
+        Assert.NotEmpty(
+            documentFormatTypes);
+
+        foreach (var documentFormatType in documentFormatTypes)
+        {
+            Assert.Equal(
+                typeof(IDocumentRasterizer)
+                    .IsAssignableFrom(
+                        documentFormatType),
+                typeof(IVisualRasterObservationSource)
+                    .IsAssignableFrom(
+                        documentFormatType));
+        }
     }
 
     [Fact]

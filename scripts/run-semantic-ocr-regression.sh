@@ -546,7 +546,7 @@ if p405 is None:
 
 if (
     p405["decision"] != "Agreement"
-    or p405["selectedOrigin"] != "NativePdf"
+    or p405["selectedOrigin"] != "Native"
     or p405["resolved"] is not True
     or p405["divergence"] is not False
     or p405["nativeBlockSourceSequence"] != 6
@@ -574,7 +574,7 @@ summary_path.write_text(
 print("REAL OCR SEMANTIC ACCEPTANCE: PASS")
 print("  p233 targeted OCR recovery + exact visual + reading order: PASS")
 print("  p380 Conflict/None/unresolved: PASS")
-print("  p405 Agreement/NativePdf/resolved: PASS")
+print("  p405 Agreement/Native/resolved: PASS")
 print("  Figure OCR: 0 across all three controls")
 print(f"  summary={summary_path}")
 PY

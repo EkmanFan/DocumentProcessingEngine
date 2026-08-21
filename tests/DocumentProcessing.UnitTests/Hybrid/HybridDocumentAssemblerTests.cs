@@ -291,7 +291,7 @@ public sealed class HybridDocumentAssemblerTests
             second.ReadingOrder);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             first.TextOrigin);
 
         Assert.True(

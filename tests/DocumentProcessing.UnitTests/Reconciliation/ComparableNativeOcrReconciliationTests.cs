@@ -46,7 +46,7 @@ public sealed class ComparableNativeOcrReconciliationTests
             result.Decision);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             result.SelectedOrigin);
 
         Assert.Equal(
@@ -155,7 +155,7 @@ public sealed class ComparableNativeOcrReconciliationTests
             result.Decision);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             result.SelectedOrigin);
 
         Assert.Equal(

@@ -35,7 +35,7 @@ public sealed class UnverifiedRouteSemanticParityTests
             reconciliation.Decision);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             reconciliation.SelectedOrigin);
 
         Assert.Equal(
@@ -87,11 +87,11 @@ public sealed class UnverifiedRouteSemanticParityTests
             verifiedElement.Text);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             nativeElement.TextOrigin);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             verifiedElement.TextOrigin);
 
         var nativeDocument =
@@ -147,7 +147,7 @@ public sealed class UnverifiedRouteSemanticParityTests
         Assert.Equal(
             new[]
             {
-                TextSelectionOrigin.NativePdf
+                TextSelectionOrigin.Native
             },
             verifiedSegment.TextOrigins);
 

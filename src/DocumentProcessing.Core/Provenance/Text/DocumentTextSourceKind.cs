@@ -6,7 +6,7 @@ namespace DocumentProcessing.Core.Provenance;
 /// <remarks>
 /// <see cref="Native"/> means text obtained from the document's native
 /// structure or text layer. It deliberately does not encode a PDF-specific
-/// origin such as "NativePdf".
+/// origin such as "Native".
 /// </remarks>
 public enum DocumentTextSourceKind
 {

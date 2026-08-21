@@ -79,7 +79,7 @@ public sealed class AggregateNativeOcrReconciliationTests
             result.Decision);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             result.SelectedOrigin);
 
         Assert.Equal(

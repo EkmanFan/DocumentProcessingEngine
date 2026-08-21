@@ -61,7 +61,7 @@ public static class HybridDocumentElementFactory
             HybridDocumentElementKind.Text,
             nativeBlock.Bounds,
             nativeBlock.Text,
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             nativeBlock);
     }
 

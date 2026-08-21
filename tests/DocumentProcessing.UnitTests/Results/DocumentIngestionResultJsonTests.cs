@@ -199,7 +199,7 @@ public sealed class DocumentIngestionResultJsonTests
                 .GetString());
 
         Assert.Equal(
-            "nativePdf",
+            "native",
             native.GetProperty(
                     "textOrigin")
                 .GetString());
@@ -695,7 +695,7 @@ public sealed class DocumentIngestionResultJsonTests
                 ProvenanceTextHashing
                     .ComputeUtf8Sha256(
                         nativeText),
-                TextSelectionOrigin.NativePdf,
+                TextSelectionOrigin.Native,
                 nativeBlockSourceSequence:
                     7,
                 layoutObservationSequence:
@@ -931,7 +931,7 @@ public sealed class DocumentIngestionResultJsonTests
                     ],
                 textOrigins:
                     [
-                        TextSelectionOrigin.NativePdf,
+                        TextSelectionOrigin.Native,
                         TextSelectionOrigin.Ocr
                     ],
                 hasUnresolvedEvidence:
@@ -1062,7 +1062,7 @@ public sealed class DocumentIngestionResultJsonTests
                 ProvenanceTextHashing
                     .ComputeUtf8Sha256(
                         text),
-                TextSelectionOrigin.NativePdf,
+                TextSelectionOrigin.Native,
                 nativeBlockSourceSequence:
                     0,
                 layoutObservationSequence:
@@ -1106,7 +1106,7 @@ public sealed class DocumentIngestionResultJsonTests
                 1,
                 1,
                 [element.ElementId],
-                [TextSelectionOrigin.NativePdf],
+                [TextSelectionOrigin.Native],
                 hasUnresolvedEvidence:
                     false);
 

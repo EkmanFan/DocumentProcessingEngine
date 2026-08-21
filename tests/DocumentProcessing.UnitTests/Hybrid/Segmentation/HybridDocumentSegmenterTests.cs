@@ -106,7 +106,7 @@ public sealed class HybridDocumentSegmenterTests
         Assert.Equal(
             new[]
             {
-                TextSelectionOrigin.NativePdf
+                TextSelectionOrigin.Native
             },
             segment.TextOrigins);
 
@@ -202,7 +202,7 @@ public sealed class HybridDocumentSegmenterTests
         Assert.Equal(
             new[]
             {
-                TextSelectionOrigin.NativePdf,
+                TextSelectionOrigin.Native,
                 TextSelectionOrigin.Ocr
             },
             segment.TextOrigins);
@@ -259,7 +259,7 @@ public sealed class HybridDocumentSegmenterTests
             new[]
             {
                 TextSelectionOrigin.Ocr,
-                TextSelectionOrigin.NativePdf
+                TextSelectionOrigin.Native
             },
             segment.TextOrigins);
 

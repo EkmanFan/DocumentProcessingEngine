@@ -108,7 +108,7 @@ public sealed record DocumentQualityObservations
             element =>
                 element.HasAuthoritativeText &&
                 element.TextOrigin ==
-                    TextSelectionOrigin.NativePdf);
+                    TextSelectionOrigin.Native);
 
     public int OcrTextElementCount =>
         Elements.Count(

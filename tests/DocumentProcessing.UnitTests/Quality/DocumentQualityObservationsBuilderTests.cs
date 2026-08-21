@@ -148,7 +148,7 @@ public sealed class DocumentQualityObservationsBuilderTests
                 quality.Elements,
                 element =>
                     element.TextOrigin ==
-                    TextSelectionOrigin.NativePdf);
+                    TextSelectionOrigin.Native);
 
         Assert.True(
             native.NormalizationChangedText);
@@ -358,7 +358,7 @@ public sealed class DocumentQualityObservationsBuilderTests
                     segmentId:
                         null,
                     HybridDocumentElementKind.Text,
-                    TextSelectionOrigin.NativePdf,
+                    TextSelectionOrigin.Native,
                     hasAuthoritativeText:
                         true,
                     isResolved:

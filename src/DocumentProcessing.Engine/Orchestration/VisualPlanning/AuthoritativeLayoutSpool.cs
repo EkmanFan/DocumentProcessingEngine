@@ -23,6 +23,7 @@ internal sealed class AuthoritativeLayoutSpool : IAsyncDisposable
         new(JsonSerializerDefaults.Web);
 
     private readonly string _directoryPath;
+    private readonly Action<string> _deleteDirectory;
     private bool _disposed;
 
     #endregion
@@ -30,9 +31,11 @@ internal sealed class AuthoritativeLayoutSpool : IAsyncDisposable
     #region ctor
 
     private AuthoritativeLayoutSpool(
-        string directoryPath)
+        string directoryPath,
+        Action<string> deleteDirectory)
     {
         _directoryPath = directoryPath;
+        _deleteDirectory = deleteDirectory;
     }
 
     #endregion
@@ -40,7 +43,8 @@ internal sealed class AuthoritativeLayoutSpool : IAsyncDisposable
     #region Methods Creation and Custody
 
     public static AuthoritativeLayoutSpool Create(
-        string? temporaryRoot = null)
+        string? temporaryRoot = null,
+        Action<string>? deleteDirectory = null)
     {
         var root = string.IsNullOrWhiteSpace(temporaryRoot)
             ? Path.GetTempPath()
@@ -56,7 +60,8 @@ internal sealed class AuthoritativeLayoutSpool : IAsyncDisposable
         Directory.CreateDirectory(directoryPath);
 
         return new AuthoritativeLayoutSpool(
-            directoryPath);
+            directoryPath,
+            deleteDirectory ?? DeleteDirectory);
     }
 
     public async ValueTask WriteAsync(
@@ -160,13 +165,33 @@ internal sealed class AuthoritativeLayoutSpool : IAsyncDisposable
 
         if (Directory.Exists(_directoryPath))
         {
-            Directory.Delete(
-                _directoryPath,
-                recursive: true);
+            try
+            {
+                _deleteDirectory(
+                    _directoryPath);
+            }
+            catch (IOException)
+            {
+                // Ephemeral cleanup must not replace an authoritative failure.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Ephemeral cleanup must not replace an authoritative failure.
+            }
         }
 
         return ValueTask.CompletedTask;
     }
+
+    #endregion
+
+    #region Methods Cleanup
+
+    private static void DeleteDirectory(
+        string directoryPath) =>
+        Directory.Delete(
+            directoryPath,
+            recursive: true);
 
     #endregion
 

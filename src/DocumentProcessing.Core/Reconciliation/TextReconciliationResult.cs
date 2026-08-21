@@ -57,11 +57,11 @@ public sealed class TextReconciliationResult
                 "Selected origin None must correspond to no selected text, and vice versa.");
         }
 
-        if (selectedOrigin == TextSelectionOrigin.NativePdf &&
+        if (selectedOrigin == TextSelectionOrigin.Native &&
             !input.HasNativeEvidence)
         {
             throw new ArgumentException(
-                "NativePdf selection requires native evidence.",
+                "Native selection requires native evidence.",
                 nameof(selectedOrigin));
         }
 

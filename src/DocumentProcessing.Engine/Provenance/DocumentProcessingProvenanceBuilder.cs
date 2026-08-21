@@ -320,7 +320,7 @@ public static class DocumentProcessingProvenanceBuilder
         var preparation =
             element.TextOrigin switch
             {
-                TextSelectionOrigin.NativePdf =>
+                TextSelectionOrigin.Native =>
                     reconciliation.NativeTextPreparation,
 
                 TextSelectionOrigin.Ocr =>

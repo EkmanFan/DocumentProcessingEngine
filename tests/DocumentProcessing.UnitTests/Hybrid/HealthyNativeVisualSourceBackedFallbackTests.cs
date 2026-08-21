@@ -135,7 +135,7 @@ public sealed class HealthyNativeVisualSourceBackedFallbackTests
             page.Elements[1];
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             native.TextOrigin);
 
         Assert.Equal(

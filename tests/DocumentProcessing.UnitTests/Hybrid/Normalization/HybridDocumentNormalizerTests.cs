@@ -69,7 +69,7 @@ public sealed class HybridDocumentNormalizerTests
             normalized.Text);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             normalized.TextOrigin);
 
         Assert.Equal(

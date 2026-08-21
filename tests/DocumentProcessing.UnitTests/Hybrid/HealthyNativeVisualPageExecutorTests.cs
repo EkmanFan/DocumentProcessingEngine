@@ -124,7 +124,7 @@ public sealed class HealthyNativeVisualPageExecutorTests
             native.ReadingOrder);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             native.TextOrigin);
 
         Assert.Equal(

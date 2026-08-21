@@ -237,7 +237,7 @@ public static class NativeOcrTextReconciler
                 ? Result(
                     input,
                     TextReconciliationDecision.NativeOnly,
-                    TextSelectionOrigin.NativePdf,
+                    TextSelectionOrigin.Native,
                     nativeText,
                     ocrText: null,
                     textsEquivalent: null,
@@ -268,7 +268,7 @@ public static class NativeOcrTextReconciler
             return Result(
                 input,
                 TextReconciliationDecision.Agreement,
-                TextSelectionOrigin.NativePdf,
+                TextSelectionOrigin.Native,
                 nativeText,
                 ocrText,
                 textsEquivalent: true,
@@ -284,7 +284,7 @@ public static class NativeOcrTextReconciler
             return Result(
                 input,
                 TextReconciliationDecision.HealthyNativePreferred,
-                TextSelectionOrigin.NativePdf,
+                TextSelectionOrigin.Native,
                 nativeText,
                 ocrText,
                 textsEquivalent: false,

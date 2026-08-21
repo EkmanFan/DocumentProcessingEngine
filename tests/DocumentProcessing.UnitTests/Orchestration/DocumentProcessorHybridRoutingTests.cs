@@ -154,7 +154,7 @@ public sealed class DocumentProcessorHybridRoutingTests
                     1);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             page1.TextOrigin);
 
         Assert.Null(
@@ -217,7 +217,7 @@ public sealed class DocumentProcessorHybridRoutingTests
                     3);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             page3.TextOrigin);
 
         Assert.Equal(

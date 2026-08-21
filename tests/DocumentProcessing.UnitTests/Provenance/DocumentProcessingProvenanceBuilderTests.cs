@@ -176,7 +176,7 @@ public sealed class DocumentProcessingProvenanceBuilderTests
                     1);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             native.TextOrigin);
 
         Assert.Equal(
@@ -293,7 +293,7 @@ public sealed class DocumentProcessingProvenanceBuilderTests
             new[]
             {
                 TextSelectionOrigin.Ocr,
-                TextSelectionOrigin.NativePdf
+                TextSelectionOrigin.Native
             },
             segment.TextOrigins);
 
@@ -732,7 +732,7 @@ public sealed class DocumentProcessingProvenanceBuilderTests
             normalizedText,
             normalizedTextSha256 ??
             Hash(normalizedText),
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             nativeBlockSourceSequence:
                 readingOrder,
             layoutObservationSequence:
@@ -788,7 +788,7 @@ public sealed class DocumentProcessingProvenanceBuilderTests
             sourceElementIds,
             new[]
             {
-                TextSelectionOrigin.NativePdf
+                TextSelectionOrigin.Native
             },
             hasUnresolvedEvidence:
                 false);

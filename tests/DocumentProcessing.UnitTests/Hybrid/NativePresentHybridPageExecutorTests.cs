@@ -16,7 +16,7 @@ public sealed class NativePresentHybridPageExecutorTests
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     [Fact]
-    public async Task ExecuteAsync_UnverifiedAgreementSelectsNativePdf()
+    public async Task ExecuteAsync_UnverifiedAgreementSelectsNative()
     {
         var layout =
             Layout(
@@ -73,7 +73,7 @@ public sealed class NativePresentHybridPageExecutorTests
             element.Kind);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             element.TextOrigin);
 
         Assert.Equal(

@@ -24,7 +24,7 @@ public sealed class NativeOcrTextReconcilerTests
             TextReconciliationDecision.NativeOnly,
             result.Decision);
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             result.SelectedOrigin);
         Assert.Equal(
             "Native text",
@@ -127,7 +127,7 @@ public sealed class NativeOcrTextReconcilerTests
             TextReconciliationDecision.Agreement,
             result.Decision);
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             result.SelectedOrigin);
         Assert.Equal(
             nativeText.Trim(),
@@ -154,7 +154,7 @@ public sealed class NativeOcrTextReconcilerTests
             TextReconciliationDecision.HealthyNativePreferred,
             result.Decision);
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             result.SelectedOrigin);
         Assert.Equal(
             "The native reading is trusted.",

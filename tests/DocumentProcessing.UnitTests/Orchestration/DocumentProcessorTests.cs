@@ -121,7 +121,7 @@ public sealed class DocumentProcessorTests
             element =>
             {
                 Assert.Equal(
-                    TextSelectionOrigin.NativePdf,
+                    TextSelectionOrigin.Native,
                     element.TextOrigin);
 
                 Assert.NotNull(

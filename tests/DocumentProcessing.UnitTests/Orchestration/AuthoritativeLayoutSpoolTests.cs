@@ -66,6 +66,38 @@ public sealed class AuthoritativeLayoutSpoolTests
     }
 
     [Fact]
+    public async Task DisposeAsync_CleanupFailure_DoesNotMaskOriginalException()
+    {
+        var root = CreateTemporaryRoot();
+
+        try
+        {
+            var exception =
+                await Assert.ThrowsAsync<InvalidOperationException>(
+                    async () =>
+                    {
+                        await using var spool =
+                            AuthoritativeLayoutSpool.Create(
+                                root,
+                                _ =>
+                                    throw new IOException(
+                                        "Simulated cleanup failure."));
+
+                        throw new InvalidOperationException(
+                            "Original authoritative failure.");
+                    });
+
+            Assert.Equal(
+                "Original authoritative failure.",
+                exception.Message);
+        }
+        finally
+        {
+            DeleteIfPresent(root);
+        }
+    }
+
+    [Fact]
     public async Task WriteAsync_RejectsRegionRasterMetadata()
     {
         var root = CreateTemporaryRoot();

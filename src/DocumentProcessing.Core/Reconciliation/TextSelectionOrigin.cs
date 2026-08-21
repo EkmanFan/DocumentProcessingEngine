@@ -9,6 +9,6 @@ namespace DocumentProcessing.Core.Reconciliation;
 public enum TextSelectionOrigin
 {
     None,
-    NativePdf,
+    Native,
     Ocr
 }

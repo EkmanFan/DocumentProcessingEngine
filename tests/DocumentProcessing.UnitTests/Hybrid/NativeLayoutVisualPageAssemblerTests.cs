@@ -114,7 +114,7 @@ public sealed class NativeLayoutVisualPageAssemblerTests
                 .NativeBlock);
 
         Assert.Equal(
-            TextSelectionOrigin.NativePdf,
+            TextSelectionOrigin.Native,
             result.Elements[1]
                 .TextOrigin);
 
@@ -521,7 +521,7 @@ public sealed class NativeLayoutVisualPageAssemblerTests
             result.Elements,
             element =>
                 Assert.Equal(
-                    TextSelectionOrigin.NativePdf,
+                    TextSelectionOrigin.Native,
                     element.TextOrigin));
     }
 

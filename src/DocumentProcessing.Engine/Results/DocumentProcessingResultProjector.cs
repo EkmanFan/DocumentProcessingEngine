@@ -281,7 +281,7 @@ internal static class DocumentProcessingResultProjector
         {
             TextSelectionOrigin.None =>
                 DocumentTextSourceKind.None,
-            TextSelectionOrigin.NativePdf =>
+            TextSelectionOrigin.Native =>
                 DocumentTextSourceKind.Native,
             TextSelectionOrigin.Ocr =>
                 DocumentTextSourceKind.Ocr,

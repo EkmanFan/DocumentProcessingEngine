@@ -235,7 +235,7 @@ public sealed class DocumentDualRunTextFingerprintTests
                     HybridDocumentElementKind.Text,
                     bounds,
                     text,
-                    TextSelectionOrigin.NativePdf,
+                    TextSelectionOrigin.Native,
                     nativeBlock:
                         block)
             ]);

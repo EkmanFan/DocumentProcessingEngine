@@ -297,7 +297,7 @@ public static class DocumentIngestionResultBuilder
                     item =>
                         item.HasAuthoritativeText &&
                         item.TextOrigin ==
-                            Core.Reconciliation.TextSelectionOrigin.NativePdf);
+                            Core.Reconciliation.TextSelectionOrigin.Native);
 
             var expectedOcrTextElementCount =
                 sourceElementQuality.Count(

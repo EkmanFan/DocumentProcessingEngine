@@ -503,7 +503,7 @@ public sealed class DocumentIngestionResultTests
                     0,
                 text:
                     "Native text.",
-                TextSelectionOrigin.NativePdf,
+                TextSelectionOrigin.Native,
                 ocrBackendId:
                     null,
                 ocrProfileId:
@@ -552,7 +552,7 @@ public sealed class DocumentIngestionResultTests
                     ],
                 textOrigins:
                     [
-                        TextSelectionOrigin.NativePdf,
+                        TextSelectionOrigin.Native,
                         TextSelectionOrigin.Ocr
                     ],
                 hasUnresolvedEvidence:
@@ -564,7 +564,7 @@ public sealed class DocumentIngestionResultTests
                 1,
                 0,
                 "Native text.",
-                TextSelectionOrigin.NativePdf,
+                TextSelectionOrigin.Native,
                 ocrBackendId:
                     null,
                 ocrProfileId:
@@ -605,7 +605,7 @@ public sealed class DocumentIngestionResultTests
                     ocr.ElementId
                 ],
                 [
-                    TextSelectionOrigin.NativePdf,
+                    TextSelectionOrigin.Native,
                     TextSelectionOrigin.Ocr
                 ],
                 hasUnresolvedEvidence:
@@ -710,7 +710,7 @@ public sealed class DocumentIngestionResultTests
             textOrigin,
             nativeBlockSourceSequence:
                 textOrigin ==
-                TextSelectionOrigin.NativePdf
+                TextSelectionOrigin.Native
                     ? 0
                     : null,
             layoutObservationSequence:

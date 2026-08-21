@@ -277,7 +277,7 @@ public static class DocumentQualityObservationsBuilder
                 element =>
                     element.HasAuthoritativeText &&
                     element.TextOrigin ==
-                        TextSelectionOrigin.NativePdf),
+                        TextSelectionOrigin.Native),
             sourceElements.Count(
                 element =>
                     element.HasAuthoritativeText &&

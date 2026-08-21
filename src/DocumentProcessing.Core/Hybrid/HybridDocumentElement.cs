@@ -242,11 +242,11 @@ public sealed class HybridDocumentElement
                 nameof(preservedVisual));
         }
 
-        if (textOrigin == TextSelectionOrigin.NativePdf &&
+        if (textOrigin == TextSelectionOrigin.Native &&
             nativeBlock is null)
         {
             throw new ArgumentException(
-                "NativePdf text origin requires native block provenance.",
+                "Native text origin requires native block provenance.",
                 nameof(nativeBlock));
         }
 
