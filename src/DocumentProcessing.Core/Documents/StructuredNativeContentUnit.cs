@@ -11,13 +11,20 @@ public sealed record StructuredNativeContentUnit
 
     public IReadOnlyList<StructuredNativeTextBlock> TextBlocks { get; }
 
+    /// <summary>
+    /// Gets whether deterministic format context identifies this complete unit
+    /// as publication presentation rather than documentary content.
+    /// </summary>
+    public bool IsPresentationOnly { get; }
+
     #endregion
 
     #region ctor
 
     public StructuredNativeContentUnit(
         string unitId,
-        IReadOnlyList<StructuredNativeTextBlock> textBlocks)
+        IReadOnlyList<StructuredNativeTextBlock> textBlocks,
+        bool isPresentationOnly = false)
     {
         if (string.IsNullOrWhiteSpace(
                 unitId))
@@ -44,6 +51,9 @@ public sealed record StructuredNativeContentUnit
 
         TextBlocks =
             textBlocks.ToArray();
+
+        IsPresentationOnly =
+            isPresentationOnly;
     }
 
     #endregion

@@ -12,15 +12,15 @@
   },
   "processing": {
     "elementCount": 1729,
-    "textElementCount": 1729,
-    "headingElementCount": 0,
+    "textElementCount": 1698,
+    "headingElementCount": 31,
     "captionElementCount": 0,
     "segmentCount": 32,
     "authoritativeTextSha256": "dfb083541b3983f4fa31f5198d244cfda7efe204769ec0dc17061ee015ab178d",
     "allElementLocationsAreEpub": true,
     "hasPagedElementLocation": false,
     "nativeExtractionBackendId": "epub-xhtml",
-    "nativeExtractionProfileId": "epub-xhtml-native-v1+epubcheck-5.3.0",
+    "nativeExtractionProfileId": "epub-xhtml-native-v2\u002Bepubcheck-5.3.0",
     "assemblyProfileId": "structured-native-assembly-v1",
     "normalizationProfileId": "structured-native-whitespace-v1",
     "segmentationProfileId": "structured-native-content-unit-v1"

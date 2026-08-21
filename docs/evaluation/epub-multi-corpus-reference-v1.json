@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "document-processing-epub-multi-corpus-v1",
+  "corpora": {
+    "calvin": {
+      "source": {
+        "sha256": "15e5f4aed7003852e235737e3266791f049dd5da0805103ea6f42adc3eaf4434",
+        "byteLength": 2505643,
+        "packagePath": "OEBPS/content.opf",
+        "title": "Institution de la Religion Chrétienne (French Edition)",
+        "identifier": "urn:asin:B0C33PNCB8",
+        "language": "fr",
+        "spineItemCount": 166,
+        "linearSpineItemCount": 166
+      },
+      "processing": {
+        "elementCount": 7351,
+        "textElementCount": 7212,
+        "headingElementCount": 139,
+        "captionElementCount": 0,
+        "segmentCount": 164,
+        "authoritativeTextSha256": "6ade71e1838507009833648fba9a0197e4e3e0cb4970dcf640237a1b7c9a65ba",
+        "nativeExtractionProfileId": "epub-xhtml-native-v2\u002Bepubcheck-5.3.0"
+      },
+      "visuals": {
+        "bodyMatterStartSpineIndex": null,
+        "selectedVisualCount": 0,
+        "visualAssetCount": 0,
+        "assets": []
+      }
+    },
+    "bauckham": {
+      "source": {
+        "sha256": "725b9a5d6cc0099e2df4382a63b6b6b6f6da44f5eaf15a1011b864be6d252487",
+        "byteLength": 1952106,
+        "packagePath": "OEBPS/content.opf",
+        "title": "Jesus and the Eyewitnesses, 2nd ed.: The Gospels as Eyewitness Testimony",
+        "identifier": "urn:asin:B08VVYPXCL",
+        "language": "en",
+        "spineItemCount": 37,
+        "linearSpineItemCount": 37
+      },
+      "processing": {
+        "elementCount": 5563,
+        "textElementCount": 5529,
+        "headingElementCount": 34,
+        "captionElementCount": 0,
+        "segmentCount": 35,
+        "authoritativeTextSha256": "a9bf5f7ee8223cfd64ceb639403d6229d29e60356f304f419a49cc37997f9cb5",
+        "nativeExtractionProfileId": "epub-xhtml-native-v2\u002Bepubcheck-5.3.0"
+      },
+      "visuals": {
+        "bodyMatterStartSpineIndex": null,
+        "selectedVisualCount": 1,
+        "visualAssetCount": 1,
+        "assets": [
+          {
+            "sourceResourceId": "OEBPS/image_rsrcKK6.jpg",
+            "qualification": "Meaningful",
+            "contentLength": 21143,
+            "contentSha256": "00bb0f779939ccffcb9bb2f37a167666d7f80ca6080fb5e8493d39674cc50eb1"
+          }
+        ]
+      }
+    }
+  }
+}

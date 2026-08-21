@@ -95,6 +95,11 @@ internal static class StructuredNativeDocumentProjector
         foreach (var unit in
                  evidence.ContentUnits)
         {
+            if (unit.IsPresentationOnly)
+            {
+                continue;
+            }
+
             var normalizedBlocks =
                 unit.TextBlocks
                     .Select(

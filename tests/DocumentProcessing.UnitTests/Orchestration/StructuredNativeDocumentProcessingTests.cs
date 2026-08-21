@@ -64,7 +64,17 @@ public sealed class StructuredNativeDocumentProcessingTests
                                 StructuredNativeTextBlockKind.Caption,
                                 2,
                                 "A caption.")
-                        ])
+                        ]),
+                    new StructuredNativeContentUnit(
+                        "OEBPS/promotions.xhtml",
+                        [
+                            Block(
+                                StructuredNativeTextBlockKind.Heading,
+                                3,
+                                "Promotional heading")
+                        ],
+                        isPresentationOnly:
+                            true)
                 ],
                 new ProcessingComponentIdentity(
                     "test-epub",
@@ -204,7 +214,7 @@ public sealed class StructuredNativeDocumentProcessingTests
                         "image/png",
                         isAuxiliary:
                             false,
-                        hasBodyMatterBoundary:
+                        isStructuredFigure:
                             true),
                     new StructuredNativeVisual(
                         "structured-visual-front",
@@ -225,6 +235,24 @@ public sealed class StructuredNativeDocumentProcessingTests
                         isAuxiliary:
                             false,
                         isExplicitlyPresentationOnly:
+                            true),
+                    new StructuredNativeVisual(
+                        "structured-visual-separator",
+                        visualLocation,
+                        "OEBPS/images/separator.png",
+                        "image/png",
+                        isAuxiliary:
+                            false,
+                        isRepeatedPresentationVisual:
+                            true),
+                    new StructuredNativeVisual(
+                        "structured-visual-promotion",
+                        visualLocation,
+                        "OEBPS/images/promotion.png",
+                        "image/png",
+                        isAuxiliary:
+                            false,
+                        isTerminalPresentationMatter:
                             true)
                 ]);
 

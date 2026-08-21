@@ -18,9 +18,12 @@ internal static class StructuredNativeVisualEvidenceAssessor
         return visual.IsPublicationCover ||
                visual.IsNavigation ||
                visual.IsExplicitlyPresentationOnly ||
-               visual.IsPreliminaryMatter
+               visual.IsPreliminaryMatter ||
+               visual.IsRepeatedPresentationVisual ||
+               visual.IsTerminalPresentationMatter
             ? VisualEvidenceKind.PublicationPresentationVisual
-            : visual.HasBodyMatterBoundary
+            : visual.IsStructuredFigure ||
+              visual.HasBodyMatterBoundary
                 ? VisualEvidenceKind.StructuredContentMeaningfulVisual
                 : VisualEvidenceKind.Unknown;
     }

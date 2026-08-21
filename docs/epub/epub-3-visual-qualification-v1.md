@@ -83,6 +83,10 @@ and `Meaningful` qualifications are frozen in
 The filename pattern is evaluation truth supplied for this corpus, not a
 production classification rule.
 
+The later EPUB-4 multi-corpus hardening adds navigation-backed headings and
+contextual facts for publications without a body-matter landmark. See
+`docs/epub/epub-4-multi-corpus-hardening-v1.md`.
+
 Run:
 
 ```bash

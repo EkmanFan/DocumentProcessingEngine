@@ -16,7 +16,7 @@ spine items                 36
 linear spine items          36
 portable text elements   1,729
 portable structural units   32
-heading elements             0
+heading elements            31
 caption elements             0
 paged element locations      0
 ```
@@ -32,14 +32,13 @@ into Git.
 
 ## Semantic observation
 
-The reference EPUB produces no native heading or caption element in this first
-pass because its relevant short headings and post-image text are encoded as
-ordinary XHTML `p` elements. The extractor preserves that source fact instead
-of guessing from typography or proximity.
+The reference EPUB produces 31 heading elements. EPUB-4 promotes the blocks
+targeted by the standardized EPUB navigation table even though the publisher
+encoded them as ordinary XHTML `p` elements. It still produces no native
+caption element, and the authoritative text hash remains unchanged.
 
-This is now useful diagnostic evidence: later EPUB semantic enrichment can be
-measured explicitly, and the EPUB does not falsely authorize treating the long
-paragraph after the page-28 image as a caption.
+The EPUB does not falsely authorize treating the long paragraph after the
+page-28 image as a caption.
 
 ## Reproduction
 

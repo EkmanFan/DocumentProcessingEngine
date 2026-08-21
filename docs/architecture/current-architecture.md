@@ -133,6 +133,10 @@ Required constraints:
   only unresolved raster images through PP-Structure when the user requests
   it, and invokes `UserVisualAssetWriter`; EPUB spine items and images are never
   represented as physical pages.
+- EPUB navigation-table targets can promote publisher-styled paragraphs to
+  headings; structured figures, repeated small presentational resources and
+  narrowly identified terminal presentation matter are acquired as neutral
+  source facts before Engine visual policy.
 - PdfPig supplies native extraction and native visual measurements.
 - `pdftoppm` supplies document-scoped rasterization.
 - PP-StructureV3 supplies layout observations when planned.

@@ -175,7 +175,7 @@ public sealed class EpubDocumentFormatTests
                 StringComparer.Ordinal);
 
         Assert.Equal(
-            5,
+            6,
             visuals.Count);
 
         var structure =
@@ -193,6 +193,10 @@ public sealed class EpubDocumentFormatTests
         Assert.False(
             visuals["OEBPS/images/diagram.png"]
                 .IsPublicationCover);
+
+        Assert.True(
+            visuals["OEBPS/images/diagram.png"]
+                .IsStructuredFigure);
 
         Assert.True(
             visuals["OEBPS/images/decoration.png"]
@@ -214,6 +218,27 @@ public sealed class EpubDocumentFormatTests
             visuals["OEBPS/images/diagram.png"]
                 .IsPreliminaryMatter);
 
+        Assert.True(
+            visuals["OEBPS/images/separator.png"]
+                .IsRepeatedPresentationVisual);
+
+        var styledHeading =
+            evidence.ContentUnits
+                .SelectMany(
+                    unit =>
+                        unit.TextBlocks)
+                .Single(
+                    block =>
+                        block.Location is
+                            EpubDocumentSourceLocation
+                            {
+                                FragmentId: "styled-heading"
+                            });
+
+        Assert.Equal(
+            StructuredNativeTextBlockKind.Heading,
+            styledHeading.Kind);
+
         Assert.All(
             evidence.Visuals,
             visual =>
@@ -223,6 +248,64 @@ public sealed class EpubDocumentFormatTests
         Assert.DoesNotContain(
             "OEBPS/images/unused.png",
             visuals.Keys);
+    }
+
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 2)]
+    public void Extractor_ExcludesTerminalPresentationMatter(
+        bool promotional,
+        int expectedVisualCount)
+    {
+        using var stream =
+            new MemoryStream(
+                TestEpubFactory.CreateWithTerminalPresentation(
+                    promotional));
+
+        var evidence =
+            new EpubPackageExtractor()
+                .Extract(
+                    stream,
+                    new EpubDocumentFormatOptions());
+
+        Assert.Equal(
+            expectedVisualCount,
+            evidence.Visuals.Count);
+
+        Assert.All(
+            evidence.Visuals,
+            visual =>
+                Assert.True(
+                    visual.IsTerminalPresentationMatter));
+
+        Assert.True(
+            evidence.ContentUnits[1]
+                .IsPresentationOnly);
+
+        if (promotional)
+        {
+            Assert.NotEmpty(
+                evidence.ContentUnits[1]
+                    .TextBlocks);
+        }
+        else
+        {
+            Assert.Empty(
+                evidence.ContentUnits[1]
+                    .TextBlocks);
+        }
+
+        var chapterHeading =
+            Assert.Single(
+                evidence.ContentUnits[0]
+                    .TextBlocks,
+                block =>
+                    block.Kind ==
+                    StructuredNativeTextBlockKind.Heading);
+
+        Assert.Equal(
+            "Styled chapter title",
+            chapterHeading.SourceText);
     }
 
     [Fact]

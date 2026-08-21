@@ -30,6 +30,12 @@ public sealed record StructuredNativeVisual
 
     public bool HasBodyMatterBoundary { get; }
 
+    public bool IsStructuredFigure { get; }
+
+    public bool IsRepeatedPresentationVisual { get; }
+
+    public bool IsTerminalPresentationMatter { get; }
+
     #endregion
 
     #region ctor
@@ -44,7 +50,10 @@ public sealed record StructuredNativeVisual
         bool isNavigation = false,
         bool isExplicitlyPresentationOnly = false,
         bool isPreliminaryMatter = false,
-        bool hasBodyMatterBoundary = false)
+        bool hasBodyMatterBoundary = false,
+        bool isStructuredFigure = false,
+        bool isRepeatedPresentationVisual = false,
+        bool isTerminalPresentationMatter = false)
     {
         if (string.IsNullOrWhiteSpace(
                 visualId))
@@ -106,6 +115,15 @@ public sealed record StructuredNativeVisual
 
         HasBodyMatterBoundary =
             hasBodyMatterBoundary;
+
+        IsStructuredFigure =
+            isStructuredFigure;
+
+        IsRepeatedPresentationVisual =
+            isRepeatedPresentationVisual;
+
+        IsTerminalPresentationMatter =
+            isTerminalPresentationMatter;
     }
 
     #endregion
