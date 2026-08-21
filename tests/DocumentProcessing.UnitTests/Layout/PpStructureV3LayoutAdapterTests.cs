@@ -179,6 +179,47 @@ public sealed class PpStructureV3LayoutAdapterTests
     }
 
     [Fact]
+    public async Task AdaptAsync_MapsFormulaToNeutralFigure()
+    {
+        const string json =
+            """
+            {
+              "res": {
+                "parsing_res_list": [
+                  {
+                    "block_bbox": [193, 993, 369, 1102],
+                    "block_label": "formula",
+                    "block_content": "If p, then q. P therefore q."
+                  }
+                ]
+              }
+            }
+            """;
+
+        await using var stream =
+            new MemoryStream(
+                Encoding.UTF8.GetBytes(json));
+
+        var result =
+            await new PpStructureV3LayoutAdapter()
+                .AdaptAsync(
+                    stream,
+                    physicalPageNumber: 16,
+                    pixelWidth: 1020,
+                    pixelHeight: 1320);
+
+        var observation =
+            Assert.Single(result.Observations);
+
+        Assert.Equal(
+            LayoutObservationKind.Figure,
+            observation.Kind);
+        Assert.Equal(
+            "formula",
+            observation.RawLabel);
+    }
+
+    [Fact]
     public async Task AdaptAsync_MapsUnmodeledLabelsToUnknown()
     {
         const string json =

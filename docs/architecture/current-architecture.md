@@ -146,6 +146,14 @@ Required constraints:
 - PdfPig supplies native extraction and native visual measurements.
 - `pdftoppm` supplies document-scoped rasterization.
 - PP-StructureV3 supplies layout observations when planned.
+- source-visual page geometry is retained through authoritative planning;
+  every source visual already planned for meaningful preservation supplies one
+  preservation crop and one layout-order Figure.
+- PP may classify or fragment that source visual, but PP regions never create
+  additional visual assets without a corresponding source-visual plan.
+- PP `formula` remains a neutral Figure label. When it corresponds to a planned
+  source image, the source image is preserved; without a source image, the
+  `formula` region is discarded as visual evidence and native text remains.
 - PaddleOCR supplies targeted text recognition when planned.
 - the Engine returns the portable `DocumentProcessingResult` through the Host.
 

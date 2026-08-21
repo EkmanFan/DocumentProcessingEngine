@@ -119,15 +119,22 @@ figure_title                   Caption
 figure_caption                 Caption
 image                          Figure
 figure                         Figure
+formula                        Figure
 header_image                   Figure
 footer_image                   Figure
 table                          Table
 anything else                  Unknown
 ```
 
-The mapping is intentionally conservative. For example, `header`, `number`,
-`footnote`, and other labels are not promoted to narrative `Text` until a real
-policy requirement is implemented and evaluated.
+The mapping is intentionally conservative. `formula` is mapped to the neutral
+`Figure` role because it is non-narrative visual content that may require
+preservation; its backend-specific label remains available through `RawLabel`.
+The label alone does not authorize preservation. A `formula` Figure must
+correspond to an already-detected source image; otherwise it is discarded as
+visual evidence and any native PDF text remains authoritative.
+For example, `header`, `number`, `footnote`, and other labels are not promoted
+to narrative `Text` until a real policy requirement is implemented and
+evaluated.
 
 ## Scope intentionally not included
 

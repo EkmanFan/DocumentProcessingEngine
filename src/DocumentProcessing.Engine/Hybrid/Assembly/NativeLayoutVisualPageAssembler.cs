@@ -396,6 +396,16 @@ public static class NativeLayoutVisualPageAssembler
             if (hasBefore &&
                 hasAfter)
             {
+                if (TryResolveGeometryVisualBand(
+                        block,
+                        orderedVisuals,
+                        out var geometryVisualBand))
+                {
+                    return new NativeBlockPlacement(
+                        block,
+                        geometryVisualBand);
+                }
+
                 throw new InvalidDataException(
                     $"Native block {block.SourceSequence} on page " +
                     $"{sourcePage.PhysicalPageNumber} straddles preserved visual " +
@@ -468,6 +478,50 @@ public static class NativeLayoutVisualPageAssembler
         return new NativeBlockPlacement(
             block,
             visualBand);
+    }
+
+    private static bool TryResolveGeometryVisualBand(
+        DocumentTextBlock block,
+        IReadOnlyList<HybridDocumentElement> orderedVisuals,
+        out int visualBand)
+    {
+        visualBand =
+            0;
+
+        var encounteredVisualAfterBlock =
+            false;
+
+        foreach (var visual in
+                 orderedVisuals)
+        {
+            var visualBounds =
+                visual.LayoutObservation!
+                    .Bounds;
+
+            if (block.Bounds.Top >=
+                visualBounds.Bottom)
+            {
+                if (encounteredVisualAfterBlock)
+                {
+                    return false;
+                }
+
+                visualBand++;
+                continue;
+            }
+
+            if (block.Bounds.Bottom <=
+                visualBounds.Top)
+            {
+                encounteredVisualAfterBlock =
+                    true;
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     private static IReadOnlyList<HybridDocumentElement> BuildDenseHybridStream(

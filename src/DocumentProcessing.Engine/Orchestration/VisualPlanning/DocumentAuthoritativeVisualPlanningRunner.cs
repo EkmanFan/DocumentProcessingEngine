@@ -36,7 +36,7 @@ internal sealed class DocumentAuthoritativeVisualPlanningRunner
 
     #region Methods
 
-    public async ValueTask<IReadOnlyList<GuardedPagePlanningDecision>> RunAsync(
+    public async ValueTask<DocumentAuthoritativeVisualPlanningResult> RunAsync(
         DocumentSource source,
         DocumentFormatId format,
         DocumentExtractionResult extraction,
@@ -86,11 +86,13 @@ internal sealed class DocumentAuthoritativeVisualPlanningRunner
                     rasterObservations,
                     cancellationToken);
 
-        return _dependencies
-            .GuardedPlanner
-            .Plan(
-                extraction,
-                visualObservations);
+        return new DocumentAuthoritativeVisualPlanningResult(
+            _dependencies
+                .GuardedPlanner
+                .Plan(
+                    extraction,
+                    visualObservations),
+            rasterObservations);
     }
 
     #endregion

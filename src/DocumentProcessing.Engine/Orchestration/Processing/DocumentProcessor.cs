@@ -486,6 +486,10 @@ public sealed class DocumentProcessor
             authoritativeVisualPlanning =
                 null;
 
+        IReadOnlyList<PageVisualRasterObservations>?
+            authoritativeVisualRasterObservations =
+                null;
+
         if (_authoritativeVisualPlanningRunner is not null &&
             RequiresAuthoritativeVisualPlanning(
                 extraction,
@@ -495,7 +499,7 @@ public sealed class DocumentProcessor
 
             try
             {
-                authoritativeVisualPlanning =
+                var authoritativeVisualPlanningResult =
                     await _authoritativeVisualPlanningRunner
                         .RunAsync(
                             prepared.Source,
@@ -503,6 +507,12 @@ public sealed class DocumentProcessor
                             extraction,
                             cancellationToken)
                         .ConfigureAwait(false);
+
+                authoritativeVisualPlanning =
+                    authoritativeVisualPlanningResult.Decisions;
+
+                authoritativeVisualRasterObservations =
+                    authoritativeVisualPlanningResult.RasterObservations;
             }
             finally
             {
@@ -683,6 +693,9 @@ public sealed class DocumentProcessor
                             authoritativeVisualPlanning is null
                                 ? null
                                 : authoritativeVisualPlanning[index],
+                            authoritativeVisualRasterObservations is null
+                                ? null
+                                : authoritativeVisualRasterObservations[index],
                             rasterSession,
                             hybridExecution,
                             layoutSpool,
@@ -1070,6 +1083,8 @@ public sealed class DocumentProcessor
             DocumentExtractionPage page,
             PageProcessingDecision decision,
             GuardedPagePlanningDecision? authoritativeVisualDecision,
+            PageVisualRasterObservations?
+                authoritativeVisualRasterObservations,
             IDocumentRasterizationSession? rasterSession,
             DocumentHybridExecutionDependencies? hybridExecution,
             AuthoritativeLayoutSpool? layoutSpool,
@@ -1122,6 +1137,9 @@ public sealed class DocumentProcessor
                         authoritativeVisualDecision!
                             .Candidate
                             .Plan,
+                        authoritativeVisualRasterObservations?
+                            .VisualElements ??
+                        [],
                         rasterSession!,
                         preparedLayout!.PageRaster,
                         preparedLayout!.Layout,

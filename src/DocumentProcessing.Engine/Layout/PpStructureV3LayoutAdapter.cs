@@ -237,6 +237,7 @@ public sealed class PpStructureV3LayoutAdapter
 
             "image" or
             "figure" or
+            "formula" or
             "header_image" or
             "footer_image" =>
                 LayoutObservationKind.Figure,

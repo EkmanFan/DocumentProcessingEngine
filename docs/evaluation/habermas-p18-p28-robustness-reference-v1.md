@@ -17,11 +17,11 @@ The standalone `habermas-p0018.pdf` fixture now completes through the public
 layout call, zero OCR calls, zero Figure OCR, and exactly one preserved Figure.
 Native text remains authoritative.
 
-The global layout-only assessor is intentionally unchanged: the p18-like
-horizontal Figure still evaluates to `Unknown` without source evidence. The
-Healthy Native executor may resolve that evidence only when an already-resolved
-source plan provides a one-to-one singleton visual mapping and the Figure is
-spatially independent from semantic text-like observations.
+The p18-like horizontal Figure still evaluates to `Unknown` without source
+evidence. The Healthy Native executor resolves it because the meaningful source
+visual supplies its authoritative preservation bounds. The same rule applies
+to one or more source visuals: each planned source visual produces exactly one
+asset, while layout-only Figures cannot increase that count.
 
 ## p28
 

@@ -50,7 +50,7 @@
   },
   "invariants": [
     "Default layout-only p18-like Figure evidence remains Unknown.",
-    "Source-backed singleton resolution requires exactly one source visual plan and one unresolved Figure.",
+    "Source-backed resolution emits exactly one preservation Figure per planned source visual; layout-only Figures cannot create additional assets.",
     "Unknown layout observations are not promoted to OCR targets.",
     "Unowned native blocks may use geometry only when their visual band is unambiguous.",
     "Native blocks overlapping a preserved visual still fail closed.",

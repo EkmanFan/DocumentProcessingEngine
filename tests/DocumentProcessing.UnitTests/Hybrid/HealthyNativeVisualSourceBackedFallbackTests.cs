@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
@@ -232,6 +233,154 @@ public sealed class HealthyNativeVisualSourceBackedFallbackTests
     }
 
     [Fact]
+    public async Task ExecuteWithPrecomputedLayoutAsync_MultipleSourceVisuals_PreservesOneAssetPerPlannedSource()
+    {
+        var sourcePage =
+            NativePage(
+                rasterImageCount:
+                    3);
+
+        var firstFigure =
+            Layout(
+                0,
+                0,
+                LayoutObservationKind.Figure,
+                0.19,
+                0.09,
+                0.36,
+                0.17);
+
+        var secondFigure =
+            Layout(
+                1,
+                1,
+                LayoutObservationKind.Figure,
+                0.19,
+                0.35,
+                0.36,
+                0.43);
+
+        var thirdFigure =
+            Layout(
+                2,
+                2,
+                LayoutObservationKind.Figure,
+                0.19,
+                0.49,
+                0.36,
+                0.57);
+
+        var text =
+            Layout(
+                3,
+                3,
+                LayoutObservationKind.Text,
+                0.10,
+                0.65,
+                0.55,
+                0.75);
+
+        var plan =
+            new PageExecutionPlan(
+                physicalPageNumber:
+                    1,
+                TextExecutionMode.NativeText,
+                [
+                    PreserveVisual(
+                        sourceVisualIndex:
+                            2),
+                    PreserveVisual(
+                        sourceVisualIndex:
+                            0),
+                    PreserveVisual(
+                        sourceVisualIndex:
+                            1)
+                ]);
+
+        var sourceVisuals =
+            new[]
+            {
+                MeasuredSourceVisual(
+                    0,
+                    0.196,
+                    0.091,
+                    0.362,
+                    0.174),
+                MeasuredSourceVisual(
+                    1,
+                    0.196,
+                    0.353,
+                    0.360,
+                    0.436),
+                MeasuredSourceVisual(
+                    2,
+                    0.196,
+                    0.491,
+                    0.359,
+                    0.575)
+            };
+
+        var executor =
+            new HealthyNativeVisualPageExecutor(
+                new ThrowingLayoutAnalyzer(),
+                new VisualAssetPreserver());
+
+        var session =
+            new FakeRasterizationSession();
+
+        var destinations =
+            new List<MemoryStream>();
+
+        var page =
+            await executor
+                .ExecuteWithPrecomputedLayoutAsync(
+                    sourcePage,
+                    HealthyNativeOnlyDecision(),
+                    plan,
+                    sourceVisuals,
+                    session,
+                    FullPageRaster(),
+                    new LayoutAnalysisResult(
+                        "fake-layout",
+                        1,
+                        [
+                            thirdFigure,
+                            firstFigure,
+                            secondFigure,
+                            text
+                        ]),
+                    SourceSha,
+                    (_, cancellationToken) =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        var destination =
+                            new MemoryStream();
+
+                        destinations.Add(
+                            destination);
+
+                        return ValueTask.FromResult<Stream>(
+                            destination);
+                    });
+
+        Assert.Equal(
+            3,
+            session.RegionRenderCount);
+
+        Assert.Equal(
+            3,
+            destinations.Count);
+
+        Assert.Equal(
+            3,
+            page.Elements.Count(
+                element =>
+                    element.Kind ==
+                    HybridDocumentElementKind.Visual));
+    }
+
+    [Fact]
     public async Task ExecuteWithPrecomputedLayoutAsync_UnknownFigureIntersectingSemanticText_FailsClosed()
     {
         var sourcePage =
@@ -323,6 +472,49 @@ public sealed class HealthyNativeVisualSourceBackedFallbackTests
                         0,
                     VisualExecutionAction.PreserveMeaningfulVisual)
             ]);
+
+    private static VisualElementExecutionPlan PreserveVisual(
+        int sourceVisualIndex) =>
+        new(
+            sourceVisualIndex,
+            VisualExecutionAction.PreserveMeaningfulVisual);
+
+    private static VisualRasterObservation MeasuredSourceVisual(
+        int sourceVisualIndex,
+        double left,
+        double top,
+        double right,
+        double bottom)
+    {
+        var bounds =
+            new NormalizedRectangle(
+                left,
+                top,
+                right,
+                bottom);
+
+        return new VisualRasterObservation(
+            sourceVisualIndex,
+            declaredPageBounds:
+                bounds,
+            VisualRasterDecodeSource.RawEmbeddedImage,
+            pixelWidth:
+                100,
+            pixelHeight:
+                100,
+            backgroundUniformity:
+                1,
+            VisualForegroundState.Measured,
+            foregroundPixelRatio:
+                0.25,
+            VisualPixelInteractionKind.NoForegroundWordIntersection,
+            nativeWordsTouchedRatio:
+                0,
+            significantComponentCount:
+                1,
+            effectiveVisualBounds:
+                bounds);
+    }
 
     private static DocumentExtractionPage NativePage(
         int rasterImageCount)

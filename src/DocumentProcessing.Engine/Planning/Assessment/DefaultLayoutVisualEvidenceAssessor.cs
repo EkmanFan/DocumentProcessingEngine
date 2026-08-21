@@ -7,7 +7,7 @@ namespace DocumentProcessing.Engine.Planning;
 /// <summary>
 /// Classifies layout-detected Figure regions using layout evidence only.
 ///
-/// A Figure label alone is never treated as meaningful-visual evidence.
+/// A backend Figure label alone is never treated as meaningful-visual evidence.
 /// A Figure receives <see cref="VisualEvidenceKind.CaptionedMeaningfulVisual"/>
 /// when exactly one caption satisfies the existing strong spatial
 /// Figure/Caption relation. A sufficiently large Figure may instead receive
@@ -66,6 +66,14 @@ public sealed class DefaultLayoutVisualEvidenceAssessor
         LayoutObservation figure,
         IReadOnlyList<LayoutObservation> observations)
     {
+        if (string.Equals(
+                figure.RawLabel,
+                "formula",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return VisualEvidenceKind.Unknown;
+        }
+
         var captions =
             observations
                 .Where(

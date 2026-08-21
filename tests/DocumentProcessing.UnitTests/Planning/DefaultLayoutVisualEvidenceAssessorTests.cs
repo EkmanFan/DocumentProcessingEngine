@@ -80,6 +80,37 @@ public sealed class DefaultLayoutVisualEvidenceAssessorTests
     }
 
     [Fact]
+    public void Assess_FormulaWithoutSourceVisual_RemainsUnknown()
+    {
+        var formula =
+            new LayoutObservation(
+                physicalPageNumber:
+                    1,
+                observationSequence:
+                    2,
+                readingOrder:
+                    2,
+                LayoutObservationKind.Figure,
+                new NormalizedRectangle(
+                    0.10,
+                    0.10,
+                    0.90,
+                    0.60),
+                "formula");
+
+        var evidence =
+            Assert.Single(
+                new DefaultLayoutVisualEvidenceAssessor()
+                    .Assess(
+                        Layout(
+                            formula)));
+
+        Assert.Equal(
+            VisualEvidenceKind.Unknown,
+            evidence.Kind);
+    }
+
+    [Fact]
     public void Assess_LargeFigureWithoutCaption_ClassifiesLargeIndependentVisual()
     {
         var figure =

@@ -1,6 +1,7 @@
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Core.Planning;
@@ -21,8 +22,9 @@ namespace DocumentProcessing.Engine.Hybrid;
 /// preservation -> native/layout visual order merge.
 ///
 /// It never performs OCR or native/OCR reconciliation. Unresolved layout Figure
-/// evidence fails closed unless an already-resolved single source visual maps
-/// one-to-one to one spatially independent layout Figure.
+/// evidence cannot create an asset by itself. Every already-resolved meaningful
+/// source visual supplies exactly one Figure crop, and reliable source geometry
+/// places that Figure in layout order even when PP fragments or omits it.
 /// </summary>
 public sealed class HealthyNativeVisualPageExecutor
 {
@@ -78,6 +80,8 @@ public sealed class HealthyNativeVisualPageExecutor
         return await ExecutePreparedAsync(
                 sourcePage,
                 candidatePlan,
+                sourceVisualObservations:
+                    [],
                 rasterSession,
                 prepared.PageRaster,
                 prepared.Layout,
@@ -161,6 +165,32 @@ public sealed class HealthyNativeVisualPageExecutor
         string sourceDocumentSha256,
         Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
             openVisualDestinationAsync,
+        CancellationToken cancellationToken = default) =>
+        await ExecuteWithPrecomputedLayoutAsync(
+                sourcePage,
+                authoritativeDecision,
+                candidatePlan,
+                sourceVisualObservations:
+                    [],
+                rasterSession,
+                pageRaster,
+                layout,
+                sourceDocumentSha256,
+                openVisualDestinationAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+    public async ValueTask<HybridDocumentPage> ExecuteWithPrecomputedLayoutAsync(
+        DocumentExtractionPage sourcePage,
+        PageProcessingDecision authoritativeDecision,
+        PageExecutionPlan candidatePlan,
+        IReadOnlyList<VisualRasterObservation> sourceVisualObservations,
+        IDocumentRasterizationSession rasterSession,
+        RasterRenderResult pageRaster,
+        LayoutAnalysisResult layout,
+        string sourceDocumentSha256,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync,
         CancellationToken cancellationToken = default)
     {
         ValidateRequest(
@@ -176,6 +206,9 @@ public sealed class HealthyNativeVisualPageExecutor
         ArgumentNullException.ThrowIfNull(
             layout);
 
+        ArgumentNullException.ThrowIfNull(
+            sourceVisualObservations);
+
         cancellationToken.ThrowIfCancellationRequested();
 
         ValidatePageRaster(
@@ -189,6 +222,7 @@ public sealed class HealthyNativeVisualPageExecutor
         return await ExecutePreparedAsync(
                 sourcePage,
                 candidatePlan,
+                sourceVisualObservations,
                 rasterSession,
                 pageRaster,
                 layout,
@@ -201,6 +235,7 @@ public sealed class HealthyNativeVisualPageExecutor
     private async ValueTask<HybridDocumentPage> ExecutePreparedAsync(
         DocumentExtractionPage sourcePage,
         PageExecutionPlan candidatePlan,
+        IReadOnlyList<VisualRasterObservation> sourceVisualObservations,
         IDocumentRasterizationSession rasterSession,
         RasterRenderResult pageRaster,
         LayoutAnalysisResult layout,
@@ -209,10 +244,20 @@ public sealed class HealthyNativeVisualPageExecutor
             openVisualDestinationAsync,
         CancellationToken cancellationToken)
     {
+        var executionLayout =
+            sourceVisualObservations.Count ==
+                0
+                ? layout
+                : SourceBackedLayoutVisualMatcher
+                    .AddSourceFigures(
+                        candidatePlan,
+                        sourceVisualObservations,
+                        layout);
+
         var visualEvidence =
             _visualExecutor
                 .Assess(
-                    layout)
+                    executionLayout)
                 .Values
                 .OrderBy(
                     evidence =>
@@ -226,7 +271,8 @@ public sealed class HealthyNativeVisualPageExecutor
         var preserving =
             ResolvePreservingEvidence(
                 candidatePlan,
-                layout,
+                sourceVisualObservations,
+                executionLayout,
                 visualEvidence);
 
         if (openVisualDestinationAsync is null)
@@ -273,12 +319,13 @@ public sealed class HealthyNativeVisualPageExecutor
         return NativeLayoutVisualPageAssembler
             .Assemble(
                 sourcePage,
-                layout,
+                executionLayout,
                 visualElements);
     }
 
     private static LayoutVisualEvidence[] ResolvePreservingEvidence(
         PageExecutionPlan candidatePlan,
+        IReadOnlyList<VisualRasterObservation> sourceVisualObservations,
         LayoutAnalysisResult layout,
         IReadOnlyList<LayoutVisualEvidence> visualEvidence)
     {
@@ -301,6 +348,24 @@ public sealed class HealthyNativeVisualPageExecutor
                                 evidence.Kind) ==
                         VisualDisposition.RequiresVisualAnalysis)
                 .ToArray();
+
+        if (sourceVisualObservations.Count >
+            0)
+        {
+            if (SourceBackedLayoutVisualMatcher.TryResolve(
+                    candidatePlan,
+                    sourceVisualObservations,
+                    layout,
+                    out var sourceBacked))
+            {
+                return sourceBacked;
+            }
+
+            throw new InvalidDataException(
+                $"Physical page {candidatePlan.PhysicalPageNumber} requested " +
+                "meaningful source-visual preservation, but one source-backed " +
+                "layout Figure could not be resolved for every planned source visual.");
+        }
 
         if (unresolved.Length ==
             0)

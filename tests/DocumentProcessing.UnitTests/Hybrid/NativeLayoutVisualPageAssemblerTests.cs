@@ -285,6 +285,73 @@ public sealed class NativeLayoutVisualPageAssemblerTests
     }
 
     [Fact]
+    public void Assemble_LayoutOrdersStraddleFigure_ButBlockGeometryIsAbove_UsesGeometry()
+    {
+        var block =
+            CreateTwoWordBlock(
+                sourceSequence:
+                    0,
+                readingOrder:
+                    0,
+                "Before",
+                firstTop:
+                    0.10,
+                "StillBefore",
+                secondTop:
+                    0.18);
+
+        var page =
+            CreatePage(
+                block);
+
+        var figure =
+            Figure(
+                observationSequence:
+                    1,
+                readingOrder:
+                    1,
+                top:
+                    0.40,
+                bottom:
+                    0.60);
+
+        var result =
+            NativeLayoutVisualPageAssembler
+                .Assemble(
+                    page,
+                    Layout(
+                        Text(
+                            0,
+                            0,
+                            0.09,
+                            0.16),
+                        figure,
+                        Text(
+                            2,
+                            2,
+                            0.17,
+                            0.24)),
+                    [
+                        PreservedVisual(
+                            figure)
+                    ]);
+
+        Assert.Equal(
+            [
+                HybridDocumentElementKind.Text,
+                HybridDocumentElementKind.Visual
+            ],
+            result.Elements.Select(
+                element =>
+                    element.Kind));
+
+        Assert.Same(
+            block,
+            result.Elements[0]
+                .NativeBlock);
+    }
+
+    [Fact]
     public void Assemble_UnmappedNativeBlockOverlappingFigure_FailsClosed()
     {
         var mapped =
