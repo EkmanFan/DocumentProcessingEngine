@@ -56,6 +56,42 @@ public abstract record NativeEvidenceExtractionResult
     }
 
     /// <summary>
+    /// The source is recognized as the concrete format, but the format cannot
+    /// currently acquire its native evidence because a required capability is
+    /// unavailable.
+    /// </summary>
+    public sealed record Unavailable : NativeEvidenceExtractionResult
+    {
+        #region Properties
+
+        /// <summary>
+        /// Gets the stable consumer-safe reason for the unavailability.
+        /// </summary>
+        public string Reason { get; }
+
+        #endregion
+
+        #region ctor
+
+        public Unavailable(
+            string reason)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    reason))
+            {
+                throw new ArgumentException(
+                    "Unavailable-format reason cannot be empty.",
+                    nameof(reason));
+            }
+
+            Reason =
+                reason.Trim();
+        }
+
+        #endregion
+    }
+
+    /// <summary>
     /// The source is recognized and its native evidence was acquired.
     /// </summary>
     public sealed record Success : NativeEvidenceExtractionResult

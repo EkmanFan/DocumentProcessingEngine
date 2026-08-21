@@ -16,5 +16,7 @@ public readonly record struct DocumentFormatId
 
     public static DocumentFormatId Pdf { get; } = new("pdf");
 
+    public static DocumentFormatId Epub { get; } = new("epub");
+
     public override string ToString() => Value;
 }

@@ -91,6 +91,43 @@ internal abstract record DocumentFormatSelectionResult
         #endregion
     }
 
+    internal sealed record Unavailable
+        : DocumentFormatSelectionResult
+    {
+        #region Properties
+
+        public IDocumentFormat DocumentFormat { get; }
+
+        public string Reason { get; }
+
+        #endregion
+
+        #region ctor
+
+        public Unavailable(
+            IDocumentFormat documentFormat,
+            string reason)
+        {
+            DocumentFormat =
+                documentFormat ??
+                throw new ArgumentNullException(
+                    nameof(documentFormat));
+
+            if (string.IsNullOrWhiteSpace(
+                    reason))
+            {
+                throw new ArgumentException(
+                    "Unavailable-format reason cannot be empty.",
+                    nameof(reason));
+            }
+
+            Reason =
+                reason.Trim();
+        }
+
+        #endregion
+    }
+
     internal sealed record Ambiguous
         : DocumentFormatSelectionResult
     {

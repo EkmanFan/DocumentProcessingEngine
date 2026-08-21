@@ -4,8 +4,9 @@ namespace DocumentProcessing.Core.Results;
 /// Consumer-facing outcome of one document-processing request.
 /// </summary>
 /// <remarks>
-/// Unsupported or ambiguous formats are functional failures represented by an
-/// error message. Technical failures and cancellation remain exceptional.
+/// Unsupported, invalid, ambiguous or temporarily unavailable formats are
+/// functional failures represented by a consumer-safe error message. Unhandled
+/// technical failures and cancellation remain exceptional.
 /// </remarks>
 public sealed record DocumentProcessingOutcome
 {

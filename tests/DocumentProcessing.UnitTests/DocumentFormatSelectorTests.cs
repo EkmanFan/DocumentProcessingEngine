@@ -226,6 +226,59 @@ public sealed class DocumentFormatSelectorTests
     }
 
     [Fact]
+    public async Task SelectAsync_SingleUnavailableClaim_ReturnsUnavailable()
+    {
+        var unavailableFormat =
+            new StubDocumentFormat(
+                DocumentFormatId.Epub,
+                ReadPrefixThen(
+                    new NativeEvidenceExtractionResult
+                        .Unavailable(
+                            "La validation EPUB est temporairement indisponible.")));
+
+        var other =
+            new StubDocumentFormat(
+                AlternateFormat,
+                ReadPrefixThen(
+                    new NativeEvidenceExtractionResult
+                        .NotRecognized()));
+
+        await using var prepared =
+            await PreparedDocumentSource.CreateAsync(
+                new DocumentSource(
+                    new MemoryStream(
+                        "selector fixture"u8.ToArray())),
+                CancellationToken.None);
+
+        var result =
+            await new DocumentFormatSelector(
+                    new IDocumentFormat[]
+                    {
+                        unavailableFormat,
+                        other
+                    })
+                .SelectAsync(
+                    prepared);
+
+        var unavailable =
+            Assert.IsType<
+                DocumentFormatSelectionResult.Unavailable>(
+                result);
+
+        Assert.Same(
+            unavailableFormat,
+            unavailable.DocumentFormat);
+
+        Assert.Equal(
+            "La validation EPUB est temporairement indisponible.",
+            unavailable.Reason);
+
+        Assert.Equal(
+            0,
+            prepared.Source.Content.Position);
+    }
+
+    [Fact]
     public async Task SelectAsync_TwoRecognitionClaims_ReturnsAmbiguousIndependentOfClaimKind()
     {
         var successFormat =

@@ -5,9 +5,10 @@ namespace DocumentProcessing.Engine.Orchestration;
 /// processing request.
 /// </summary>
 /// <remarks>
-/// Recognition failure, recognized-but-invalid input, and ambiguous recognition
-/// are document-processing outcomes. Technical failures and cancellation remain
-/// exceptional and are not wrapped by this type.
+/// Recognition failure, recognized-but-invalid input, temporarily unavailable
+/// format acquisition, and ambiguous recognition are document-processing
+/// outcomes. Unhandled technical failures and cancellation remain exceptional
+/// and are not wrapped by this type.
 /// </remarks>
 public sealed class DocumentFormatSelectionException
     : Exception

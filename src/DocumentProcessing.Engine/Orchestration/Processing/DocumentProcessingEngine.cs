@@ -145,6 +145,10 @@ public sealed class DocumentProcessingEngine
                 throw new DocumentFormatSelectionException(
                     $"Document format '{invalid.DocumentFormat.Format}' recognized the source but rejected it: {invalid.Reason}");
 
+            case DocumentFormatSelectionResult.Unavailable unavailable:
+                throw new DocumentFormatSelectionException(
+                    unavailable.Reason);
+
             case DocumentFormatSelectionResult.Ambiguous ambiguous:
                 throw new DocumentFormatSelectionException(
                     "Document format selection is ambiguous between: " +

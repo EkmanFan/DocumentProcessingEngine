@@ -105,7 +105,8 @@ format-specific origin.
 DocumentProcessing.Core
         ↑
         ├── DocumentProcessing.Engine
-        └── DocumentProcessing.Pdf
+        ├── DocumentProcessing.Pdf
+        └── DocumentProcessing.Epub
 
 DocumentProcessing
         └── Core + Engine + Pdf
@@ -124,14 +125,20 @@ Required constraints:
 ## Current format and execution status
 
 - PDF is the only registered production format.
+- `DocumentProcessing.Epub` contains the EPUBCheck 5.3.0 conformance boundary;
+  EPUB production registration waits for the native non-paged acquisition and
+  projection slice.
 - PdfPig supplies native extraction and native visual measurements.
 - `pdftoppm` supplies document-scoped rasterization.
 - PP-StructureV3 supplies layout observations when planned.
 - PaddleOCR supplies targeted text recognition when planned.
 - the Engine returns the portable `DocumentProcessingResult` through the Host.
 
-Unsupported or ambiguous formats are consumer-facing functional failures.
-Cancellation and technical failures remain exceptional.
+Unsupported, invalid, ambiguous or temporarily unavailable formats are
+consumer-facing functional failures. Expected failures of a required external
+format capability are mapped to a consumer-safe unavailable result; their
+technical diagnostics remain internal. Cancellation and unhandled technical
+failures remain exceptional.
 
 ## Dual Run
 

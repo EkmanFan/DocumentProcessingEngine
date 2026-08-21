@@ -69,6 +69,15 @@ public sealed class NativeEvidenceContractTests
     }
 
     [Fact]
+    public void Unavailable_RejectsBlankReason()
+    {
+        Assert.Throws<ArgumentException>(
+            () =>
+                new NativeEvidenceExtractionResult.Unavailable(
+                    " "));
+    }
+
+    [Fact]
     public void FunctionalOutcomes_AreStructurallyDistinct()
     {
         NativeEvidenceExtractionResult notRecognized =
@@ -78,6 +87,10 @@ public sealed class NativeEvidenceContractTests
             new NativeEvidenceExtractionResult.Invalid(
                 "recognized but invalid");
 
+        NativeEvidenceExtractionResult unavailable =
+            new NativeEvidenceExtractionResult.Unavailable(
+                "validation unavailable");
+
         Assert.IsType<
             NativeEvidenceExtractionResult.NotRecognized>(
             notRecognized);
@@ -85,6 +98,10 @@ public sealed class NativeEvidenceContractTests
         Assert.IsType<
             NativeEvidenceExtractionResult.Invalid>(
             invalid);
+
+        Assert.IsType<
+            NativeEvidenceExtractionResult.Unavailable>(
+            unavailable);
     }
 
     #endregion

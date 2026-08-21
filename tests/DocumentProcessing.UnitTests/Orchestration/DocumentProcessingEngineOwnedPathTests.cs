@@ -120,6 +120,53 @@ public sealed class DocumentProcessingEngineOwnedPathTests
             format.AcquisitionCallCount);
     }
 
+    [Fact]
+    public async Task ProcessDocumentAsync_FormatUnavailable_ExposesOnlyConsumerSafeReason()
+    {
+        const string publicReason =
+            "La validation EPUB est temporairement indisponible.";
+
+        var format =
+            new StubDocumentFormat(
+                new NativeEvidenceExtractionResult.Unavailable(
+                    publicReason));
+
+        var engine =
+            new DocumentProcessingEngine(
+                [format],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity);
+
+        await using var stream =
+            new MemoryStream(
+                [1, 2, 3],
+                writable:
+                    false);
+
+        var exception =
+            await Assert.ThrowsAsync<DocumentFormatSelectionException>(
+                () =>
+                    engine.ProcessDocumentAsync(
+                        new DocumentSource(
+                            stream)));
+
+        Assert.Equal(
+            publicReason,
+            exception.Message);
+
+        Assert.DoesNotContain(
+            "java",
+            exception.Message,
+            StringComparison.OrdinalIgnoreCase);
+
+        Assert.DoesNotContain(
+            "epubcheck.jar",
+            exception.Message,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
     #endregion
 
     #region Methods Fixtures

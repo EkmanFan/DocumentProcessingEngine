@@ -5,6 +5,14 @@ namespace DocumentProcessing.UnitTests.Documents;
 public sealed class DocumentFormatIdTests
 {
     [Fact]
+    public void Epub_HasStableIdentifier()
+    {
+        Assert.Equal(
+            "epub",
+            DocumentFormatId.Epub.Value);
+    }
+
+    [Fact]
     public void Constructor_TrimsValue()
     {
         var format = new DocumentFormatId("  custom-format  ");

@@ -119,6 +119,7 @@ internal sealed class DocumentFormatSelector
                         break;
 
                     case NativeEvidenceExtractionResult.Invalid:
+                    case NativeEvidenceExtractionResult.Unavailable:
                     case NativeEvidenceExtractionResult.Success:
                         recognitionClaims.Add(
                             (
@@ -168,6 +169,11 @@ internal sealed class DocumentFormatSelector
                     selected.Format,
                     invalid.Reason),
 
+            NativeEvidenceExtractionResult.Unavailable unavailable =>
+                new DocumentFormatSelectionResult.Unavailable(
+                    selected.Format,
+                    unavailable.Reason),
+
             NativeEvidenceExtractionResult.Success success =>
                 new DocumentFormatSelectionResult.Success(
                     selected.Format,
@@ -175,7 +181,7 @@ internal sealed class DocumentFormatSelector
 
             _ =>
                 throw new InvalidOperationException(
-                    "A recorded format-recognition claim must be either Invalid or Success.")
+                    "A recorded format-recognition claim must be Invalid, Unavailable or Success.")
         };
     }
 
