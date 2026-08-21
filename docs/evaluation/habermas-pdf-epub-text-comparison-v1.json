@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "document-processing-habermas-pdf-epub-text-comparison-v1",
+  "sources": {
+    "pdfSha256": "f367a503f298337ec589eb1ad5ec5fe956999e49205a486d50798bfeee6d0399",
+    "epubSha256": "038c0e5a8ca13c93f4da0e0095ca73da5974e8d24aa9313f0781e110a641cbf5"
+  },
+  "footnoteCorrection": {
+    "xhtmlFootnoteAsideCount": 477,
+    "previousNonVisualElementCount": 1729,
+    "correctedNonVisualElementCount": 2204,
+    "previousNormalizedTokenCount": 94117,
+    "correctedNormalizedTokenCount": 120082,
+    "nativeExtractionProfileId": "epub-xhtml-native-v3+epubcheck-5.3.0"
+  },
+  "text": {
+    "pdf": {
+      "resultElementCount": 1217,
+      "textElementCount": 1194,
+      "normalizedTokenCount": 120968,
+      "authoritativeTextSha256": "baa0954c70a51e5dc331b92db01d292d6229b7ae94b4707667820e5e14f84c51",
+      "normalizedTextSha256": "4227ccc1db7b5f6eec53e42dde9d1a2d6070846abf5b8dc751e18668d413e87d",
+      "tokenSequenceSha256": "51fa231737098417d34206244ecb6705752bd48b8af9f42fd9f145df28f82030"
+    },
+    "epub": {
+      "resultElementCount": 2228,
+      "nonVisualElementCount": 2204,
+      "textElementCount": 2204,
+      "normalizedTokenCount": 120082,
+      "authoritativeTextSha256": "10bbd2ce5a756c3b40869ae1c9a68bf03ebc0d2c120c34541b0af36400f1b3ae",
+      "normalizedTextSha256": "e989edc881f786d0c221fa008d7fab29e9aae1a91448cf509f5fe56394473fbc",
+      "tokenSequenceSha256": "95404c66f5083e052212d36b693058aa8dd7d73febb0903d0f0d5bc9e8356001"
+    },
+    "orderedHistogramDiff": {
+      "commonTokenCount": 118707,
+      "epubCoveragePercent": 98.8549,
+      "pdfCoveragePercent": 98.1309,
+      "epubOnlyOrChangedTokenCount": 1375,
+      "pdfOnlyOrChangedTokenCount": 2261,
+      "diffHunkCount": 1598
+    },
+    "tokenOccurrenceOverlapIgnoringOrder": {
+      "commonTokenCount": 120027,
+      "epubCoveragePercent": 99.9542,
+      "pdfExcessTokenCount": 941,
+      "epubExcessTokenCount": 55,
+      "diagnosticOnly": true
+    }
+  },
+  "structuralPartitions": {
+    "main": {
+      "pdfTokenCount": 80268,
+      "epubTokenCount": 79662
+    },
+    "notes": {
+      "pdfTokenCount": 37294,
+      "epubTokenCount": 37301
+    },
+    "bibliography": {
+      "pdfTokenCount": 3119,
+      "epubTokenCount": 3119
+    },
+    "pdfOnlyTerminalMatter": {
+      "pdfTokenCount": 287,
+      "epubTokenCount": 0
+    }
+  },
+  "visualCustodyPreparedForLaterComparison": {
+    "pdfVisualCount": 22,
+    "epubVisualCount": 24,
+    "epubHashesVerified": 24,
+    "visualComparisonPerformed": false
+  },
+  "claimBoundary": {
+    "exactTextEqualityClaimed": false,
+    "tokenOccurrenceOverlapProvesOrder": false,
+    "pdfReprocessedForCorrection": false,
+    "ppOrPaddleRequiredForEpubCorrection": false,
+    "copyrightedTextCommitted": false
+  }
+}

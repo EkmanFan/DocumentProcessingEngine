@@ -7,7 +7,8 @@ internal static class TestEpubFactory
 {
     public static byte[] Create(
         bool includeUnsafeEntry = false,
-        bool includeVisuals = false)
+        bool includeVisuals = false,
+        bool includeFootnotes = false)
     {
         using var output =
             new MemoryStream();
@@ -171,6 +172,20 @@ internal static class TestEpubFactory
                 <html xmlns="http://www.w3.org/1999/xhtml">
                   <head><title>Chapter 2</title></head>
                   <body><p id="styled-heading">Styled chapter heading</p><p id="paragraph-2">Second paragraph.</p><img id="separator-use-2" src="images/separator.png" alt="" /><img id="aux-use" src="images/auxiliary.png" alt="Appendix diagram" /></body>
+                </html>
+                """
+                    : includeFootnotes
+                        ? """
+                <?xml version="1.0" encoding="utf-8"?>
+                <html xmlns="http://www.w3.org/1999/xhtml"
+                      xmlns:epub="http://www.idpf.org/2007/ops">
+                  <head><title>Notes</title></head>
+                  <body>
+                    <p id="before-note">Before note.</p>
+                    <aside id="inline-note" epub:type="footnote"><span>1</span> Inline <em>footnote</em> content.</aside>
+                    <aside id="nested-note" epub:type="footnote"><p>Nested footnote paragraph.</p></aside>
+                    <p id="after-note">After note.</p>
+                  </body>
                 </html>
                 """
                     : """

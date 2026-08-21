@@ -142,6 +142,12 @@ Septante corpora, including a large conformant EPUB with 1,181 spine items.
 See
 [`docs/epub/epub-5-expanded-corpus-validation-v1.md`](docs/epub/epub-5-expanded-corpus-validation-v1.md).
 
+The Habermas PDF/EPUB comparison subsequently identified standard XHTML
+`aside epub:type="footnote"` containers omitted by native profile V2. Profile
+V3 retains those notes exactly once, with cross-format and multi-corpus evidence
+in
+[`docs/evaluation/habermas-pdf-epub-text-comparison-v1.md`](docs/evaluation/habermas-pdf-epub-text-comparison-v1.md).
+
 ## Consumer entry point
 
 Consumers configure the shared providers once and process a `DocumentSource`

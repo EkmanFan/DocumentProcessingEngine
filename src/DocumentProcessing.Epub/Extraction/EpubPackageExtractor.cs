@@ -22,7 +22,7 @@ internal sealed class EpubPackageExtractor
         NativeExtractionIdentity =
             new(
                 "epub-xhtml",
-                "epub-xhtml-native-v2+epubcheck-5.3.0");
+                "epub-xhtml-native-v3+epubcheck-5.3.0");
 
     private static readonly IReadOnlyDictionary<string,
         StructuredNativeTextBlockKind> BlockKinds =
@@ -40,6 +40,8 @@ internal sealed class EpubPackageExtractor
             ["dt"] =
                 StructuredNativeTextBlockKind.Text,
             ["dd"] =
+                StructuredNativeTextBlockKind.Text,
+            ["aside"] =
                 StructuredNativeTextBlockKind.Text,
             ["h1"] =
                 StructuredNativeTextBlockKind.Heading,

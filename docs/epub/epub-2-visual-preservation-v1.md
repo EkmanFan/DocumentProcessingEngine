@@ -69,8 +69,9 @@ raster derivations              0
 
 EPUB-3 subsequently identifies `U6` and `U7` as preliminary title matter and
 returns the remaining 24 body images as `Meaningful`. The current frozen visual
-reference therefore contains 24 assets. The EPUB-1 text reference remains
-unchanged.
+reference therefore contains 24 assets. Visual custody remains unchanged by
+the later native V3 correction that retains standard XHTML footnote
+containers.
 
 Run:
 

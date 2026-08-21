@@ -137,6 +137,9 @@ Required constraints:
   headings; structured figures, repeated small presentational resources and
   narrowly identified terminal presentation matter are acquired as neutral
   source facts before Engine visual policy.
+- native EPUB extraction retains XHTML `aside` containers, including standard
+  `epub:type="footnote"` notes, as one ordered text block without duplicating
+  nested block content.
 - the EPUBCheck report reader materializes only validation messages and skips
   the potentially large package inventory; the five-corpus regression includes
   a 1,181-item spine whose official report is larger than one MiB.

@@ -13,13 +13,13 @@
         "linearSpineItemCount": 166
       },
       "processing": {
-        "elementCount": 7351,
-        "textElementCount": 7212,
+        "elementCount": 7862,
+        "textElementCount": 7723,
         "headingElementCount": 139,
         "captionElementCount": 0,
         "segmentCount": 164,
-        "authoritativeTextSha256": "6ade71e1838507009833648fba9a0197e4e3e0cb4970dcf640237a1b7c9a65ba",
-        "nativeExtractionProfileId": "epub-xhtml-native-v2\u002Bepubcheck-5.3.0"
+        "authoritativeTextSha256": "cc05126abc6d7d50786c5bdb91270c9f856fcb9acc310d30767a6d4bd8007419",
+        "nativeExtractionProfileId": "epub-xhtml-native-v3\u002Bepubcheck-5.3.0"
       },
       "visuals": {
         "bodyMatterStartSpineIndex": null,
@@ -40,13 +40,13 @@
         "linearSpineItemCount": 37
       },
       "processing": {
-        "elementCount": 5563,
-        "textElementCount": 5529,
+        "elementCount": 7202,
+        "textElementCount": 7168,
         "headingElementCount": 34,
         "captionElementCount": 0,
         "segmentCount": 35,
-        "authoritativeTextSha256": "a9bf5f7ee8223cfd64ceb639403d6229d29e60356f304f419a49cc37997f9cb5",
-        "nativeExtractionProfileId": "epub-xhtml-native-v2\u002Bepubcheck-5.3.0"
+        "authoritativeTextSha256": "7bd02b204529139b2c05293202754e59cf3c7f709b4a0791d4512768d9a5eb37",
+        "nativeExtractionProfileId": "epub-xhtml-native-v3\u002Bepubcheck-5.3.0"
       },
       "visuals": {
         "bodyMatterStartSpineIndex": null,
@@ -80,7 +80,7 @@
         "captionElementCount": 0,
         "segmentCount": 21,
         "authoritativeTextSha256": "a60fdddb8b1705e5d4b367b772549f8c595348123a2f3cddbb5a73ca7d5a6fec",
-        "nativeExtractionProfileId": "epub-xhtml-native-v2+epubcheck-5.3.0"
+        "nativeExtractionProfileId": "epub-xhtml-native-v3+epubcheck-5.3.0"
       },
       "visuals": {
         "bodyMatterStartSpineIndex": 6,
@@ -882,7 +882,7 @@
         "captionElementCount": 0,
         "segmentCount": 1179,
         "authoritativeTextSha256": "eef90b7e36d9ad326f9ddec68dd751962390464e14d1c70fb2c4f9431ecef6b1",
-        "nativeExtractionProfileId": "epub-xhtml-native-v2+epubcheck-5.3.0"
+        "nativeExtractionProfileId": "epub-xhtml-native-v3+epubcheck-5.3.0"
       },
       "visuals": {
         "bodyMatterStartSpineIndex": null,

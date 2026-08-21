@@ -164,6 +164,57 @@ public sealed class EpubDocumentFormatTests
     }
 
     [Fact]
+    public void Extractor_RetainsFootnoteAsidesExactlyOnceInReadingOrder()
+    {
+        using var stream =
+            new MemoryStream(
+                TestEpubFactory.Create(
+                    includeFootnotes:
+                        true));
+
+        var evidence =
+            new EpubPackageExtractor()
+                .Extract(
+                    stream,
+                    new EpubDocumentFormatOptions());
+
+        var blocks =
+            evidence.ContentUnits[1]
+                .TextBlocks;
+
+        Assert.Equal(
+            [
+                "Before note.",
+                "1 Inline footnote content.",
+                "Nested footnote paragraph.",
+                "After note."
+            ],
+            blocks.Select(
+                block =>
+                    block.SourceText));
+
+        Assert.All(
+            blocks,
+            block =>
+                Assert.Equal(
+                    StructuredNativeTextBlockKind.Text,
+                    block.Kind));
+
+        Assert.Equal(
+            [
+                "before-note",
+                "inline-note",
+                "nested-note",
+                "after-note"
+            ],
+            blocks.Select(
+                block =>
+                    Assert.IsType<EpubDocumentSourceLocation>(
+                            block.Location)
+                        .FragmentId));
+    }
+
+    [Fact]
     public void Extractor_RejectsArchivePathEscapingPublicationRoot()
     {
         using var stream =
