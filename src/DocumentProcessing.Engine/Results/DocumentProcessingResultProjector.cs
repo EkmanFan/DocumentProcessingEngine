@@ -15,8 +15,9 @@ namespace DocumentProcessing.Engine.Results;
 /// assessment, planning, enrichment, reconciliation, persistence or routing.
 ///
 /// Facts that the portable result derives rather than stores directly, such as
-/// per-page reading-order numbers and segment ordinals, must remain exactly
-/// reconstructible from the ingestion graph.
+/// element order and segment ordinals, must remain exactly reconstructible from
+/// the ingestion graph. Numeric gaps in page-local reading-order values carry
+/// no additional ordering information and are intentionally not projected.
 /// </remarks>
 internal static class DocumentProcessingResultProjector
 {
@@ -33,10 +34,6 @@ internal static class DocumentProcessingResultProjector
                 element =>
                     element.ElementId,
                 StringComparer.Ordinal);
-
-        ValidateCanonicalPageReadingOrder(
-            ingestionResult.Pages,
-            elementsById);
 
         var orderedElements =
             ingestionResult.Pages
@@ -294,38 +291,6 @@ internal static class DocumentProcessingResultProjector
     #endregion
 
     #region Methods Validation
-
-    private static void ValidateCanonicalPageReadingOrder(
-        IReadOnlyList<DocumentIngestionPage> pages,
-        IReadOnlyDictionary<string, DocumentElementProvenance> elementsById)
-    {
-        foreach (var page in
-                 pages)
-        {
-            for (var index = 0;
-                 index < page.OrderedElementIds.Count;
-                 index++)
-            {
-                var elementId =
-                    page.OrderedElementIds[index];
-
-                if (!elementsById.TryGetValue(
-                        elementId,
-                        out var element))
-                {
-                    throw new InvalidOperationException(
-                        $"Ingestion page {page.PhysicalPageNumber} references unknown element '{elementId}'.");
-                }
-
-                if (element.ReadingOrder !=
-                    index)
-                {
-                    throw new InvalidOperationException(
-                        $"Ingestion page {page.PhysicalPageNumber} element '{element.ElementId}' has reading-order value {element.ReadingOrder}, but portable projection can reconstruct exact per-page reading order only when values are contiguous from zero.");
-                }
-            }
-        }
-    }
 
     private static void ValidateCanonicalSegmentOrdinals(
         IReadOnlyList<DocumentSegmentProvenance> segments)

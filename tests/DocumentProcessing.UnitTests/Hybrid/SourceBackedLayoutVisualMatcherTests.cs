@@ -210,6 +210,46 @@ public sealed class SourceBackedLayoutVisualMatcherTests
     }
 
     [Fact]
+    public void TryResolve_NoPlannedSourcePreservation_SucceedsWithNoSourceFigures()
+    {
+        var layout =
+            Layout(
+                Text(
+                    0,
+                    0,
+                    0.10,
+                    0.10,
+                    0.90,
+                    0.20));
+
+        var actual =
+            SourceBackedLayoutVisualMatcher
+                .TryResolveWithSourceFigures(
+                    Plan(),
+                    [
+                        Source(
+                            0,
+                            0,
+                            0,
+                            1,
+                            1)
+                    ],
+                    layout,
+                    out var executionLayout,
+                    out var resolved);
+
+        Assert.True(
+            actual);
+
+        Assert.Same(
+            layout,
+            executionLayout);
+
+        Assert.Empty(
+            resolved);
+    }
+
+    [Fact]
     public void TryResolve_AnalyzeVisualWithFormula_QualifiesSourceAsMeaningful()
     {
         var source =

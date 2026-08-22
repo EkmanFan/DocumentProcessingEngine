@@ -7,6 +7,7 @@ using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Quality;
 using DocumentProcessing.Core.Reconciliation;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Engine.Results;
 
 namespace DocumentProcessing.UnitTests.Results;
 
@@ -113,6 +114,51 @@ public sealed class DocumentIngestionResultTests
 
         Assert.Single(
             result.StructuralSegments);
+    }
+
+    [Fact]
+    public void PortableProjection_AcceptsUniqueNonContiguousPageReadingOrder()
+    {
+        var fixture =
+            CreateFixture();
+
+        var first =
+            CopyWithReadingOrder(
+                fixture.Elements[0],
+                readingOrder:
+                    5);
+
+        var ingestion =
+            new DocumentIngestionResult(
+                fixture.Source,
+                fixture.Manifest,
+                fixture.Pages,
+                [
+                    first,
+                    fixture.Elements[1]
+                ],
+                fixture.Segments,
+                fixture.Quality);
+
+        var portable =
+            DocumentProcessingResultProjector
+                .Project(
+                    ingestion);
+
+        Assert.Equal(
+            [
+                first.ElementId,
+                fixture.Elements[1].ElementId
+            ],
+            portable.Elements.Select(
+                element =>
+                    element.ElementId));
+
+        Assert.Equal(
+            [0, 1],
+            portable.Elements.Select(
+                element =>
+                    element.Ordinal));
     }
 
     [Fact]
@@ -747,6 +793,37 @@ public sealed class DocumentIngestionResultTests
             preservedVisual:
                 null);
     }
+
+    private static DocumentElementProvenance CopyWithReadingOrder(
+        DocumentElementProvenance source,
+        int readingOrder) =>
+        new(
+            source.SourceDocumentSha256,
+            source.ElementId,
+            source.PhysicalPageNumber,
+            readingOrder,
+            source.Kind,
+            source.Bounds,
+            source.SegmentId,
+            source.SelectedSourceText,
+            source.SelectedSourceTextSha256,
+            source.NormalizedText,
+            source.NormalizedTextSha256,
+            source.TextOrigin,
+            source.NativeBlockSourceSequence,
+            source.LayoutObservationSequence,
+            source.LayoutKind,
+            source.OcrBackendId,
+            source.OcrProfileId,
+            source.ReconciliationDecision,
+            source.TextsEquivalent,
+            source.HasReconciliationDivergence,
+            source.SelectedTextPreparation,
+            source.NormalizationDehyphenation,
+            source.NormalizationChangedText,
+            source.ExclusionReason,
+            source.IsResolved,
+            source.PreservedVisual);
 
     private static OcrConfidenceSummary Confidence() =>
         new(

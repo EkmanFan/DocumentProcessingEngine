@@ -321,7 +321,7 @@ internal static class SourceBackedLayoutVisualMatcher
         if (preservingPlans.Length ==
             0)
         {
-            return false;
+            return true;
         }
 
         var sourceByIndex =
