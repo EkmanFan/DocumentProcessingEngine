@@ -87,10 +87,17 @@ quality gate.
 
 ### Shared capabilities
 
-Layout analysis and OCR are format-independent technical operations. Current
-Host composition uses HTTP-configured PP-StructureV3 and PaddleOCR adapters.
-Provider outputs remain untrusted inputs that are validated and interpreted by
-deterministic Engine policy.
+Layout analysis and OCR are format-independent technical operations. Their
+Core ports are implemented by provider adapters. Each adapter translates the
+neutral Core contract to a concrete provider client and translates the
+provider-native result back to neutral evidence.
+
+Current Host composition uses `PpStructureV3LayoutAdapter` over
+`PpStructureV3ServingClient` and `PaddleOcrAdapter` over
+`PaddleOcrServingClient`. Provider clients own transport and provider protocol;
+they do not implement Core capability ports and do not own Engine processing
+policy. Provider outputs remain untrusted evidence interpreted by deterministic
+Engine policy.
 
 ### Core
 
@@ -106,10 +113,13 @@ DocumentProcessing.Core
         ↑
         ├── DocumentProcessing.Engine
         ├── DocumentProcessing.Pdf
-        └── DocumentProcessing.Epub
+        ├── DocumentProcessing.Epub
+        ├── DocumentProcessing.Layout.Adapters
+        └── DocumentProcessing.Ocr.Adapters
 
 DocumentProcessing
         └── Core + Engine + Pdf + Epub
+          + Layout.Adapters + Ocr.Adapters
 
 DocumentProcessing.DualRunWorker
         └── Core + Engine + Pdf
@@ -120,7 +130,12 @@ Required constraints:
 - Engine has no concrete PDF dependency.
 - PDF has no Engine dependency.
 - Core has no implementation or provider dependency.
-- the Host is the production composition root.
+- Engine does not reference layout or OCR adapter assemblies.
+- layout and OCR adapter assemblies do not reference Engine.
+- adapters implement Core capability ports and own neutral/provider translation.
+- provider serving clients return provider-native results and do not implement
+  Core capability ports.
+- the Host is the production composition root for concrete provider selection.
 
 ## Current format and execution status
 

@@ -13,6 +13,8 @@ namespace DocumentProcessing.Ocr.Adapters.PaddleOCR;
 /// </summary>
 public sealed class PaddleOcrServingClient
 {
+    #region Variables and Constants
+
     public const long DefaultMaxInputBytes = 16L * 1024L * 1024L;
     public const long DefaultMaxResponseBytes = 16L * 1024L * 1024L;
 
@@ -24,6 +26,11 @@ public sealed class PaddleOcrServingClient
     private readonly TimeSpan _requestTimeout;
     private readonly long _maxInputBytes;
     private readonly long _maxResponseBytes;
+
+    #endregion
+
+
+    #region ctor
 
     public PaddleOcrServingClient(
         HttpClient httpClient,
@@ -96,6 +103,11 @@ public sealed class PaddleOcrServingClient
         _maxResponseBytes =
             maxResponseBytes;
     }
+
+    #endregion
+
+
+    #region Methods
 
     public async ValueTask<PaddleOcrNativeResult> RecognizeAsync(
         Stream rasterRegion,
@@ -476,4 +488,5 @@ public sealed class PaddleOcrServingClient
         }
     }
 
+    #endregion
 }

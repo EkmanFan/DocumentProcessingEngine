@@ -1,8 +1,6 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using DocumentProcessing.Core.Layout;
-using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 namespace DocumentProcessing.UnitTests.Layout;
@@ -10,7 +8,7 @@ namespace DocumentProcessing.UnitTests.Layout;
 public sealed class PpStructureV3ServingClientTests
 {
     [Fact]
-    public async Task AnalyzeAsync_EhrmanRepresentativeResponse_MapsNeutralLayoutAndSendsSafeFlags()
+    public async Task AnalyzeAsync_RepresentativeResponse_ReturnsNativeResultAndSendsSafeFlags()
     {
         var imageBytes =
             new byte[] { 1, 2, 3, 4 };
@@ -22,156 +20,131 @@ public sealed class PpStructureV3ServingClientTests
                     Assert.Equal(
                         HttpMethod.Post,
                         request.Method);
+
                     Assert.Equal(
                         "http://127.0.0.1:8080/layout-parsing",
                         request.RequestUri!.ToString());
 
                     var body =
                         await request.Content!
-                            .ReadAsStringAsync(cancellationToken);
+                            .ReadAsStringAsync(
+                                cancellationToken);
 
                     using var requestJson =
-                        JsonDocument.Parse(body);
+                        JsonDocument.Parse(
+                            body);
 
                     var root =
                         requestJson.RootElement;
 
                     Assert.Equal(
-                        Convert.ToBase64String(imageBytes),
-                        root.GetProperty("file").GetString());
+                        Convert.ToBase64String(
+                            imageBytes),
+                        root.GetProperty(
+                                "file")
+                            .GetString());
+
                     Assert.Equal(
                         1,
-                        root.GetProperty("fileType").GetInt32());
+                        root.GetProperty(
+                                "fileType")
+                            .GetInt32());
 
                     Assert.False(
-                        root.GetProperty("useDocOrientationClassify").GetBoolean());
+                        root.GetProperty(
+                                "useDocOrientationClassify")
+                            .GetBoolean());
+
                     Assert.False(
-                        root.GetProperty("useDocUnwarping").GetBoolean());
+                        root.GetProperty(
+                                "useDocUnwarping")
+                            .GetBoolean());
+
                     Assert.False(
-                        root.GetProperty("useTextlineOrientation").GetBoolean());
+                        root.GetProperty(
+                                "useTextlineOrientation")
+                            .GetBoolean());
+
                     Assert.False(
-                        root.GetProperty("useSealRecognition").GetBoolean());
+                        root.GetProperty(
+                                "useSealRecognition")
+                            .GetBoolean());
+
                     Assert.False(
-                        root.GetProperty("useTableRecognition").GetBoolean());
+                        root.GetProperty(
+                                "useTableRecognition")
+                            .GetBoolean());
+
                     Assert.False(
-                        root.GetProperty("useFormulaRecognition").GetBoolean());
+                        root.GetProperty(
+                                "useFormulaRecognition")
+                            .GetBoolean());
+
                     Assert.False(
-                        root.GetProperty("useChartRecognition").GetBoolean());
+                        root.GetProperty(
+                                "useChartRecognition")
+                            .GetBoolean());
+
                     Assert.True(
-                        root.GetProperty("useRegionDetection").GetBoolean());
+                        root.GetProperty(
+                                "useRegionDetection")
+                            .GetBoolean());
+
                     Assert.False(
-                        root.GetProperty("formatBlockContent").GetBoolean());
+                        root.GetProperty(
+                                "formatBlockContent")
+                            .GetBoolean());
+
                     Assert.False(
-                        root.GetProperty("visualize").GetBoolean());
+                        root.GetProperty(
+                                "visualize")
+                            .GetBoolean());
+
                     Assert.False(
-                        root.GetProperty("returnMarkdownImages").GetBoolean());
+                        root.GetProperty(
+                                "returnMarkdownImages")
+                            .GetBoolean());
 
                     return JsonResponse(
-                        """
-                        {
-                          "logId": "test-request",
-                          "errorCode": 0,
-                          "errorMsg": "Success",
-                          "result": {
-                            "layoutParsingResults": [
-                              {
-                                "prunedResult": {
-                                  "parsing_res_list": [
-                                    {
-                                      "block_bbox": [617, 809, 1389, 981],
-                                      "block_label": "paragraph_title",
-                                      "block_content": "THE NEW TESTAMENT EPISTLES AND THE CONTEXTUAL METHOD"
-                                    },
-                                    {
-                                      "block_bbox": [613, 1044, 1468, 1376],
-                                      "block_label": "text",
-                                      "block_content": "Imagine,"
-                                    },
-                                    {
-                                      "block_bbox": [620, 1442, 1461, 2840],
-                                      "block_label": "image",
-                                      "block_content": "OCR NOISE FROM THE PAPYRUS"
-                                    },
-                                    {
-                                      "block_bbox": [608, 2880, 1427, 3113],
-                                      "block_label": "figure_title",
-                                      "block_content": "Figure 11.1 Example of a papyrus letter"
-                                    },
-                                    {
-                                      "block_bbox": [1530, 776, 2387, 1344],
-                                      "block_label": "text",
-                                      "block_content": "for example"
-                                    }
-                                  ]
-                                },
-                                "markdown": {
-                                  "text": "",
-                                  "images": null,
-                                  "isStart": true,
-                                  "isEnd": true
-                                },
-                                "outputImages": null,
-                                "inputImage": null
-                              }
-                            ],
-                            "dataInfo": {}
-                          }
-                        }
-                        """);
+                        SuccessfulSingleTextResponse);
                 });
 
         using var httpClient =
-            CreateHttpClient(handler);
+            CreateHttpClient(
+                handler);
 
         var client =
-            CreateClient(httpClient);
+            CreateClient(
+                httpClient);
 
         await using var image =
             new MemoryStream(
                 imageBytes,
                 writable: false);
 
-        var adapter =
-            new PpStructureV3LayoutAdapter(
-                client);
+        var nativeResult =
+            await client.AnalyzeAsync(
+                image);
 
-        var result =
-            await adapter.AnalyzeAsync(
-                image,
-                physicalPageNumber: 233,
-                pixelWidth: 2556,
-                pixelHeight: 3305);
+        using var resultJson =
+            JsonDocument.Parse(
+                nativeResult.PrunedResultJson);
 
-        Assert.Equal(
-            PpStructureV3LayoutAdapter.BackendId,
-            result.BackendId);
+        var parsingResults =
+            resultJson.RootElement
+                .GetProperty(
+                    "parsing_res_list");
 
         Assert.Equal(
-            [
-                LayoutObservationKind.Heading,
-                LayoutObservationKind.Text,
-                LayoutObservationKind.Figure,
-                LayoutObservationKind.Caption,
-                LayoutObservationKind.Text
-            ],
-            result.Observations
-                .Select(observation => observation.Kind)
-                .ToArray());
+            1,
+            parsingResults.GetArrayLength());
 
-        var figure =
-            result.Observations[2];
-
-        Assert.Equal("image", figure.RawLabel);
-
-        Assert.DoesNotContain(
-            typeof(LayoutObservation).GetProperties(),
-            property =>
-                property.Name.Equals(
-                    "Text",
-                    StringComparison.OrdinalIgnoreCase) ||
-                property.Name.Equals(
-                    "Content",
-                    StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(
+            "text",
+            parsingResults[0]
+                .GetProperty(
+                    "block_label")
+                .GetString());
     }
 
     [Fact]

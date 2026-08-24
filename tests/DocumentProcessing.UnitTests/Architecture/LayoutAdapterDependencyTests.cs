@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
 
@@ -33,5 +34,19 @@ public sealed class LayoutAdapterDependencyTests
         Assert.DoesNotContain(
             "DocumentProcessing.Engine",
             references);
+    }
+
+    [Fact]
+    public void LayoutPort_IsImplementedByAdapter_NotServingClient()
+    {
+        Assert.True(
+            typeof(IPageLayoutAnalyzer)
+                .IsAssignableFrom(
+                    typeof(PpStructureV3LayoutAdapter)));
+
+        Assert.False(
+            typeof(IPageLayoutAnalyzer)
+                .IsAssignableFrom(
+                    typeof(PpStructureV3ServingClient)));
     }
 }

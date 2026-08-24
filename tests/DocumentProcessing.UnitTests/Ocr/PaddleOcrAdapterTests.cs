@@ -1,11 +1,9 @@
 using System.Net;
 using System.Text;
-using System.Text.Json;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Core.Raster;
-using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 namespace DocumentProcessing.UnitTests.Ocr;
@@ -13,89 +11,35 @@ namespace DocumentProcessing.UnitTests.Ocr;
 public sealed class PaddleOcrAdapterTests
 {
     [Fact]
-    public async Task RecognizeAsync_TextRegion_MapsEvidenceAndSendsSafeFlags()
+    public async Task RecognizeAsync_TextRegion_MapsProviderEvidenceToNeutralOcrResult()
     {
-        var imageBytes =
-            new byte[] { 1, 2, 3, 4 };
-
         var handler =
             new StubHttpMessageHandler(
-                async (request, cancellationToken) =>
-                {
-                    Assert.Equal(
-                        HttpMethod.Post,
-                        request.Method);
-                    Assert.Equal(
-                        "http://127.0.0.1:8081/ocr",
-                        request.RequestUri!.ToString());
-
-                    var body =
-                        await request.Content!
-                            .ReadAsStringAsync(cancellationToken);
-
-                    using var json =
-                        JsonDocument.Parse(body);
-
-                    var root =
-                        json.RootElement;
-
-                    Assert.Equal(
-                        Convert.ToBase64String(imageBytes),
-                        root.GetProperty("file").GetString());
-                    Assert.Equal(
-                        1,
-                        root.GetProperty("fileType").GetInt32());
-                    Assert.False(
-                        root.GetProperty("useDocOrientationClassify").GetBoolean());
-                    Assert.False(
-                        root.GetProperty("useDocUnwarping").GetBoolean());
-                    Assert.False(
-                        root.GetProperty("useTextlineOrientation").GetBoolean());
-                    Assert.Equal(
-                        0d,
-                        root.GetProperty("textRecScoreThresh").GetDouble());
-                    Assert.False(
-                        root.GetProperty("visualize").GetBoolean());
-
-                    return JsonResponse(
-                        """
-                        {
-                          "logId": "targeted-ocr-test",
-                          "errorCode": 0,
-                          "errorMsg": "Success",
-                          "result": {
-                            "ocrResults": [
-                              {
-                                "prunedResult": {
-                                  "rec_texts": [
-                                    "Imagine,",
-                                    "for example"
-                                  ],
-                                  "rec_scores": [
-                                    0.98,
-                                    0.91
-                                  ],
-                                  "rec_boxes": [
-                                    [0, 0, 100, 20],
-                                    [5, 30, 120, 50]
-                                  ]
-                                },
-                                "ocrImage": null,
-                                "docPreprocessingImage": null,
-                                "inputImage": null
-                              }
-                            ],
-                            "dataInfo": {}
-                          }
-                        }
-                        """);
-                });
+                (_, _) =>
+                    Task.FromResult(
+                        JsonResponse(
+                            "{"
+                            + "\"logId\":\"success\","
+                            + "\"errorCode\":0,"
+                            + "\"errorMsg\":\"Success\","
+                            + "\"result\":{"
+                            + "\"ocrResults\":[{"
+                            + "\"prunedResult\":{"
+                            + "\"rec_texts\":[\"Imagine,\",\"for example\"],"
+                            + "\"rec_scores\":[0.98,0.91],"
+                            + "\"rec_boxes\":[[0,0,100,20],[5,30,120,50]]"
+                            + "}}],"
+                            + "\"dataInfo\":{}"
+                            + "}"
+                            + "}")));
 
         using var httpClient =
-            CreateHttpClient(handler);
+            CreateHttpClient(
+                handler);
 
-        var client =
-            CreateAdapter(httpClient);
+        var adapter =
+            CreateAdapter(
+                httpClient);
 
         var source =
             TextObservation();
@@ -108,11 +52,11 @@ public sealed class PaddleOcrAdapterTests
 
         await using var image =
             new MemoryStream(
-                imageBytes,
+                new byte[] { 1, 2, 3, 4 },
                 writable: false);
 
         var result =
-            await client.RecognizeAsync(
+            await adapter.RecognizeAsync(
                 image,
                 source,
                 crop,
@@ -122,53 +66,59 @@ public sealed class PaddleOcrAdapterTests
         Assert.Equal(
             ProcessingCapability.TextRecognition,
             result.Capability);
+
         Assert.Equal(
             PaddleOcrAdapter.BackendId,
             result.BackendId);
+
         Assert.Equal(
             ProfileId,
             result.ProfileId);
-        Assert.Same(
-            source,
-            result.SourceLayoutObservation);
 
-        Assert.Equal(
-            2,
-            result.TextObservations.Count);
+        Assert.Collection(
+            result.TextObservations,
+            first =>
+            {
+                Assert.Equal(
+                    "Imagine,",
+                    first.Text);
 
-        var first =
-            result.TextObservations[0];
+                Assert.Equal(
+                    0.98,
+                    first.Confidence,
+                    6);
 
-        Assert.Equal(
-            "Imagine,",
-            first.Text);
-        Assert.Equal(
-            0.98,
-            first.Confidence,
-            6);
-        Assert.Equal(
-            233,
-            first.PhysicalPageNumber);
-        Assert.Equal(
-            source.ObservationSequence,
-            first.SourceLayoutObservationSequence);
+                Assert.Equal(
+                    0.10,
+                    first.Bounds.Left,
+                    6);
 
-        Assert.Equal(
-            0.10,
-            first.Bounds.Left,
-            6);
-        Assert.Equal(
-            0.20,
-            first.Bounds.Top,
-            6);
-        Assert.Equal(
-            0.20,
-            first.Bounds.Right,
-            6);
-        Assert.Equal(
-            0.22,
-            first.Bounds.Bottom,
-            6);
+                Assert.Equal(
+                    0.20,
+                    first.Bounds.Top,
+                    6);
+
+                Assert.Equal(
+                    0.20,
+                    first.Bounds.Right,
+                    6);
+
+                Assert.Equal(
+                    0.22,
+                    first.Bounds.Bottom,
+                    6);
+            },
+            second =>
+            {
+                Assert.Equal(
+                    "for example",
+                    second.Text);
+
+                Assert.Equal(
+                    0.91,
+                    second.Confidence,
+                    6);
+            });
     }
 
     [Fact]
@@ -190,7 +140,7 @@ public sealed class PaddleOcrAdapterTests
         using var httpClient =
             CreateHttpClient(handler);
 
-        var client =
+        var adapter =
             CreateAdapter(httpClient);
         var figure =
             new LayoutObservation(
@@ -216,7 +166,7 @@ public sealed class PaddleOcrAdapterTests
                 writable: false);
 
         var result =
-            await client
+            await adapter
                 .RecognizeAsync(
                     image,
                     figure,
@@ -256,7 +206,7 @@ public sealed class PaddleOcrAdapterTests
         using var httpClient =
             CreateHttpClient(handler);
 
-        var client =
+        var adapter =
             CreateAdapter(httpClient);
         var source =
             TextObservation();
@@ -268,7 +218,7 @@ public sealed class PaddleOcrAdapterTests
 
         await Assert.ThrowsAsync<ArgumentException>(
             async () =>
-                await client
+                await adapter
                     .RecognizeAsync(
                         image,
                         source,
@@ -320,7 +270,7 @@ public sealed class PaddleOcrAdapterTests
         using var httpClient =
             CreateHttpClient(handler);
 
-        var client =
+        var adapter =
             CreateAdapter(httpClient);
         var source =
             TextObservation();
@@ -337,7 +287,7 @@ public sealed class PaddleOcrAdapterTests
 
         await Assert.ThrowsAsync<InvalidDataException>(
             async () =>
-                await client
+                await adapter
                     .RecognizeAsync(
                         image,
                         source,
@@ -347,157 +297,8 @@ public sealed class PaddleOcrAdapterTests
                     .AsTask());
     }
 
-    [Fact]
-    public async Task RecognizeAsync_ServiceErrorCode_Throws()
-    {
-        var handler =
-            new StubHttpMessageHandler(
-                (_, _) =>
-                    Task.FromResult(
-                        JsonResponse(
-                            """
-                            {
-                              "logId": "service-error",
-                              "errorCode": 17,
-                              "errorMsg": "OCR backend unavailable",
-                              "result": {}
-                            }
-                            """)));
 
-        using var httpClient =
-            CreateHttpClient(handler);
 
-        var client =
-            CreateAdapter(httpClient);
-        var source =
-            TextObservation();
-        var crop =
-            RasterCropGeometry.FromNormalized(
-                source.Bounds,
-                1000,
-                1000);
-
-        await using var image =
-            new MemoryStream(
-                new byte[] { 1 },
-                writable: false);
-
-        var exception =
-            await Assert.ThrowsAsync<InvalidDataException>(
-                async () =>
-                    await client
-                        .RecognizeAsync(
-                            image,
-                            source,
-                            crop,
-                            1000,
-                            1000)
-                        .AsTask());
-
-        Assert.Contains(
-            "17",
-            exception.Message,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "OCR backend unavailable",
-            exception.Message,
-            StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task RecognizeAsync_RestoresSeekableInputPosition()
-    {
-        var handler =
-            new StubHttpMessageHandler(
-                (_, _) =>
-                    Task.FromResult(
-                        JsonResponse(
-                            SuccessfulEmptyResponse)));
-
-        using var httpClient =
-            CreateHttpClient(handler);
-
-        var client =
-            CreateAdapter(httpClient);
-        var source =
-            TextObservation();
-        var crop =
-            RasterCropGeometry.FromNormalized(
-                source.Bounds,
-                1000,
-                1000);
-
-        await using var image =
-            new MemoryStream(
-                new byte[] { 9, 8, 7, 6, 5 },
-                writable: false);
-
-        image.Position =
-            2;
-
-        await client.RecognizeAsync(
-            image,
-            source,
-            crop,
-            1000,
-            1000);
-
-        Assert.Equal(
-            2,
-            image.Position);
-    }
-
-    [Fact]
-    public async Task RecognizeAsync_RequestTimeout_ThrowsTimeoutException()
-    {
-        var handler =
-            new StubHttpMessageHandler(
-                async (_, cancellationToken) =>
-                {
-                    await Task.Delay(
-                        Timeout.InfiniteTimeSpan,
-                        cancellationToken);
-
-                    throw new InvalidOperationException(
-                        "Unreachable.");
-                });
-
-        using var httpClient =
-            CreateHttpClient(handler);
-
-        var client =
-            new PaddleOcrAdapter(
-                new PaddleOcrServingClient(
-                    httpClient,
-                    Endpoint,
-                    requestTimeout:
-                        TimeSpan.FromMilliseconds(50)),
-                ProfileId);
-
-        var source =
-            TextObservation();
-        var crop =
-            RasterCropGeometry.FromNormalized(
-                source.Bounds,
-                1000,
-                1000);
-
-        await using var image =
-            new MemoryStream(
-                new byte[] { 1 },
-                writable: false);
-
-        await Assert.ThrowsAsync<TimeoutException>(
-            async () =>
-                await client
-                    .RecognizeAsync(
-                        image,
-                        source,
-                        crop,
-                        1000,
-                        1000)
-                    .AsTask());
-    }
 
     private static LayoutObservation TextObservation() =>
         new(

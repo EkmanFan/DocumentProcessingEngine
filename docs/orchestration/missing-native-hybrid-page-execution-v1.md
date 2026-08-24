@@ -72,10 +72,10 @@ testable.
 Concrete V1 adapters remain:
 
 ```text
-PpStructureV3PageLayoutAnalyzer
+PpStructureV3LayoutAdapter
     -> PpStructureV3ServingClient
 
-PaddleOcrRegionTextRecognizer
+PaddleOcrAdapter
     -> PaddleOcrServingClient
 ```
 

@@ -5,12 +5,11 @@ using DocumentProcessing.Core.Layout;
 namespace DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 /// <summary>
-/// Adapts a single-page PP-StructureV3 JSON result to the neutral Core layout
-/// model.
+/// Adapts the neutral page-layout contract to PP-StructureV3 and translates
+/// provider-native layout evidence back to the Core layout model.
 ///
-/// This class does not start Python, Paddle, Docker, or any inference runtime.
-/// It is the narrow format boundary between PP-StructureV3 output and the
-/// engine-owned neutral model.
+/// The Engine owns the policy that decides whether layout analysis is required.
+/// This adapter performs contract validation and translation only.
 /// </summary>
 public sealed class PpStructureV3LayoutAdapter
     : IPageLayoutAnalyzer

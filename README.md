@@ -57,8 +57,11 @@ Ownership is intentionally separated:
   boundary and can write a reflowable EPUB from a completed portable result.
 - `DocumentProcessing.Core` contains format-neutral contracts and portable
   models.
-- layout and OCR providers execute technical operations; they do not decide
-  when those operations are required.
+- `DocumentProcessing.Layout.Adapters` and `DocumentProcessing.Ocr.Adapters`
+  implement Core capability ports and translate between provider-specific
+  protocols/results and neutral Core evidence.
+- concrete layout and OCR provider clients execute technical operations; they
+  do not decide when those operations are required.
 
 Dependency direction:
 
@@ -67,10 +70,13 @@ DocumentProcessing.Core
         ↑
         ├── DocumentProcessing.Engine
         ├── DocumentProcessing.Pdf
-        └── DocumentProcessing.Epub
+        ├── DocumentProcessing.Epub
+        ├── DocumentProcessing.Layout.Adapters
+        └── DocumentProcessing.Ocr.Adapters
 
 DocumentProcessing
         └── Core + Engine + Pdf + Epub
+          + Layout.Adapters + Ocr.Adapters
 ```
 
 See [Current architecture](docs/architecture/current-architecture.md) for the
@@ -85,6 +91,8 @@ src/
   DocumentProcessing.Engine/        assessment, planning and processing policy
   DocumentProcessing.Pdf/           PDF acquisition and technical capabilities
   DocumentProcessing.Epub/          EPUB acquisition, validation and export
+  DocumentProcessing.Layout.Adapters/ provider-specific layout translation/client
+  DocumentProcessing.Ocr.Adapters/  provider-specific OCR translation/client
   DocumentProcessing/               consumer-facing Host and composition root
   DocumentProcessing.DualRunWorker/ isolated non-authoritative worker
 
@@ -169,8 +177,8 @@ through `DocumentProcessingHost`:
 ```csharp
 using DocumentProcessing;
 using DocumentProcessing.Core.Documents;
-using DocumentProcessing.Engine.Layout;
-using DocumentProcessing.Engine.Ocr;
+using DocumentProcessing.Layout.Adapters.PpStructureV3;
+using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 var options = new DocumentProcessingHostOptions(
     engineVersion: "my-application-v1",

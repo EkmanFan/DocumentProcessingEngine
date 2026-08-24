@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
@@ -33,5 +34,19 @@ public sealed class OcrAdapterDependencyTests
         Assert.DoesNotContain(
             "DocumentProcessing.Engine",
             references);
+    }
+
+    [Fact]
+    public void OcrPort_IsImplementedByAdapter_NotServingClient()
+    {
+        Assert.True(
+            typeof(IRegionTextRecognizer)
+                .IsAssignableFrom(
+                    typeof(PaddleOcrAdapter)));
+
+        Assert.False(
+            typeof(IRegionTextRecognizer)
+                .IsAssignableFrom(
+                    typeof(PaddleOcrServingClient)));
     }
 }
