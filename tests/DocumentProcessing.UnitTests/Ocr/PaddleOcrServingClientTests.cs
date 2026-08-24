@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Ocr;
 
@@ -118,6 +119,9 @@ public sealed class PaddleOcrServingClientTests
                 pagePixelHeight: 1000);
 
         Assert.Equal(
+            ProcessingCapability.TextRecognition,
+            result.Capability);
+        Assert.Equal(
             PaddleOcrServingClient.BackendId,
             result.BackendId);
         Assert.Equal(
@@ -167,11 +171,10 @@ public sealed class PaddleOcrServingClientTests
     }
 
     [Fact]
-    public async Task RecognizeAsync_FigureRegion_FailsClosedBeforeHttp()
+    public async Task RecognizeAsync_FigureRegion_DoesNotOwnEngineEligibilityPolicy()
     {
         var sendCount =
             0;
-
         var handler =
             new StubHttpMessageHandler(
                 (_, _) =>
@@ -188,7 +191,6 @@ public sealed class PaddleOcrServingClientTests
 
         var client =
             CreateClient(httpClient);
-
         var figure =
             new LayoutObservation(
                 physicalPageNumber: 233,
@@ -201,7 +203,6 @@ public sealed class PaddleOcrServingClientTests
                     0.5,
                     0.8),
                 rawLabel: "image");
-
         var crop =
             RasterCropGeometry.FromNormalized(
                 figure.Bounds,
@@ -213,22 +214,27 @@ public sealed class PaddleOcrServingClientTests
                 new byte[] { 1 },
                 writable: false);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            async () =>
-                await client
-                    .RecognizeAsync(
-                        image,
-                        figure,
-                        crop,
-                        1000,
-                        1000)
-                    .AsTask());
+        var result =
+            await client
+                .RecognizeAsync(
+                    image,
+                    figure,
+                    crop,
+                    1000,
+                    1000);
 
         Assert.Equal(
-            0,
+            1,
             sendCount);
+        Assert.Equal(
+            ProcessingCapability.TextRecognition,
+            result.Capability);
+        Assert.Equal(
+            PaddleOcrServingClient.BackendId,
+            result.BackendId);
+        Assert.Empty(
+            result.TextObservations);
     }
-
     [Fact]
     public async Task RecognizeAsync_MismatchedCrop_FailsBeforeHttp()
     {

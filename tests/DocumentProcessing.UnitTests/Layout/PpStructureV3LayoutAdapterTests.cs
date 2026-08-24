@@ -1,5 +1,6 @@
 using System.Text;
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Engine.Layout;
 
 namespace DocumentProcessing.UnitTests.Layout;
@@ -63,6 +64,9 @@ public sealed class PpStructureV3LayoutAdapterTests
                 pixelWidth: 2556,
                 pixelHeight: 3305);
 
+        Assert.Equal(
+            ProcessingCapability.LayoutAnalysis,
+            result.Capability);
         Assert.Equal(
             PpStructureV3LayoutAdapter.BackendId,
             result.BackendId);

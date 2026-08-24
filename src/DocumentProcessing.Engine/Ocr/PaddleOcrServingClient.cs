@@ -5,16 +5,15 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Raster;
-using DocumentProcessing.Engine.Layout;
 
 namespace DocumentProcessing.Engine.Ocr;
 
 /// <summary>
 /// Calls a self-hosted PaddleOCR General OCR basic-serving endpoint for one
-/// layout-authorized raster crop.
+/// raster crop already authorized by the Engine for text recognition.
 ///
-/// The client deliberately refuses to OCR a region unless the deterministic
-/// text-only layout policy authorizes it for recognition.
+/// This provider client owns recognition and technical validation only. The
+/// deterministic decision to invoke OCR remains an Engine responsibility.
 /// </summary>
 public sealed class PaddleOcrServingClient
 {
@@ -130,14 +129,6 @@ public sealed class PaddleOcrServingClient
             throw new ArgumentOutOfRangeException(nameof(pagePixelHeight));
         }
 
-        if (!LayoutTextPolicy.IsTextRecognitionCandidate(
-                sourceLayoutObservation.Kind))
-        {
-            throw new InvalidOperationException(
-                $"Layout region {sourceLayoutObservation.ObservationSequence} " +
-                $"of kind {sourceLayoutObservation.Kind} is not authorized " +
-                "for OCR by deterministic text layout policy.");
-        }
 
         var expectedCrop =
             RasterCropGeometry.FromNormalized(

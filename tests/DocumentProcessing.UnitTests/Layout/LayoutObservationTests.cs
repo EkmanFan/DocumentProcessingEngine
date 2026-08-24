@@ -1,5 +1,6 @@
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Processing;
 
 namespace DocumentProcessing.UnitTests.Layout;
 
@@ -104,6 +105,10 @@ public sealed class LayoutObservationTests
 
         source.Clear();
 
+        Assert.Equal(
+            ProcessingCapability.LayoutAnalysis,
+            result.Capability);
+        Assert.Equal("test-backend", result.BackendId);
         Assert.Single(result.Observations);
     }
 

@@ -66,7 +66,9 @@ public sealed record LayoutObservation
     public NormalizedRectangle Bounds { get; }
 
     /// <summary>
-    /// Optional backend label retained as diagnostic/provenance evidence.
+    /// Optional backend label retained as opaque diagnostic/provenance
+    /// evidence. Engine policy must never branch on this value; functional
+    /// decisions use the neutral Kind instead.
     /// </summary>
     public string? RawLabel { get; }
 }

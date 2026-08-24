@@ -1,3 +1,5 @@
+using DocumentProcessing.Core.Processing;
+
 namespace DocumentProcessing.Core.Layout;
 
 public sealed class LayoutAnalysisResult
@@ -39,7 +41,18 @@ public sealed class LayoutAnalysisResult
         Observations = resolvedObservations.ToArray();
     }
 
+    /// <summary>
+    /// Stable DPEngine capability represented by this result.
+    /// </summary>
+    public ProcessingCapability Capability =>
+        ProcessingCapability.LayoutAnalysis;
+
+    /// <summary>
+    /// Concrete software/backend that produced this evidence.
+    /// Provenance only: Engine decisions must not branch on this value.
+    /// </summary>
     public string BackendId { get; }
+
     public int PhysicalPageNumber { get; }
     public IReadOnlyList<LayoutObservation> Observations { get; }
 }

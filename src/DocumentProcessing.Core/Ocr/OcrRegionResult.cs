@@ -1,4 +1,5 @@
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Processing;
 
 namespace DocumentProcessing.Core.Ocr;
 
@@ -59,11 +60,23 @@ public sealed class OcrRegionResult
         TextObservations = resolvedObservations.ToArray();
     }
 
+    /// <summary>
+    /// Stable DPEngine capability represented by this result.
+    /// </summary>
+    public ProcessingCapability Capability =>
+        ProcessingCapability.TextRecognition;
+
+    /// <summary>
+    /// Concrete software/backend that produced this evidence.
+    /// Provenance only: Engine decisions must not branch on this value.
+    /// </summary>
     public string BackendId { get; }
 
     /// <summary>
     /// Application-supplied, versioned processing profile identifying the
     /// configured OCR service/model combination used for this result.
+    /// Provenance/reproducibility only: Engine decisions must not branch on
+    /// this value.
     /// </summary>
     public string ProfileId { get; }
 
