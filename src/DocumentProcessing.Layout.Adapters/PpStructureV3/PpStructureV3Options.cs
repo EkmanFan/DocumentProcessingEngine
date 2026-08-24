@@ -1,4 +1,4 @@
-namespace DocumentProcessing.Engine.Layout;
+namespace DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 /// <summary>
 /// Runtime configuration for the PP-StructureV3 layout-analysis provider.

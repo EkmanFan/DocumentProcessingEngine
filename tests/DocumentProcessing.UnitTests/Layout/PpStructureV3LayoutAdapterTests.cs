@@ -2,6 +2,7 @@ using System.Text;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Engine.Layout;
+using DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 namespace DocumentProcessing.UnitTests.Layout;
 

@@ -11,6 +11,7 @@ using DocumentProcessing.Engine.Visual;
 using DocumentProcessing.Pdf;
 using DocumentProcessing.Engine.Planning;
 using StbImageSharp;
+using DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 namespace DocumentProcessing.EvaluationCli;
 

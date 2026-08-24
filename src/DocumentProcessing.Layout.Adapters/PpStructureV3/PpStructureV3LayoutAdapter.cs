@@ -2,7 +2,7 @@ using System.Text.Json;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 
-namespace DocumentProcessing.Engine.Layout;
+namespace DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 /// <summary>
 /// Adapts a single-page PP-StructureV3 JSON result to the neutral Core layout

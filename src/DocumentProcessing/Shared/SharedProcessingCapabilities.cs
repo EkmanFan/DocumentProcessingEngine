@@ -3,6 +3,7 @@ using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
+using DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 namespace DocumentProcessing.Shared;
 

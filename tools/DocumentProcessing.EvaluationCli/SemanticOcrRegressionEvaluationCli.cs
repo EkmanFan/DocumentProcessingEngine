@@ -15,6 +15,7 @@ using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Engine.Visual;
 using DocumentProcessing.Pdf;
 using DocumentProcessing.Engine.Planning;
+using DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 namespace DocumentProcessing.EvaluationCli;
 

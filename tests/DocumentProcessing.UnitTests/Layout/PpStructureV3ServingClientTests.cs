@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Engine.Layout;
+using DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 namespace DocumentProcessing.UnitTests.Layout;
 

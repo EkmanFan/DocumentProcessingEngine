@@ -3,6 +3,7 @@ using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Epub;
 using Microsoft.Extensions.Logging;
+using DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 namespace DocumentProcessing;
 

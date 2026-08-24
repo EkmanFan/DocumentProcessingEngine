@@ -1,6 +1,6 @@
 using DocumentProcessing.Core.Layout;
 
-namespace DocumentProcessing.Engine.Layout;
+namespace DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 /// <summary>
 /// Testable orchestration adapter over the selected PP-StructureV3 serving

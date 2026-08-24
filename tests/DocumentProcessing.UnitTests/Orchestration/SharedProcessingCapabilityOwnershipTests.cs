@@ -8,6 +8,7 @@ using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Pdf;
 using DocumentProcessing.Epub;
+using DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 

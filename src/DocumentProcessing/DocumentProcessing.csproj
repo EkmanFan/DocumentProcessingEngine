@@ -5,6 +5,7 @@
     <ProjectReference Include="..\DocumentProcessing.Engine\DocumentProcessing.Engine.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Epub\DocumentProcessing.Epub.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Pdf\DocumentProcessing.Pdf.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Layout.Adapters\DocumentProcessing.Layout.Adapters.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

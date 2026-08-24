@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using DocumentProcessing.Core.Layout;
 
-namespace DocumentProcessing.Engine.Layout;
+namespace DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 /// <summary>
 /// Calls a self-hosted PP-StructureV3 serving endpoint and adapts its single-page

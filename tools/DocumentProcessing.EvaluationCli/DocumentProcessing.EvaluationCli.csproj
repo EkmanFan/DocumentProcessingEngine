@@ -17,6 +17,7 @@
     <ProjectReference Include="..\..\src\DocumentProcessing.Epub\DocumentProcessing.Epub.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Pdf\DocumentProcessing.Pdf.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing\DocumentProcessing.csproj" />
+    <ProjectReference Include="..\..\src\DocumentProcessing.Layout.Adapters\DocumentProcessing.Layout.Adapters.csproj" />
   </ItemGroup>
 
 </Project>
