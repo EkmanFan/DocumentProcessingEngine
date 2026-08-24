@@ -24,7 +24,7 @@ public sealed class OcrAdapterDependencyTests
     public void OcrAdaptersAssembly_DoesNotReferenceEngine()
     {
         var references =
-            typeof(PaddleOcrRegionTextRecognizer)
+            typeof(PaddleOcrAdapter)
                 .Assembly
                 .GetReferencedAssemblies()
                 .Select(reference => reference.Name)

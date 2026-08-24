@@ -77,12 +77,12 @@ internal sealed class SharedProcessingCapabilities
                         ppStructureV3.RequestTimeout));
 
             TextRecognizer =
-                new PaddleOcrRegionTextRecognizer(
+                new PaddleOcrAdapter(
                     new PaddleOcrServingClient(
                         _ocrHttpClient,
                         paddleOcr.Endpoint,
-                        paddleOcr.ProfileId,
-                        paddleOcr.RequestTimeout));
+                        paddleOcr.RequestTimeout),
+                    paddleOcr.ProfileId);
         }
         catch
         {

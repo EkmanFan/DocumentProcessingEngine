@@ -1,23 +1,18 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using DocumentProcessing.Core.Extraction;
-using DocumentProcessing.Core.Layout;
-using DocumentProcessing.Core.Ocr;
-using DocumentProcessing.Core.Raster;
 
 namespace DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 /// <summary>
 /// Calls a self-hosted PaddleOCR General OCR basic-serving endpoint for one
-/// raster crop already authorized by the Engine for text recognition.
+/// raster image and returns provider-native recognition evidence.
 ///
-/// This provider client owns recognition and technical validation only. The
-/// deterministic decision to invoke OCR remains an Engine responsibility.
+/// This client owns PaddleOCR transport, protocol validation and technical
+/// resource limits only.
 /// </summary>
 public sealed class PaddleOcrServingClient
 {
-    public const string BackendId = "paddleocr-general-ocr";
     public const long DefaultMaxInputBytes = 16L * 1024L * 1024L;
     public const long DefaultMaxResponseBytes = 16L * 1024L * 1024L;
 
@@ -26,7 +21,6 @@ public sealed class PaddleOcrServingClient
 
     private readonly HttpClient _httpClient;
     private readonly Uri _endpoint;
-    private readonly string _profileId;
     private readonly TimeSpan _requestTimeout;
     private readonly long _maxInputBytes;
     private readonly long _maxResponseBytes;
@@ -34,16 +28,17 @@ public sealed class PaddleOcrServingClient
     public PaddleOcrServingClient(
         HttpClient httpClient,
         Uri endpoint,
-        string profileId,
         TimeSpan? requestTimeout = null,
         long maxInputBytes = DefaultMaxInputBytes,
         long maxResponseBytes = DefaultMaxResponseBytes)
     {
         _httpClient =
             httpClient ??
-            throw new ArgumentNullException(nameof(httpClient));
+            throw new ArgumentNullException(
+                nameof(httpClient));
 
-        ArgumentNullException.ThrowIfNull(endpoint);
+        ArgumentNullException.ThrowIfNull(
+            endpoint);
 
         if (!endpoint.IsAbsoluteUri ||
             (endpoint.Scheme != Uri.UriSchemeHttp &&
@@ -52,13 +47,6 @@ public sealed class PaddleOcrServingClient
             throw new ArgumentException(
                 "PaddleOCR endpoint must be an absolute HTTP or HTTPS URI.",
                 nameof(endpoint));
-        }
-
-        if (string.IsNullOrWhiteSpace(profileId))
-        {
-            throw new ArgumentException(
-                "OCR profile ID cannot be empty.",
-                nameof(profileId));
         }
 
         _requestTimeout =
@@ -77,17 +65,21 @@ public sealed class PaddleOcrServingClient
         if (maxInputBytes <= 0 ||
             maxInputBytes > int.MaxValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(maxInputBytes));
+            throw new ArgumentOutOfRangeException(
+                nameof(maxInputBytes));
         }
 
         if (maxResponseBytes <= 0 ||
             maxResponseBytes > int.MaxValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(maxResponseBytes));
+            throw new ArgumentOutOfRangeException(
+                nameof(maxResponseBytes));
         }
 
-        if (_httpClient.Timeout != Timeout.InfiniteTimeSpan &&
-            _httpClient.Timeout < _requestTimeout)
+        if (_httpClient.Timeout !=
+                Timeout.InfiniteTimeSpan &&
+            _httpClient.Timeout <
+                _requestTimeout)
         {
             throw new ArgumentException(
                 "HttpClient.Timeout must be infinite or at least as long as " +
@@ -95,53 +87,28 @@ public sealed class PaddleOcrServingClient
                 nameof(httpClient));
         }
 
-        _endpoint = endpoint;
-        _profileId = profileId.Trim();
-        _maxInputBytes = maxInputBytes;
-        _maxResponseBytes = maxResponseBytes;
+        _endpoint =
+            endpoint;
+
+        _maxInputBytes =
+            maxInputBytes;
+
+        _maxResponseBytes =
+            maxResponseBytes;
     }
 
-    public async ValueTask<OcrRegionResult> RecognizeAsync(
+    public async ValueTask<PaddleOcrNativeResult> RecognizeAsync(
         Stream rasterRegion,
-        LayoutObservation sourceLayoutObservation,
-        PixelRectangle crop,
-        int pagePixelWidth,
-        int pagePixelHeight,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(rasterRegion);
-        ArgumentNullException.ThrowIfNull(sourceLayoutObservation);
+        ArgumentNullException.ThrowIfNull(
+            rasterRegion);
 
         if (!rasterRegion.CanRead)
         {
             throw new ArgumentException(
                 "Raster region stream must be readable.",
                 nameof(rasterRegion));
-        }
-
-        if (pagePixelWidth <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(pagePixelWidth));
-        }
-
-        if (pagePixelHeight <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(pagePixelHeight));
-        }
-
-
-        var expectedCrop =
-            RasterCropGeometry.FromNormalized(
-                sourceLayoutObservation.Bounds,
-                pagePixelWidth,
-                pagePixelHeight);
-
-        if (crop != expectedCrop)
-        {
-            throw new ArgumentException(
-                "Raster crop does not match the deterministic crop derived " +
-                "from the source layout observation.",
-                nameof(crop));
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -158,7 +125,9 @@ public sealed class PaddleOcrServingClient
             JsonSerializer.SerializeToUtf8Bytes(
                 new
                 {
-                    file = Convert.ToBase64String(imageBytes),
+                    file =
+                        Convert.ToBase64String(
+                            imageBytes),
                     fileType = 1,
                     useDocOrientationClassify = false,
                     useDocUnwarping = false,
@@ -172,14 +141,19 @@ public sealed class PaddleOcrServingClient
                 HttpMethod.Post,
                 _endpoint)
             {
-                Content = new ByteArrayContent(payload)
+                Content =
+                    new ByteArrayContent(
+                        payload)
             };
 
         request.Content.Headers.ContentType =
-            new MediaTypeHeaderValue("application/json");
+            new MediaTypeHeaderValue(
+                "application/json");
 
         using var timeoutSource =
-            new CancellationTokenSource(_requestTimeout);
+            new CancellationTokenSource(
+                _requestTimeout);
+
         using var linkedSource =
             CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken,
@@ -231,7 +205,8 @@ public sealed class PaddleOcrServingClient
             if (!response.IsSuccessStatusCode)
             {
                 var serviceMessage =
-                    TryReadServiceErrorMessage(responseBytes);
+                    TryReadServiceErrorMessage(
+                        responseBytes);
 
                 throw new HttpRequestException(
                     serviceMessage is null
@@ -243,30 +218,24 @@ public sealed class PaddleOcrServingClient
             }
 
             return ParseSuccessfulResponse(
-                responseBytes,
-                sourceLayoutObservation,
-                crop,
-                pagePixelWidth,
-                pagePixelHeight);
+                responseBytes);
         }
     }
 
-    private OcrRegionResult ParseSuccessfulResponse(
-        byte[] responseBytes,
-        LayoutObservation sourceLayoutObservation,
-        PixelRectangle crop,
-        int pagePixelWidth,
-        int pagePixelHeight)
+    private static PaddleOcrNativeResult ParseSuccessfulResponse(
+        byte[] responseBytes)
     {
         try
         {
             using var document =
-                JsonDocument.Parse(responseBytes);
+                JsonDocument.Parse(
+                    responseBytes);
 
             var root =
                 document.RootElement;
 
-            if (root.ValueKind != JsonValueKind.Object)
+            if (root.ValueKind !=
+                JsonValueKind.Object)
             {
                 throw new InvalidDataException(
                     "PaddleOCR serving response root must be an object.");
@@ -280,7 +249,9 @@ public sealed class PaddleOcrServingClient
             if (errorCode != 0)
             {
                 var errorMessage =
-                    TryReadString(root, "errorMsg") ??
+                    TryReadString(
+                        root,
+                        "errorMsg") ??
                     "Unspecified service error.";
 
                 throw new InvalidDataException(
@@ -290,7 +261,8 @@ public sealed class PaddleOcrServingClient
             if (!root.TryGetProperty(
                     "result",
                     out var result) ||
-                result.ValueKind != JsonValueKind.Object)
+                result.ValueKind !=
+                    JsonValueKind.Object)
             {
                 throw new InvalidDataException(
                     "PaddleOCR serving response has no valid result object.");
@@ -299,7 +271,8 @@ public sealed class PaddleOcrServingClient
             if (!result.TryGetProperty(
                     "ocrResults",
                     out var ocrResults) ||
-                ocrResults.ValueKind != JsonValueKind.Array)
+                ocrResults.ValueKind !=
+                    JsonValueKind.Array)
             {
                 throw new InvalidDataException(
                     "PaddleOCR serving response has no ocrResults array.");
@@ -315,95 +288,21 @@ public sealed class PaddleOcrServingClient
             var item =
                 ocrResults[0];
 
-            if (item.ValueKind != JsonValueKind.Object ||
+            if (item.ValueKind !=
+                    JsonValueKind.Object ||
                 !item.TryGetProperty(
                     "prunedResult",
                     out var prunedResult) ||
-                prunedResult.ValueKind != JsonValueKind.Object)
+                prunedResult.ValueKind !=
+                    JsonValueKind.Object)
             {
                 throw new InvalidDataException(
                     "PaddleOCR serving response has no valid prunedResult.");
             }
 
-            var texts =
-                ReadRequiredArray(
-                    prunedResult,
-                    "rec_texts");
-            var scores =
-                ReadRequiredArray(
-                    prunedResult,
-                    "rec_scores");
-            var boxes =
-                ReadRequiredArray(
-                    prunedResult,
-                    "rec_boxes");
-
-            if (texts.GetArrayLength() != scores.GetArrayLength() ||
-                texts.GetArrayLength() != boxes.GetArrayLength())
-            {
-                throw new InvalidDataException(
-                    "PaddleOCR rec_texts, rec_scores and rec_boxes must have " +
-                    "the same length.");
-            }
-
-            var observations =
-                new List<OcrTextObservation>();
-
-            for (var index = 0;
-                 index < texts.GetArrayLength();
-                 index++)
-            {
-                var textElement =
-                    texts[index];
-
-                if (textElement.ValueKind != JsonValueKind.String)
-                {
-                    throw new InvalidDataException(
-                        $"PaddleOCR rec_texts[{index}] must be a string.");
-                }
-
-                var scoreElement =
-                    scores[index];
-
-                if (scoreElement.ValueKind != JsonValueKind.Number ||
-                    !scoreElement.TryGetDouble(out var confidence))
-                {
-                    throw new InvalidDataException(
-                        $"PaddleOCR rec_scores[{index}] must be numeric.");
-                }
-
-                var localBox =
-                    ReadBox(
-                        boxes[index],
-                        index);
-
-                var text =
-                    textElement.GetString();
-
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    continue;
-                }
-
-                observations.Add(
-                    new OcrTextObservation(
-                        sourceLayoutObservation.PhysicalPageNumber,
-                        sourceLayoutObservation.ObservationSequence,
-                        index,
-                        text,
-                        confidence,
-                        MapToPageBounds(
-                            localBox,
-                            crop,
-                            pagePixelWidth,
-                            pagePixelHeight)));
-            }
-
-            return new OcrRegionResult(
-                BackendId,
-                _profileId,
-                sourceLayoutObservation,
-                observations);
+            return new PaddleOcrNativeResult(
+                JsonSerializer.SerializeToUtf8Bytes(
+                    prunedResult));
         }
         catch (JsonException exception)
         {
@@ -413,92 +312,8 @@ public sealed class PaddleOcrServingClient
         }
     }
 
-    private static NormalizedRectangle MapToPageBounds(
-        LocalBox localBox,
-        PixelRectangle crop,
-        int pagePixelWidth,
-        int pagePixelHeight)
-    {
-        var left =
-            (crop.Left + localBox.Left) /
-            (double)pagePixelWidth;
-        var top =
-            (crop.Top + localBox.Top) /
-            (double)pagePixelHeight;
-        var right =
-            (crop.Left + localBox.Right) /
-            (double)pagePixelWidth;
-        var bottom =
-            (crop.Top + localBox.Bottom) /
-            (double)pagePixelHeight;
 
-        return new NormalizedRectangle(
-            left,
-            top,
-            right,
-            bottom);
-    }
 
-    private static LocalBox ReadBox(
-        JsonElement element,
-        int index)
-    {
-        if (element.ValueKind != JsonValueKind.Array ||
-            element.GetArrayLength() != 4)
-        {
-            throw new InvalidDataException(
-                $"PaddleOCR rec_boxes[{index}] must contain four numbers.");
-        }
-
-        var values =
-            new double[4];
-
-        for (var coordinate = 0;
-             coordinate < values.Length;
-             coordinate++)
-        {
-            var value =
-                element[coordinate];
-
-            if (value.ValueKind != JsonValueKind.Number ||
-                !value.TryGetDouble(out values[coordinate]) ||
-                !double.IsFinite(values[coordinate]))
-            {
-                throw new InvalidDataException(
-                    $"PaddleOCR rec_boxes[{index}][{coordinate}] must be " +
-                    "a finite number.");
-            }
-        }
-
-        if (values[2] < values[0] ||
-            values[3] < values[1])
-        {
-            throw new InvalidDataException(
-                $"PaddleOCR rec_boxes[{index}] has reversed coordinates.");
-        }
-
-        return new LocalBox(
-            values[0],
-            values[1],
-            values[2],
-            values[3]);
-    }
-
-    private static JsonElement ReadRequiredArray(
-        JsonElement root,
-        string propertyName)
-    {
-        if (!root.TryGetProperty(
-                propertyName,
-                out var property) ||
-            property.ValueKind != JsonValueKind.Array)
-        {
-            throw new InvalidDataException(
-                $"PaddleOCR prunedResult has no valid {propertyName} array.");
-        }
-
-        return property;
-    }
 
     private static int ReadRequiredInt32(
         JsonElement root,
@@ -661,9 +476,4 @@ public sealed class PaddleOcrServingClient
         }
     }
 
-    private readonly record struct LocalBox(
-        double Left,
-        double Top,
-        double Right,
-        double Bottom);
 }

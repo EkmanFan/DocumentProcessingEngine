@@ -10,7 +10,7 @@ using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 namespace DocumentProcessing.UnitTests.Ocr;
 
-public sealed class PaddleOcrServingClientTests
+public sealed class PaddleOcrAdapterTests
 {
     [Fact]
     public async Task RecognizeAsync_TextRegion_MapsEvidenceAndSendsSafeFlags()
@@ -95,7 +95,7 @@ public sealed class PaddleOcrServingClientTests
             CreateHttpClient(handler);
 
         var client =
-            CreateClient(httpClient);
+            CreateAdapter(httpClient);
 
         var source =
             TextObservation();
@@ -123,7 +123,7 @@ public sealed class PaddleOcrServingClientTests
             ProcessingCapability.TextRecognition,
             result.Capability);
         Assert.Equal(
-            PaddleOcrServingClient.BackendId,
+            PaddleOcrAdapter.BackendId,
             result.BackendId);
         Assert.Equal(
             ProfileId,
@@ -191,7 +191,7 @@ public sealed class PaddleOcrServingClientTests
             CreateHttpClient(handler);
 
         var client =
-            CreateClient(httpClient);
+            CreateAdapter(httpClient);
         var figure =
             new LayoutObservation(
                 physicalPageNumber: 233,
@@ -231,7 +231,7 @@ public sealed class PaddleOcrServingClientTests
             ProcessingCapability.TextRecognition,
             result.Capability);
         Assert.Equal(
-            PaddleOcrServingClient.BackendId,
+            PaddleOcrAdapter.BackendId,
             result.BackendId);
         Assert.Empty(
             result.TextObservations);
@@ -257,7 +257,7 @@ public sealed class PaddleOcrServingClientTests
             CreateHttpClient(handler);
 
         var client =
-            CreateClient(httpClient);
+            CreateAdapter(httpClient);
         var source =
             TextObservation();
 
@@ -321,7 +321,7 @@ public sealed class PaddleOcrServingClientTests
             CreateHttpClient(handler);
 
         var client =
-            CreateClient(httpClient);
+            CreateAdapter(httpClient);
         var source =
             TextObservation();
         var crop =
@@ -368,7 +368,7 @@ public sealed class PaddleOcrServingClientTests
             CreateHttpClient(handler);
 
         var client =
-            CreateClient(httpClient);
+            CreateAdapter(httpClient);
         var source =
             TextObservation();
         var crop =
@@ -418,7 +418,7 @@ public sealed class PaddleOcrServingClientTests
             CreateHttpClient(handler);
 
         var client =
-            CreateClient(httpClient);
+            CreateAdapter(httpClient);
         var source =
             TextObservation();
         var crop =
@@ -466,11 +466,13 @@ public sealed class PaddleOcrServingClientTests
             CreateHttpClient(handler);
 
         var client =
-            new PaddleOcrServingClient(
-                httpClient,
-                Endpoint,
-                ProfileId,
-                requestTimeout: TimeSpan.FromMilliseconds(50));
+            new PaddleOcrAdapter(
+                new PaddleOcrServingClient(
+                    httpClient,
+                    Endpoint,
+                    requestTimeout:
+                        TimeSpan.FromMilliseconds(50)),
+                ProfileId);
 
         var source =
             TextObservation();
@@ -510,11 +512,12 @@ public sealed class PaddleOcrServingClientTests
                 0.30),
             rawLabel: "text");
 
-    private static PaddleOcrServingClient CreateClient(
+    private static PaddleOcrAdapter CreateAdapter(
         HttpClient httpClient) =>
         new(
-            httpClient,
-            Endpoint,
+            new PaddleOcrServingClient(
+                httpClient,
+                Endpoint),
             ProfileId);
 
     private static HttpClient CreateHttpClient(

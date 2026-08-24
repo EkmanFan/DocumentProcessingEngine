@@ -109,14 +109,14 @@ internal static class SemanticOcrRegressionEvaluationCli
             };
 
         IRegionTextRecognizer liveRecognizer =
-            new PaddleOcrRegionTextRecognizer(
+            new PaddleOcrAdapter(
                 new PaddleOcrServingClient(
                     ocrHttpClient,
                     options.OcrEndpoint,
-                    options.OcrProfileId,
                     requestTimeout:
                         TimeSpan.FromMinutes(
-                            3)));
+                            3)),
+                options.OcrProfileId);
 
         var countingRecognizer =
             new CountingRecognizer(
