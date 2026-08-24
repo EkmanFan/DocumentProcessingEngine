@@ -70,7 +70,7 @@ internal sealed class SharedProcessingCapabilities
         try
         {
             LayoutAnalyzer =
-                new PpStructureV3PageLayoutAnalyzer(
+                new PpStructureV3LayoutAdapter(
                     new PpStructureV3ServingClient(
                         _layoutHttpClient,
                         ppStructureV3.Endpoint,

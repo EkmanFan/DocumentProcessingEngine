@@ -131,8 +131,12 @@ public sealed class PpStructureV3ServingClientTests
                 imageBytes,
                 writable: false);
 
+        var adapter =
+            new PpStructureV3LayoutAdapter(
+                client);
+
         var result =
-            await client.AnalyzeAsync(
+            await adapter.AnalyzeAsync(
                 image,
                 physicalPageNumber: 233,
                 pixelWidth: 2556,
@@ -193,11 +197,7 @@ public sealed class PpStructureV3ServingClientTests
 
         image.Position = 2;
 
-        await client.AnalyzeAsync(
-            image,
-            physicalPageNumber: 1,
-            pixelWidth: 100,
-            pixelHeight: 100);
+        await client.AnalyzeAsync(image);
 
         Assert.Equal(2, image.Position);
     }
@@ -234,12 +234,7 @@ public sealed class PpStructureV3ServingClientTests
 
         await Assert.ThrowsAsync<InvalidDataException>(
             async () =>
-                await client
-                    .AnalyzeAsync(
-                        image,
-                        1,
-                        100,
-                        100)
+                await client.AnalyzeAsync(image)
                     .AsTask());
 
         Assert.Equal(0, sendCount);
@@ -271,12 +266,7 @@ public sealed class PpStructureV3ServingClientTests
 
         await Assert.ThrowsAsync<InvalidDataException>(
             async () =>
-                await client
-                    .AnalyzeAsync(
-                        image,
-                        1,
-                        100,
-                        100)
+                await client.AnalyzeAsync(image)
                     .AsTask());
     }
 
@@ -311,12 +301,7 @@ public sealed class PpStructureV3ServingClientTests
         var exception =
             await Assert.ThrowsAsync<InvalidDataException>(
                 async () =>
-                    await client
-                        .AnalyzeAsync(
-                            image,
-                            1,
-                            100,
-                            100)
+                    await client.AnalyzeAsync(image)
                         .AsTask());
 
         Assert.Contains(
@@ -373,12 +358,7 @@ public sealed class PpStructureV3ServingClientTests
 
         await Assert.ThrowsAsync<InvalidDataException>(
             async () =>
-                await client
-                    .AnalyzeAsync(
-                        image,
-                        1,
-                        100,
-                        100)
+                await client.AnalyzeAsync(image)
                     .AsTask());
     }
 
@@ -413,12 +393,7 @@ public sealed class PpStructureV3ServingClientTests
 
         await Assert.ThrowsAsync<TimeoutException>(
             async () =>
-                await client
-                    .AnalyzeAsync(
-                        image,
-                        1,
-                        100,
-                        100)
+                await client.AnalyzeAsync(image)
                     .AsTask());
     }
 
@@ -450,13 +425,7 @@ public sealed class PpStructureV3ServingClientTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             async () =>
-                await client
-                    .AnalyzeAsync(
-                        image,
-                        1,
-                        100,
-                        100,
-                        cancellationSource.Token)
+                await client.AnalyzeAsync(image, cancellationSource.Token)
                     .AsTask());
     }
 

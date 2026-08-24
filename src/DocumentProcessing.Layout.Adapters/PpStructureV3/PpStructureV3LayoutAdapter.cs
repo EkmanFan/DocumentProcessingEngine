@@ -13,17 +13,85 @@ namespace DocumentProcessing.Layout.Adapters.PpStructureV3;
 /// engine-owned neutral model.
 /// </summary>
 public sealed class PpStructureV3LayoutAdapter
+    : IPageLayoutAnalyzer
 {
     #region Variables and Constants
 
     public const string BackendId = "pp-structurev3";
+
+    private readonly PpStructureV3ServingClient _client;
+
+    #endregion
+
+
+    #region ctor
+
+    public PpStructureV3LayoutAdapter(
+        PpStructureV3ServingClient client)
+    {
+        _client =
+            client ??
+            throw new ArgumentNullException(
+                nameof(client));
+    }
 
     #endregion
 
 
     #region Methods
 
-    public async ValueTask<LayoutAnalysisResult> AdaptAsync(
+    public async ValueTask<LayoutAnalysisResult> AnalyzeAsync(
+        Stream rasterImage,
+        int physicalPageNumber,
+        int pixelWidth,
+        int pixelHeight,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            rasterImage);
+
+        if (physicalPageNumber <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(physicalPageNumber));
+        }
+
+        if (pixelWidth <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(pixelWidth));
+        }
+
+        if (pixelHeight <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(pixelHeight));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var nativeResult =
+            await _client
+                .AnalyzeAsync(
+                    rasterImage,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        await using var nativeStream =
+            new MemoryStream(
+                nativeResult.PrunedResultJson,
+                writable: false);
+
+        return await AdaptAsync(
+                nativeStream,
+                physicalPageNumber,
+                pixelWidth,
+                pixelHeight,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public static async ValueTask<LayoutAnalysisResult> AdaptAsync(
         Stream resultJson,
         int physicalPageNumber,
         int pixelWidth,

@@ -24,7 +24,7 @@ public sealed class LayoutAdapterDependencyTests
     public void LayoutAdaptersAssembly_DoesNotReferenceEngine()
     {
         var references =
-            typeof(PpStructureV3PageLayoutAnalyzer)
+            typeof(PpStructureV3LayoutAdapter)
                 .Assembly
                 .GetReferencedAssemblies()
                 .Select(reference => reference.Name)

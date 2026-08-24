@@ -85,7 +85,7 @@ internal static class SemanticOcrRegressionEvaluationCli
             };
 
         IPageLayoutAnalyzer liveLayout =
-            new PpStructureV3PageLayoutAnalyzer(
+            new PpStructureV3LayoutAdapter(
                 new PpStructureV3ServingClient(
                     layoutHttpClient,
                     options.LayoutEndpoint,

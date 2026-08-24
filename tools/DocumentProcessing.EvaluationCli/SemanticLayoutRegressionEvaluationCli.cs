@@ -78,7 +78,7 @@ internal static class SemanticLayoutRegressionEvaluationCli
             };
 
         var analyzer =
-            new PpStructureV3PageLayoutAnalyzer(
+            new PpStructureV3LayoutAdapter(
                 new PpStructureV3ServingClient(
                     httpClient,
                     options.LayoutEndpoint,

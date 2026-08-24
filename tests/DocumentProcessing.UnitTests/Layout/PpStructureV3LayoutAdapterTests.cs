@@ -55,11 +55,8 @@ public sealed class PpStructureV3LayoutAdapterTests
             new MemoryStream(
                 Encoding.UTF8.GetBytes(json));
 
-        var adapter =
-            new PpStructureV3LayoutAdapter();
-
         var result =
-            await adapter.AdaptAsync(
+            await PpStructureV3LayoutAdapter.AdaptAsync(
                 stream,
                 physicalPageNumber: 233,
                 pixelWidth: 2556,
@@ -158,8 +155,7 @@ public sealed class PpStructureV3LayoutAdapterTests
                 Encoding.UTF8.GetBytes(json));
 
         var result =
-            await new PpStructureV3LayoutAdapter()
-                .AdaptAsync(
+            await PpStructureV3LayoutAdapter.AdaptAsync(
                     stream,
                     physicalPageNumber: 233,
                     pixelWidth: 2556,
@@ -206,8 +202,7 @@ public sealed class PpStructureV3LayoutAdapterTests
                 Encoding.UTF8.GetBytes(json));
 
         var result =
-            await new PpStructureV3LayoutAdapter()
-                .AdaptAsync(
+            await PpStructureV3LayoutAdapter.AdaptAsync(
                     stream,
                     physicalPageNumber: 16,
                     pixelWidth: 1020,
@@ -252,8 +247,7 @@ public sealed class PpStructureV3LayoutAdapterTests
                 Encoding.UTF8.GetBytes(json));
 
         var result =
-            await new PpStructureV3LayoutAdapter()
-                .AdaptAsync(
+            await PpStructureV3LayoutAdapter.AdaptAsync(
                     stream,
                     physicalPageNumber: 233,
                     pixelWidth: 2556,
@@ -285,12 +279,9 @@ public sealed class PpStructureV3LayoutAdapterTests
 
         stream.Position = 5;
 
-        var adapter =
-            new PpStructureV3LayoutAdapter();
-
         await Assert.ThrowsAsync<InvalidDataException>(
             async () =>
-                await adapter
+                await PpStructureV3LayoutAdapter
                     .AdaptAsync(
                         stream,
                         physicalPageNumber: 233,

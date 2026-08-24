@@ -1,13 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using DocumentProcessing.Core.Layout;
 
 namespace DocumentProcessing.Layout.Adapters.PpStructureV3;
 
 /// <summary>
-/// Calls a self-hosted PP-StructureV3 serving endpoint and adapts its single-page
-/// pruned result to the engine-owned neutral layout model.
+/// Calls a self-hosted PP-StructureV3 serving endpoint and returns its
+/// single-page native pruned result.
 ///
 /// The .NET engine does not launch Python, Paddle, Docker, or the model process.
 /// Model hosting remains an external infrastructure concern behind the official
@@ -28,7 +27,6 @@ public sealed class PpStructureV3ServingClient
     private readonly TimeSpan _requestTimeout;
     private readonly long _maxInputBytes;
     private readonly long _maxResponseBytes;
-    private readonly PpStructureV3LayoutAdapter _adapter = new();
 
     #endregion
 
@@ -101,11 +99,8 @@ public sealed class PpStructureV3ServingClient
 
     #region Methods
 
-    public async ValueTask<LayoutAnalysisResult> AnalyzeAsync(
+    public async ValueTask<PpStructureV3NativeResult> AnalyzeAsync(
         Stream rasterImage,
-        int physicalPageNumber,
-        int pixelWidth,
-        int pixelHeight,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(rasterImage);
@@ -115,22 +110,6 @@ public sealed class PpStructureV3ServingClient
             throw new ArgumentException(
                 "Raster image stream must be readable.",
                 nameof(rasterImage));
-        }
-
-        if (physicalPageNumber <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(physicalPageNumber));
-        }
-
-        if (pixelWidth <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(pixelWidth));
-        }
-
-        if (pixelHeight <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(pixelHeight));
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -238,29 +217,22 @@ public sealed class PpStructureV3ServingClient
                     response.StatusCode);
             }
 
-            return await AdaptSuccessfulResponseAsync(
-                    responseBytes,
-                    physicalPageNumber,
-                    pixelWidth,
-                    pixelHeight,
-                    linkedSource.Token)
-                .ConfigureAwait(false);
+            return ParseSuccessfulResponse(
+                responseBytes);
         }
     }
 
-    private async ValueTask<LayoutAnalysisResult> AdaptSuccessfulResponseAsync(
-        byte[] responseBytes,
-        int physicalPageNumber,
-        int pixelWidth,
-        int pixelHeight,
-        CancellationToken cancellationToken)
+    private static PpStructureV3NativeResult ParseSuccessfulResponse(
+        byte[] responseBytes)
     {
         try
         {
             using var document =
-                JsonDocument.Parse(responseBytes);
+                JsonDocument.Parse(
+                    responseBytes);
 
-            var root = document.RootElement;
+            var root =
+                document.RootElement;
 
             if (root.ValueKind != JsonValueKind.Object)
             {
@@ -276,7 +248,9 @@ public sealed class PpStructureV3ServingClient
             if (errorCode != 0)
             {
                 var errorMessage =
-                    TryReadString(root, "errorMsg") ??
+                    TryReadString(
+                        root,
+                        "errorMsg") ??
                     "Unspecified service error.";
 
                 throw new InvalidDataException(
@@ -321,23 +295,9 @@ public sealed class PpStructureV3ServingClient
                     "PP-StructureV3 serving response has no valid prunedResult.");
             }
 
-            var prunedBytes =
+            return new PpStructureV3NativeResult(
                 JsonSerializer.SerializeToUtf8Bytes(
-                    prunedResult);
-
-            await using var prunedStream =
-                new MemoryStream(
-                    prunedBytes,
-                    writable: false);
-
-            return await _adapter
-                .AdaptAsync(
-                    prunedStream,
-                    physicalPageNumber,
-                    pixelWidth,
-                    pixelHeight,
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    prunedResult));
         }
         catch (JsonException exception)
         {
