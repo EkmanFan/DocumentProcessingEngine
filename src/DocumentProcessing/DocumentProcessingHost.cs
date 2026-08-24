@@ -6,6 +6,7 @@ using DocumentProcessing.Engine.Orchestration;
 using DocumentProcessing.Epub;
 using DocumentProcessing.Pdf;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
+using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 namespace DocumentProcessing;
 

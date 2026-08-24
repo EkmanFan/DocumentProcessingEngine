@@ -11,6 +11,7 @@ using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Epub;
 using DocumentProcessing.Epub.Locations;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
+using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 namespace DocumentProcessing.EvaluationCli;
 

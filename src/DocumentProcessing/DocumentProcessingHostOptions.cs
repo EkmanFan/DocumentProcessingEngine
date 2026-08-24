@@ -4,6 +4,7 @@ using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Epub;
 using Microsoft.Extensions.Logging;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
+using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 namespace DocumentProcessing;
 

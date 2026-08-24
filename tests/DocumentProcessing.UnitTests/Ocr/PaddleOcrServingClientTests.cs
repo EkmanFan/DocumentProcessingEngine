@@ -6,6 +6,7 @@ using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Processing;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Engine.Ocr;
+using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 namespace DocumentProcessing.UnitTests.Ocr;
 

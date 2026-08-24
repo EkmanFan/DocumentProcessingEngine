@@ -1,4 +1,4 @@
-namespace DocumentProcessing.Engine.Ocr;
+namespace DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 /// <summary>
 /// Runtime configuration for the PaddleOCR text-recognition provider.

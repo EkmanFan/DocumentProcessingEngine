@@ -16,6 +16,7 @@ using DocumentProcessing.Engine.Visual;
 using DocumentProcessing.Pdf;
 using DocumentProcessing.Engine.Planning;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
+using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 namespace DocumentProcessing.EvaluationCli;
 

@@ -2,7 +2,7 @@ using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Raster;
 
-namespace DocumentProcessing.Engine.Ocr;
+namespace DocumentProcessing.Ocr.Adapters.PaddleOCR;
 
 /// <summary>
 /// Testable orchestration adapter over the selected PaddleOCR serving client.
