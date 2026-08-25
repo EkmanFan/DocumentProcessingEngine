@@ -390,7 +390,7 @@ public sealed class PdfPigDocumentExtractor
                     sourceBlocks)
                 .ToArray();
 
-        var documentBlocks =
+        var initialDocumentBlocks =
             orderedBlocks
                 .Select(block =>
                     ToDocumentTextBlock(
@@ -398,6 +398,12 @@ public sealed class PdfPigDocumentExtractor
                         blockSourceSequence[block],
                         documentWordBySourceWord,
                         resolvedCoordinateSpace))
+                .ToArray();
+
+        var documentBlocks =
+            PdfPageNativeTextRepair
+                .Reconstruct(
+                    initialDocumentBlocks)
                 .ToArray();
 
         images =
