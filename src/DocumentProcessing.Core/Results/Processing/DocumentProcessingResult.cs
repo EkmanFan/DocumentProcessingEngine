@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.DocumentModel;
 using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Provenance;
 namespace DocumentProcessing.Core.Results;
@@ -24,7 +25,7 @@ public sealed record DocumentProcessingResult
     /// contract.
     /// </summary>
     public const string SchemaVersionId =
-        "document-processing-result-v1";
+        "document-processing-result-v2";
 
     #endregion
 
@@ -84,6 +85,11 @@ public sealed record DocumentProcessingResult
     public IReadOnlyList<DocumentVisualAsset> VisualAssets { get; }
 
     /// <summary>
+    /// Gets semantic footnotes projected outside the primary reading flow.
+    /// </summary>
+    public IReadOnlyList<DocumentFootnote> Footnotes { get; }
+
+    /// <summary>
     /// Gets non-duplicating quality observations.
     /// </summary>
     public DocumentProcessingQualityObservations QualityObservations { get; }
@@ -106,7 +112,8 @@ public sealed record DocumentProcessingResult
             segmentProcessingEvidence,
         IReadOnlyList<DocumentVisualAsset> visualAssets,
         DocumentProcessingQualityObservations qualityObservations,
-        DocumentSourceStructure? sourceStructure = null)
+        DocumentSourceStructure? sourceStructure = null,
+        IReadOnlyList<DocumentFootnote>? footnotes = null)
     {
         Source =
             source ??
@@ -166,6 +173,12 @@ public sealed record DocumentProcessingResult
                 visualAssets,
                 nameof(visualAssets));
 
+        var footnoteArray =
+            CopyWithoutNulls(
+                footnotes ??
+                    Array.Empty<DocumentFootnote>(),
+                nameof(footnotes));
+
         ValidateUniqueIds(
             elementArray,
             element =>
@@ -193,6 +206,19 @@ public sealed record DocumentProcessingResult
                 segment.Ordinal,
             "structural segment",
             nameof(structuralSegments));
+        ValidateUniqueIds(
+            footnoteArray,
+            footnote =>
+                footnote.FootnoteId,
+            "footnote",
+            nameof(footnotes));
+
+        ValidateContiguousOrdinals(
+            footnoteArray,
+            footnote =>
+                footnote.Ordinal,
+            "footnote",
+            nameof(footnotes));
 
         var elementsById =
             elementArray.ToDictionary(
@@ -209,6 +235,10 @@ public sealed record DocumentProcessingResult
         ValidateSourceStructure(
             SourceStructure,
             elementArray);
+        ValidateFootnotes(
+            footnoteArray,
+            elementsById,
+            SourceStructure);
 
         ValidateStructuralMembership(
             elementArray,
@@ -256,6 +286,10 @@ public sealed record DocumentProcessingResult
 
         VisualAssets =
             visualAssetArray;
+
+
+        Footnotes =
+            footnoteArray;
     }
 
     #endregion
@@ -686,6 +720,118 @@ public sealed record DocumentProcessingResult
                     $"Visual asset '{asset.AssetId}' references preservation profile not present in the processing manifest.",
                     nameof(visualAssets));
             }
+        }
+    }
+
+    private static void ValidateFootnotes(
+        IReadOnlyList<DocumentFootnote> footnotes,
+        IReadOnlyDictionary<string, DocumentElement> elementsById,
+        DocumentSourceStructure? sourceStructure)
+    {
+        foreach (var footnote in
+                 footnotes)
+        {
+            foreach (var reference in
+                     footnote.References)
+            {
+                var provenance =
+                    reference.Provenance;
+
+                if (!elementsById.TryGetValue(
+                        provenance.ElementId,
+                        out var referencedElement))
+                {
+                    throw new ArgumentException(
+                        $"Footnote '{footnote.FootnoteId}' references unknown document element '{provenance.ElementId}'.",
+                        nameof(footnotes));
+                }
+
+                ValidateFootnoteLocation(
+                    provenance.Location,
+                    sourceStructure,
+                    footnote.FootnoteId,
+                    nameof(footnotes));
+
+                ValidateFootnoteReferenceLocation(
+                    provenance.Location,
+                    referencedElement.Location,
+                    footnote.FootnoteId,
+                    provenance.ElementId,
+                    nameof(footnotes));
+            }
+
+            foreach (var location in
+                     footnote.SourceLocations)
+            {
+                ValidateFootnoteLocation(
+                    location,
+                    sourceStructure,
+                    footnote.FootnoteId,
+                    nameof(footnotes));
+            }
+        }
+    }
+
+    private static void ValidateFootnoteLocation(
+        DocumentSourceLocation location,
+        DocumentSourceStructure? sourceStructure,
+        string footnoteId,
+        string parameterName)
+    {
+        if (sourceStructure is not
+            PagedDocumentSourceStructure paged)
+        {
+            return;
+        }
+
+        if (location is not
+            PagedDocumentSourceLocation pagedLocation)
+        {
+            throw new ArgumentException(
+                $"Footnote '{footnoteId}' must use paged source locations when the result retains a paged source structure.",
+                parameterName);
+        }
+
+        if (pagedLocation.PhysicalPageNumber >
+            paged.PhysicalPageCount)
+        {
+            throw new ArgumentException(
+                $"Footnote '{footnoteId}' references physical page {pagedLocation.PhysicalPageNumber}, outside the retained paged source structure.",
+                parameterName);
+        }
+    }
+
+    private static void ValidateFootnoteReferenceLocation(
+        DocumentSourceLocation referenceLocation,
+        DocumentSourceLocation elementLocation,
+        string footnoteId,
+        string elementId,
+        string parameterName)
+    {
+        if (referenceLocation is
+                PagedDocumentSourceLocation referencePage &&
+            elementLocation is
+                PagedDocumentSourceLocation elementPage)
+        {
+            if (referencePage.PhysicalPageNumber !=
+                elementPage.PhysicalPageNumber)
+            {
+                throw new ArgumentException(
+                    $"Footnote '{footnoteId}' reference '{elementId}' is on physical page {referencePage.PhysicalPageNumber}, but the referenced document element is on physical page {elementPage.PhysicalPageNumber}.",
+                    parameterName);
+            }
+
+            return;
+        }
+
+        if (referenceLocation is
+                PagedDocumentSourceLocation ||
+            elementLocation is
+                PagedDocumentSourceLocation)
+        {
+            throw new ArgumentException(
+                $"Footnote '{footnoteId}' reference '{elementId}' must use paged locations consistently with its referenced element.",
+                parameterName);
         }
     }
 

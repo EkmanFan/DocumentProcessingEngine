@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.DocumentModel;
 using DocumentProcessing.Core.Hybrid;
 using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Provenance;
@@ -24,10 +25,26 @@ internal static class DocumentProcessingResultProjector
     #region Methods Projection
 
     public static DocumentProcessingResult Project(
-        DocumentIngestionResult ingestionResult)
+        DocumentIngestionResult ingestionResult,
+        IReadOnlyList<DocumentFootnote> footnotes)
     {
         ArgumentNullException.ThrowIfNull(
             ingestionResult);
+
+        ArgumentNullException.ThrowIfNull(
+            footnotes);
+
+        var projectedFootnotes =
+            footnotes.ToArray();
+
+        if (projectedFootnotes.Any(
+                footnote =>
+                    footnote is null))
+        {
+            throw new ArgumentException(
+                "Portable footnote projection cannot contain null values.",
+                nameof(footnotes));
+        }
 
         var elementsById =
             ingestionResult.Elements.ToDictionary(
@@ -130,7 +147,8 @@ internal static class DocumentProcessingResultProjector
             segmentEvidence,
             visualAssets,
             quality,
-            sourceStructure);
+            sourceStructure,
+            projectedFootnotes);
     }
 
     #endregion

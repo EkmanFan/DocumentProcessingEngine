@@ -143,7 +143,8 @@ public sealed class DocumentIngestionResultTests
         var portable =
             DocumentProcessingResultProjector
                 .Project(
-                    ingestion);
+                    ingestion,
+                    []);
 
         Assert.Equal(
             [

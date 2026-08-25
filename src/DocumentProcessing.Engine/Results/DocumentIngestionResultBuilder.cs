@@ -1,8 +1,11 @@
+using DocumentProcessing.Core.DocumentModel;
 using DocumentProcessing.Core.Hybrid.Normalization;
+using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Hybrid.Segmentation;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Quality;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Engine.Footnotes;
 using DocumentProcessing.Engine.Provenance;
 using DocumentProcessing.Engine.Quality;
 
@@ -74,6 +77,115 @@ public static class DocumentIngestionResultBuilder
             provenance.Elements,
             provenance.Segments,
             finalQuality);
+    }
+
+    internal static IReadOnlyList<DocumentFootnote> BuildFootnotes(
+        DocumentIngestionResult ingestionResult,
+        FootnoteTopologyAnalysis topology)
+    {
+        ArgumentNullException.ThrowIfNull(
+            ingestionResult);
+
+        ArgumentNullException.ThrowIfNull(
+            topology);
+
+        var elementsByNativeBlock =
+            ingestionResult.Elements
+                .Where(
+                    element =>
+                        element.NativeBlockSourceSequence.HasValue)
+                .GroupBy(
+                    element =>
+                        (
+                            element.PhysicalPageNumber,
+                            SourceSequence:
+                                element.NativeBlockSourceSequence!.Value
+                        ))
+                .ToDictionary(
+                    group =>
+                        group.Key,
+                    group =>
+                        group.ToArray());
+
+        var footnotes =
+            new List<DocumentFootnote>(
+                topology.Entries.Count);
+
+        for (var ordinal = 0;
+             ordinal <
+             topology.Entries.Count;
+             ordinal++)
+        {
+            var entry =
+                topology.Entries[ordinal];
+
+            var references =
+                new List<DocumentFootnoteReference>(
+                    entry.References.Count);
+
+            foreach (var reference in
+                     entry.References)
+            {
+                var key =
+                    (
+                        reference.PhysicalPageNumber,
+                        SourceSequence:
+                            reference.SourceBlockSequence
+                    );
+
+                if (!elementsByNativeBlock.TryGetValue(
+                        key,
+                        out var candidates) ||
+                    candidates.Length !=
+                        1)
+                {
+                    throw new InvalidDataException(
+                        $"Footnote reference '{entry.Label}' at p{reference.PhysicalPageNumber}/b{reference.SourceBlockSequence} does not resolve to exactly one stable ingestion element.");
+                }
+
+                var owner =
+                    candidates[0];
+
+                if (owner.IsExcluded)
+                {
+                    throw new InvalidDataException(
+                        $"Footnote reference '{entry.Label}' resolves to excluded element '{owner.ElementId}'.");
+                }
+
+                references.Add(
+                    new DocumentFootnoteReference(
+                        new DocumentFootnoteProvenance(
+                            owner.ElementId,
+                            new PagedDocumentSourceLocation(
+                                reference.PhysicalPageNumber,
+                                reference.Bounds))));
+            }
+
+            var sourceLocations =
+                entry.PayloadLines
+                    .Select(
+                        line =>
+                            (DocumentSourceLocation)
+                                new PagedDocumentSourceLocation(
+                                    line.PhysicalPageNumber,
+                                    line.Bounds))
+                    .ToArray();
+
+            footnotes.Add(
+                new DocumentFootnote(
+                    footnoteId:
+                        $"footnote-{ordinal:D6}",
+                    ordinal,
+                    entry.Label,
+                    entry.Text,
+                    ProvenanceTextHashing.ComputeUtf8Sha256(
+                        entry.Text),
+                    sourceLocations,
+                    references));
+        }
+
+        return Array.AsReadOnly(
+            footnotes.ToArray());
     }
 
     private static IReadOnlyList<DocumentIngestionPage>

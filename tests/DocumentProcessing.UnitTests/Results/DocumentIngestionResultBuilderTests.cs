@@ -297,7 +297,8 @@ public sealed class DocumentIngestionResultBuilderTests
         var portable =
             DocumentProcessingResultProjector
                 .Project(
-                    ingestion);
+                    ingestion,
+                    []);
 
         Assert.Equal(
             DocumentVisualQualification.Unqualified,

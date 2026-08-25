@@ -368,20 +368,43 @@ public sealed class DocumentProcessor
                     .ConfigureAwait(false);
         }
 
-        return await ProcessPreparedEvidenceCoreAsync(
-                prepared,
-                format,
-                extraction,
-                coordinatedExtraction?
-                    .RasterObservations,
-                coordinatedExtraction?
-                    .RasterObservationFailure,
-                openVisualDestinationAsync,
-                cancellationToken)
-            .ConfigureAwait(false);
+        var model =
+            await ProcessPreparedEvidenceCoreAsync(
+                    prepared,
+                    format,
+                    extraction,
+                    coordinatedExtraction?
+                        .RasterObservations,
+                    coordinatedExtraction?
+                        .RasterObservationFailure,
+                    openVisualDestinationAsync,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return model.IngestionResult;
     }
 
-    internal Task<DocumentIngestionResult> ProcessPreparedEvidenceAsync(
+    internal async Task<DocumentIngestionResult> ProcessPreparedEvidenceAsync(
+        PreparedDocumentSource prepared,
+        DocumentFormatId selectedFormat,
+        NativeDocumentEvidence evidence,
+        Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
+            openVisualDestinationAsync,
+        CancellationToken cancellationToken = default)
+    {
+        var model =
+            await ProcessPreparedEvidenceModelAsync(
+                    prepared,
+                    selectedFormat,
+                    evidence,
+                    openVisualDestinationAsync,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return model.IngestionResult;
+    }
+
+    private Task<DocumentProcessingModel> ProcessPreparedEvidenceModelAsync(
         PreparedDocumentSource prepared,
         DocumentFormatId selectedFormat,
         NativeDocumentEvidence evidence,
@@ -424,8 +447,8 @@ public sealed class DocumentProcessor
                 openVisualDestinationAsync,
             CancellationToken cancellationToken = default)
     {
-        var ingestionResult =
-            await ProcessPreparedEvidenceAsync(
+        var model =
+            await ProcessPreparedEvidenceModelAsync(
                     prepared,
                     selectedFormat,
                     evidence,
@@ -435,11 +458,13 @@ public sealed class DocumentProcessor
 
         return DocumentProcessingResultProjector
             .Project(
-                ingestionResult);
+                model.IngestionResult,
+                model.Footnotes);
     }
 
 
-    private async Task<DocumentIngestionResult>
+
+    private async Task<DocumentProcessingModel>
         ProcessPreparedEvidenceCoreAsync(
             PreparedDocumentSource prepared,
             DocumentFormatId format,
@@ -798,6 +823,12 @@ public sealed class DocumentProcessor
                     segmentation,
                     provenanceContext);
 
+        var footnotes =
+            DocumentIngestionResultBuilder
+                .BuildFootnotes(
+                    authoritativeResult,
+                    footnoteTopology);
+
         DocumentDualRunCandidateTextExecutionReport?
             dualRunCandidateTextExecutionReport =
                 null;
@@ -850,7 +881,9 @@ public sealed class DocumentProcessor
             }
         }
 
-        return authoritativeResult;
+        return new DocumentProcessingModel(
+            authoritativeResult,
+            footnotes);
     }
 
     #endregion
