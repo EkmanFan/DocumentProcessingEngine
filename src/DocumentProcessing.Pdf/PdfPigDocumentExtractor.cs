@@ -460,11 +460,13 @@ public sealed class PdfPigDocumentExtractor
         IReadOnlyDictionary<Word, DocumentWord> documentWordBySourceWord,
         PdfPageCoordinateSpace coordinateSpace)
     {
+        var reconstruction =
+            PdfInlineSuperscriptOrderRepair
+                .Reconstruct(
+                    block);
+
         var sourceWords =
-            block.TextLines
-                .SelectMany(line =>
-                    line.Words)
-                .ToArray();
+            reconstruction.Words;
 
         var words =
             sourceWords
@@ -489,7 +491,7 @@ public sealed class PdfPigDocumentExtractor
             block.ReadingOrder >= 0
                 ? block.ReadingOrder
                 : null,
-            block.Text,
+            reconstruction.Text,
             coordinateSpace.ToNormalizedRectangle(
                 block.BoundingBox),
             words,
