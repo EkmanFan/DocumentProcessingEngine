@@ -7,5 +7,6 @@ namespace DocumentProcessing.Core.Normalization;
 public enum DocumentBlockExclusionReason
 {
     RepeatedHeader = 0,
-    RepeatedFooter = 1
+    RepeatedFooter = 1,
+    FootnoteContent = 2
 }

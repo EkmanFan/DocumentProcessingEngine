@@ -15,6 +15,7 @@ using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Hybrid.Normalization;
 using DocumentProcessing.Engine.Hybrid.Segmentation;
+using DocumentProcessing.Engine.Footnotes;
 using DocumentProcessing.Engine.Results;
 using DocumentProcessing.Engine.Planning;
 using DocumentProcessing.Engine.DualRun.InProcess;
@@ -738,10 +739,22 @@ public sealed class DocumentProcessor
                     assembly,
                     cancellationToken);
 
+        var footnoteTopology =
+            new FootnoteTopologyAnalyzer()
+                .Analyze(
+                    normalization,
+                    cancellationToken);
+
+        var contentNormalization =
+            FootnoteTextFlowExcluder
+                .Apply(
+                    normalization,
+                    footnoteTopology);
+
         var segmentation =
             new HybridDocumentSegmenter()
                 .Segment(
-                    normalization,
+                    contentNormalization,
                     cancellationToken);
 
         var hasReconciliationEvidence =
