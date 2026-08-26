@@ -273,6 +273,93 @@ public sealed class PdfPageNativeTextRepairTests
     }
 
     [Fact]
+    public void Reconstruct_AttachesIsolatedTrailingPunctuationAfterSameBlockMarker()
+    {
+        var body =
+            Block(
+                0,
+                0,
+                Word(0, "they", 0.10, 0.10, 0.14, 0.12, 11),
+                Word(1, "say", 0.15, 0.10, 0.20, 0.12, 11),
+                Word(2, "1001", 0.20, 0.095, 0.23, 0.105, 9.13),
+                Word(4, "not", 0.24, 0.10, 0.27, 0.12, 11),
+                Word(5, "I", 0.28, 0.10, 0.29, 0.12, 11));
+
+        var punctuation =
+            Block(
+                1,
+                1,
+                Word(3, ",", 0.23, 0.10, 0.235, 0.12, 11));
+
+        var result =
+            Assert.Single(
+                PdfPageNativeTextRepair
+                    .Reconstruct(
+                        new[]
+                        {
+                            body,
+                            punctuation
+                        }));
+
+        Assert.Equal(
+            "they say 1001 , not I",
+            result.Text);
+
+        Assert.Equal(
+            new[]
+            {
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+            },
+            result.Words.Select(word =>
+                word.SourceSequence));
+    }
+
+    [Fact]
+    public void Reconstruct_DoesNotAttachNonConsecutivePunctuationFragment()
+    {
+        var body =
+            Block(
+                0,
+                0,
+                Word(0, "they", 0.10, 0.10, 0.14, 0.12, 11),
+                Word(1, "say", 0.15, 0.10, 0.20, 0.12, 11),
+                Word(2, "1001", 0.20, 0.095, 0.23, 0.105, 9.13),
+                Word(3, "not", 0.24, 0.10, 0.27, 0.12, 11));
+
+        var punctuation =
+            Block(
+                1,
+                1,
+                Word(4, ",", 0.23, 0.10, 0.235, 0.12, 11));
+
+        var result =
+            PdfPageNativeTextRepair
+                .Reconstruct(
+                    new[]
+                    {
+                        body,
+                        punctuation
+                    });
+
+        Assert.Equal(
+            2,
+            result.Count);
+
+        Assert.Same(
+            body,
+            result[0]);
+
+        Assert.Same(
+            punctuation,
+            result[1]);
+    }
+
+    [Fact]
     public void Reconstruct_FailsClosedForAmbiguousAnchor()
     {
         var first =

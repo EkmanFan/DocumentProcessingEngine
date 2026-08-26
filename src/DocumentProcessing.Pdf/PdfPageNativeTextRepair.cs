@@ -70,6 +70,14 @@ internal static class PdfPageNativeTextRepair
                 parent,
                 relation.Marker.BlockIndex,
                 relation.Anchor.BlockIndex);
+
+            if (relation.TrailingPunctuation is { } trailingPunctuation)
+            {
+                Union(
+                    parent,
+                    relation.Marker.BlockIndex,
+                    trailingPunctuation.BlockIndex);
+            }
         }
 
         var roots =
@@ -194,14 +202,35 @@ internal static class PdfPageNativeTextRepair
             var anchor =
                 anchors[0];
 
+            var trailingPunctuationCandidates =
+                positions
+                    .Where(candidate =>
+                        IsCompatibleTrailingPunctuation(
+                            marker,
+                            anchor,
+                            candidate,
+                            blocks))
+                    .ToArray();
+
+            if (trailingPunctuationCandidates.Length > 1)
+            {
+                continue;
+            }
+
+            var trailingPunctuation =
+                trailingPunctuationCandidates
+                    .SingleOrDefault();
+
             relations.Add(
                 new Relation(
                     marker,
                     anchor,
+                    trailingPunctuation,
                     marker.BlockIndex ==
                         anchor.BlockIndex &&
                     marker.WordIndex ==
-                        anchor.WordIndex + 1));
+                        anchor.WordIndex + 1 &&
+                    trailingPunctuation is null));
         }
 
         return relations;
@@ -269,6 +298,70 @@ internal static class PdfPageNativeTextRepair
                rise <=
                    referenceHeight *
                    MaximumVerticalRiseToReferenceHeightRatio;
+    }
+
+    private static bool IsCompatibleTrailingPunctuation(
+        WordPosition marker,
+        WordPosition anchor,
+        WordPosition candidate,
+        IReadOnlyList<DocumentTextBlock> blocks)
+    {
+        if (candidate.BlockIndex == marker.BlockIndex ||
+            blocks[candidate.BlockIndex].WordCount != 1 ||
+            candidate.Word.SourceSequence !=
+                marker.Word.SourceSequence + 1 ||
+            candidate.Word.Text.Length is not >= 1 and <= 3 ||
+            !candidate.Word.Text.All(char.IsPunctuation) ||
+            candidate.Word.MedianPointSize is null ||
+            anchor.Word.MedianPointSize is null)
+        {
+            return false;
+        }
+
+        var pointSizeDelta =
+            Math.Abs(
+                candidate.Word.MedianPointSize.Value -
+                anchor.Word.MedianPointSize.Value) /
+            anchor.Word.MedianPointSize.Value;
+
+        if (pointSizeDelta > SamePointSizeToleranceRatio)
+        {
+            return false;
+        }
+
+        var referenceHeight =
+            GetLocalReferenceHeight(
+                blocks[marker.BlockIndex],
+                blocks[anchor.BlockIndex],
+                anchor.Word);
+
+        if (referenceHeight <= 0)
+        {
+            return false;
+        }
+
+        var horizontalGap =
+            candidate.Word.Bounds.Left -
+            marker.Word.Bounds.Right;
+
+        var maximumHorizontalGap =
+            Math.Max(
+                MaximumHorizontalGapFloor,
+                referenceHeight *
+                MaximumHorizontalGapToAnchorHeightRatio);
+
+        var lineTolerance =
+            Math.Max(
+                MinimumLineTolerance,
+                referenceHeight *
+                LineToleranceToReferenceHeightRatio);
+
+        return Math.Abs(horizontalGap) <=
+                   maximumHorizontalGap &&
+               Math.Abs(
+                   CenterY(candidate.Word) -
+                   CenterY(anchor.Word)) <=
+               lineTolerance;
     }
 
     private static DocumentTextBlock ReconstructComponent(
@@ -687,6 +780,7 @@ internal static class PdfPageNativeTextRepair
     private sealed record Relation(
         WordPosition Marker,
         WordPosition Anchor,
+        WordPosition? TrailingPunctuation,
         bool IsAlreadyAdjacent);
 
     private sealed record PositionedWord(

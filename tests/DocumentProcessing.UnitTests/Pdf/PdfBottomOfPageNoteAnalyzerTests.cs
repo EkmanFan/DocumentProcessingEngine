@@ -311,6 +311,130 @@ public sealed class PdfBottomOfPageNoteAnalyzerTests
     }
 
     [Fact]
+    public void AnalyzeEvidence_AppendsUnlabeledBottomContinuationOnSparseNextPage()
+    {
+        var pageOne =
+            new PagedNativeNotePageEvidence(
+                1,
+                [
+                    BodyBlock(
+                        sourceSequence:
+                            0,
+                        ("body", "50")),
+                    LabelBlock(
+                        sourceSequence:
+                            1,
+                        (50, 0.84)),
+                    PayloadBlock(
+                        sourceSequence:
+                            2,
+                        ("starts on first page", 0.84))
+                ]);
+
+        var pageTwo =
+            new PagedNativeNotePageEvidence(
+                2,
+                [
+                    TextBlock(
+                        sourceSequence:
+                            0,
+                        "body continuation",
+                        centerY:
+                            0.20,
+                        pointSize:
+                            11),
+                    PayloadBlock(
+                        sourceSequence:
+                            1,
+                        ("continues without a repeated label", 0.84))
+                ]);
+
+        var result =
+            Assert.Single(
+                PdfBottomOfPageNoteAnalyzer
+                    .AnalyzeEvidence(
+                        [
+                            pageOne,
+                            pageTwo
+                        ]));
+
+        Assert.True(
+            result.SpansMultiplePages);
+
+        Assert.Equal(
+            "starts on first page continues without a repeated label",
+            result.Text);
+
+        Assert.Equal(
+            new[]
+            {
+                1,
+                2
+            },
+            result.PayloadLines
+                .Select(line =>
+                    line.PhysicalPageNumber)
+                .Distinct()
+                .ToArray());
+    }
+
+    [Fact]
+    public void AnalyzeEvidence_DoesNotAppendUnlabeledBlockWhenPreviousNoteEndsAboveFooter()
+    {
+        var pageOne =
+            new PagedNativeNotePageEvidence(
+                1,
+                [
+                    BodyBlock(
+                        sourceSequence:
+                            0,
+                        ("body", "60")),
+                    LabelBlock(
+                        sourceSequence:
+                            1,
+                        (60, 0.70)),
+                    PayloadBlock(
+                        sourceSequence:
+                            2,
+                        ("complete note", 0.70))
+                ]);
+
+        var pageTwo =
+            new PagedNativeNotePageEvidence(
+                2,
+                [
+                    TextBlock(
+                        sourceSequence:
+                            0,
+                        "body continuation",
+                        centerY:
+                            0.20,
+                        pointSize:
+                            11),
+                    PayloadBlock(
+                        sourceSequence:
+                            1,
+                        ("unrelated small footer text", 0.84))
+                ]);
+
+        var result =
+            Assert.Single(
+                PdfBottomOfPageNoteAnalyzer
+                    .AnalyzeEvidence(
+                        [
+                            pageOne,
+                            pageTwo
+                        ]));
+
+        Assert.False(
+            result.SpansMultiplePages);
+
+        Assert.Equal(
+            "complete note",
+            result.Text);
+    }
+
+    [Fact]
     public void AnalyzeEvidence_FailsClosedOnAmbiguousDuplicateLabel()
     {
         var page =
@@ -677,6 +801,57 @@ public sealed class PdfBottomOfPageNoteAnalyzerTests
                 pointSize,
             lineCount:
                 1);
+
+    private static DocumentTextBlock TextBlock(
+        int sourceSequence,
+        string text,
+        double centerY,
+        double pointSize)
+    {
+        var words =
+            text.Split(
+                    ' ',
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Select(
+                    (value, index) =>
+                        Word(
+                            sourceSequence *
+                                100 +
+                            index,
+                            value,
+                            0.10 +
+                                index *
+                                0.10,
+                            centerY -
+                                0.01,
+                            0.18 +
+                                index *
+                                0.10,
+                            centerY +
+                                0.01,
+                            pointSize))
+                .ToArray();
+
+        return new DocumentTextBlock(
+            sourceSequence,
+            readingOrder:
+                sourceSequence,
+            text,
+            new NormalizedRectangle(
+                words.Min(word =>
+                    word.Bounds.Left),
+                words.Min(word =>
+                    word.Bounds.Top),
+                words.Max(word =>
+                    word.Bounds.Right),
+                words.Max(word =>
+                    word.Bounds.Bottom)),
+            words,
+            medianPointSize:
+                pointSize,
+            lineCount:
+                1);
+    }
 
     private static DocumentWord Word(
         int sourceSequence,

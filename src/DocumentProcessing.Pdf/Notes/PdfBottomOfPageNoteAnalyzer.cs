@@ -31,6 +31,15 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
     private const double VisualLineHeightToleranceRatio =
         0.45;
 
+    private const double MinimumUnlabeledContinuationTop =
+        0.75;
+
+    private const double MinimumPreviousPayloadBottom =
+        0.80;
+
+    private const double MinimumUnlabeledContinuationGap =
+        0.10;
+
     #endregion
 
 
@@ -224,7 +233,8 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
         {
             return PageAnalysis.Empty(
                 page.PhysicalPageNumber,
-                references);
+                references,
+                page.Blocks);
         }
 
         var noteSizedWords =
@@ -430,7 +440,9 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
             references,
             visualLines,
             labelsOnLines,
-            entries);
+            entries,
+            page.Blocks,
+            notePointSize);
     }
 
     private static void AttachCrossPageContinuations(
@@ -458,9 +470,22 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
                 next.Entries
                     .FirstOrDefault();
 
-            if (lastEntry is null ||
-                firstEntry is null ||
-                !AreConsecutiveNumericLabels(
+            if (lastEntry is null)
+            {
+                continue;
+            }
+
+            if (firstEntry is null)
+            {
+                AttachUnlabeledBottomContinuation(
+                    current,
+                    next,
+                    lastEntry);
+
+                continue;
+            }
+
+            if (!AreConsecutiveNumericLabels(
                     lastEntry.Label,
                     firstEntry.Label))
             {
@@ -552,6 +577,109 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
                 }
             }
         }
+    }
+
+    private static void AttachUnlabeledBottomContinuation(
+        PageAnalysis current,
+        PageAnalysis next,
+        EntryBuilder lastEntry)
+    {
+        if (current.NotePointSize is null ||
+            next.References.Count >
+                0 ||
+            next.LabelsOnLines.Count >
+                0 ||
+            next.Entries.Count >
+                0)
+        {
+            return;
+        }
+
+        var lastPayloadLine =
+            lastEntry.PayloadLines
+                .LastOrDefault();
+
+        if (lastPayloadLine is null ||
+            lastPayloadLine.PhysicalPageNumber !=
+                current.PhysicalPageNumber ||
+            lastPayloadLine.Bounds.Bottom <
+                MinimumPreviousPayloadBottom)
+        {
+            return;
+        }
+
+        var candidates =
+            next.Blocks
+                .Where(block =>
+                    block.Bounds.Top >=
+                        MinimumUnlabeledContinuationTop &&
+                    block.Bounds.Bottom >
+                        block.Bounds.Top &&
+                    block.Words.Count >
+                        0 &&
+                    block.Words.All(word =>
+                        IsNoteSized(
+                            word,
+                            current.NotePointSize.Value)))
+                .ToArray();
+
+        if (candidates.Length !=
+            1)
+        {
+            return;
+        }
+
+        var candidate =
+            candidates[0];
+
+        var precedingBodyBlocks =
+            next.Blocks
+                .Where(block =>
+                    block.SourceSequence !=
+                        candidate.SourceSequence &&
+                    block.Bounds.Bottom >
+                        block.Bounds.Top &&
+                    block.Bounds.Bottom <=
+                        candidate.Bounds.Top &&
+                    block.Words.Any(word =>
+                        word.MedianPointSize is { } pointSize &&
+                        pointSize >
+                            current.NotePointSize.Value *
+                            MaximumNotePointSizeRatio))
+                .ToArray();
+
+        if (precedingBodyBlocks.Length ==
+                0 ||
+            candidate.Bounds.Top -
+                precedingBodyBlocks.Max(block =>
+                    block.Bounds.Bottom) <
+                MinimumUnlabeledContinuationGap)
+        {
+            return;
+        }
+
+        var lines =
+            BuildVisualLines(
+                candidate.Words
+                    .Select(word =>
+                        new LocatedWord(
+                            candidate.SourceSequence,
+                            word))
+                    .ToArray());
+
+        foreach (var line in
+                 lines)
+        {
+            lastEntry.PayloadLines.Add(
+                ToPayloadLine(
+                    next.PhysicalPageNumber,
+                    line.Words));
+        }
+
+        lastEntry.SourceBlocks.Add(
+            new PagedNativeNoteSourceBlock(
+                next.PhysicalPageNumber,
+                candidate.SourceSequence));
     }
 
     #endregion
@@ -1096,17 +1224,23 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
         IReadOnlyList<PdfRaisedNumericReferenceCandidate> References,
         IReadOnlyList<VisualLine> VisualLines,
         IReadOnlyList<LabelOnLine> LabelsOnLines,
-        IReadOnlyList<EntryBuilder> Entries)
+        IReadOnlyList<EntryBuilder> Entries,
+        IReadOnlyList<DocumentTextBlock> Blocks,
+        double? NotePointSize)
     {
         public static PageAnalysis Empty(
             int physicalPageNumber,
-            IReadOnlyList<PdfRaisedNumericReferenceCandidate> references) =>
+            IReadOnlyList<PdfRaisedNumericReferenceCandidate> references,
+            IReadOnlyList<DocumentTextBlock> blocks) =>
             new(
                 physicalPageNumber,
                 references,
                 [],
                 [],
-                []);
+                [],
+                blocks,
+                NotePointSize:
+                    null);
     }
 
     #endregion
