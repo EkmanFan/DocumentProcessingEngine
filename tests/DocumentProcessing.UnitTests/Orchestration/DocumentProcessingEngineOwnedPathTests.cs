@@ -1,6 +1,9 @@
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Locations;
+using DocumentProcessing.Core.Normalization;
 using DocumentProcessing.Core.Ocr;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Provenance;
@@ -80,6 +83,86 @@ public sealed class DocumentProcessingEngineOwnedPathTests
         Assert.Equal(
             1,
             format.AcquisitionCallCount);
+    }
+
+    [Fact]
+    public async Task ProcessDocumentAsync_ConsumesAdapterConcludedNotes()
+    {
+        var format =
+            new StubDocumentFormat(
+                new NativeEvidenceExtractionResult.Success(
+                    CreateNativeEvidence(
+                        [
+                            CreateNativeNote()
+                        ])));
+
+        var engine =
+            new DocumentProcessingEngine(
+                [format],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity);
+
+        await using var stream =
+            new MemoryStream(
+                "%PDF-engine-note-path"u8.ToArray(),
+                writable:
+                    false);
+
+        var result =
+            await engine
+                .ProcessDocumentAsync(
+                    new DocumentSource(
+                        stream,
+                        "engine-note.pdf",
+                        "application/pdf"));
+
+        var footnote =
+            Assert.Single(
+                result.Footnotes);
+
+        Assert.Equal(
+            "1",
+            footnote.Label);
+
+        Assert.Equal(
+            "Beta native paragraph.",
+            footnote.Text);
+
+        var payloadElement =
+            Assert.Single(
+                result.Elements,
+                element =>
+                    Assert.IsType<PagedDocumentSourceLocation>(
+                            element.Location)
+                        .PhysicalPageNumber ==
+                    2);
+
+        var payloadEvidence =
+            Assert.Single(
+                result.ElementProcessingEvidence,
+                evidence =>
+                    evidence.ElementId ==
+                    payloadElement.ElementId);
+
+        Assert.Equal(
+            DocumentBlockExclusionReason.FootnoteContent,
+            payloadEvidence.ExclusionReason);
+
+        var reference =
+            Assert.Single(
+                footnote.References);
+
+        Assert.Contains(
+            result.Elements,
+            element =>
+                Assert.IsType<PagedDocumentSourceLocation>(
+                        element.Location)
+                    .PhysicalPageNumber ==
+                    1 &&
+                element.ElementId ==
+                    reference.Provenance.ElementId);
     }
 
     [Fact]
@@ -210,7 +293,8 @@ public sealed class DocumentProcessingEngineOwnedPathTests
 
     #region Methods Fixtures
 
-    private static PagedNativeDocumentEvidence CreateNativeEvidence()
+    private static PagedNativeDocumentEvidence CreateNativeEvidence(
+        IReadOnlyList<NativeDocumentNote>? documentNotes = null)
     {
         var extraction =
             new DocumentExtractionResult(
@@ -238,8 +322,52 @@ public sealed class DocumentProcessingEngineOwnedPathTests
 
         return new PagedNativeDocumentEvidence(
             coordinated,
-            NativeIdentity);
+            NativeIdentity,
+            documentNotes ??
+            []);
     }
+
+    private static PagedNativeDocumentNote CreateNativeNote() =>
+        new(
+            "1",
+            [
+                new PagedNativeNoteReference(
+                    "1",
+                    physicalPageNumber:
+                        1,
+                    sourceBlockSequence:
+                        0,
+                    wordSourceSequence:
+                        0,
+                    new NormalizedRectangle(
+                        0.10,
+                        0.20,
+                        0.14,
+                        0.24))
+            ],
+            [
+                new PagedNativeNotePayloadLine(
+                    physicalPageNumber:
+                        2,
+                    text:
+                        "Beta native paragraph.",
+                    new NormalizedRectangle(
+                        0.10,
+                        0.20,
+                        0.90,
+                        0.40),
+                    sourceBlockSequences:
+                        [0],
+                    wordSourceSequences:
+                        [0, 1, 2])
+            ],
+            [
+                new PagedNativeNoteSourceBlock(
+                    physicalPageNumber:
+                        2,
+                    sourceSequence:
+                        0)
+            ]);
 
     private static DocumentExtractionPage CreatePage(
         int physicalPageNumber,

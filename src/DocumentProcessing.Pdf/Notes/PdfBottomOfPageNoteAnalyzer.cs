@@ -15,17 +15,9 @@ namespace DocumentProcessing.Pdf.Notes;
 /// missing typography and mixed body/note source blocks remain ordinary text.
 /// </summary>
 internal sealed class PdfBottomOfPageNoteAnalyzer
+    : IPdfDocumentNoteStrategy
 {
     #region Variables and Constants
-
-    private const double MinimumRaisedMarkerPointSizeRatio =
-        0.65;
-
-    private const double MaximumRaisedMarkerPointSizeRatio =
-        0.86;
-
-    private const double MaximumRaisedMarkerHorizontalGap =
-        0.01;
 
     private const double MinimumNotePointSizeRatio =
         0.90;
@@ -47,9 +39,22 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
     public IReadOnlyList<PagedNativeDocumentNote> Analyze(
         DocumentExtractionResult extraction,
         CancellationToken cancellationToken = default)
+        => Analyze(
+            extraction,
+            claimedReferences:
+                new HashSet<PdfNativeNoteReferenceKey>(),
+            cancellationToken);
+
+    public IReadOnlyList<PagedNativeDocumentNote> Analyze(
+        DocumentExtractionResult extraction,
+        IReadOnlySet<PdfNativeNoteReferenceKey> claimedReferences,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
             extraction);
+
+        ArgumentNullException.ThrowIfNull(
+            claimedReferences);
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -63,8 +68,16 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
                 .ToArray();
 
         return AnalyzeEvidence(
-            pages,
-            cancellationToken);
+                pages,
+                cancellationToken)
+            .Where(
+                note =>
+                    note.References.All(
+                        reference =>
+                            !claimedReferences.Contains(
+                                PdfNativeNoteReferenceKey.From(
+                                    reference))))
+            .ToArray();
     }
 
     internal static IReadOnlyList<PagedNativeDocumentNote> AnalyzeEvidence(
@@ -546,82 +559,13 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
 
     #region Methods Evidence Mapping
 
-    private static IReadOnlyList<RaisedReferenceCandidate>
+    private static IReadOnlyList<PdfRaisedNumericReferenceCandidate>
         FindRaisedReferences(
         PagedNativeNotePageEvidence page)
-    {
-        var references =
-            new List<RaisedReferenceCandidate>();
-
-        foreach (var block in
-                 page.Blocks)
-        {
-            for (var index = 1;
-                 index <
-                 block.Words.Count;
-                 index++)
-            {
-                var marker =
-                    block.Words[index];
-
-                if (!IsNumericMarker(
-                        marker.Text) ||
-                    marker.MedianPointSize is null)
-                {
-                    continue;
-                }
-
-                var anchor =
-                    block.Words[index - 1];
-
-                if (anchor.MedianPointSize is null ||
-                    !anchor.Text.Any(
-                        char.IsLetterOrDigit))
-                {
-                    continue;
-                }
-
-                var pointSizeRatio =
-                    marker.MedianPointSize.Value /
-                    anchor.MedianPointSize.Value;
-
-                if (pointSizeRatio <
-                        MinimumRaisedMarkerPointSizeRatio ||
-                    pointSizeRatio >
-                        MaximumRaisedMarkerPointSizeRatio)
-                {
-                    continue;
-                }
-
-                var horizontalGap =
-                    marker.Bounds.Left -
-                    anchor.Bounds.Right;
-
-                if (Math.Abs(
-                        horizontalGap) >
-                    MaximumRaisedMarkerHorizontalGap)
-                {
-                    continue;
-                }
-
-                if (CenterY(
-                        marker) >=
-                    CenterY(
-                        anchor))
-                {
-                    continue;
-                }
-
-                references.Add(
-                    new RaisedReferenceCandidate(
-                        marker.Text,
-                        block.SourceSequence,
-                        marker));
-            }
-        }
-
-        return references;
-    }
+        => PdfRaisedNumericReferenceFinder
+            .Find(
+                page.PhysicalPageNumber,
+                page.Blocks);
 
     private static IReadOnlyList<StandaloneLabelCandidate>
         FindStandaloneLabels(
@@ -1035,11 +979,6 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
 
     #region Internal Types
 
-    private sealed record RaisedReferenceCandidate(
-        string Value,
-        int SourceBlockSequence,
-        DocumentWord Word);
-
     private sealed record StandaloneLabelCandidate(
         string Value,
         DocumentTextBlock Block);
@@ -1154,14 +1093,14 @@ internal sealed class PdfBottomOfPageNoteAnalyzer
 
     private sealed record PageAnalysis(
         int PhysicalPageNumber,
-        IReadOnlyList<RaisedReferenceCandidate> References,
+        IReadOnlyList<PdfRaisedNumericReferenceCandidate> References,
         IReadOnlyList<VisualLine> VisualLines,
         IReadOnlyList<LabelOnLine> LabelsOnLines,
         IReadOnlyList<EntryBuilder> Entries)
     {
         public static PageAnalysis Empty(
             int physicalPageNumber,
-            IReadOnlyList<RaisedReferenceCandidate> references) =>
+            IReadOnlyList<PdfRaisedNumericReferenceCandidate> references) =>
             new(
                 physicalPageNumber,
                 references,

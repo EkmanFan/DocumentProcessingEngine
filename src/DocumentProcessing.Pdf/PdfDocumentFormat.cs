@@ -105,7 +105,7 @@ public sealed class PdfDocumentFormat
                     .ConfigureAwait(false);
 
             var documentNotes =
-                new PdfBottomOfPageNoteAnalyzer()
+                new PdfDocumentNoteAnalyzer()
                     .Analyze(
                         currentEvidence.Extraction,
                         cancellationToken);
