@@ -105,7 +105,7 @@ public sealed class PdfDocumentFormat
 
             return new NativeEvidenceExtractionResult
                 .Success(
-                    new NativeDocumentEvidence(
+                    new PagedNativeDocumentEvidence(
                         currentEvidence,
                         NativeExtractionIdentity));
         }

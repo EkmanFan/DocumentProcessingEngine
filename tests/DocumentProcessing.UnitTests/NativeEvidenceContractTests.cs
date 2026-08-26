@@ -10,7 +10,7 @@ public sealed class NativeEvidenceContractTests
     #region Methods
 
     [Fact]
-    public void NativeDocumentEvidence_DelegatesExistingCoordinatedEvidence()
+    public void PagedNativeDocumentEvidence_DelegatesExistingCoordinatedEvidence()
     {
         var extraction =
             new DocumentExtractionResult(
@@ -24,7 +24,7 @@ public sealed class NativeEvidenceContractTests
                     null);
 
         var evidence =
-            new NativeDocumentEvidence(
+            new PagedNativeDocumentEvidence(
                 coordinated);
 
         Assert.Same(
@@ -42,11 +42,11 @@ public sealed class NativeEvidenceContractTests
     }
 
     [Fact]
-    public void NativeDocumentEvidence_RejectsNullCurrentEvidence()
+    public void PagedNativeDocumentEvidence_RejectsNullCurrentEvidence()
     {
         Assert.Throws<ArgumentNullException>(
             () =>
-                new NativeDocumentEvidence(
+                new PagedNativeDocumentEvidence(
                     null!));
     }
 

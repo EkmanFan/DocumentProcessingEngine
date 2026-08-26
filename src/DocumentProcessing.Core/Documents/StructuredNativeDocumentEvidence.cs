@@ -8,6 +8,7 @@ namespace DocumentProcessing.Core.Documents;
 /// page model.
 /// </summary>
 public sealed record StructuredNativeDocumentEvidence
+    : NativeDocumentEvidence
 {
     #region Properties
 
@@ -17,7 +18,7 @@ public sealed record StructuredNativeDocumentEvidence
 
     public IReadOnlyList<StructuredNativeVisual> Visuals { get; }
 
-    public ProcessingComponentIdentity NativeExtractionIdentity { get; }
+    public override ProcessingComponentIdentity NativeExtractionIdentity { get; }
 
     #endregion
 

@@ -550,7 +550,7 @@ public sealed class StructuredNativeDocumentProcessingTests
             cancellationToken.ThrowIfCancellationRequested();
 
             return ValueTask.FromResult<NativeEvidenceExtractionResult>(
-                new NativeEvidenceExtractionResult.StructuredSuccess(
+                new NativeEvidenceExtractionResult.Success(
                     evidence));
         }
 

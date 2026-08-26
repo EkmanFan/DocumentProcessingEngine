@@ -121,7 +121,6 @@ internal sealed class DocumentFormatSelector
                     case NativeEvidenceExtractionResult.Invalid:
                     case NativeEvidenceExtractionResult.Unavailable:
                     case NativeEvidenceExtractionResult.Success:
-                    case NativeEvidenceExtractionResult.StructuredSuccess:
                         recognitionClaims.Add(
                             (
                                 format,
@@ -180,12 +179,6 @@ internal sealed class DocumentFormatSelector
                 new DocumentFormatSelectionResult.Success(
                     selected.Format,
                     success.Evidence),
-
-            NativeEvidenceExtractionResult.StructuredSuccess success =>
-                new DocumentFormatSelectionResult.StructuredSuccess(
-                    selected.Format,
-                    success.Evidence),
-
             _ =>
                 throw new InvalidOperationException(
                     "A recorded format-recognition claim must be Invalid, Unavailable or a supported Success shape.")

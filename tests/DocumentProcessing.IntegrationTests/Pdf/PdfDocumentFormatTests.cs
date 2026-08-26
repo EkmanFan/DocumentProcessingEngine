@@ -107,25 +107,25 @@ public sealed class PdfDocumentFormatTests
 
         Assert.Equal(
             DocumentFormatId.Pdf,
-            success.Evidence.Extraction.Format);
+            Assert.IsType<PagedNativeDocumentEvidence>(success.Evidence).Extraction.Format);
 
         Assert.Equal(
             Serialize(
                 baseline.Extraction),
             Serialize(
-                success.Evidence.Extraction));
+                Assert.IsType<PagedNativeDocumentEvidence>(success.Evidence).Extraction));
 
         Assert.Equal(
             Serialize(
                 baseline.RasterObservations),
             Serialize(
-                success.Evidence.RasterObservations));
+                Assert.IsType<PagedNativeDocumentEvidence>(success.Evidence).RasterObservations));
 
         Assert.Equal(
             Serialize(
                 baseline.RasterObservationFailure),
             Serialize(
-                success.Evidence.RasterObservationFailure));
+                Assert.IsType<PagedNativeDocumentEvidence>(success.Evidence).RasterObservationFailure));
 
         Assert.Equal(
             7,

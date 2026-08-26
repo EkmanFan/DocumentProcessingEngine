@@ -479,7 +479,7 @@ public sealed class DocumentFormatSelectorTests
         };
     }
 
-    private static NativeDocumentEvidence CreateEvidence(
+    private static PagedNativeDocumentEvidence CreateEvidence(
         DocumentFormatId format)
     {
         var extraction =
@@ -493,7 +493,7 @@ public sealed class DocumentFormatSelectorTests
                 rasterObservationFailure:
                     null);
 
-        return new NativeDocumentEvidence(
+        return new PagedNativeDocumentEvidence(
             current);
     }
 

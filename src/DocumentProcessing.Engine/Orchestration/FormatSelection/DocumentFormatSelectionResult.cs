@@ -134,37 +134,6 @@ internal abstract record DocumentFormatSelectionResult
         #endregion
     }
 
-    internal sealed record StructuredSuccess
-        : DocumentFormatSelectionResult
-    {
-        #region Properties
-
-        public IDocumentFormat DocumentFormat { get; }
-
-        public StructuredNativeDocumentEvidence Evidence { get; }
-
-        #endregion
-
-        #region ctor
-
-        public StructuredSuccess(
-            IDocumentFormat documentFormat,
-            StructuredNativeDocumentEvidence evidence)
-        {
-            DocumentFormat =
-                documentFormat ??
-                throw new ArgumentNullException(
-                    nameof(documentFormat));
-
-            Evidence =
-                evidence ??
-                throw new ArgumentNullException(
-                    nameof(evidence));
-        }
-
-        #endregion
-    }
-
     internal sealed record Ambiguous
         : DocumentFormatSelectionResult
     {

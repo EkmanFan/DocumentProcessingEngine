@@ -126,31 +126,5 @@ public abstract record NativeEvidenceExtractionResult
         #endregion
     }
 
-    /// <summary>
-    /// The source is recognized and its structured, non-paged native evidence
-    /// was acquired.
-    /// </summary>
-    public sealed record StructuredSuccess : NativeEvidenceExtractionResult
-    {
-        #region Properties
-
-        public StructuredNativeDocumentEvidence Evidence { get; }
-
-        #endregion
-
-        #region ctor
-
-        public StructuredSuccess(
-            StructuredNativeDocumentEvidence evidence)
-        {
-            Evidence =
-                evidence ??
-                throw new ArgumentNullException(
-                    nameof(evidence));
-        }
-
-        #endregion
-    }
-
     #endregion
 }

@@ -149,7 +149,7 @@ public sealed class EpubDocumentFormat
                     _options,
                     cancellationToken);
 
-            return new NativeEvidenceExtractionResult.StructuredSuccess(
+            return new NativeEvidenceExtractionResult.Success(
                 evidence);
         }
         catch (OperationCanceledException)

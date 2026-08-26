@@ -178,7 +178,8 @@ public sealed class DocumentProcessingEngine
                                 format =>
                                     format.Value)));
 
-            case DocumentFormatSelectionResult.Success success:
+            case DocumentFormatSelectionResult.Success success
+                when success.Evidence is PagedNativeDocumentEvidence:
                 return await ProcessSelectedFormatAsync(
                         prepared,
                         success,
@@ -189,12 +190,14 @@ public sealed class DocumentProcessingEngine
                         cancellationToken)
                     .ConfigureAwait(false);
 
-            case DocumentFormatSelectionResult.StructuredSuccess success:
+            case DocumentFormatSelectionResult.Success success
+                when success.Evidence is
+                    StructuredNativeDocumentEvidence structuredEvidence:
                 return await StructuredNativeDocumentProjector
                     .ProjectAsync(
                         prepared,
                         success.DocumentFormat,
-                        success.Evidence,
+                        structuredEvidence,
                         engineVersion,
                         _userVisualAssetWriter,
                         layoutAnalyzer,
@@ -223,8 +226,14 @@ public sealed class DocumentProcessingEngine
             ProcessingComponentIdentity layoutAnalysisIdentity,
             CancellationToken cancellationToken)
     {
+        var pagedEvidence =
+            selection.Evidence as PagedNativeDocumentEvidence ??
+            throw new InvalidDataException(
+                $"Document format '{selection.DocumentFormat.Format}' returned " +
+                "non-paged native evidence to the paged processing path.");
+
         var nativeExtractionIdentity =
-            selection.Evidence.NativeExtractionIdentity ??
+            pagedEvidence.NativeExtractionIdentity ??
             throw new InvalidDataException(
                 $"Document format '{selection.DocumentFormat.Format}' returned native evidence without acquisition provenance.");
 
@@ -282,7 +291,7 @@ public sealed class DocumentProcessingEngine
             .ProcessPreparedEvidencePortableAsync(
                 prepared,
                 selection.DocumentFormat.Format,
-                selection.Evidence,
+                pagedEvidence,
                 openVisualDestinationAsync,
                 cancellationToken)
             .ConfigureAwait(false);

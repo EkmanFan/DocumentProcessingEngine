@@ -1,72 +1,26 @@
-using DocumentProcessing.Core.Extraction;
-using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Provenance;
 
 namespace DocumentProcessing.Core.Documents;
 
 /// <summary>
-/// Transitional neutral boundary around the current native document evidence
-/// model.
+/// Common neutral contract for native document evidence produced by a document
+/// format adapter.
 /// </summary>
 /// <remarks>
-/// The container remains passive. Native-extraction identity is factual
-/// provenance for the acquisition that produced this evidence; it is not an
-/// Engine assessment or treatment decision.
+/// Only facts with the same meaning across native representations belong on this
+/// contract. Representation-specific evidence remains on derived types, while
+/// Engine assessment and treatment decisions remain outside the DTO.
 /// </remarks>
-public sealed class NativeDocumentEvidence
+public abstract record NativeDocumentEvidence
 {
-    #region Variables and Constants
-
-    private readonly DocumentExtractionWithRasterObservationsResult
-        _currentEvidence;
-
-    #endregion
-
     #region Properties
 
-    public DocumentExtractionResult Extraction =>
-        _currentEvidence.Extraction;
-
-    public IReadOnlyList<PageVisualRasterObservations>?
-        RasterObservations =>
-        _currentEvidence.RasterObservations;
-
-    public RasterObservationAcquisitionFailure?
-        RasterObservationFailure =>
-        _currentEvidence.RasterObservationFailure;
-
     /// <summary>
-    /// Stable factual identity of the native-evidence acquisition component when
-    /// the producer supplies it.
+    /// Gets the stable factual identity of the native-evidence acquisition
+    /// component when that representation supplies one.
     /// </summary>
-    public ProcessingComponentIdentity?
+    public abstract ProcessingComponentIdentity?
         NativeExtractionIdentity { get; }
-
-    #endregion
-
-    #region ctor
-
-    public NativeDocumentEvidence(
-        DocumentExtractionWithRasterObservationsResult currentEvidence)
-        : this(
-            currentEvidence,
-            nativeExtractionIdentity:
-                null)
-    {
-    }
-
-    public NativeDocumentEvidence(
-        DocumentExtractionWithRasterObservationsResult currentEvidence,
-        ProcessingComponentIdentity? nativeExtractionIdentity)
-    {
-        _currentEvidence =
-            currentEvidence ??
-            throw new ArgumentNullException(
-                nameof(currentEvidence));
-
-        NativeExtractionIdentity =
-            nativeExtractionIdentity;
-    }
 
     #endregion
 }

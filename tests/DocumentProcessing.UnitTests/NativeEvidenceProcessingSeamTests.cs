@@ -171,7 +171,7 @@ public sealed class NativeEvidenceProcessingSeamTests
                 "native-evidence-seam-extractor",
                 "test-v1"));
 
-    private static NativeDocumentEvidence CreateEvidence(
+    private static PagedNativeDocumentEvidence CreateEvidence(
         DocumentFormatId format)
     {
         var extraction =
@@ -185,7 +185,7 @@ public sealed class NativeEvidenceProcessingSeamTests
                 rasterObservationFailure:
                     null);
 
-        return new NativeDocumentEvidence(
+        return new PagedNativeDocumentEvidence(
             coordinated);
     }
 

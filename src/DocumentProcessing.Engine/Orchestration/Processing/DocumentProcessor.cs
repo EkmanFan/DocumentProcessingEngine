@@ -387,7 +387,7 @@ public sealed class DocumentProcessor
     internal async Task<DocumentIngestionResult> ProcessPreparedEvidenceAsync(
         PreparedDocumentSource prepared,
         DocumentFormatId selectedFormat,
-        NativeDocumentEvidence evidence,
+        PagedNativeDocumentEvidence evidence,
         Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
             openVisualDestinationAsync,
         CancellationToken cancellationToken = default)
@@ -407,7 +407,7 @@ public sealed class DocumentProcessor
     private Task<DocumentProcessingModel> ProcessPreparedEvidenceModelAsync(
         PreparedDocumentSource prepared,
         DocumentFormatId selectedFormat,
-        NativeDocumentEvidence evidence,
+        PagedNativeDocumentEvidence evidence,
         Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
             openVisualDestinationAsync,
         CancellationToken cancellationToken = default)
@@ -442,7 +442,7 @@ public sealed class DocumentProcessor
         ProcessPreparedEvidencePortableAsync(
             PreparedDocumentSource prepared,
             DocumentFormatId selectedFormat,
-            NativeDocumentEvidence evidence,
+            PagedNativeDocumentEvidence evidence,
             Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
                 openVisualDestinationAsync,
             CancellationToken cancellationToken = default)

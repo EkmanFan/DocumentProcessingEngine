@@ -210,7 +210,7 @@ public sealed class DocumentProcessingEngineOwnedPathTests
 
     #region Methods Fixtures
 
-    private static NativeDocumentEvidence CreateNativeEvidence()
+    private static PagedNativeDocumentEvidence CreateNativeEvidence()
     {
         var extraction =
             new DocumentExtractionResult(
@@ -236,7 +236,7 @@ public sealed class DocumentProcessingEngineOwnedPathTests
                 rasterObservationFailure:
                     null);
 
-        return new NativeDocumentEvidence(
+        return new PagedNativeDocumentEvidence(
             coordinated,
             NativeIdentity);
     }
