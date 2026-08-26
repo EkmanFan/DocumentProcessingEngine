@@ -19,6 +19,12 @@ internal static class PdfRaisedNumericReferenceFinder
     private const double MaximumHorizontalGap =
         0.01;
 
+    private const double MinimumFallbackVerticalRiseRatio =
+        0.10;
+
+    private const double MaximumFallbackVerticalRiseRatio =
+        1.00;
+
     #endregion
 
     #region Methods
@@ -40,6 +46,19 @@ internal static class PdfRaisedNumericReferenceFinder
         var references =
             new List<PdfRaisedNumericReferenceCandidate>();
 
+        var pageWords =
+            blocks
+                .SelectMany(
+                    block =>
+                        block.Words)
+                .GroupBy(
+                    word =>
+                        word.SourceSequence)
+                .Select(
+                    group =>
+                        group.First())
+                .ToArray();
+
         foreach (var block in
                  blocks)
         {
@@ -58,39 +77,20 @@ internal static class PdfRaisedNumericReferenceFinder
                     continue;
                 }
 
-                var anchor =
+                var sourceAnchor =
                     block.Words[index - 1];
 
-                if (anchor.MedianPointSize is null ||
-                    !anchor.Text.Any(
-                        char.IsLetterOrDigit))
-                {
-                    continue;
-                }
+                var anchor =
+                    IsStrictAnchor(
+                        marker,
+                        sourceAnchor)
+                        ? sourceAnchor
+                        : FindFallbackAnchor(
+                            marker,
+                            block.MedianPointSize,
+                            pageWords);
 
-                var pointSizeRatio =
-                    marker.MedianPointSize.Value /
-                    anchor.MedianPointSize.Value;
-
-                if (pointSizeRatio <
-                        MinimumPointSizeRatio ||
-                    pointSizeRatio >
-                        MaximumPointSizeRatio)
-                {
-                    continue;
-                }
-
-                var horizontalGap =
-                    marker.Bounds.Left -
-                    anchor.Bounds.Right;
-
-                if (Math.Abs(
-                        horizontalGap) >
-                    MaximumHorizontalGap ||
-                    CenterY(
-                        marker) >=
-                    CenterY(
-                        anchor))
+                if (anchor is null)
                 {
                     continue;
                 }
@@ -106,6 +106,128 @@ internal static class PdfRaisedNumericReferenceFinder
 
         return references;
     }
+
+    private static DocumentWord? FindFallbackAnchor(
+        DocumentWord marker,
+        double? blockMedianPointSize,
+        IReadOnlyList<DocumentWord> pageWords)
+    {
+        if (marker.MedianPointSize is null ||
+            blockMedianPointSize is null)
+        {
+            return null;
+        }
+
+        var blockPointSizeRatio =
+            marker.MedianPointSize.Value /
+            blockMedianPointSize.Value;
+
+        if (!IsCompatiblePointSizeRatio(
+                blockPointSizeRatio))
+        {
+            return null;
+        }
+
+        var matches =
+            pageWords
+                .Where(
+                    candidate =>
+                        candidate.SourceSequence !=
+                            marker.SourceSequence &&
+                        IsFallbackAnchor(
+                            marker,
+                            candidate))
+                .ToArray();
+
+        return matches.Length ==
+               1
+            ? matches[0]
+            : null;
+    }
+
+    private static bool IsStrictAnchor(
+        DocumentWord marker,
+        DocumentWord anchor)
+    {
+        if (marker.MedianPointSize is null ||
+            anchor.MedianPointSize is null ||
+            !anchor.Text.Any(
+                char.IsLetterOrDigit))
+        {
+            return false;
+        }
+
+        var pointSizeRatio =
+            marker.MedianPointSize.Value /
+            anchor.MedianPointSize.Value;
+
+        return IsCompatiblePointSizeRatio(
+                   pointSizeRatio) &&
+               IsHorizontallyAdjacent(
+                   marker,
+                   anchor) &&
+               CenterY(
+                   marker) <
+               CenterY(
+                   anchor);
+    }
+
+    private static bool IsFallbackAnchor(
+        DocumentWord marker,
+        DocumentWord anchor)
+    {
+        if (anchor.MedianPointSize is null ||
+            !anchor.Text.Any(
+                char.IsLetterOrDigit) ||
+            !IsHorizontallyAdjacent(
+                marker,
+                anchor))
+        {
+            return false;
+        }
+
+        var anchorHeight =
+            anchor.Bounds.Bottom -
+            anchor.Bounds.Top;
+
+        if (anchorHeight <=
+                0 ||
+            !double.IsFinite(
+                anchorHeight))
+        {
+            return false;
+        }
+
+        var verticalRise =
+            CenterY(
+                anchor) -
+            CenterY(
+                marker);
+
+        var verticalRiseRatio =
+            verticalRise /
+            anchorHeight;
+
+        return verticalRiseRatio >=
+                   MinimumFallbackVerticalRiseRatio &&
+               verticalRiseRatio <=
+                   MaximumFallbackVerticalRiseRatio;
+    }
+
+    private static bool IsCompatiblePointSizeRatio(
+        double pointSizeRatio) =>
+        pointSizeRatio >=
+            MinimumPointSizeRatio &&
+        pointSizeRatio <=
+            MaximumPointSizeRatio;
+
+    private static bool IsHorizontallyAdjacent(
+        DocumentWord marker,
+        DocumentWord anchor) =>
+        Math.Abs(
+            marker.Bounds.Left -
+            anchor.Bounds.Right) <=
+        MaximumHorizontalGap;
 
     private static bool IsNumericMarker(
         string value) =>

@@ -113,6 +113,46 @@ public sealed class PdfChapterEndNoteAnalyzerTests
     }
 
     [Fact]
+    public void Analyze_IgnoresMisalignedNumericPayloadLine()
+    {
+        var notes =
+            new PdfChapterEndNoteAnalyzer()
+                .Analyze(
+                    CreateExtraction(
+                        includeReferences:
+                            true,
+                        includeMisalignedNumericPayload:
+                            true),
+                    new HashSet<PdfNativeNoteReferenceKey>());
+
+        Assert.Equal(
+            3,
+            notes.Count);
+
+        Assert.Equal(
+            "second payload 30. remains payload",
+            notes[1].Text);
+    }
+
+    [Fact]
+    public void Analyze_DoesNotBridgeSequentialEntriesAcrossDistantPages()
+    {
+        var notes =
+            new PdfChapterEndNoteAnalyzer()
+                .Analyze(
+                    CreateExtraction(
+                        includeReferences:
+                            true,
+                        includeDistantFourthEntry:
+                            true),
+                    new HashSet<PdfNativeNoteReferenceKey>());
+
+        Assert.Equal(
+            3,
+            notes.Count);
+    }
+
+    [Fact]
     public void Analyze_DoesNotReuseClaimedReference()
     {
         var extraction =
@@ -146,7 +186,9 @@ public sealed class PdfChapterEndNoteAnalyzerTests
     private static DocumentExtractionResult CreateExtraction(
         bool includeReferences,
         bool includeUnreferencedFourthEntry = false,
-        bool includeEmptySecondEntry = false)
+        bool includeEmptySecondEntry = false,
+        bool includeMisalignedNumericPayload = false,
+        bool includeDistantFourthEntry = false)
     {
         var pages =
             new List<DocumentExtractionPage>();
@@ -168,7 +210,9 @@ public sealed class PdfChapterEndNoteAnalyzerTests
                 ? "1. first payload\n1996) remains payload\n2. second payload\n3. third payload\n4. unreferenced payload"
                 : includeEmptySecondEntry
                     ? "1. first payload\n1996) remains payload\n2.\n3. third payload"
-                    : "1. first payload\n1996) remains payload\n2. second payload\n3. third payload";
+                    : includeMisalignedNumericPayload
+                        ? "1. first payload\n1996) remains payload\n2. second payload\n30. remains payload\n3. third payload"
+                        : "1. first payload\n1996) remains payload\n2. second payload\n3. third payload";
 
         pages.Add(
             new DocumentExtractionPage(
@@ -179,8 +223,42 @@ public sealed class PdfChapterEndNoteAnalyzerTests
                         ChapterEndBlock(
                             chapterEndText,
                             includeUnreferencedFourthEntry,
-                            includeEmptySecondEntry)
+                            includeEmptySecondEntry,
+                            includeMisalignedNumericPayload)
                     ]));
+
+        if (includeDistantFourthEntry)
+        {
+            pages.Add(
+                new DocumentExtractionPage(
+                    5,
+                    "4. distant numbered payload",
+                    blocks:
+                        [
+                            new DocumentTextBlock(
+                                sourceSequence:
+                                    0,
+                                readingOrder:
+                                    0,
+                                "4. distant numbered payload",
+                                new NormalizedRectangle(
+                                    0.1,
+                                    0.2,
+                                    0.9,
+                                    0.4),
+                                words:
+                                    [
+                                        Word(0, "4.", 0.15, 0.30, 0.18, 0.32, 10),
+                                        Word(1, "distant", 0.20, 0.30, 0.29, 0.32, 10),
+                                        Word(2, "numbered", 0.30, 0.30, 0.41, 0.32, 10),
+                                        Word(3, "payload", 0.42, 0.30, 0.52, 0.32, 10)
+                                    ],
+                                medianPointSize:
+                                    10,
+                                lineCount:
+                                    1)
+                        ]));
+        }
 
         return new DocumentExtractionResult(
             DocumentFormatId.Pdf,
@@ -216,7 +294,8 @@ public sealed class PdfChapterEndNoteAnalyzerTests
     private static DocumentTextBlock ChapterEndBlock(
         string text,
         bool includeUnreferencedFourthEntry,
-        bool includeEmptySecondEntry)
+        bool includeEmptySecondEntry,
+        bool includeMisalignedNumericPayload)
     {
         var words =
             new List<DocumentWord>
@@ -236,6 +315,16 @@ public sealed class PdfChapterEndNoteAnalyzerTests
                 [
                     Word(7, "second", 0.20, 0.50, 0.29, 0.52, 10),
                     Word(8, "payload", 0.30, 0.50, 0.40, 0.52, 10)
+                ]);
+        }
+
+        if (includeMisalignedNumericPayload)
+        {
+            words.AddRange(
+                [
+                    Word(15, "30.", 0.10, 0.55, 0.14, 0.57, 10),
+                    Word(16, "remains", 0.15, 0.55, 0.24, 0.57, 10),
+                    Word(17, "payload", 0.25, 0.55, 0.35, 0.57, 10)
                 ]);
         }
 
@@ -271,9 +360,17 @@ public sealed class PdfChapterEndNoteAnalyzerTests
             medianPointSize:
                 10,
             lineCount:
-                includeUnreferencedFourthEntry
-                    ? 5
-                    : 4);
+                4 +
+                (
+                    includeUnreferencedFourthEntry
+                        ? 1
+                        : 0
+                ) +
+                (
+                    includeMisalignedNumericPayload
+                        ? 1
+                        : 0
+                ));
     }
 
     private static DocumentWord Word(

@@ -22,11 +22,17 @@ internal sealed class PdfChapterEndNoteAnalyzer
     private const int MinimumSequentialEntries =
         3;
 
+    private const int MaximumSequentialEntryPageGap =
+        1;
+
     private const double MinimumVisualLineTolerance =
         0.0010;
 
     private const double VisualLineHeightToleranceRatio =
         0.45;
+
+    private const double MaximumEntryMarkerHorizontalDrift =
+        0.01;
 
     #endregion
 
@@ -269,8 +275,34 @@ internal sealed class PdfChapterEndNoteAnalyzer
                 continue;
             }
 
-            if (current is null ||
-                numericLabel !=
+            if (current is null)
+            {
+                continue;
+            }
+
+            if (!IsAlignedWithSection(
+                    line,
+                    current[0].Line))
+            {
+                continue;
+            }
+
+            if (line.PhysicalPageNumber -
+                    current[^1].Line.PhysicalPageNumber >
+                MaximumSequentialEntryPageGap)
+            {
+                AddSectionIfConclusive(
+                    current,
+                    lines,
+                    sections);
+
+                current =
+                    null;
+
+                continue;
+            }
+
+            if (numericLabel !=
                 current[^1].NumericLabel +
                 1)
             {
@@ -299,6 +331,14 @@ internal sealed class PdfChapterEndNoteAnalyzer
 
         return sections;
     }
+
+    private static bool IsAlignedWithSection(
+        ChapterEndLine candidate,
+        ChapterEndLine sectionStart) =>
+        Math.Abs(
+            candidate.Words[0].Word.Bounds.Left -
+            sectionStart.Words[0].Word.Bounds.Left) <=
+        MaximumEntryMarkerHorizontalDrift;
 
     private static void AddSectionIfConclusive(
         IReadOnlyList<ChapterEndEntryStart>? entries,
