@@ -1,5 +1,6 @@
 using Xunit;
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
 
@@ -39,6 +40,71 @@ public sealed class NativeEvidenceContractTests
 
         Assert.Null(
             evidence.RasterObservationFailure);
+
+        Assert.Empty(
+            evidence.DocumentNotes);
+    }
+
+    [Fact]
+    public void PagedNativeDocumentEvidence_SnapshotsConcludedNotes()
+    {
+        var notes =
+            new List<NativeDocumentNote>
+            {
+                CreateNote(
+                    "7")
+            };
+
+        var evidence =
+            new PagedNativeDocumentEvidence(
+                CreateCoordinatedEvidence(),
+                nativeExtractionIdentity:
+                    null,
+                notes);
+
+        notes.Clear();
+
+        var note =
+            Assert.IsType<PagedNativeDocumentNote>(
+                Assert.Single(
+                    evidence.DocumentNotes));
+
+        Assert.Equal(
+            "7",
+            note.Label);
+
+        Assert.Equal(
+            "note payload",
+            note.Text);
+    }
+
+    [Fact]
+    public void PagedNativeDocumentEvidence_RejectsNullDocumentNotes()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () =>
+                new PagedNativeDocumentEvidence(
+                    CreateCoordinatedEvidence(),
+                    nativeExtractionIdentity:
+                        null,
+                    documentNotes:
+                        null!));
+    }
+
+    [Fact]
+    public void PagedNativeDocumentEvidence_RejectsNullNoteItem()
+    {
+        Assert.Throws<ArgumentException>(
+            () =>
+                new PagedNativeDocumentEvidence(
+                    CreateCoordinatedEvidence(),
+                    nativeExtractionIdentity:
+                        null,
+                    documentNotes:
+                        new NativeDocumentNote[]
+                        {
+                            null!
+                        }));
     }
 
     [Fact]
@@ -103,6 +169,58 @@ public sealed class NativeEvidenceContractTests
             NativeEvidenceExtractionResult.Unavailable>(
             unavailable);
     }
+
+    private static DocumentExtractionWithRasterObservationsResult
+        CreateCoordinatedEvidence() =>
+        new(
+            new DocumentExtractionResult(
+                DocumentFormatId.Pdf),
+            Array.Empty<PageVisualRasterObservations>(),
+            rasterObservationFailure:
+                null);
+
+    private static PagedNativeDocumentNote CreateNote(
+        string label) =>
+        new(
+            label,
+            [
+                new PagedNativeNoteReference(
+                    label,
+                    physicalPageNumber:
+                        1,
+                    sourceBlockSequence:
+                        2,
+                    wordSourceSequence:
+                        3,
+                    new NormalizedRectangle(
+                        0.1,
+                        0.2,
+                        0.3,
+                        0.4))
+            ],
+            [
+                new PagedNativeNotePayloadLine(
+                    physicalPageNumber:
+                        1,
+                    text:
+                        "note payload",
+                    new NormalizedRectangle(
+                        0.1,
+                        0.8,
+                        0.7,
+                        0.85),
+                    sourceBlockSequences:
+                        [4],
+                    wordSourceSequences:
+                        [5, 6])
+            ],
+            [
+                new PagedNativeNoteSourceBlock(
+                    physicalPageNumber:
+                        1,
+                    sourceSequence:
+                        4)
+            ]);
 
     #endregion
 }

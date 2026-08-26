@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Security.Cryptography;
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Hybrid;
 using DocumentProcessing.Core.Layout;
@@ -377,6 +378,8 @@ public sealed class DocumentProcessor
                         .RasterObservations,
                     coordinatedExtraction?
                         .RasterObservationFailure,
+                    documentNotes:
+                        [],
                     openVisualDestinationAsync,
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -434,6 +437,7 @@ public sealed class DocumentProcessor
             evidence.Extraction,
             evidence.RasterObservations,
             evidence.RasterObservationFailure,
+            evidence.DocumentNotes,
             openVisualDestinationAsync,
             cancellationToken);
     }
@@ -473,6 +477,7 @@ public sealed class DocumentProcessor
                 precomputedRasterObservations,
             RasterObservationAcquisitionFailure?
                 rasterObservationFailure,
+            IReadOnlyList<NativeDocumentNote> documentNotes,
             Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
                 openVisualDestinationAsync,
             CancellationToken cancellationToken)
@@ -482,6 +487,9 @@ public sealed class DocumentProcessor
 
         ArgumentNullException.ThrowIfNull(
             extraction);
+
+        ArgumentNullException.ThrowIfNull(
+            documentNotes);
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -764,17 +772,11 @@ public sealed class DocumentProcessor
                     assembly,
                     cancellationToken);
 
-        var footnoteTopology =
-            new FootnoteTopologyAnalyzer()
-                .Analyze(
-                    normalization,
-                    cancellationToken);
-
         var contentNormalization =
             FootnoteTextFlowExcluder
                 .Apply(
                     normalization,
-                    footnoteTopology);
+                    documentNotes);
 
         var segmentation =
             new HybridDocumentSegmenter()
@@ -827,7 +829,7 @@ public sealed class DocumentProcessor
             DocumentIngestionResultBuilder
                 .BuildFootnotes(
                     authoritativeResult,
-                    footnoteTopology);
+                    documentNotes);
 
         DocumentDualRunCandidateTextExecutionReport?
             dualRunCandidateTextExecutionReport =

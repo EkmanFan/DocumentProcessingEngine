@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Provenance;
@@ -48,13 +49,29 @@ public sealed record PagedNativeDocumentEvidence
         : this(
             currentEvidence,
             nativeExtractionIdentity:
-                null)
+                null,
+            documentNotes:
+                [])
     {
     }
 
     public PagedNativeDocumentEvidence(
         DocumentExtractionWithRasterObservationsResult currentEvidence,
         ProcessingComponentIdentity? nativeExtractionIdentity)
+        : this(
+            currentEvidence,
+            nativeExtractionIdentity,
+            documentNotes:
+                [])
+    {
+    }
+
+    public PagedNativeDocumentEvidence(
+        DocumentExtractionWithRasterObservationsResult currentEvidence,
+        ProcessingComponentIdentity? nativeExtractionIdentity,
+        IReadOnlyList<NativeDocumentNote> documentNotes)
+        : base(
+            documentNotes)
     {
         _currentEvidence =
             currentEvidence ??

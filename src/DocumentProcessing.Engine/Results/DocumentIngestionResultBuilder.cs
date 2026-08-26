@@ -1,11 +1,11 @@
 using DocumentProcessing.Core.DocumentModel;
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Hybrid.Normalization;
-using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Hybrid.Segmentation;
+using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Quality;
 using DocumentProcessing.Core.Results;
-using DocumentProcessing.Engine.Footnotes;
 using DocumentProcessing.Engine.Provenance;
 using DocumentProcessing.Engine.Quality;
 
@@ -81,13 +81,22 @@ public static class DocumentIngestionResultBuilder
 
     internal static IReadOnlyList<DocumentFootnote> BuildFootnotes(
         DocumentIngestionResult ingestionResult,
-        FootnoteTopologyAnalysis topology)
+        IReadOnlyList<NativeDocumentNote> notes)
     {
         ArgumentNullException.ThrowIfNull(
             ingestionResult);
 
         ArgumentNullException.ThrowIfNull(
-            topology);
+            notes);
+
+        var pagedNotes =
+            notes
+                .Select(
+                    note =>
+                        note as PagedNativeDocumentNote ??
+                        throw new InvalidDataException(
+                            $"Paged processing received unsupported native note evidence '{note.GetType().FullName}'."))
+                .ToArray();
 
         var elementsByNativeBlock =
             ingestionResult.Elements
@@ -109,15 +118,15 @@ public static class DocumentIngestionResultBuilder
 
         var footnotes =
             new List<DocumentFootnote>(
-                topology.Entries.Count);
+                pagedNotes.Length);
 
         for (var ordinal = 0;
              ordinal <
-             topology.Entries.Count;
+             pagedNotes.Length;
              ordinal++)
         {
             var entry =
-                topology.Entries[ordinal];
+                pagedNotes[ordinal];
 
             var references =
                 new List<DocumentFootnoteReference>(

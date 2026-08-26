@@ -1,14 +1,13 @@
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Hybrid.Normalization;
 using DocumentProcessing.Core.Normalization;
 
 namespace DocumentProcessing.Engine.Footnotes;
 
 /// <summary>
-/// Removes Engine-recognized footnote source blocks from the primary structural
+/// Removes format-concluded note payload blocks from the primary structural
 /// text flow while retaining every normalized element and its source evidence.
-///
-/// This component does not create portable footnote objects. That projection is
-/// intentionally deferred to F1b.6B.
+/// This component does not create portable footnote objects.
 /// </summary>
 internal static class FootnoteTextFlowExcluder
 {
@@ -16,15 +15,29 @@ internal static class FootnoteTextFlowExcluder
 
     public static HybridDocumentNormalizationResult Apply(
         HybridDocumentNormalizationResult normalization,
-        FootnoteTopologyAnalysis analysis)
+        IReadOnlyList<NativeDocumentNote> notes)
     {
         ArgumentNullException.ThrowIfNull(
             normalization);
 
         ArgumentNullException.ThrowIfNull(
-            analysis);
+            notes);
 
-        if (analysis.Entries.Count ==
+        if (notes.Count ==
+            0)
+        {
+            return normalization;
+        }
+
+        var noteSourceBlocks =
+            notes
+                .OfType<PagedNativeDocumentNote>()
+                .SelectMany(
+                    note =>
+                        note.SourceBlocks)
+                .ToHashSet();
+
+        if (noteSourceBlocks.Count ==
             0)
         {
             return normalization;
@@ -42,7 +55,7 @@ internal static class FootnoteTextFlowExcluder
                                         ExcludeIfFootnote(
                                             page.PhysicalPageNumber,
                                             element,
-                                            analysis))
+                                            noteSourceBlocks))
                                 .ToArray()))
                 .ToArray();
 
@@ -55,15 +68,16 @@ internal static class FootnoteTextFlowExcluder
     private static NormalizedHybridDocumentElement ExcludeIfFootnote(
         int physicalPageNumber,
         NormalizedHybridDocumentElement element,
-        FootnoteTopologyAnalysis analysis)
+        IReadOnlySet<PagedNativeNoteSourceBlock> noteSourceBlocks)
     {
         if (element.IsExcluded ||
             !element.HasAuthoritativeText ||
             element.NativeBlock is not
                 { } nativeBlock ||
-            !analysis.ContainsSourceBlock(
-                physicalPageNumber,
-                nativeBlock.SourceSequence))
+            !noteSourceBlocks.Contains(
+                new PagedNativeNoteSourceBlock(
+                    physicalPageNumber,
+                    nativeBlock.SourceSequence)))
         {
             return element;
         }

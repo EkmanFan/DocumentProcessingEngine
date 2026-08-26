@@ -3,6 +3,7 @@ using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
+using DocumentProcessing.Pdf.Notes;
 using UglyToad.PdfPig.Core;
 
 namespace DocumentProcessing.Pdf;
@@ -103,11 +104,18 @@ public sealed class PdfDocumentFormat
                         cancellationToken)
                     .ConfigureAwait(false);
 
+            var documentNotes =
+                new PdfBottomOfPageNoteAnalyzer()
+                    .Analyze(
+                        currentEvidence.Extraction,
+                        cancellationToken);
+
             return new NativeEvidenceExtractionResult
                 .Success(
                     new PagedNativeDocumentEvidence(
                         currentEvidence,
-                        NativeExtractionIdentity));
+                        NativeExtractionIdentity,
+                        documentNotes));
         }
         catch (OperationCanceledException)
             when (cancellationToken.IsCancellationRequested)

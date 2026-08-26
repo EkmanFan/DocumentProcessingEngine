@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Provenance;
 
@@ -29,6 +30,24 @@ public sealed record StructuredNativeDocumentEvidence
         IReadOnlyList<StructuredNativeContentUnit> contentUnits,
         ProcessingComponentIdentity nativeExtractionIdentity,
         IReadOnlyList<StructuredNativeVisual>? visuals = null)
+        : this(
+            sourceStructure,
+            contentUnits,
+            nativeExtractionIdentity,
+            visuals,
+            documentNotes:
+                [])
+    {
+    }
+
+    public StructuredNativeDocumentEvidence(
+        DocumentSourceStructure sourceStructure,
+        IReadOnlyList<StructuredNativeContentUnit> contentUnits,
+        ProcessingComponentIdentity nativeExtractionIdentity,
+        IReadOnlyList<StructuredNativeVisual>? visuals,
+        IReadOnlyList<NativeDocumentNote> documentNotes)
+        : base(
+            documentNotes)
     {
         SourceStructure =
             sourceStructure ??

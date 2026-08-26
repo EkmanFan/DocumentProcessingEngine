@@ -1,9 +1,10 @@
 using DocumentProcessing.Core.Extraction;
-using DocumentProcessing.Engine.Footnotes;
+using DocumentProcessing.Core.Documents.Notes;
+using DocumentProcessing.Pdf.Notes;
 
-namespace DocumentProcessing.UnitTests.Footnotes;
+namespace DocumentProcessing.UnitTests.Pdf;
 
-public sealed class FootnoteTopologyAnalyzerTests
+public sealed class PdfBottomOfPageNoteAnalyzerTests
 {
     #region Tests
 
@@ -11,7 +12,7 @@ public sealed class FootnoteTopologyAnalyzerTests
     public void AnalyzeEvidence_ReconstructsSplitBlockMultilineAndSingleTokenNotes()
     {
         var page =
-            new FootnotePageEvidence(
+            new PagedNativeNotePageEvidence(
                 1,
                 [
                     BodyBlock(
@@ -41,7 +42,7 @@ public sealed class FootnoteTopologyAnalyzerTests
                 ]);
 
         var result =
-            FootnoteTopologyAnalyzer
+            PdfBottomOfPageNoteAnalyzer
                 .AnalyzeEvidence(
                     [
                         page
@@ -49,10 +50,10 @@ public sealed class FootnoteTopologyAnalyzerTests
 
         Assert.Equal(
             2,
-            result.Entries.Count);
+            result.Count);
 
         var ten =
-            result.Entries.Single(
+            result.Single(
                 entry =>
                     entry.Label ==
                     "10");
@@ -66,19 +67,19 @@ public sealed class FootnoteTopologyAnalyzerTests
             ten.PayloadLines.Count);
 
         Assert.Contains(
-            new FootnoteSourceBlockKey(
+            new PagedNativeNoteSourceBlock(
                 1,
                 1),
             ten.SourceBlocks);
 
         Assert.Contains(
-            new FootnoteSourceBlockKey(
+            new PagedNativeNoteSourceBlock(
                 1,
                 2),
             ten.SourceBlocks);
 
         var eleven =
-            result.Entries.Single(
+            result.Single(
                 entry =>
                     entry.Label ==
                     "11");
@@ -88,7 +89,7 @@ public sealed class FootnoteTopologyAnalyzerTests
             eleven.Text);
 
         Assert.DoesNotContain(
-            result.Entries,
+            result,
             entry =>
                 entry.Label ==
                 "156");
@@ -98,7 +99,7 @@ public sealed class FootnoteTopologyAnalyzerTests
     public void AnalyzeEvidence_AppendsOnlyGenuineCrossPageContinuation()
     {
         var pageOne =
-            new FootnotePageEvidence(
+            new PagedNativeNotePageEvidence(
                 1,
                 [
                     BodyBlock(
@@ -192,7 +193,7 @@ public sealed class FootnoteTopologyAnalyzerTests
                     3);
 
         var pageTwo =
-            new FootnotePageEvidence(
+            new PagedNativeNotePageEvidence(
                 2,
                 [
                     BodyBlock(
@@ -203,7 +204,7 @@ public sealed class FootnoteTopologyAnalyzerTests
                 ]);
 
         var result =
-            FootnoteTopologyAnalyzer
+            PdfBottomOfPageNoteAnalyzer
                 .AnalyzeEvidence(
                     [
                         pageOne,
@@ -211,7 +212,7 @@ public sealed class FootnoteTopologyAnalyzerTests
                     ]);
 
         var twenty =
-            result.Entries.Single(
+            result.Single(
                 entry =>
                     entry.Label ==
                     "20");
@@ -237,7 +238,7 @@ public sealed class FootnoteTopologyAnalyzerTests
                 .ToArray());
 
         var twentyOne =
-            result.Entries.Single(
+            result.Single(
                 entry =>
                     entry.Label ==
                     "21");
@@ -251,7 +252,7 @@ public sealed class FootnoteTopologyAnalyzerTests
     public void AnalyzeEvidence_DoesNotTreatFirstNextPageLabelLineAsContinuation()
     {
         var pageOne =
-            new FootnotePageEvidence(
+            new PagedNativeNotePageEvidence(
                 1,
                 [
                     BodyBlock(
@@ -269,7 +270,7 @@ public sealed class FootnoteTopologyAnalyzerTests
                 ]);
 
         var pageTwo =
-            new FootnotePageEvidence(
+            new PagedNativeNotePageEvidence(
                 2,
                 [
                     BodyBlock(
@@ -288,7 +289,7 @@ public sealed class FootnoteTopologyAnalyzerTests
                 ]);
 
         var result =
-            FootnoteTopologyAnalyzer
+            PdfBottomOfPageNoteAnalyzer
                 .AnalyzeEvidence(
                     [
                         pageOne,
@@ -296,7 +297,7 @@ public sealed class FootnoteTopologyAnalyzerTests
                     ]);
 
         var thirty =
-            result.Entries.Single(
+            result.Single(
                 entry =>
                     entry.Label ==
                     "30");
@@ -313,7 +314,7 @@ public sealed class FootnoteTopologyAnalyzerTests
     public void AnalyzeEvidence_FailsClosedOnAmbiguousDuplicateLabel()
     {
         var page =
-            new FootnotePageEvidence(
+            new PagedNativeNotePageEvidence(
                 1,
                 [
                     BodyBlock(
@@ -335,17 +336,15 @@ public sealed class FootnoteTopologyAnalyzerTests
                 ]);
 
         var result =
-            FootnoteTopologyAnalyzer
+            PdfBottomOfPageNoteAnalyzer
                 .AnalyzeEvidence(
                     [
                         page
                     ]);
 
         Assert.Empty(
-            result.Entries);
+            result);
 
-        Assert.Empty(
-            result.ExcludedSourceBlocks);
     }
 
     [Fact]
@@ -358,10 +357,10 @@ public sealed class FootnoteTopologyAnalyzerTests
 
         Assert.Throws<OperationCanceledException>(
             () =>
-                FootnoteTopologyAnalyzer
+                PdfBottomOfPageNoteAnalyzer
                     .AnalyzeEvidence(
                         [
-                            new FootnotePageEvidence(
+                            new PagedNativeNotePageEvidence(
                                 1,
                                 [])
                         ],

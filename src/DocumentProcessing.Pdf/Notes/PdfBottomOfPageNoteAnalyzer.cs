@@ -1,20 +1,20 @@
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Extraction;
-using DocumentProcessing.Core.Hybrid.Normalization;
 
-namespace DocumentProcessing.Engine.Footnotes;
+namespace DocumentProcessing.Pdf.Notes;
 
 /// <summary>
-/// Recognizes numeric footnote topology from neutral native text evidence.
+/// Concludes numeric bottom-of-page note relations from PDF-native text
+/// evidence.
 ///
 /// The analyzer consumes source geometry, typography and source sequence
-/// retained by the normalized hybrid stream. It does not depend on PDF types,
-/// provider identity, raw layout labels, OCR identity or linguistic payload
-/// shape.
+/// produced by PDF extraction. It does not decide how concluded notes affect
+/// the main reading flow, segmentation, quality or portable projection.
 ///
 /// Ambiguous evidence fails closed: unmatched numbers, duplicate labels,
 /// missing typography and mixed body/note source blocks remain ordinary text.
 /// </summary>
-internal sealed class FootnoteTopologyAnalyzer
+internal sealed class PdfBottomOfPageNoteAnalyzer
 {
     #region Variables and Constants
 
@@ -44,23 +44,22 @@ internal sealed class FootnoteTopologyAnalyzer
 
     #region Methods Analysis
 
-    public FootnoteTopologyAnalysis Analyze(
-        HybridDocumentNormalizationResult normalization,
+    public IReadOnlyList<PagedNativeDocumentNote> Analyze(
+        DocumentExtractionResult extraction,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
-            normalization);
+            extraction);
 
         cancellationToken.ThrowIfCancellationRequested();
 
         var pages =
-            normalization.Pages
+            extraction.Pages
                 .Select(
                     page =>
-                        new FootnotePageEvidence(
+                        new PagedNativeNotePageEvidence(
                             page.PhysicalPageNumber,
-                            ResolveNativeBlocks(
-                                page)))
+                            page.Blocks))
                 .ToArray();
 
         return AnalyzeEvidence(
@@ -68,8 +67,8 @@ internal sealed class FootnoteTopologyAnalyzer
             cancellationToken);
     }
 
-    internal static FootnoteTopologyAnalysis AnalyzeEvidence(
-        IReadOnlyList<FootnotePageEvidence> pages,
+    internal static IReadOnlyList<PagedNativeDocumentNote> AnalyzeEvidence(
+        IReadOnlyList<PagedNativeNotePageEvidence> pages,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
@@ -112,12 +111,12 @@ internal sealed class FootnoteTopologyAnalyzer
                         entry.ToTopology())
                 .ToArray();
 
-        return new FootnoteTopologyAnalysis(
+        return Array.AsReadOnly(
             entries);
     }
 
     private static PageAnalysis AnalyzePage(
-        FootnotePageEvidence page)
+        PagedNativeNotePageEvidence page)
     {
         var references =
             FindRaisedReferences(
@@ -316,10 +315,10 @@ internal sealed class FootnoteTopologyAnalyzer
             }
 
             var payloadLines =
-                new List<FootnotePayloadLineTopology>();
+                new List<PagedNativeNotePayloadLine>();
 
             var sourceBlocks =
-                new HashSet<FootnoteSourceBlockKey>
+                new HashSet<PagedNativeNoteSourceBlock>
                 {
                     new(
                         page.PhysicalPageNumber,
@@ -365,7 +364,7 @@ internal sealed class FootnoteTopologyAnalyzer
                          payloadLine.SourceBlockSequences)
                 {
                     sourceBlocks.Add(
-                        new FootnoteSourceBlockKey(
+                        new PagedNativeNoteSourceBlock(
                             page.PhysicalPageNumber,
                             sourceSequence));
                 }
@@ -393,7 +392,7 @@ internal sealed class FootnoteTopologyAnalyzer
                         current.Label.Value]
                     .Select(
                         reference =>
-                            new FootnoteReferenceTopology(
+                            new PagedNativeNoteReference(
                                 current.Label.Value,
                                 page.PhysicalPageNumber,
                                 reference.SourceBlockSequence,
@@ -534,7 +533,7 @@ internal sealed class FootnoteTopologyAnalyzer
                          payloadLine.SourceBlockSequences)
                 {
                     lastEntry.SourceBlocks.Add(
-                        new FootnoteSourceBlockKey(
+                        new PagedNativeNoteSourceBlock(
                             next.PhysicalPageNumber,
                             sourceSequence));
                 }
@@ -547,61 +546,9 @@ internal sealed class FootnoteTopologyAnalyzer
 
     #region Methods Evidence Mapping
 
-    private static IReadOnlyList<DocumentTextBlock> ResolveNativeBlocks(
-        NormalizedHybridDocumentPage page)
-    {
-        var bySourceSequence =
-            new Dictionary<int, DocumentTextBlock>();
-
-        foreach (var element in
-                 page.Elements)
-        {
-            if (element.IsExcluded ||
-                element.NativeBlock is not
-                    { } block)
-            {
-                continue;
-            }
-
-            if (bySourceSequence.TryGetValue(
-                    block.SourceSequence,
-                    out var existing))
-            {
-                if (!ReferenceEquals(
-                        existing,
-                        block) &&
-                    (
-                        !string.Equals(
-                            existing.Text,
-                            block.Text,
-                            StringComparison.Ordinal) ||
-                        existing.Bounds !=
-                            block.Bounds
-                    ))
-                {
-                    throw new InvalidDataException(
-                        $"Physical page {page.PhysicalPageNumber} contains conflicting native blocks with source sequence {block.SourceSequence}.");
-                }
-
-                continue;
-            }
-
-            bySourceSequence.Add(
-                block.SourceSequence,
-                block);
-        }
-
-        return bySourceSequence
-            .Values
-            .OrderBy(
-                block =>
-                    block.SourceSequence)
-            .ToArray();
-    }
-
     private static IReadOnlyList<RaisedReferenceCandidate>
         FindRaisedReferences(
-        FootnotePageEvidence page)
+        PagedNativeNotePageEvidence page)
     {
         var references =
             new List<RaisedReferenceCandidate>();
@@ -678,7 +625,7 @@ internal sealed class FootnoteTopologyAnalyzer
 
     private static IReadOnlyList<StandaloneLabelCandidate>
         FindStandaloneLabels(
-        FootnotePageEvidence page)
+        PagedNativeNotePageEvidence page)
     {
         var labels =
             new List<StandaloneLabelCandidate>();
@@ -880,7 +827,7 @@ internal sealed class FootnoteTopologyAnalyzer
         return result;
     }
 
-    private static FootnotePayloadLineTopology ToPayloadLine(
+    private static PagedNativeNotePayloadLine ToPayloadLine(
         int physicalPageNumber,
         IReadOnlyList<LocatedWord> words)
     {
@@ -902,7 +849,7 @@ internal sealed class FootnoteTopologyAnalyzer
                         item.Word.SourceSequence)
                 .ToArray();
 
-        return new FootnotePayloadLineTopology(
+        return new PagedNativeNotePayloadLine(
             physicalPageNumber,
             string.Join(
                 " ",
@@ -935,7 +882,7 @@ internal sealed class FootnoteTopologyAnalyzer
     #region Methods Validation and Math
 
     private static void ValidatePages(
-        IReadOnlyList<FootnotePageEvidence> pages)
+        IReadOnlyList<PagedNativeNotePageEvidence> pages)
     {
         var previousPage =
             0;
@@ -1148,11 +1095,11 @@ internal sealed class FootnoteTopologyAnalyzer
 
         public string Label { get; }
 
-        public IReadOnlyList<FootnoteReferenceTopology> References { get; }
+        public IReadOnlyList<PagedNativeNoteReference> References { get; }
 
-        public List<FootnotePayloadLineTopology> PayloadLines { get; }
+        public List<PagedNativeNotePayloadLine> PayloadLines { get; }
 
-        public HashSet<FootnoteSourceBlockKey> SourceBlocks { get; }
+        public HashSet<PagedNativeNoteSourceBlock> SourceBlocks { get; }
 
         public int FirstPhysicalPageNumber { get; }
 
@@ -1165,9 +1112,9 @@ internal sealed class FootnoteTopologyAnalyzer
 
         public EntryBuilder(
             string label,
-            IReadOnlyList<FootnoteReferenceTopology> references,
-            IReadOnlyList<FootnotePayloadLineTopology> payloadLines,
-            IReadOnlyCollection<FootnoteSourceBlockKey> sourceBlocks,
+            IReadOnlyList<PagedNativeNoteReference> references,
+            IReadOnlyList<PagedNativeNotePayloadLine> payloadLines,
+            IReadOnlyCollection<PagedNativeNoteSourceBlock> sourceBlocks,
             int firstPhysicalPageNumber,
             double firstLineCenterY)
         {
@@ -1195,7 +1142,7 @@ internal sealed class FootnoteTopologyAnalyzer
 
         #region Methods
 
-        public FootnoteEntryTopology ToTopology() =>
+        public PagedNativeDocumentNote ToTopology() =>
             new(
                 Label,
                 References,
@@ -1225,3 +1172,10 @@ internal sealed class FootnoteTopologyAnalyzer
 
     #endregion
 }
+
+/// <summary>
+/// Minimal PDF-native page evidence accepted by the pure note classifier.
+/// </summary>
+internal sealed record PagedNativeNotePageEvidence(
+    int PhysicalPageNumber,
+    IReadOnlyList<DocumentTextBlock> Blocks);
