@@ -122,6 +122,55 @@ public sealed class PdfPageNativeTextRepairTests
     }
 
     [Fact]
+    public void Reconstruct_UsesMarkerBlockTypographyForSparseAnchorFragment()
+    {
+        var body =
+            Block(
+                0,
+                0,
+                Word(0, "things", 0.10, 0.10, 0.16, 0.12, 11),
+                Word(1, "which", 0.17, 0.10, 0.22, 0.12, 11),
+                Word(2, "do", 0.23, 0.10, 0.25, 0.12, 11),
+                Word(4, "877", 0.33, 0.091, 0.35, 0.101, 9.13),
+                Word(5, ".\u2019", 0.36, 0.10, 0.38, 0.12, 11),
+                Word(6, "But", 0.39, 0.10, 0.43, 0.12, 11));
+
+        var anchor =
+            Block(
+                1,
+                1,
+                Word(3, "appear", 0.25, 0.10, 0.33, 0.11, 11));
+
+        var result =
+            Assert.Single(
+                PdfPageNativeTextRepair
+                    .Reconstruct(
+                        new[]
+                        {
+                            body,
+                            anchor
+                        }));
+
+        Assert.Equal(
+            "things which do appear 877 .\u2019 But",
+            result.Text);
+
+        Assert.Equal(
+            new[]
+            {
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            },
+            result.Words.Select(word =>
+                word.SourceSequence));
+    }
+
+    [Fact]
     public void Reconstruct_Repairs804And805WithoutDiscardingUnrelatedMarginalNumber()
     {
         var body =

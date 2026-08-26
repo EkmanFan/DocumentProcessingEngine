@@ -181,6 +181,8 @@ internal static class PdfPageNativeTextRepair
                             marker.Word,
                             candidate.Word,
                             blocks[
+                                marker.BlockIndex],
+                            blocks[
                                 candidate.BlockIndex]))
                     .ToArray();
 
@@ -208,6 +210,7 @@ internal static class PdfPageNativeTextRepair
     private static bool IsCompatible(
         DocumentWord marker,
         DocumentWord anchor,
+        DocumentTextBlock markerBlock,
         DocumentTextBlock anchorBlock)
     {
         if (marker.MedianPointSize is null ||
@@ -232,6 +235,7 @@ internal static class PdfPageNativeTextRepair
 
         var referenceHeight =
             GetLocalReferenceHeight(
+                markerBlock,
                 anchorBlock,
                 anchor);
 
@@ -434,7 +438,8 @@ internal static class PdfPageNativeTextRepair
     }
 
     private static double GetLocalReferenceHeight(
-        DocumentTextBlock block,
+        DocumentTextBlock markerBlock,
+        DocumentTextBlock anchorBlock,
         DocumentWord anchor)
     {
         if (anchor.MedianPointSize is null)
@@ -444,7 +449,7 @@ internal static class PdfPageNativeTextRepair
         }
 
         var heights =
-            block.Words
+            anchorBlock.Words
                 .Where(word =>
                     word.MedianPointSize is not null &&
                     !IsNumeric(
@@ -463,6 +468,30 @@ internal static class PdfPageNativeTextRepair
                 .OrderBy(height =>
                     height)
                 .ToArray();
+
+        if (heights.Length < 3)
+        {
+            heights =
+                markerBlock.Words
+                    .Where(word =>
+                        word.MedianPointSize is not null &&
+                        !IsNumeric(
+                            word.Text) &&
+                        word.Text.Any(
+                            char.IsLetterOrDigit) &&
+                        Math.Abs(
+                            word.MedianPointSize.Value -
+                            anchor.MedianPointSize.Value) /
+                            anchor.MedianPointSize.Value <=
+                        SamePointSizeToleranceRatio)
+                    .Select(
+                        Height)
+                    .Where(height =>
+                        height > 0)
+                    .OrderBy(height =>
+                        height)
+                    .ToArray();
+        }
 
         if (heights.Length < 3)
         {
