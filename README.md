@@ -29,6 +29,9 @@ policy.
   assets run through the Host, are retained as verified content-addressed JSON,
   and are registered idempotently in PostgreSQL. Page-range execution, visual
   result assets and Blazor adapters remain future increments.
+- Manager Host: a key-protected ASP.NET Core process composes schema migration,
+  source/result custody, sequential background execution, lifecycle commands,
+  submission, queue observation/reordering and result retrieval.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts
@@ -108,6 +111,7 @@ src/
   DocumentProcessing.Manager/       queue/control/runtime core and hexagonal ports
   DocumentProcessing.Manager.Persistence/ PostgreSQL and storage adapters
   DocumentProcessing.Manager.DPEngine/ Manager-to-Host execution adapter
+  DocumentProcessing.Manager.Host/  executable Manager API and composition root
   DocumentProcessing.DualRunWorker/ isolated non-authoritative worker
 
 tests/

@@ -1217,6 +1217,99 @@ public sealed class PostgresManagerPersistenceTests
     }
 
     [PostgresFact]
+    public async Task QueueReader_ReturnsConsistentVersionedDisplayOrder()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var submission =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    '7');
+
+        var first =
+            new ProcessingWorkItem(
+                ProcessingUnitId.New(),
+                submission.SubmissionId,
+                new ProcessingUnitScope.PageRange(
+                    startPhysicalPageNumber:
+                        1,
+                    endPhysicalPageNumber:
+                        9,
+                    title:
+                        "Chapter one"),
+                attemptNumber:
+                    1);
+
+        var second =
+            new ProcessingWorkItem(
+                ProcessingUnitId.New(),
+                submission.SubmissionId,
+                new ProcessingUnitScope.PageRange(
+                    startPhysicalPageNumber:
+                        10,
+                    endPhysicalPageNumber:
+                        20,
+                    title:
+                        "Chapter two"),
+                attemptNumber:
+                    1);
+
+        await context.SubmissionStore.RegisterAndEnqueueAsync(
+            submission,
+            [first, second]);
+
+        var initial =
+            await context.QueueReader.GetSnapshotAsync();
+
+        Assert.Equal(
+            1,
+            initial.Version);
+
+        Assert.Equal(
+            [first.UnitId, second.UnitId],
+            initial.Items
+                .Select(
+                    item =>
+                        item.WorkItem.UnitId));
+
+        Assert.All(
+            initial.Items,
+            item =>
+                Assert.Equal(
+                    ProcessingUnitStatus.Pending,
+                    item.Status));
+
+        await context.QueueStore.ReorderPendingAsync(
+            new ReorderProcessingQueueCommand(
+                [second.UnitId, first.UnitId],
+                initial.Version));
+
+        var reordered =
+            await context.QueueReader.GetSnapshotAsync();
+
+        Assert.Equal(
+            2,
+            reordered.Version);
+
+        Assert.Equal(
+            [second.UnitId, first.UnitId],
+            reordered.Items
+                .Select(
+                    item =>
+                        item.WorkItem.UnitId));
+
+        var pageRange =
+            Assert.IsType<ProcessingUnitScope.PageRange>(
+                reordered.Items[0].WorkItem.Scope);
+
+        Assert.Equal(
+            "Chapter two",
+            pageRange.Title);
+    }
+
+    [PostgresFact]
     public async Task QueueStore_RecoversExpiredUnitsInExpiryOrder()
     {
         await using var context =
@@ -2098,6 +2191,13 @@ public sealed class PostgresManagerPersistenceTests
                 dataSource);
 
         public PostgresProcessingQueueStore QueueStore
+        {
+            get;
+        } =
+            new(
+                dataSource);
+
+        public PostgresProcessingQueueReader QueueReader
         {
             get;
         } =

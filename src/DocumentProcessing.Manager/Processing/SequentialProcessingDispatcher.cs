@@ -105,6 +105,7 @@ public sealed class SequentialProcessingDispatcher
                 runtimeLease,
                 () =>
                     interruptionReason,
+                cancellationToken,
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -112,7 +113,8 @@ public sealed class SequentialProcessingDispatcher
     internal async ValueTask<ProcessingDispatchOutcome> DispatchNextAsync(
         ManagerRuntimeLease runtimeLease,
         Func<ProcessingInterruptionReason> interruptionReasonProvider,
-        CancellationToken cancellationToken = default)
+        CancellationToken claimCancellationToken,
+        CancellationToken executionCancellationToken)
     {
         ArgumentNullException.ThrowIfNull(
             runtimeLease);
@@ -132,7 +134,7 @@ public sealed class SequentialProcessingDispatcher
 
         await _dispatchGate
             .WaitAsync(
-                cancellationToken)
+                claimCancellationToken)
             .ConfigureAwait(false);
 
         try
@@ -148,7 +150,7 @@ public sealed class SequentialProcessingDispatcher
                         now,
                         now +
                         _options.LeaseDuration,
-                        cancellationToken)
+                        claimCancellationToken)
                     .ConfigureAwait(false);
 
             if (lease is null)
@@ -176,7 +178,7 @@ public sealed class SequentialProcessingDispatcher
             return await ExecuteClaimedAsync(
                     lease,
                     interruptionReasonProvider,
-                    cancellationToken)
+                    executionCancellationToken)
                 .ConfigureAwait(false);
         }
         finally

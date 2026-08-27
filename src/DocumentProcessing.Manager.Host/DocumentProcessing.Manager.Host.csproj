@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DocumentProcessing.Manager\DocumentProcessing.Manager.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Manager.Persistence\DocumentProcessing.Manager.Persistence.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Manager.DPEngine\DocumentProcessing.Manager.DPEngine.csproj" />
+    <ProjectReference Include="..\DocumentProcessing\DocumentProcessing.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Layout.Adapters\DocumentProcessing.Layout.Adapters.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Ocr.Adapters\DocumentProcessing.Ocr.Adapters.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

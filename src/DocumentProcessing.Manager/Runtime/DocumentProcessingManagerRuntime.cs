@@ -296,6 +296,7 @@ public sealed class DocumentProcessingManagerRuntime
                                 lease,
                                 () =>
                                     active.InterruptionReason,
+                                ownership.Token,
                                 active.Token)
                             .ConfigureAwait(false);
                 }

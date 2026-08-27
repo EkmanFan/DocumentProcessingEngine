@@ -225,6 +225,112 @@ public sealed class DocumentProcessingManagerRuntimeTests
     }
 
     [Fact]
+    public async Task Stop_DuringClaimLetsClaimLinearizeThenRequeuesBeforeReturning()
+    {
+        var stateStore =
+            new RecordingStateStore(
+                ManagerOperatingState.Running);
+
+        var claimEntered =
+            new TaskCompletionSource(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var releaseClaim =
+            new TaskCompletionSource(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var queueStore =
+            new RecordingQueueStore(
+                claimEntered,
+                releaseClaim,
+                CreateWorkItem());
+
+        var executorCalled =
+            new TaskCompletionSource(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var executor =
+            new DelegateExecutor(
+                (_, cancellationToken) =>
+                {
+                    executorCalled.TrySetResult();
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    return Task.FromResult<ProcessingExecutionOutcome>(
+                        new ProcessingExecutionOutcome.Success(
+                            "unreachable-result"));
+                });
+
+        var runtime =
+            CreateRuntime(
+                "worker-one",
+                stateStore,
+                new RecordingRuntimeLeaseStore(),
+                queueStore,
+                executor);
+
+        using var hostStopping =
+            new CancellationTokenSource();
+
+        var running =
+            runtime.RunAsync(
+                hostStopping.Token);
+
+        await claimEntered.Task
+            .WaitAsync(
+                TimeSpan.FromSeconds(
+                    5));
+
+        var stopping =
+            runtime.ExecuteAsync(
+                    new StopManagerCommand())
+                .AsTask();
+
+        var prematureStop =
+            await Task.WhenAny(
+                stopping,
+                Task.Delay(
+                    TimeSpan.FromMilliseconds(
+                        100)));
+
+        Assert.NotSame(
+            stopping,
+            prematureStop);
+
+        releaseClaim.TrySetResult();
+
+        var stopped =
+            await stopping.WaitAsync(
+                TimeSpan.FromSeconds(
+                    5));
+
+        Assert.Equal(
+            ManagerOperatingState.Stopped,
+            stopped.Snapshot.State);
+
+        await executorCalled.Task
+            .WaitAsync(
+                TimeSpan.FromSeconds(
+                    5));
+
+        Assert.True(
+            queueStore.InterruptionObserved.Task.IsCompleted);
+
+        Assert.Equal(
+            ProcessingInterruptionReason.ManagerStop,
+            queueStore.LastInterruptionReason);
+
+        Assert.False(
+            running.IsCompleted);
+
+        hostStopping.Cancel();
+
+        await running.WaitAsync(
+            TimeSpan.FromSeconds(
+                5));
+    }
+
+    [Fact]
     public async Task SharedRuntimeLease_PreventsConcurrentProcessingAcrossInstances()
     {
         var stateStore =
@@ -684,6 +790,12 @@ public sealed class DocumentProcessingManagerRuntimeTests
         private readonly int
             _initialWorkCount;
 
+        private readonly TaskCompletionSource?
+            _claimEntered;
+
+        private readonly TaskCompletionSource?
+            _releaseClaim;
+
         private int
             _completedCount;
 
@@ -699,6 +811,20 @@ public sealed class DocumentProcessingManagerRuntimeTests
 
             _initialWorkCount =
                 workItems.Length;
+        }
+
+        public RecordingQueueStore(
+            TaskCompletionSource claimEntered,
+            TaskCompletionSource releaseClaim,
+            params ProcessingWorkItem[] workItems)
+            : this(
+                workItems)
+        {
+            _claimEntered =
+                claimEntered;
+
+            _releaseClaim =
+                releaseClaim;
         }
 
         public int CompletedCount =>
@@ -740,20 +866,28 @@ public sealed class DocumentProcessingManagerRuntimeTests
             new(
                 TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public ValueTask<ProcessingLease?> ClaimNextAsync(
+        public async ValueTask<ProcessingLease?> ClaimNextAsync(
             ManagerRuntimeLease runtimeLease,
             string workerId,
             DateTimeOffset observedAtUtc,
             DateTimeOffset leaseExpiresAtUtc,
             CancellationToken cancellationToken = default)
         {
+            _claimEntered?.TrySetResult();
+
+            if (_releaseClaim is not null)
+            {
+                await _releaseClaim.Task
+                    .WaitAsync(
+                        cancellationToken);
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
             if (!_pending.TryDequeue(
                     out var workItem))
             {
-                return ValueTask.FromResult<ProcessingLease?>(
-                    null);
+                return null;
             }
 
             var lease =
@@ -768,8 +902,7 @@ public sealed class DocumentProcessingManagerRuntimeTests
                 lease.Token,
                 workItem);
 
-            return ValueTask.FromResult<ProcessingLease?>(
-                lease);
+            return lease;
         }
 
         public ValueTask<bool> RenewLeaseAsync(
