@@ -451,6 +451,7 @@ internal static class ManagerApi
                         new ProcessingQueueItemResponse(
                             item.WorkItem.UnitId.Value,
                             item.WorkItem.SubmissionId.Value,
+                            item.OriginalFileName,
                             ToResponse(
                                 item.WorkItem.Scope),
                             item.WorkItem.AttemptNumber,
@@ -536,6 +537,7 @@ internal static class ManagerApi
     internal sealed record ProcessingQueueItemResponse(
         Guid UnitId,
         Guid SubmissionId,
+        string OriginalFileName,
         ProcessingScopeResponse Scope,
         int AttemptNumber,
         ProcessingUnitStatus Status,

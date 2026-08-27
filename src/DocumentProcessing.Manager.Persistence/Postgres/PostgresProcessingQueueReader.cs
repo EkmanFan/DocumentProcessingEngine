@@ -75,31 +75,34 @@ public sealed class PostgresProcessingQueueReader
             new NpgsqlCommand(
                 """
                 SELECT
-                    unit_id,
-                    submission_id,
-                    scope_kind,
-                    start_physical_page_number,
-                    end_physical_page_number,
-                    scope_title,
-                    attempt_number,
-                    status,
-                    queue_position,
-                    result_reference,
-                    failure_code,
-                    failure_message,
-                    interruption_reason,
-                    created_at_utc,
-                    updated_at_utc
-                FROM document_processing_manager.processing_units
+                    processing_unit.unit_id,
+                    processing_unit.submission_id,
+                    processing_unit.scope_kind,
+                    processing_unit.start_physical_page_number,
+                    processing_unit.end_physical_page_number,
+                    processing_unit.scope_title,
+                    processing_unit.attempt_number,
+                    processing_unit.status,
+                    processing_unit.queue_position,
+                    processing_unit.result_reference,
+                    processing_unit.failure_code,
+                    processing_unit.failure_message,
+                    processing_unit.interruption_reason,
+                    processing_unit.created_at_utc,
+                    processing_unit.updated_at_utc,
+                    submission.original_file_name
+                FROM document_processing_manager.processing_units AS processing_unit
+                INNER JOIN document_processing_manager.document_submissions AS submission
+                    ON submission.submission_id = processing_unit.submission_id
                 ORDER BY
-                    CASE status
+                    CASE processing_unit.status
                         WHEN 0 THEN 0
                         WHEN 1 THEN 1
                         ELSE 2
                     END,
-                    queue_position NULLS LAST,
-                    created_at_utc,
-                    unit_id;
+                    processing_unit.queue_position NULLS LAST,
+                    processing_unit.created_at_utc,
+                    processing_unit.unit_id;
                 """,
                 connection,
                 transaction);
@@ -162,6 +165,8 @@ public sealed class PostgresProcessingQueueReader
                 scope,
                 reader.GetInt32(
                     6)),
+            reader.GetString(
+                15),
             (ProcessingUnitStatus)reader.GetInt16(
                 7),
             reader.IsDBNull(

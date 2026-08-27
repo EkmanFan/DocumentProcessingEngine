@@ -1,4 +1,5 @@
 using DocumentProcessing.Manager.Processing;
+using DocumentProcessing.Manager.Submissions;
 
 namespace DocumentProcessing.Manager.Queue;
 
@@ -13,6 +14,11 @@ public sealed record ProcessingQueueItemSnapshot
     /// Gets the immutable processing work item.
     /// </summary>
     public ProcessingWorkItem WorkItem { get; }
+
+    /// <summary>
+    /// Gets the normalized original source filename.
+    /// </summary>
+    public string OriginalFileName { get; }
 
     /// <summary>
     /// Gets the durable unit status.
@@ -58,6 +64,7 @@ public sealed record ProcessingQueueItemSnapshot
     /// </summary>
     public ProcessingQueueItemSnapshot(
         ProcessingWorkItem workItem,
+        string originalFileName,
         ProcessingUnitStatus status,
         long? queuePosition,
         string? resultReference,
@@ -70,6 +77,10 @@ public sealed record ProcessingQueueItemSnapshot
             workItem ??
             throw new ArgumentNullException(
                 nameof(workItem));
+
+        OriginalFileName =
+            DocumentSubmission.NormalizeFileName(
+                originalFileName);
 
         if (!Enum.IsDefined(
                 status))

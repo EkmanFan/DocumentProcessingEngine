@@ -1,0 +1,541 @@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@implements IAsyncDisposable
+@inject IManagerHostClient ManagerClient
+@inject DocumentProcessing.Manager.Blazor.Configuration.ManagerApiOptions Options
+@inject ILogger<ManagerWorkshop> Logger
+
+<main class="workshop-shell">
+    <header class="workshop-header">
+        <div class="brand-block">
+            <div class="brand-mark" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div>
+                <p class="eyebrow">DPEngine Manager</p>
+                <h1>Atelier documentaire</h1>
+            </div>
+        </div>
+
+        <div class="manager-toolbar">
+            <div class="manager-state @StateCssClass" aria-live="polite">
+                <span class="state-indicator" aria-hidden="true"></span>
+                <span>@StateLabel</span>
+            </div>
+
+            <div class="control-group" aria-label="Commandes du Manager">
+                @if (_snapshot?.State == ManagerHostState.Stopped)
+                {
+                    <button class="control-button control-primary"
+                            type="button"
+                            disabled="@_commandRunning"
+                            @onclick="() => ExecuteControlAsync(ManagerControlAction.Start)">
+                        Démarrer
+                    </button>
+                }
+                else if (_snapshot?.State == ManagerHostState.Paused)
+                {
+                    <button class="control-button control-primary"
+                            type="button"
+                            disabled="@_commandRunning"
+                            @onclick="() => ExecuteControlAsync(ManagerControlAction.Resume)">
+                        Reprendre
+                    </button>
+                }
+                else
+                {
+                    <button class="control-button control-primary"
+                            type="button"
+                            disabled="@(_commandRunning || _snapshot is null)"
+                            @onclick="() => ExecuteControlAsync(ManagerControlAction.Pause)">
+                        Pause
+                    </button>
+                }
+
+                <button class="control-button control-secondary"
+                        type="button"
+                        disabled="@(_commandRunning || _snapshot is null || _snapshot.State == ManagerHostState.Stopped)"
+                        @onclick="() => ExecuteControlAsync(ManagerControlAction.Stop)">
+                    Arrêter
+                </button>
+            </div>
+        </div>
+    </header>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="connection-alert" role="alert">
+            <div>
+                <strong>Manager indisponible</strong>
+                <span>@_errorMessage</span>
+            </div>
+            <button type="button" @onclick="RefreshFromUserAsync">Réessayer</button>
+        </div>
+    }
+
+    <section class="workshop-grid" aria-busy="@(_snapshot is null)">
+        <section class="work-column queue-column" aria-labelledby="queue-title">
+            <div class="column-heading">
+                <div>
+                    <p class="column-kicker">Prochainement</p>
+                    <h2 id="queue-title">À traiter</h2>
+                </div>
+                <span class="count-badge">@PendingCount</span>
+            </div>
+
+            <div class="column-rule"></div>
+
+            @if (_snapshot is null)
+            {
+                <div class="skeleton-list" aria-label="Chargement de la file">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            }
+            else if (_snapshot.PendingItems.Count == 0)
+            {
+                <div class="empty-state">
+                    <span class="empty-icon" aria-hidden="true">✓</span>
+                    <strong>La file est vide</strong>
+                    <p>Aucun document n’attend son tour.</p>
+                </div>
+            }
+            else
+            {
+                <ol class="work-list queue-list">
+                    @foreach (var item in _snapshot.PendingItems)
+                    {
+                        <li class="work-item pending-item">
+                            <span class="queue-position">@item.QueuePosition</span>
+                            <div class="work-copy">
+                                <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
+                                <span>@item.ScopeLabel</span>
+                            </div>
+                            @if (item.AttemptNumber > 1)
+                            {
+                                <span class="attempt-badge">Essai @item.AttemptNumber</span>
+                            }
+                        </li>
+                    }
+                </ol>
+            }
+
+            <footer class="column-footer">
+                <span>File globale</span>
+                <span>v@(QueueVersion)</span>
+            </footer>
+        </section>
+
+        <section class="work-column active-column" aria-labelledby="active-title">
+            <div class="column-heading active-heading">
+                <div>
+                    <p class="column-kicker">Sur le bureau</p>
+                    <h2 id="active-title">En cours</h2>
+                </div>
+                @if (_snapshot?.ActiveItem is not null)
+                {
+                    <span class="live-badge"><span></span>Actif</span>
+                }
+            </div>
+
+            <div class="current-document" aria-live="polite">
+                @if (_snapshot?.ActiveItem is { } activeItem)
+                {
+                    <div class="document-monogram" aria-hidden="true">@GetMonogram(activeItem.DocumentTitle)</div>
+                    <div>
+                        <strong>@activeItem.DocumentTitle</strong>
+                        <span>@activeItem.ScopeLabel</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="document-monogram document-monogram-empty" aria-hidden="true">—</div>
+                    <div>
+                        <strong>Aucun traitement en cours</strong>
+                        <span>@IdleMessage</span>
+                    </div>
+                }
+            </div>
+
+            <div class="animation-stage">
+                <span class="reserved-label">Espace animation · incrément 2</span>
+                <div class="stage-glow" aria-hidden="true"></div>
+                <svg class="book-placeholder"
+                     viewBox="0 0 320 220"
+                     role="img"
+                     aria-label="Emplacement réservé au bibliothécaire animé">
+                    <path class="desk-shadow" d="M33 184h254c10 0 18 7 18 16H15c0-9 8-16 18-16Z" />
+                    <path class="book-cover" d="M42 77c43-9 82-2 118 26v81c-36-25-75-32-118-23V77Z" />
+                    <path class="book-cover" d="M278 77c-43-9-82-2-118 26v81c36-25 75-32 118-23V77Z" />
+                    <path class="book-page" d="M50 68c40-5 77 4 110 30v78c-34-23-70-31-110-24V68Z" />
+                    <path class="book-page" d="M270 68c-40-5-77 4-110 30v78c34-23 70-31 110-24V68Z" />
+                    <path class="book-line" d="M72 94c24 0 45 6 64 17M72 113c24 1 45 7 64 18M72 132c20 1 38 6 54 15M248 94c-24 0-45 6-64 17M248 113c-24 1-45 7-64 18M248 132c-20 1-38 6-54 15" />
+                    <path class="bookmark" d="M154 99h12v88l-6-7-6 7V99Z" />
+                </svg>
+                <div class="stage-caption">
+                    <strong>Le bibliothécaire prendra place ici.</strong>
+                    <span>Illustration éditoriale 2D · animation SVG</span>
+                </div>
+            </div>
+
+            <footer class="active-footer">
+                <span>Un seul document est traité à la fois</span>
+                <span>@LastRefreshLabel</span>
+            </footer>
+        </section>
+
+        <section class="work-column completed-column" aria-labelledby="completed-title">
+            <div class="column-heading">
+                <div>
+                    <p class="column-kicker">Archives récentes</p>
+                    <h2 id="completed-title">Traités</h2>
+                </div>
+                <span class="count-badge count-complete">@CompletedCount</span>
+            </div>
+
+            <div class="column-rule"></div>
+
+            @if (_snapshot is null)
+            {
+                <div class="skeleton-list" aria-label="Chargement des traitements terminés">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            }
+            else if (_snapshot.CompletedItems.Count == 0)
+            {
+                <div class="empty-state">
+                    <span class="empty-icon empty-icon-book" aria-hidden="true">◇</span>
+                    <strong>Aucun résultat</strong>
+                    <p>Les documents traités apparaîtront ici.</p>
+                </div>
+            }
+            else
+            {
+                <ol class="work-list completed-list">
+                    @foreach (var item in _snapshot.CompletedItems)
+                    {
+                        <li class="work-item completed-item @(item.Status == ManagerQueueItemStatus.Failed ? "failed-item" : null)">
+                            <span class="result-indicator" aria-hidden="true">
+                                @(item.Status == ManagerQueueItemStatus.Failed ? "!" : "✓")
+                            </span>
+                            <div class="work-copy">
+                                <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
+                                <span>@item.ScopeLabel</span>
+                                <time datetime="@item.UpdatedAtUtc.ToString("O")">@FormatCompletedAt(item.UpdatedAtUtc)</time>
+                            </div>
+                            <span class="result-status">
+                                @(item.Status == ManagerQueueItemStatus.Failed ? "Échec" : "Terminé")
+                            </span>
+                        </li>
+                    }
+                </ol>
+            }
+
+            <footer class="column-footer">
+                <span>Plus récents en premier</span>
+                <span>@CompletedCount résultat(s)</span>
+            </footer>
+        </section>
+    </section>
+</main>
+
+@code {
+    #region Variables and Constants
+
+    private readonly CancellationTokenSource
+        _lifetime =
+            new();
+
+    private readonly SemaphoreSlim
+        _refreshGate =
+            new(
+                initialCount:
+                    1,
+                maxCount:
+                    1);
+
+    private ManagerWorkshopSnapshot?
+        _snapshot;
+
+    private PeriodicTimer?
+        _refreshTimer;
+
+    private Task?
+        _refreshLoop;
+
+    private string?
+        _errorMessage;
+
+    private DateTimeOffset?
+        _lastRefreshUtc;
+
+    private bool
+        _commandRunning;
+
+    #endregion
+
+    #region Properties
+
+    private int PendingCount =>
+        _snapshot?.PendingItems.Count ??
+        0;
+
+    private int CompletedCount =>
+        _snapshot?.CompletedItems.Count ??
+        0;
+
+    private long QueueVersion =>
+        _snapshot?.QueueVersion ??
+        0;
+
+    private string StateCssClass =>
+        _snapshot?.State switch
+        {
+            ManagerHostState.Running =>
+                "state-running",
+            ManagerHostState.Paused =>
+                "state-paused",
+            ManagerHostState.Stopped =>
+                "state-stopped",
+            _ =>
+                "state-unknown"
+        };
+
+    private string StateLabel =>
+        _snapshot?.State switch
+        {
+            ManagerHostState.Running =>
+                "En marche",
+            ManagerHostState.Paused =>
+                "En pause",
+            ManagerHostState.Stopped =>
+                "Arrêté",
+            _ =>
+                "Connexion…"
+        };
+
+    private string IdleMessage =>
+        _snapshot?.State switch
+        {
+            ManagerHostState.Paused =>
+                "La file est en pause.",
+            ManagerHostState.Stopped =>
+                "Le Manager est arrêté.",
+            _ when PendingCount > 0 =>
+                "Le prochain document va être pris en charge.",
+            _ =>
+                "Le bibliothécaire attend un nouveau document."
+        };
+
+    private string LastRefreshLabel =>
+        _lastRefreshUtc is null
+            ? "Synchronisation…"
+            : $"Actualisé à {_lastRefreshUtc.Value.ToLocalTime():HH:mm:ss}";
+
+    #endregion
+
+    #region Methods Lifecycle
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync(
+            notifyRenderer:
+                false,
+            _lifetime.Token);
+
+        _refreshTimer =
+            new PeriodicTimer(
+                Options.RefreshInterval);
+
+        _refreshLoop =
+            RefreshPeriodicallyAsync(
+                _lifetime.Token);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _lifetime
+            .CancelAsync();
+
+        _refreshTimer?.Dispose();
+
+        if (_refreshLoop is not null)
+        {
+            try
+            {
+                await _refreshLoop;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        _refreshGate.Dispose();
+        _lifetime.Dispose();
+    }
+
+    #endregion
+
+    #region Methods Interaction
+
+    private async Task ExecuteControlAsync(
+        ManagerControlAction action)
+    {
+        if (_commandRunning)
+        {
+            return;
+        }
+
+        _commandRunning =
+            true;
+
+        _errorMessage =
+            null;
+
+        try
+        {
+            await ManagerClient
+                .ExecuteControlAsync(
+                    action,
+                    _lifetime.Token);
+
+            await RefreshAsync(
+                notifyRenderer:
+                    false,
+                _lifetime.Token);
+        }
+        catch (OperationCanceledException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager control command {ManagerControlAction} failed.",
+                action);
+
+            _errorMessage =
+                "La commande n’a pas pu être appliquée.";
+        }
+        finally
+        {
+            _commandRunning =
+                false;
+        }
+    }
+
+    private Task RefreshFromUserAsync() =>
+        RefreshAsync(
+            notifyRenderer:
+                false,
+            _lifetime.Token);
+
+    #endregion
+
+    #region Methods Refresh
+
+    private async Task RefreshPeriodicallyAsync(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (_refreshTimer is not null &&
+                   await _refreshTimer.WaitForNextTickAsync(
+                       cancellationToken))
+            {
+                await RefreshAsync(
+                    notifyRenderer:
+                        true,
+                    cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task RefreshAsync(
+        bool notifyRenderer,
+        CancellationToken cancellationToken)
+    {
+        if (!await _refreshGate
+                .WaitAsync(
+                    millisecondsTimeout:
+                        0,
+                    cancellationToken))
+        {
+            return;
+        }
+
+        try
+        {
+            _snapshot =
+                await ManagerClient
+                    .GetWorkshopAsync(
+                        cancellationToken);
+
+            _lastRefreshUtc =
+                DateTimeOffset.UtcNow;
+
+            _errorMessage =
+                null;
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager workshop refresh failed.");
+
+            _errorMessage =
+                "Vérifie que le Host est démarré et que la clé API est correcte.";
+        }
+        finally
+        {
+            _refreshGate.Release();
+        }
+
+        if (notifyRenderer &&
+            !cancellationToken.IsCancellationRequested)
+        {
+            await InvokeAsync(
+                StateHasChanged);
+        }
+    }
+
+    #endregion
+
+    #region Methods Formatting
+
+    private static string GetMonogram(
+        string title) =>
+        title
+            .TrimStart()
+            .FirstOrDefault()
+            .ToString()
+            .ToUpperInvariant();
+
+    private static string FormatCompletedAt(
+        DateTimeOffset value)
+    {
+        var local =
+            value.ToLocalTime();
+
+        return local.Date ==
+               DateTimeOffset.Now.Date
+            ? $"Aujourd’hui à {local:HH:mm}"
+            : local.ToString(
+                "dd/MM/yyyy · HH:mm");
+    }
+
+    #endregion
+}

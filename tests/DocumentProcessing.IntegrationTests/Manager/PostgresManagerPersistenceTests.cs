@@ -1277,9 +1277,15 @@ public sealed class PostgresManagerPersistenceTests
         Assert.All(
             initial.Items,
             item =>
+            {
                 Assert.Equal(
                     ProcessingUnitStatus.Pending,
-                    item.Status));
+                    item.Status);
+
+                Assert.Equal(
+                    submission.OriginalFileName,
+                    item.OriginalFileName);
+            });
 
         await context.QueueStore.ReorderPendingAsync(
             new ReorderProcessingQueueCommand(

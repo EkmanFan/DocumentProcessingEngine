@@ -28,10 +28,13 @@ policy.
 - Managed execution V1: `WholeDocument` paged results without external visual
   assets run through the Host, are retained as verified content-addressed JSON,
   and are registered idempotently in PostgreSQL. Page-range execution, visual
-  result assets and Blazor adapters remain future increments.
+  result assets and advanced workshop interactions remain future increments.
 - Manager Host: a key-protected ASP.NET Core process composes schema migration,
   source/result custody, sequential background execution, lifecycle commands,
   submission, queue observation/reordering and result retrieval.
+- Manager workshop: a server-side Blazor adapter presents pending, active and
+  completed work with lifecycle controls while retaining the Manager API key
+  outside the browser. The animation stage is reserved for the next increment.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts
@@ -112,6 +115,7 @@ src/
   DocumentProcessing.Manager.Persistence/ PostgreSQL and storage adapters
   DocumentProcessing.Manager.DPEngine/ Manager-to-Host execution adapter
   DocumentProcessing.Manager.Host/  executable Manager API and composition root
+  DocumentProcessing.Manager.Blazor/ server-side Manager workshop UI adapter
   DocumentProcessing.DualRunWorker/ isolated non-authoritative worker
 
 tests/
