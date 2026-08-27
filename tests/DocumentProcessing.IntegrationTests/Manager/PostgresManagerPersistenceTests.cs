@@ -1,13 +1,18 @@
 using System.Security.Cryptography;
+using System.Text.Json;
+using DocumentProcessing.Layout.Adapters.PpStructureV3;
 using DocumentProcessing.Manager.Control;
 using DocumentProcessing.Manager.Custody;
+using DocumentProcessing.Manager.DPEngine;
 using DocumentProcessing.Manager.Persistence.Files;
 using DocumentProcessing.Manager.Persistence.Postgres;
 using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Processing;
 using DocumentProcessing.Manager.Queue;
+using DocumentProcessing.Manager.Results;
 using DocumentProcessing.Manager.Runtime;
 using DocumentProcessing.Manager.Submissions;
+using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -71,9 +76,172 @@ public sealed class PostgresManagerPersistenceTests
                 "SELECT MAX(version) FROM document_processing_manager.schema_versions;");
 
         Assert.Equal(
-            2,
+            3,
             Convert.ToInt32(
                 await versionCommand.ExecuteScalarAsync()));
+    }
+
+    [PostgresFact]
+    public async Task ProcessingResultRegistry_RegistersReadsAndReplaysIdempotently()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var workItem =
+            CreateWorkItem();
+
+        await InsertPendingAsync(
+            context.DataSource,
+            workItem,
+            queuePosition:
+                1);
+
+        var result =
+            CreateProcessingResult(
+                workItem,
+                digestCharacter:
+                    '1');
+
+        var created =
+            await context.ResultRegistry.RegisterAsync(
+                result);
+
+        var replay =
+            await context.ResultRegistry.RegisterAsync(
+                CreateProcessingResult(
+                    workItem,
+                    digestCharacter:
+                        '1',
+                    resultReference:
+                        "manager-result:retry",
+                    producedAtUtc:
+                        DateTimeOffset.UnixEpoch.AddDays(
+                            1)));
+
+        Assert.True(
+            created.Created);
+
+        Assert.False(
+            replay.Created);
+
+        Assert.Equal(
+            result,
+            replay.Result);
+
+        Assert.Equal(
+            result,
+            await context.ResultRegistry.GetByUnitAsync(
+                workItem.UnitId));
+
+        Assert.Equal(
+            result,
+            await context.ResultRegistry.GetByReferenceAsync(
+                result.ResultReference));
+    }
+
+    [PostgresFact]
+    public async Task ProcessingResultRegistry_RejectsConflictingReplayAtomically()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var workItem =
+            CreateWorkItem();
+
+        await InsertPendingAsync(
+            context.DataSource,
+            workItem,
+            queuePosition:
+                1);
+
+        await context.ResultRegistry.RegisterAsync(
+            CreateProcessingResult(
+                workItem,
+                digestCharacter:
+                    '2'));
+
+        await Assert.ThrowsAsync<ProcessingResultConflictException>(
+            () =>
+                context.ResultRegistry
+                    .RegisterAsync(
+                        CreateProcessingResult(
+                            workItem,
+                            digestCharacter:
+                                '3'))
+                    .AsTask());
+
+        await using var countCommand =
+            context.DataSource.CreateCommand(
+                "SELECT COUNT(*) FROM document_processing_manager.processing_result_artifacts;");
+
+        Assert.Equal(
+            1L,
+            Convert.ToInt64(
+                await countCommand.ExecuteScalarAsync()));
+    }
+
+    [PostgresFact]
+    public async Task ProcessingResultRegistry_ConcurrentEquivalentRegistrationHasSingleCreation()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var workItem =
+            CreateWorkItem();
+
+        await InsertPendingAsync(
+            context.DataSource,
+            workItem,
+            queuePosition:
+                1);
+
+        var registrations =
+            Enumerable.Range(
+                    0,
+                    8)
+                .Select(
+                    index =>
+                        context.ResultRegistry
+                            .RegisterAsync(
+                                CreateProcessingResult(
+                                    workItem,
+                                    digestCharacter:
+                                        '4',
+                                    resultReference:
+                                        $"manager-result:concurrent-{index}"))
+                            .AsTask())
+                .ToArray();
+
+        var results =
+            await Task.WhenAll(
+                registrations);
+
+        Assert.Single(
+            results,
+            result =>
+                result.Created);
+
+        Assert.Single(
+            results
+                .Select(
+                    result =>
+                        result.Result.ResultReference)
+                .Distinct(
+                    StringComparer.Ordinal));
+    }
+
+    [PostgresFact]
+    public async Task ManagedExecution_ProcessesOnlyWhitelistedHabermasPage()
+    {
+        await ExecuteManagedPageAsync(
+            "habermas-p0079.pdf");
+    }
+
+    [PostgresFact]
+    public async Task ManagedExecution_ProcessesOnlyWhitelistedDeCretisPage()
+    {
+        await ExecuteManagedPageAsync(
+            "decretis-p0512.pdf");
     }
 
     [PostgresFact]
@@ -1227,6 +1395,253 @@ public sealed class PostgresManagerPersistenceTests
         return context;
     }
 
+    private static async Task ExecuteManagedPageAsync(
+        string whitelistedFileName)
+    {
+        if (whitelistedFileName is not
+            ("habermas-p0079.pdf" or "decretis-p0512.pdf"))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(whitelistedFileName),
+                whitelistedFileName,
+                "Managed page tests accept only their explicit fixture whitelist.");
+        }
+
+        var fixturePath =
+            Path.Combine(
+                FindRepositoryRoot(),
+                "tests",
+                "document_corpus",
+                "pdf",
+                "pages",
+                whitelistedFileName);
+
+        if (!File.Exists(
+                fixturePath))
+        {
+            throw Xunit.Sdk.SkipException.ForSkip(
+                $"Local qualified fixture '{whitelistedFileName}' is unavailable.");
+        }
+
+        await using var context =
+            await CreateContextAsync();
+
+        var custodyRoot =
+            CreateTemporaryCustodyRoot();
+
+        try
+        {
+            var sourceStore =
+                new FileSystemSourceArtifactCustodyStore(
+                    new FileSystemSourceArtifactCustodyOptions(
+                        Path.Combine(
+                            custodyRoot,
+                            "sources"),
+                        maximumArtifactBytes:
+                            16 * 1024 * 1024));
+
+            var resultStore =
+                new FileSystemProcessingResultArtifactStore(
+                    new FileSystemProcessingResultArtifactOptions(
+                        Path.Combine(
+                            custodyRoot,
+                            "results"),
+                        maximumArtifactBytes:
+                            64 * 1024 * 1024));
+
+            var submitter =
+                new SubmitDocumentService(
+                    sourceStore,
+                    context.SubmissionStore);
+
+            await using var source =
+                new FileStream(
+                    fixturePath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    bufferSize:
+                        128 * 1024,
+                    FileOptions.Asynchronous |
+                    FileOptions.SequentialScan);
+
+            var submitted =
+                await submitter.SubmitAsync(
+                    new SubmitDocumentCommand(
+                        DocumentSubmissionId.New(),
+                        source,
+                        whitelistedFileName,
+                        "application/pdf",
+                        "qualified local single-page fixture"));
+
+            var unitId =
+                Assert.Single(
+                    submitted.ProcessingUnitIds);
+
+            using var host =
+                new global::DocumentProcessing.DocumentProcessingHost(
+                    new global::DocumentProcessing.DocumentProcessingHostOptions(
+                        "manager-integration-v1",
+                        new PpStructureV3Options(
+                            new Uri(
+                                "http://127.0.0.1:1/layout-parsing")),
+                        new PaddleOcrOptions(
+                            new Uri(
+                                "http://127.0.0.1:1/ocr"),
+                            "manager-integration-ocr")));
+
+            var executor =
+                new DocumentProcessingHostExecutor(
+                    host,
+                    context.SubmissionStore,
+                    sourceStore,
+                    resultStore,
+                    resultStore,
+                    context.ResultRegistry,
+                    context.ResultRegistry,
+                    new PagedDocumentProcessingResultJsonEncoder());
+
+            var workerId =
+                $"managed-page-{Guid.NewGuid():N}";
+
+            var now =
+                DateTimeOffset.UtcNow;
+
+            var runtimeLease =
+                await context.RuntimeLeaseStore.TryAcquireAsync(
+                    workerId,
+                    now,
+                    now.AddMinutes(
+                        5));
+
+            Assert.NotNull(
+                runtimeLease);
+
+            var dispatcher =
+                new SequentialProcessingDispatcher(
+                    context.QueueStore,
+                    executor,
+                    new SequentialProcessingDispatcherOptions(
+                        workerId,
+                        leaseDuration:
+                            TimeSpan.FromMinutes(
+                                2),
+                        leaseRenewalInterval:
+                            TimeSpan.FromSeconds(
+                                30)),
+                    new BoundedProcessingFailurePolicy(
+                        maximumAttempts:
+                            1));
+
+            var dispatched =
+                await dispatcher.DispatchNextAsync(
+                    runtimeLease,
+                    ProcessingInterruptionReason.HostShutdown);
+
+            Assert.Equal(
+                ProcessingDispatchStatus.Succeeded,
+                dispatched.Status);
+
+            Assert.Equal(
+                unitId,
+                dispatched.UnitId);
+
+            var registered =
+                await context.ResultRegistry.GetByUnitAsync(
+                    unitId);
+
+            Assert.NotNull(
+                registered);
+
+            Assert.True(
+                await resultStore.VerifyAsync(
+                    registered.Artifact));
+
+            await using var retainedResult =
+                await resultStore.OpenReadAsync(
+                    registered.Artifact);
+
+            using var json =
+                await JsonDocument.ParseAsync(
+                    retainedResult);
+
+            var root =
+                json.RootElement;
+
+            Assert.Equal(
+                "document-processing-result-v2",
+                root.GetProperty(
+                        "schemaVersion")
+                    .GetString());
+
+            Assert.Equal(
+                submitted.Submission.SourceArtifact.Digest.Value,
+                root.GetProperty(
+                        "source")
+                    .GetProperty(
+                        "sha256")
+                    .GetString());
+
+            Assert.Equal(
+                "paged",
+                root.GetProperty(
+                        "sourceStructure")
+                    .GetProperty(
+                        "kind")
+                    .GetString());
+
+            Assert.True(
+                root.GetProperty(
+                        "elements")
+                    .GetArrayLength() >
+                0);
+
+            var replay =
+                await executor.ExecuteAsync(
+                    new ProcessingWorkItem(
+                        unitId,
+                        submitted.Submission.SubmissionId,
+                        new ProcessingUnitScope.WholeDocument(),
+                        attemptNumber:
+                            2));
+
+            Assert.Equal(
+                registered.ResultReference,
+                Assert.IsType<ProcessingExecutionOutcome.Success>(
+                        replay)
+                    .ResultReference);
+        }
+        finally
+        {
+            DeleteTemporaryCustodyRoot(
+                custodyRoot);
+        }
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var current =
+            new DirectoryInfo(
+                AppContext.BaseDirectory);
+
+        while (current is not null)
+        {
+            if (File.Exists(
+                    Path.Combine(
+                        current.FullName,
+                        "DocumentProcessingEngine.sln")))
+            {
+                return current.FullName;
+            }
+
+            current =
+                current.Parent;
+        }
+
+        throw new InvalidOperationException(
+            "DocumentProcessingEngine repository root could not be located.");
+    }
+
     private static ProcessingWorkItem CreateWorkItem(
         ProcessingUnitScope? scope = null) =>
         new(
@@ -1244,6 +1659,8 @@ public sealed class PostgresManagerPersistenceTests
             dataSource.CreateCommand(
                 """
                 TRUNCATE TABLE
+                    document_processing_manager.processing_results,
+                    document_processing_manager.processing_result_artifacts,
                     document_processing_manager.custody_events,
                     document_processing_manager.processing_units,
                     document_processing_manager.document_submissions,
@@ -1590,6 +2007,28 @@ public sealed class PostgresManagerPersistenceTests
             "integration test",
             DateTimeOffset.UnixEpoch);
 
+    private static ProcessingResultRecord CreateProcessingResult(
+        ProcessingWorkItem workItem,
+        char digestCharacter,
+        string resultReference = "manager-result:test",
+        DateTimeOffset? producedAtUtc = null) =>
+        new(
+            resultReference,
+            workItem.UnitId,
+            workItem.SubmissionId,
+            new ProcessingResultArtifact(
+                new Sha256Digest(
+                    new string(
+                        digestCharacter,
+                        count:
+                            64)),
+                byteLength:
+                    256),
+            "application/vnd.document-processing-result+json",
+            "document-processing-result-v2",
+            producedAtUtc ??
+            DateTimeOffset.UnixEpoch);
+
     private static string CreateTemporaryCustodyRoot() =>
         Path.Combine(
             Path.GetTempPath(),
@@ -1666,6 +2105,13 @@ public sealed class PostgresManagerPersistenceTests
                 dataSource);
 
         public PostgresDocumentSubmissionStore SubmissionStore
+        {
+            get;
+        } =
+            new(
+                dataSource);
+
+        public PostgresProcessingResultRegistry ResultRegistry
         {
             get;
         } =

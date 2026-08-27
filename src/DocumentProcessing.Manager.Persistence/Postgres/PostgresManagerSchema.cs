@@ -283,6 +283,60 @@ public sealed class PostgresManagerSchema
                 NOT VALID;
             """;
 
+    private const string
+        MigrationThreeSql =
+            """
+            ALTER TABLE document_processing_manager.processing_units
+                ADD CONSTRAINT uq_processing_units_unit_submission
+                UNIQUE (unit_id, submission_id);
+
+            CREATE TABLE document_processing_manager.processing_result_artifacts
+            (
+                sha256_digest text PRIMARY KEY
+                    CHECK (sha256_digest ~ '^[0-9a-f]{64}$'),
+                byte_length bigint NOT NULL
+                    CHECK (byte_length > 0),
+                first_stored_at_utc timestamp with time zone NOT NULL
+                    DEFAULT clock_timestamp()
+            );
+
+            CREATE TABLE document_processing_manager.processing_results
+            (
+                result_reference text PRIMARY KEY
+                    CHECK (length(result_reference) > 0),
+                processing_unit_id uuid NOT NULL UNIQUE,
+                submission_id uuid NOT NULL,
+                result_sha256_digest text NOT NULL
+                    REFERENCES document_processing_manager.processing_result_artifacts
+                        (sha256_digest),
+                media_type text NOT NULL
+                    CHECK (length(media_type) > 0),
+                schema_version text NOT NULL
+                    CHECK (length(schema_version) > 0),
+                produced_at_utc timestamp with time zone NOT NULL,
+                FOREIGN KEY
+                    (processing_unit_id, submission_id)
+                REFERENCES document_processing_manager.processing_units
+                    (unit_id, submission_id)
+            );
+
+            CREATE TRIGGER processing_result_artifacts_are_immutable
+            BEFORE UPDATE OR DELETE
+            ON document_processing_manager.processing_result_artifacts
+            FOR EACH ROW
+            EXECUTE FUNCTION document_processing_manager.reject_custody_mutation();
+
+            CREATE TRIGGER processing_results_are_immutable
+            BEFORE UPDATE OR DELETE
+            ON document_processing_manager.processing_results
+            FOR EACH ROW
+            EXECUTE FUNCTION document_processing_manager.reject_custody_mutation();
+
+            CREATE INDEX ix_processing_results_artifact_digest
+                ON document_processing_manager.processing_results
+                    (result_sha256_digest);
+            """;
+
     private static readonly Migration[]
         Migrations =
         [
@@ -293,7 +347,11 @@ public sealed class PostgresManagerSchema
             new(
                 Version:
                     2,
-                MigrationTwoSql)
+                MigrationTwoSql),
+            new(
+                Version:
+                    3,
+                MigrationThreeSql)
         ];
 
     private readonly NpgsqlDataSource

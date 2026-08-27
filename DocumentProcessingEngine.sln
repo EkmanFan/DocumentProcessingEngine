@@ -34,6 +34,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Layout.A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Ocr.Adapters", "src\DocumentProcessing.Ocr.Adapters\DocumentProcessing.Ocr.Adapters.csproj", "{1E2F98CA-43EA-441D-B10F-01481F48D49B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Manager.DPEngine", "src\DocumentProcessing.Manager.DPEngine\DocumentProcessing.Manager.DPEngine.csproj", "{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -200,6 +202,18 @@ Global
 		{1E2F98CA-43EA-441D-B10F-01481F48D49B}.Release|x64.Build.0 = Release|Any CPU
 		{1E2F98CA-43EA-441D-B10F-01481F48D49B}.Release|x86.ActiveCfg = Release|Any CPU
 		{1E2F98CA-43EA-441D-B10F-01481F48D49B}.Release|x86.Build.0 = Release|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Debug|x64.Build.0 = Debug|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Debug|x86.Build.0 = Debug|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Release|x64.ActiveCfg = Release|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Release|x64.Build.0 = Release|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Release|x86.ActiveCfg = Release|Any CPU
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -219,5 +233,6 @@ Global
 		{27176F91-F885-4552-950F-D0ED8AE19253} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{7C812540-417D-4398-AA7B-312C6856FB83} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{1E2F98CA-43EA-441D-B10F-01481F48D49B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{FABFE4CC-4FE6-46E5-9D6B-4503EC843906} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

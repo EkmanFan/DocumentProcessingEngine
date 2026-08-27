@@ -1,14 +1,14 @@
-using DocumentProcessing.Manager.Custody;
 using DocumentProcessing.Manager.Ports;
+using DocumentProcessing.Manager.Results;
 
 namespace DocumentProcessing.Manager.Persistence.Files;
 
 /// <summary>
-/// Content-addressed filesystem adapter preserving exact immutable source bytes.
+/// Content-addressed filesystem adapter for immutable processing-result bytes.
 /// </summary>
-public sealed class FileSystemSourceArtifactCustodyStore
-    : ISourceArtifactWriter,
-      ISourceArtifactReader
+public sealed class FileSystemProcessingResultArtifactStore
+    : IProcessingResultArtifactWriter,
+      IProcessingResultArtifactReader
 {
     #region Variables and Constants
 
@@ -20,10 +20,10 @@ public sealed class FileSystemSourceArtifactCustodyStore
     #region ctor
 
     /// <summary>
-    /// Creates the content-addressed filesystem custody adapter.
+    /// Creates the processing-result filesystem adapter.
     /// </summary>
-    public FileSystemSourceArtifactCustodyStore(
-        FileSystemSourceArtifactCustodyOptions options)
+    public FileSystemProcessingResultArtifactStore(
+        FileSystemProcessingResultArtifactOptions options)
     {
         ArgumentNullException.ThrowIfNull(
             options);
@@ -39,7 +39,7 @@ public sealed class FileSystemSourceArtifactCustodyStore
     #region Methods Write
 
     /// <inheritdoc />
-    public async ValueTask<SourceArtifact> StoreAsync(
+    public async ValueTask<ProcessingResultArtifact> StoreAsync(
         Stream content,
         CancellationToken cancellationToken = default)
     {
@@ -51,13 +51,13 @@ public sealed class FileSystemSourceArtifactCustodyStore
                         cancellationToken)
                     .ConfigureAwait(false);
 
-            return new SourceArtifact(
+            return new ProcessingResultArtifact(
                 stored.Digest,
                 stored.ByteLength);
         }
         catch (ContentAddressedFileIntegrityException exception)
         {
-            throw new SourceArtifactIntegrityException(
+            throw new ProcessingResultIntegrityException(
                 exception.ExpectedDigest,
                 exception.Message);
         }
@@ -69,7 +69,7 @@ public sealed class FileSystemSourceArtifactCustodyStore
 
     /// <inheritdoc />
     public ValueTask<bool> VerifyAsync(
-        SourceArtifact artifact,
+        ProcessingResultArtifact artifact,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
@@ -84,7 +84,7 @@ public sealed class FileSystemSourceArtifactCustodyStore
 
     /// <inheritdoc />
     public async ValueTask<Stream> OpenReadAsync(
-        SourceArtifact artifact,
+        ProcessingResultArtifact artifact,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
@@ -102,7 +102,7 @@ public sealed class FileSystemSourceArtifactCustodyStore
         }
         catch (ContentAddressedFileIntegrityException exception)
         {
-            throw new SourceArtifactIntegrityException(
+            throw new ProcessingResultIntegrityException(
                 exception.ExpectedDigest,
                 exception.Message);
         }

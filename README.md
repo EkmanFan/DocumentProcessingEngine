@@ -22,10 +22,13 @@ policy.
 - Manager foundation: durable lifecycle semantics, globally leased sequential
   dispatch and hexagonal ports.
 - Manager persistence: versioned PostgreSQL state, runtime lease, fenced global
-  queue, immutable submission manifests and append-only custody events.
+  queue, immutable submission/result manifests and append-only custody events.
 - Source custody: exact bytes are retained through a content-addressed SHA-256
-  filesystem adapter and verified before reading; DPEngine execution, result
-  storage and Blazor adapters are not implemented yet.
+  filesystem adapter and verified before reading.
+- Managed execution V1: `WholeDocument` paged results without external visual
+  assets run through the Host, are retained as verified content-addressed JSON,
+  and are registered idempotently in PostgreSQL. Page-range execution, visual
+  result assets and Blazor adapters remain future increments.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts
@@ -104,6 +107,7 @@ src/
   DocumentProcessing/               consumer-facing Host and composition root
   DocumentProcessing.Manager/       queue/control/runtime core and hexagonal ports
   DocumentProcessing.Manager.Persistence/ PostgreSQL and storage adapters
+  DocumentProcessing.Manager.DPEngine/ Manager-to-Host execution adapter
   DocumentProcessing.DualRunWorker/ isolated non-authoritative worker
 
 tests/

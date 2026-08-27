@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Engine\DocumentProcessing.Engine.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Manager.Persistence\DocumentProcessing.Manager.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\DocumentProcessing.Manager.DPEngine\DocumentProcessing.Manager.DPEngine.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Manager\DocumentProcessing.Manager.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Pdf\DocumentProcessing.Pdf.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.DualRunWorker\DocumentProcessing.DualRunWorker.csproj" ReferenceOutputAssembly="false" />
