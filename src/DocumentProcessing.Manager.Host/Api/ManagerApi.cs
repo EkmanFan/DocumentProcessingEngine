@@ -5,6 +5,7 @@ using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Runtime;
 using DocumentProcessing.Manager.Submissions;
 using DocumentProcessing.Manager.Host.Security;
+using Microsoft.Net.Http.Headers;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
 
 namespace DocumentProcessing.Manager.Host.Api;
@@ -196,9 +197,8 @@ internal static class ManagerApi
         }
 
         var fileName =
-            request.Headers[
-                    DocumentFileNameHeader]
-                .ToString();
+            ReadDocumentFileName(
+                request);
 
         if (string.IsNullOrWhiteSpace(
                 fileName))
@@ -206,7 +206,7 @@ internal static class ManagerApi
             return HttpResults.BadRequest(
                 new ApiConflictResponse(
                     "manager.file_name_required",
-                    $"Header '{DocumentFileNameHeader}' is required."));
+                    $"A filename is required in Content-Disposition or header '{DocumentFileNameHeader}'."));
         }
 
         if (request.ContentLength is <=
@@ -221,8 +221,12 @@ internal static class ManagerApi
         if (request.ContentLength >
             maximumSourceBytes)
         {
-            return HttpResults.StatusCode(
-                StatusCodes.Status413PayloadTooLarge);
+            return HttpResults.Json(
+                new ApiConflictResponse(
+                    "manager.source_too_large",
+                    $"The source exceeds the configured custody limit of {maximumSourceBytes} bytes."),
+                statusCode:
+                    StatusCodes.Status413PayloadTooLarge);
         }
 
         try
@@ -502,6 +506,49 @@ internal static class ManagerApi
             value)
             ? null
             : value;
+    }
+
+    private static string ReadDocumentFileName(
+        HttpRequest request)
+    {
+        var contentDisposition =
+            request
+                .GetTypedHeaders()
+                .ContentDisposition;
+
+        var encodedFileName =
+            contentDisposition
+                ?.FileNameStar
+                .Value;
+
+        if (!string.IsNullOrWhiteSpace(
+                encodedFileName))
+        {
+            return encodedFileName;
+        }
+
+        var quotedFileName =
+            contentDisposition
+                ?.FileName;
+
+        if (quotedFileName is not null)
+        {
+            var fileName =
+                HeaderUtilities
+                    .RemoveQuotes(
+                        quotedFileName.Value)
+                    .Value;
+
+            if (!string.IsNullOrWhiteSpace(
+                    fileName))
+            {
+                return fileName;
+            }
+        }
+
+        return request.Headers[
+                DocumentFileNameHeader]
+            .ToString();
     }
 
     #endregion

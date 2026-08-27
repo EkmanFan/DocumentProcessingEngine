@@ -38,6 +38,8 @@ policy.
   reading, paused, stopped and unavailable states and celebrates newly
   completed work. English and French presentation follows the embedding
   application's ambient .NET culture, with English as the standalone default.
+  Its persistent animation stage also accepts streamed PDF/EPUB submissions;
+  immutable custody and queue registration remain owned by the Manager Host.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts

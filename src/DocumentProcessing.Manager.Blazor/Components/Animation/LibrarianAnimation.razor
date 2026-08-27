@@ -1,12 +1,14 @@
 @implements IAsyncDisposable
 @inject IStringLocalizer<LibrarianAnimation> Localizer
 
-<div class="librarian-scene @ModeCssClass @(_celebrating ? "scene-celebrating" : null)"
+<div class="librarian-scene @ModeCssClass @MomentCssClass"
      role="img"
      aria-label="@AccessibleLabel"
      data-animation-mode="@ModeCssClass"
      data-celebration-sequence="@CelebrationSequence"
-     data-celebrating="@_celebrating.ToString().ToLowerInvariant()">
+     data-reception-sequence="@ReceptionSequence"
+     data-celebrating="@IsCelebrating.ToString().ToLowerInvariant()"
+     data-receiving="@IsReceiving.ToString().ToLowerInvariant()">
     <span class="scene-status">@StatusLabel</span>
 
     <div class="sprite-window" aria-hidden="true">
@@ -34,21 +36,24 @@
             "/images/librarian-animation-v1.png";
 
     private static readonly TimeSpan
-        CelebrationDuration =
+        MomentDuration =
             TimeSpan.FromMilliseconds(
                 4000);
 
     private CancellationTokenSource?
-        _celebrationCancellation;
+        _momentCancellation;
 
     private Task?
-        _celebrationTask;
+        _momentTask;
 
     private long
         _observedCelebrationSequence;
 
-    private bool
-        _celebrating;
+    private long
+        _observedReceptionSequence;
+
+    private LibrarianMoment?
+        _activeMoment;
 
     #endregion
 
@@ -64,12 +69,37 @@
     public long CelebrationSequence { get; set; }
 
     [Parameter]
+    public long ReceptionSequence { get; set; }
+
+    [Parameter]
+    public string? ReceptionDocumentTitle { get; set; }
+
+    [Parameter]
     public string ImageSource { get; set; } =
         DefaultImageSource;
 
     #endregion
 
     #region Properties
+
+    private bool IsCelebrating =>
+        _activeMoment ==
+        LibrarianMoment.Completion;
+
+    private bool IsReceiving =>
+        _activeMoment ==
+        LibrarianMoment.Reception;
+
+    private string? MomentCssClass =>
+        _activeMoment switch
+        {
+            LibrarianMoment.Completion =>
+                "scene-celebrating",
+            LibrarianMoment.Reception =>
+                "scene-celebrating scene-receiving",
+            _ =>
+                null
+        };
 
     private string ModeCssClass =>
         Mode switch
@@ -94,54 +124,71 @@
         };
 
     private string StatusLabel =>
-        _celebrating
-            ? Localizer["StatusCompleted"]
-            : Mode switch
-            {
-                LibrarianAnimationMode.Connecting =>
-                    Localizer["StatusConnecting"],
-                LibrarianAnimationMode.Waiting =>
-                    Localizer["StatusWaiting"],
-                LibrarianAnimationMode.Reading =>
-                    Localizer["StatusReading"],
-                LibrarianAnimationMode.Paused =>
-                    Localizer["StatusPaused"],
-                LibrarianAnimationMode.Stopped =>
-                    Localizer["StatusStopped"],
-                LibrarianAnimationMode.Unavailable =>
-                    Localizer["StatusUnavailable"],
-                _ =>
-                    string.Empty
-            };
+        _activeMoment switch
+        {
+            LibrarianMoment.Completion =>
+                Localizer["StatusCompleted"],
+            LibrarianMoment.Reception =>
+                Localizer["StatusReceived"],
+            _ =>
+                Mode switch
+                {
+                    LibrarianAnimationMode.Connecting =>
+                        Localizer["StatusConnecting"],
+                    LibrarianAnimationMode.Waiting =>
+                        Localizer["StatusWaiting"],
+                    LibrarianAnimationMode.Reading =>
+                        Localizer["StatusReading"],
+                    LibrarianAnimationMode.Paused =>
+                        Localizer["StatusPaused"],
+                    LibrarianAnimationMode.Stopped =>
+                        Localizer["StatusStopped"],
+                    LibrarianAnimationMode.Unavailable =>
+                        Localizer["StatusUnavailable"],
+                    _ =>
+                        string.Empty
+                }
+        };
 
     private string CaptionTitle =>
-        _celebrating
-            ? Localizer["TitleCelebrating"]
-            : Mode switch
-            {
-                LibrarianAnimationMode.Connecting =>
-                    Localizer["TitleConnecting"],
-                LibrarianAnimationMode.Waiting =>
-                    Localizer["TitleWaiting"],
-                LibrarianAnimationMode.Reading =>
-                    Localizer["TitleReading"],
-                LibrarianAnimationMode.Paused =>
-                    Localizer["TitlePaused"],
-                LibrarianAnimationMode.Stopped =>
-                    Localizer["TitleStopped"],
-                LibrarianAnimationMode.Unavailable =>
-                    Localizer["TitleUnavailable"],
-                _ =>
-                    string.Empty
-            };
+        _activeMoment switch
+        {
+            LibrarianMoment.Completion =>
+                Localizer["TitleCelebrating"],
+            LibrarianMoment.Reception =>
+                Localizer["TitleReceived"],
+            _ =>
+                Mode switch
+                {
+                    LibrarianAnimationMode.Connecting =>
+                        Localizer["TitleConnecting"],
+                    LibrarianAnimationMode.Waiting =>
+                        Localizer["TitleWaiting"],
+                    LibrarianAnimationMode.Reading =>
+                        Localizer["TitleReading"],
+                    LibrarianAnimationMode.Paused =>
+                        Localizer["TitlePaused"],
+                    LibrarianAnimationMode.Stopped =>
+                        Localizer["TitleStopped"],
+                    LibrarianAnimationMode.Unavailable =>
+                        Localizer["TitleUnavailable"],
+                    _ =>
+                        string.Empty
+                }
+        };
 
     private string CaptionDetail =>
-        _celebrating
-            ? Localizer["DetailCelebrating"]
-            : Mode ==
-              LibrarianAnimationMode.Reading
-                ? NormalizedDocumentTitle
-                : Mode switch
+        _activeMoment switch
+        {
+            LibrarianMoment.Completion =>
+                Localizer["DetailCelebrating"],
+            LibrarianMoment.Reception =>
+                NormalizedReceptionDocumentTitle,
+            _ =>
+                Mode ==
+                LibrarianAnimationMode.Reading
+                    ? NormalizedDocumentTitle
+                    : Mode switch
                 {
                     LibrarianAnimationMode.Waiting =>
                         Localizer["DetailWaiting"],
@@ -153,7 +200,8 @@
                         Localizer["DetailUnavailable"],
                     _ =>
                         Localizer["DetailConnecting"]
-                };
+                }
+        };
 
     private string AccessibleLabel =>
         Localizer[
@@ -167,6 +215,12 @@
             DocumentTitle)
             ? Localizer["DefaultDocumentTitle"]
             : DocumentTitle.Trim();
+
+    private string NormalizedReceptionDocumentTitle =>
+        string.IsNullOrWhiteSpace(
+            ReceptionDocumentTitle)
+            ? Localizer["DefaultDocumentTitle"]
+            : ReceptionDocumentTitle.Trim();
 
     #endregion
 
@@ -192,6 +246,15 @@
                 "The celebration sequence cannot be negative.");
         }
 
+        if (ReceptionSequence <
+            0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(ReceptionSequence),
+                ReceptionSequence,
+                "The reception sequence cannot be negative.");
+        }
+
         if (string.IsNullOrWhiteSpace(
                 ImageSource))
         {
@@ -200,69 +263,91 @@
                 nameof(ImageSource));
         }
 
-        if (CelebrationSequence <=
-            _observedCelebrationSequence)
+        var receptionRequested =
+            ReceptionSequence >
+            _observedReceptionSequence;
+
+        var completionRequested =
+            CelebrationSequence >
+            _observedCelebrationSequence;
+
+        _observedReceptionSequence =
+            Math.Max(
+                _observedReceptionSequence,
+                ReceptionSequence);
+
+        _observedCelebrationSequence =
+            Math.Max(
+                _observedCelebrationSequence,
+                CelebrationSequence);
+
+        if (receptionRequested)
         {
+            StartMoment(
+                LibrarianMoment.Reception);
+
             return;
         }
 
-        _observedCelebrationSequence =
-            CelebrationSequence;
-
-        StartCelebration();
+        if (completionRequested)
+        {
+            StartMoment(
+                LibrarianMoment.Completion);
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_celebrationCancellation is null)
+        if (_momentCancellation is null)
         {
             return;
         }
 
-        await _celebrationCancellation
+        await _momentCancellation
             .CancelAsync();
 
-        if (_celebrationTask is not null)
+        if (_momentTask is not null)
         {
             try
             {
-                await _celebrationTask;
+                await _momentTask;
             }
             catch (OperationCanceledException)
             {
             }
         }
 
-        _celebrationCancellation.Dispose();
+        _momentCancellation.Dispose();
     }
 
     #endregion
 
     #region Methods Animation
 
-    private void StartCelebration()
+    private void StartMoment(
+        LibrarianMoment moment)
     {
-        _celebrationCancellation?.Cancel();
-        _celebrationCancellation?.Dispose();
+        _momentCancellation?.Cancel();
+        _momentCancellation?.Dispose();
 
-        _celebrationCancellation =
+        _momentCancellation =
             new CancellationTokenSource();
 
-        _celebrating =
-            true;
+        _activeMoment =
+            moment;
 
-        _celebrationTask =
-            CompleteCelebrationAsync(
-                _celebrationCancellation.Token);
+        _momentTask =
+            CompleteMomentAsync(
+                _momentCancellation.Token);
     }
 
-    private async Task CompleteCelebrationAsync(
+    private async Task CompleteMomentAsync(
         CancellationToken cancellationToken)
     {
         try
         {
             await Task.Delay(
-                CelebrationDuration,
+                MomentDuration,
                 cancellationToken);
         }
         catch (OperationCanceledException)
@@ -271,11 +356,21 @@
             return;
         }
 
-        _celebrating =
-            false;
+        _activeMoment =
+            null;
 
         await InvokeAsync(
             StateHasChanged);
+    }
+
+    #endregion
+
+    #region Types
+
+    private enum LibrarianMoment
+    {
+        Completion,
+        Reception
     }
 
     #endregion

@@ -38,11 +38,17 @@ public sealed class ManagerBlazorDependencyTests
         var animationType =
             typeof(global::DocumentProcessing.Manager.Blazor.Components.Animation.LibrarianAnimation);
 
+        var documentDropZoneType =
+            typeof(global::DocumentProcessing.Manager.Blazor.Components.Workshop.ManagerDocumentDropZone);
+
         Assert.True(
             workshopType.IsPublic);
 
         Assert.True(
             animationType.IsPublic);
+
+        Assert.True(
+            documentDropZoneType.IsPublic);
 
         Assert.True(
             typeof(global::DocumentProcessing.Manager.Blazor.DependencyInjection.ManagerWorkshopServiceCollectionExtensions)

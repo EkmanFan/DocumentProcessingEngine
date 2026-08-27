@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="DropInputLabel" xml:space="preserve"><value>Drop or choose a PDF or EPUB document</value></data>
+  <data name="DropHint" xml:space="preserve"><value>Drop or choose a PDF / EPUB</value></data>
+  <data name="DropReadyTitle" xml:space="preserve"><value>Release the document here</value></data>
+  <data name="DropReadyDetail" xml:space="preserve"><value>The librarian is ready to receive it.</value></data>
+  <data name="UploadingTitle" xml:space="preserve"><value>Securing the original source…</value></data>
+  <data name="UploadFailedTitle" xml:space="preserve"><value>The document was not added</value></data>
+  <data name="DefaultDocumentName" xml:space="preserve"><value>Selected document</value></data>
+  <data name="UploadNoReadableContentError" xml:space="preserve"><value>The browser reported no readable content for this file. If it is not empty, choose it by clicking the drop zone.</value></data>
+  <data name="UploadTooLargeError" xml:space="preserve"><value>The file exceeds the configured limit of {0}.</value></data>
+  <data name="UploadUnsupportedFormatError" xml:space="preserve"><value>Only PDF and EPUB documents are accepted.</value></data>
+  <data name="UploadRejectedError" xml:space="preserve"><value>The Manager rejected the document. Check the Host logs.</value></data>
+  <data name="UploadConnectionError" xml:space="preserve"><value>The connection was interrupted before custody was confirmed.</value></data>
+</root>

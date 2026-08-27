@@ -160,11 +160,13 @@
                 }
             </div>
 
-            <div class="animation-stage">
+            <ManagerDocumentDropZone DocumentSubmitted="HandleDocumentSubmittedAsync">
                 <LibrarianAnimation Mode="@LibrarianMode"
                                     DocumentTitle="@_snapshot?.ActiveItem?.DocumentTitle"
-                                    CelebrationSequence="@_animationTracker.CelebrationSequence" />
-            </div>
+                                    CelebrationSequence="@_animationTracker.CelebrationSequence"
+                                    ReceptionSequence="@_receptionSequence"
+                                    ReceptionDocumentTitle="@_receivedDocumentTitle" />
+            </ManagerDocumentDropZone>
 
             <footer class="active-footer">
                 <span>@Localizer["SequentialProcessingDetail"]</span>
@@ -267,6 +269,12 @@
 
     private bool
         _commandRunning;
+
+    private string?
+        _receivedDocumentTitle;
+
+    private long
+        _receptionSequence;
 
     #endregion
 
@@ -381,6 +389,8 @@
         await RefreshAsync(
             notifyRenderer:
                 false,
+            waitForTurn:
+                true,
             _lifetime.Token);
 
         _refreshTimer =
@@ -418,6 +428,22 @@
 
     #region Methods Interaction
 
+    private async Task HandleDocumentSubmittedAsync(
+        string originalFileName)
+    {
+        _receivedDocumentTitle =
+            originalFileName;
+
+        _receptionSequence++;
+
+        await RefreshAsync(
+            notifyRenderer:
+                false,
+            waitForTurn:
+                true,
+            _lifetime.Token);
+    }
+
     private async Task ExecuteControlAsync(
         ManagerControlAction action)
     {
@@ -442,6 +468,8 @@
             await RefreshAsync(
                 notifyRenderer:
                     false,
+                waitForTurn:
+                    true,
                 _lifetime.Token);
         }
         catch (OperationCanceledException)
@@ -469,6 +497,8 @@
         RefreshAsync(
             notifyRenderer:
                 false,
+            waitForTurn:
+                true,
             _lifetime.Token);
 
     #endregion
@@ -487,6 +517,8 @@
                 await RefreshAsync(
                     notifyRenderer:
                         true,
+                    waitForTurn:
+                        false,
                     cancellationToken);
             }
         }
@@ -498,13 +530,20 @@
 
     private async Task RefreshAsync(
         bool notifyRenderer,
+        bool waitForTurn,
         CancellationToken cancellationToken)
     {
-        if (!await _refreshGate
+        if (waitForTurn)
+        {
+            await _refreshGate
                 .WaitAsync(
-                    millisecondsTimeout:
-                        0,
-                    cancellationToken))
+                    cancellationToken);
+        }
+        else if (!await _refreshGate
+                     .WaitAsync(
+                         millisecondsTimeout:
+                             0,
+                         cancellationToken))
         {
             return;
         }

@@ -1,0 +1,395 @@
+@implements IAsyncDisposable
+@inject ManagerWorkshopUploadService UploadService
+@inject DocumentProcessing.Manager.Blazor.Configuration.ManagerApiOptions Options
+@inject ILogger<ManagerDocumentDropZone> Logger
+@inject IStringLocalizer<ManagerDocumentDropZone> Localizer
+
+<div class="animation-stage @UploadStateCssClass"
+     aria-busy="@_uploading"
+     @ondragenter="HandleDragEnter"
+     @ondragleave="HandleDragLeave"
+     @ondrop="HandleDrop">
+    @ChildContent
+
+    <InputFile @key="_fileInputSequence"
+               class="document-drop-input"
+               aria-label="@(Localizer["DropInputLabel"])"
+               accept=".pdf,.epub,application/pdf,application/epub+zip"
+               disabled="@_uploading"
+               OnChange="SubmitSelectedDocumentAsync" />
+
+    <div class="drop-hint" aria-hidden="true">
+        <span>＋</span>
+        <strong>@Localizer["DropHint"]</strong>
+    </div>
+
+    @if (UploadFeedbackVisible)
+    {
+        <div class="drop-feedback"
+             role="status"
+             aria-live="polite">
+            <span class="drop-feedback-icon" aria-hidden="true">@UploadFeedbackIcon</span>
+            <span>
+                <strong>@UploadFeedbackTitle</strong>
+                <small>@UploadFeedbackDetail</small>
+            </span>
+        </div>
+    }
+</div>
+
+@code {
+    #region Variables and Constants
+
+    private readonly CancellationTokenSource
+        _lifetime =
+            new();
+
+    private bool
+        _uploading;
+
+    private ManagerDocumentDropState
+        _uploadState;
+
+    private ManagerDocumentDropError?
+        _uploadError;
+
+    private string?
+        _uploadFileName;
+
+    private string?
+        _uploadErrorDetail;
+
+    private long
+        _fileInputSequence;
+
+    #endregion
+
+    #region Parameters
+
+    [Parameter]
+    [EditorRequired]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public EventCallback<string> DocumentSubmitted { get; set; }
+
+    #endregion
+
+    #region Properties
+
+    private bool UploadFeedbackVisible =>
+        _uploadState is
+            ManagerDocumentDropState.Ready or
+            ManagerDocumentDropState.Uploading or
+            ManagerDocumentDropState.Failed;
+
+    private string? UploadStateCssClass =>
+        _uploadState switch
+        {
+            ManagerDocumentDropState.Ready =>
+                "drop-ready",
+            ManagerDocumentDropState.Uploading =>
+                "drop-uploading",
+            ManagerDocumentDropState.Failed =>
+                "drop-failed",
+            _ =>
+                null
+        };
+
+    private string UploadFeedbackIcon =>
+        _uploadState switch
+        {
+            ManagerDocumentDropState.Ready =>
+                "↓",
+            ManagerDocumentDropState.Uploading =>
+                "…",
+            ManagerDocumentDropState.Failed =>
+                "!",
+            _ =>
+                string.Empty
+        };
+
+    private string UploadFeedbackTitle =>
+        _uploadState switch
+        {
+            ManagerDocumentDropState.Ready =>
+                Localizer["DropReadyTitle"],
+            ManagerDocumentDropState.Uploading =>
+                Localizer["UploadingTitle"],
+            ManagerDocumentDropState.Failed =>
+                Localizer["UploadFailedTitle"],
+            _ =>
+                string.Empty
+        };
+
+    private string UploadFeedbackDetail =>
+        _uploadState switch
+        {
+            ManagerDocumentDropState.Ready =>
+                Localizer["DropReadyDetail"],
+            ManagerDocumentDropState.Uploading =>
+                _uploadFileName ??
+                Localizer["DefaultDocumentName"],
+            ManagerDocumentDropState.Failed =>
+                UploadErrorMessage,
+            _ =>
+                string.Empty
+        };
+
+    private string UploadErrorMessage =>
+        !string.IsNullOrWhiteSpace(
+            _uploadErrorDetail)
+            ? _uploadErrorDetail
+            : _uploadError switch
+            {
+                ManagerDocumentDropError.NoReadableContent =>
+                    Localizer["UploadNoReadableContentError"],
+                ManagerDocumentDropError.TooLarge =>
+                    Localizer[
+                        "UploadTooLargeError",
+                        FormatByteSize(
+                            Options.MaximumUploadBytes)],
+                ManagerDocumentDropError.UnsupportedFormat =>
+                    Localizer["UploadUnsupportedFormatError"],
+                ManagerDocumentDropError.Rejected =>
+                    Localizer["UploadRejectedError"],
+                ManagerDocumentDropError.Connection =>
+                    Localizer["UploadConnectionError"],
+                _ =>
+                    string.Empty
+            };
+
+    #endregion
+
+    #region Methods Lifecycle
+
+    public async ValueTask DisposeAsync()
+    {
+        await _lifetime
+            .CancelAsync();
+
+        _lifetime.Dispose();
+    }
+
+    #endregion
+
+    #region Methods Interaction
+
+    private void HandleDragEnter()
+    {
+        if (_uploading)
+        {
+            return;
+        }
+
+        _uploadError =
+            null;
+
+        _uploadErrorDetail =
+            null;
+
+        _uploadState =
+            ManagerDocumentDropState.Ready;
+    }
+
+    private void HandleDragLeave()
+    {
+        if (_uploadState ==
+            ManagerDocumentDropState.Ready)
+        {
+            _uploadState =
+                ManagerDocumentDropState.Idle;
+        }
+    }
+
+    private void HandleDrop()
+    {
+        if (_uploadState ==
+            ManagerDocumentDropState.Ready)
+        {
+            _uploadState =
+                ManagerDocumentDropState.Idle;
+        }
+    }
+
+    private async Task SubmitSelectedDocumentAsync(
+        InputFileChangeEventArgs eventArgs)
+    {
+        if (_uploading)
+        {
+            return;
+        }
+
+        var file =
+            eventArgs.File;
+
+        _uploading =
+            true;
+
+        _uploadError =
+            null;
+
+        _uploadErrorDetail =
+            null;
+
+        _uploadFileName =
+            file.Name;
+
+        _uploadState =
+            ManagerDocumentDropState.Uploading;
+
+        ManagerDocumentSubmissionResult result;
+
+        try
+        {
+            result =
+                await UploadService
+                    .SubmitAsync(
+                        file,
+                        _lifetime.Token);
+        }
+        catch (OperationCanceledException)
+            when (_lifetime.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (ManagerWorkshopUploadValidationException exception)
+        {
+            _uploadError =
+                exception.Failure switch
+                {
+                    ManagerWorkshopUploadValidationFailure.NoReadableContent =>
+                        ManagerDocumentDropError.NoReadableContent,
+                    ManagerWorkshopUploadValidationFailure.TooLarge =>
+                        ManagerDocumentDropError.TooLarge,
+                    ManagerWorkshopUploadValidationFailure.UnsupportedFormat =>
+                        ManagerDocumentDropError.UnsupportedFormat,
+                    _ =>
+                        throw new ArgumentOutOfRangeException(
+                            nameof(exception),
+                            exception.Failure,
+                            "Unknown upload validation failure.")
+                };
+
+            _uploadState =
+                ManagerDocumentDropState.Failed;
+
+            return;
+        }
+        catch (ManagerSubmissionRejectedException exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager rejected document {DocumentFileName} with code {ManagerErrorCode}.",
+                file.Name,
+                exception.ManagerCode);
+
+            _uploadError =
+                exception.StatusCode ==
+                System.Net.HttpStatusCode.RequestEntityTooLarge
+                    ? ManagerDocumentDropError.TooLarge
+                    : ManagerDocumentDropError.Rejected;
+
+            _uploadErrorDetail =
+                exception.Message;
+
+            _uploadState =
+                ManagerDocumentDropState.Failed;
+
+            return;
+        }
+        catch (HttpRequestException exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager document submission failed for {DocumentFileName}.",
+                file.Name);
+
+            _uploadError =
+                exception.StatusCode ==
+                System.Net.HttpStatusCode.RequestEntityTooLarge
+                    ? ManagerDocumentDropError.TooLarge
+                    : exception.StatusCode is null
+                        ? ManagerDocumentDropError.Connection
+                        : ManagerDocumentDropError.Rejected;
+
+            _uploadState =
+                ManagerDocumentDropState.Failed;
+
+            return;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager document submission failed for {DocumentFileName}.",
+                file.Name);
+
+            _uploadError =
+                ManagerDocumentDropError.Rejected;
+
+            _uploadState =
+                ManagerDocumentDropState.Failed;
+
+            return;
+        }
+        finally
+        {
+            _uploading =
+                false;
+
+            _fileInputSequence++;
+        }
+
+        _uploadState =
+            ManagerDocumentDropState.Idle;
+
+        await DocumentSubmitted
+            .InvokeAsync(
+                result.OriginalFileName);
+    }
+
+    #endregion
+
+    #region Methods Formatting
+
+    private static string FormatByteSize(
+        long byteLength)
+    {
+        const double bytesPerMegabyte =
+            1024d *
+            1024d;
+
+        const double bytesPerGigabyte =
+            bytesPerMegabyte *
+            1024d;
+
+        return byteLength >=
+               bytesPerGigabyte
+            ? $"{byteLength / bytesPerGigabyte:0.#} GB"
+            : $"{byteLength / bytesPerMegabyte:0.#} MB";
+    }
+
+    #endregion
+
+    #region Types
+
+    private enum ManagerDocumentDropState
+    {
+        Idle,
+        Ready,
+        Uploading,
+        Failed
+    }
+
+    private enum ManagerDocumentDropError
+    {
+        NoReadableContent,
+        TooLarge,
+        UnsupportedFormat,
+        Rejected,
+        Connection
+    }
+
+    #endregion
+}

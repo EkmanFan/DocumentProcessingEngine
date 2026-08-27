@@ -1,5 +1,6 @@
 using DocumentProcessing.Manager.Blazor.Configuration;
 using DocumentProcessing.Manager.Blazor.ManagerApi;
+using DocumentProcessing.Manager.Blazor.Workshop;
 
 namespace DocumentProcessing.Manager.Blazor.DependencyInjection;
 
@@ -31,23 +32,43 @@ public static class ManagerWorkshopServiceCollectionExtensions
         services.AddSingleton(
             options);
 
+        services.AddTransient<ManagerWorkshopUploadService>();
+
         services
             .AddHttpClient<IManagerHostClient,
                 ManagerHostClient>(
                 client =>
-                {
-                    client.BaseAddress =
-                        options.BaseAddress;
+                    ConfigureClient(
+                        client,
+                        options,
+                        options.RequestTimeout));
 
-                    client.Timeout =
-                        options.RequestTimeout;
-
-                    client.DefaultRequestHeaders.Add(
-                        "X-Manager-Api-Key",
-                        options.ApiKey);
-                });
+        services
+            .AddHttpClient<IManagerSubmissionClient,
+                ManagerSubmissionClient>(
+                client =>
+                    ConfigureClient(
+                        client,
+                        options,
+                        options.SubmissionTimeout));
 
         return services;
+    }
+
+    private static void ConfigureClient(
+        HttpClient client,
+        ManagerApiOptions options,
+        TimeSpan timeout)
+    {
+        client.BaseAddress =
+            options.BaseAddress;
+
+        client.Timeout =
+            timeout;
+
+        client.DefaultRequestHeaders.Add(
+            "X-Manager-Api-Key",
+            options.ApiKey);
     }
 
     #endregion

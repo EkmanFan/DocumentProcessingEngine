@@ -10,6 +10,10 @@ Required configuration:
 ```bash
 export ManagerApi__BaseAddress='http://127.0.0.1:5080'
 export ManagerApi__ApiKey='the-same-at-least-32-character-key-as-the-host'
+# Optional; defaults to 2 GiB and should not exceed the Host custody limit.
+export ManagerApi__MaximumUploadBytes='2147483648'
+# Optional; source streaming defaults to one hour independently of short API calls.
+export ManagerApi__SubmissionTimeoutSeconds='3600'
 ```
 
 Run locally:
@@ -19,10 +23,21 @@ dotnet run --project src/DocumentProcessing.Manager.Blazor
 ```
 
 The API key remains in the server process and is never sent to the browser.
-The workshop provides Manager controls, read-only pending, active and completed
-views, and a reusable sprite-animated librarian whose deterministic states
-follow Manager observations. Queue reordering, source submission and result
-download remain later increments.
+The workshop provides Manager controls, pending, active and completed views,
+and a reusable sprite-animated librarian whose deterministic states follow
+Manager observations. Queue reordering and result download remain later
+increments.
+
+The complete animation stage is a permanent PDF/EPUB file input: clicking it or
+dropping one file on the librarian streams the exact source to the authenticated
+Host without buffering it in application memory. Drag-ready, uploading and
+failure affordances are layered over the scene; they never replace the
+animation. Host rejection details are displayed in the failure overlay. The
+submission adapter sends the standard filename metadata and, for ASCII names,
+the legacy header required by earlier Manager Hosts during a rolling restart.
+A successful custody registration briefly shows the librarian's
+reception reaction and refreshes the queue. The Host remains solely responsible
+for content hashing, immutable custody and atomic initial enqueueing.
 
 The librarian waits when the queue has no active work, reads while a unit is
 active, holds its page while paused, rests while stopped and reports a lost Host

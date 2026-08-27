@@ -556,22 +556,6 @@ a:focus-visible {
     font-size: 0.72rem;
 }
 
-.animation-stage {
-    position: relative;
-    display: grid;
-    flex: 1;
-    min-height: 410px;
-    place-items: center;
-    overflow: hidden;
-    border: 1px solid rgba(29, 51, 66, 0.1);
-    border-radius: 19px;
-    background:
-        linear-gradient(rgba(29, 51, 66, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(29, 51, 66, 0.035) 1px, transparent 1px),
-        linear-gradient(155deg, #f9f5eb, #eef1ec);
-    background-size: 32px 32px, 32px 32px, auto;
-}
-
 @keyframes shimmer {
     from {
         background-position: 200% 0;
@@ -639,10 +623,6 @@ a:focus-visible {
 
     .work-column {
         min-height: 470px;
-    }
-
-    .animation-stage {
-        min-height: 330px;
     }
 
     .connection-alert {

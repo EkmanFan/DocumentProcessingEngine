@@ -17,6 +17,10 @@ public sealed class ManagerBlazorLocalizationTests
             "DocumentProcessing.Manager.Blazor.Resources.Components.Animation.LibrarianAnimation";
 
     private const string
+        DocumentDropZoneResourceName =
+            "DocumentProcessing.Manager.Blazor.Resources.Components.Workshop.ManagerDocumentDropZone";
+
+    private const string
         StandaloneResourceName =
             "DocumentProcessing.Manager.Blazor.Resources.Localization.StandaloneUiResources";
 
@@ -66,6 +70,33 @@ public sealed class ManagerBlazorLocalizationTests
             expectedScope,
             resourceManager.GetString(
                 "WholeDocumentScope",
+                culture));
+    }
+
+    [Theory]
+    [InlineData(
+        "en",
+        "The browser reported no readable content for this file. If it is not empty, choose it by clicking the drop zone.")]
+    [InlineData(
+        "fr",
+        "Le navigateur n’a fourni aucun contenu lisible pour ce fichier. S’il n’est pas vide, sélectionne-le en cliquant sur la zone.")]
+    public void DocumentDropZoneResources_ExplainUnreadableBrowserDrop(
+        string cultureName,
+        string expectedMessage)
+    {
+        var resourceManager =
+            new ResourceManager(
+                DocumentDropZoneResourceName,
+                BlazorAssembly);
+
+        var culture =
+            CultureInfo.GetCultureInfo(
+                cultureName);
+
+        Assert.Equal(
+            expectedMessage,
+            resourceManager.GetString(
+                "UploadNoReadableContentError",
                 culture));
     }
 
@@ -137,6 +168,9 @@ public sealed class ManagerBlazorLocalizationTests
 
         AssertMatchingKeys(
             AnimationResourceName);
+
+        AssertMatchingKeys(
+            DocumentDropZoneResourceName);
 
         AssertMatchingKeys(
             StandaloneResourceName);

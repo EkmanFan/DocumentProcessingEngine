@@ -2,6 +2,17 @@ namespace DocumentProcessing.Manager.Blazor.Configuration;
 
 internal sealed class ManagerApiOptions
 {
+    #region Variables and Constants
+
+    private const long
+        DefaultMaximumUploadBytes =
+            2L *
+            1024 *
+            1024 *
+            1024;
+
+    #endregion
+
     #region Properties
 
     public Uri BaseAddress { get; }
@@ -12,6 +23,10 @@ internal sealed class ManagerApiOptions
 
     public TimeSpan RequestTimeout { get; }
 
+    public TimeSpan SubmissionTimeout { get; }
+
+    public long MaximumUploadBytes { get; }
+
     #endregion
 
     #region ctor
@@ -20,7 +35,9 @@ internal sealed class ManagerApiOptions
         Uri baseAddress,
         string apiKey,
         TimeSpan refreshInterval,
-        TimeSpan requestTimeout)
+        TimeSpan requestTimeout,
+        TimeSpan submissionTimeout,
+        long maximumUploadBytes)
     {
         BaseAddress =
             baseAddress;
@@ -33,6 +50,12 @@ internal sealed class ManagerApiOptions
 
         RequestTimeout =
             requestTimeout;
+
+        SubmissionTimeout =
+            submissionTimeout;
+
+        MaximumUploadBytes =
+            maximumUploadBytes;
     }
 
     #endregion
@@ -90,7 +113,18 @@ internal sealed class ManagerApiOptions
                 defaultValue:
                     30,
                 maximumValue:
-                    300));
+                    300),
+            ReadSeconds(
+                configuration,
+                "ManagerApi:SubmissionTimeoutSeconds",
+                defaultValue:
+                    3600,
+                maximumValue:
+                    86400),
+            ReadPositiveLong(
+                configuration,
+                "ManagerApi:MaximumUploadBytes",
+                DefaultMaximumUploadBytes));
     }
 
     #endregion
@@ -138,6 +172,26 @@ internal sealed class ManagerApiOptions
 
         return TimeSpan.FromSeconds(
             value);
+    }
+
+    private static long ReadPositiveLong(
+        IConfiguration configuration,
+        string key,
+        long defaultValue)
+    {
+        var value =
+            configuration.GetValue<long?>(
+                key) ??
+            defaultValue;
+
+        if (value <=
+            0)
+        {
+            throw new InvalidOperationException(
+                $"Configuration '{key}' must be greater than zero.");
+        }
+
+        return value;
     }
 
     #endregion

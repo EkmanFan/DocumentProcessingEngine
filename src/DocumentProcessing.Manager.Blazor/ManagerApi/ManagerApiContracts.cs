@@ -55,3 +55,25 @@ internal sealed record ManagerScopeContract(
     int? StartPhysicalPageNumber,
     int? EndPhysicalPageNumber,
     string? Title);
+
+internal sealed record ManagerDocumentSubmissionRequest(
+    Guid SubmissionId,
+    Stream Content,
+    long ContentLength,
+    string OriginalFileName,
+    string MediaType,
+    string? SourceOrigin);
+
+internal sealed record ManagerDocumentSubmissionResult(
+    Guid SubmissionId,
+    string SourceSha256,
+    long SourceByteLength,
+    string OriginalFileName,
+    IReadOnlyList<Guid> ProcessingUnitIds,
+    bool Created);
+
+internal sealed record ManagerApiErrorContract(
+    string? Code,
+    string? Message,
+    string? Title,
+    string? Detail);

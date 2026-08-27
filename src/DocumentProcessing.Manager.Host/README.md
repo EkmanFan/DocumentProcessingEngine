@@ -28,6 +28,11 @@ curl --request PUT \
   http://127.0.0.1:5080/api/manager/submissions/00000000-0000-0000-0000-000000000001
 ```
 
+HTTP clients may send the original filename through the standard
+`Content-Disposition: attachment; filename*=UTF-8''...` content header. The
+legacy `X-Document-File-Name` request header remains supported for command-line
+and existing clients.
+
 Control and observation endpoints:
 
 ```text

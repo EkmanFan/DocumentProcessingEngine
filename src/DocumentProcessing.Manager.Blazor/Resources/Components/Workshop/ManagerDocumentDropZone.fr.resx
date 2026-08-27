@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="DropInputLabel" xml:space="preserve"><value>Déposer ou choisir un document PDF ou EPUB</value></data>
+  <data name="DropHint" xml:space="preserve"><value>Dépose ou choisis un PDF / EPUB</value></data>
+  <data name="DropReadyTitle" xml:space="preserve"><value>Dépose le document ici</value></data>
+  <data name="DropReadyDetail" xml:space="preserve"><value>Le bibliothécaire est prêt à le recevoir.</value></data>
+  <data name="UploadingTitle" xml:space="preserve"><value>Conservation sécurisée de l’original…</value></data>
+  <data name="UploadFailedTitle" xml:space="preserve"><value>Le document n’a pas été ajouté</value></data>
+  <data name="DefaultDocumentName" xml:space="preserve"><value>Document sélectionné</value></data>
+  <data name="UploadNoReadableContentError" xml:space="preserve"><value>Le navigateur n’a fourni aucun contenu lisible pour ce fichier. S’il n’est pas vide, sélectionne-le en cliquant sur la zone.</value></data>
+  <data name="UploadTooLargeError" xml:space="preserve"><value>Le fichier dépasse la limite configurée de {0}.</value></data>
+  <data name="UploadUnsupportedFormatError" xml:space="preserve"><value>Seuls les documents PDF et EPUB sont acceptés.</value></data>
+  <data name="UploadRejectedError" xml:space="preserve"><value>Le Manager a refusé le document. Vérifie les journaux du Host.</value></data>
+  <data name="UploadConnectionError" xml:space="preserve"><value>La connexion a été interrompue avant confirmation de la custody.</value></data>
+</root>

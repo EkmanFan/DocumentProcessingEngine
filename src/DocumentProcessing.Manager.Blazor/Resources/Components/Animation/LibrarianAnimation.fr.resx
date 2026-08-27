@@ -5,6 +5,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="StatusCompleted" xml:space="preserve"><value>Terminé</value></data>
+  <data name="StatusReceived" xml:space="preserve"><value>Ajouté à la file</value></data>
   <data name="StatusConnecting" xml:space="preserve"><value>Connexion</value></data>
   <data name="StatusWaiting" xml:space="preserve"><value>En attente</value></data>
   <data name="StatusReading" xml:space="preserve"><value>Lecture en cours</value></data>
@@ -12,6 +13,7 @@
   <data name="StatusStopped" xml:space="preserve"><value>Atelier fermé</value></data>
   <data name="StatusUnavailable" xml:space="preserve"><value>Host indisponible</value></data>
   <data name="TitleCelebrating" xml:space="preserve"><value>Traitement terminé !</value></data>
+  <data name="TitleReceived" xml:space="preserve"><value>Document reçu !</value></data>
   <data name="TitleConnecting" xml:space="preserve"><value>Le bibliothécaire ouvre l’atelier…</value></data>
   <data name="TitleWaiting" xml:space="preserve"><value>Il attend un nouvel ouvrage.</value></data>
   <data name="TitleReading" xml:space="preserve"><value>Lecture attentive en cours.</value></data>
