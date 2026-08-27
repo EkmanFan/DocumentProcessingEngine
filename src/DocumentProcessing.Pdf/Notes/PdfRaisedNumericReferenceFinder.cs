@@ -62,7 +62,7 @@ internal static class PdfRaisedNumericReferenceFinder
         foreach (var block in
                  blocks)
         {
-            for (var index = 1;
+            for (var index = 0;
                  index <
                  block.Words.Count;
                  index++)
@@ -77,14 +77,17 @@ internal static class PdfRaisedNumericReferenceFinder
                     continue;
                 }
 
-                var sourceAnchor =
-                    block.Words[index - 1];
-
                 var anchor =
+                    index >
+                        0 &&
                     IsStrictAnchor(
                         marker,
-                        sourceAnchor)
-                        ? sourceAnchor
+                        block.Words[
+                            index -
+                            1])
+                        ? block.Words[
+                            index -
+                            1]
                         : FindFallbackAnchor(
                             marker,
                             block.MedianPointSize,

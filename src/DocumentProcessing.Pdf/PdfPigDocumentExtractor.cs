@@ -1,6 +1,7 @@
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Orchestration;
+using DocumentProcessing.Pdf.Notes;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
@@ -105,6 +106,7 @@ public sealed class PdfPigDocumentExtractor
                         page,
                         physicalPageNumber,
                         out _,
+                        out _,
                         out _));
             }
 
@@ -139,6 +141,21 @@ public sealed class PdfPigDocumentExtractor
 
     public async ValueTask<DocumentExtractionWithRasterObservationsResult>
         ExtractWithRasterObservationsAsync(
+            DocumentSource source,
+            DocumentFormatId format,
+            IVisualRasterObservationSource rasterObservationSource,
+            CancellationToken cancellationToken = default) =>
+        (
+            await ExtractWithRasterObservationsAndNativeLinksAsync(
+                    source,
+                    format,
+                    rasterObservationSource,
+                    cancellationToken)
+                .ConfigureAwait(false)
+        ).ExtractionWithRasterObservations;
+
+    internal async ValueTask<PdfNativeExtractionWithLinksResult>
+        ExtractWithRasterObservationsAndNativeLinksAsync(
             DocumentSource source,
             DocumentFormatId format,
             IVisualRasterObservationSource rasterObservationSource,
@@ -214,6 +231,9 @@ public sealed class PdfPigDocumentExtractor
                 new List<PageVisualRasterObservations>(
                     document.NumberOfPages);
 
+            var nativeNumericLinks =
+                new List<PdfNativeNumericLinkObservation>();
+
             RasterObservationAcquisitionFailure?
                 rasterObservationFailure =
                     null;
@@ -233,10 +253,14 @@ public sealed class PdfPigDocumentExtractor
                         page,
                         physicalPageNumber,
                         out var coordinateSpace,
+                        out var pageNativeNumericLinks,
                         out var images);
 
                 pages.Add(
                     extractionPage);
+
+                nativeNumericLinks.AddRange(
+                    pageNativeNumericLinks);
 
                 if (rasterObservationFailure is not null)
                 {
@@ -281,12 +305,14 @@ public sealed class PdfPigDocumentExtractor
                     DocumentFormatId.Pdf,
                     pages);
 
-            return new DocumentExtractionWithRasterObservationsResult(
-                extraction,
-                rasterObservationFailure is null
-                    ? rasterObservations
-                    : null,
-                rasterObservationFailure);
+            return new PdfNativeExtractionWithLinksResult(
+                new DocumentExtractionWithRasterObservationsResult(
+                    extraction,
+                    rasterObservationFailure is null
+                        ? rasterObservations
+                        : null,
+                    rasterObservationFailure),
+                nativeNumericLinks);
         }
         finally
         {
@@ -304,6 +330,7 @@ public sealed class PdfPigDocumentExtractor
         Page page,
         int physicalPageNumber,
         out PdfPageCoordinateSpace coordinateSpace,
+        out PdfNativeNumericLinkObservation[] nativeNumericLinks,
         out IPdfImage[] images)
     {
         ArgumentNullException.ThrowIfNull(
@@ -404,6 +431,17 @@ public sealed class PdfPigDocumentExtractor
             PdfPageNativeTextRepair
                 .Reconstruct(
                     initialDocumentBlocks)
+                .ToArray();
+
+        nativeNumericLinks =
+            PdfNativeNumericLinkObservationFinder
+                .Find(
+                    page,
+                    physicalPageNumber,
+                    sourceWords,
+                    documentWordBySourceWord,
+                    documentBlocks,
+                    resolvedCoordinateSpace)
                 .ToArray();
 
         images =

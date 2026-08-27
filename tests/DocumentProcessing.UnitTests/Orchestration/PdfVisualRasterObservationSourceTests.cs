@@ -445,6 +445,7 @@ public sealed class PdfVisualRasterObservationSourceTests
                     physicalPageNumber:
                         1,
                     out var coordinateSpace,
+                    out _,
                     out var images);
 
         var observationPage =

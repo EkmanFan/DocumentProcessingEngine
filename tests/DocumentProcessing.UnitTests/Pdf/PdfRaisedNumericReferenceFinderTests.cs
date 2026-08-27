@@ -71,6 +71,124 @@ public sealed class PdfRaisedNumericReferenceFinderTests
             reference.Value);
     }
 
+    [Fact]
+    public void Find_UsesUniqueSpatialAnchorWhenMarkerStartsNativeBlock()
+    {
+        var markerBlock =
+            Block(
+                sourceSequence:
+                    0,
+                medianPointSize:
+                    10,
+                [
+                    Word(14, "5", 0.7032, 0.4091, 0.7102, 0.4151, 7.5)
+                ]);
+
+        var anchorBlock =
+            Block(
+                sourceSequence:
+                    1,
+                medianPointSize:
+                    10,
+                [
+                    Word(13, "church.", 0.6500, 0.4087, 0.7032, 0.4175, 10)
+                ]);
+
+        var reference =
+            Assert.Single(
+                PdfRaisedNumericReferenceFinder.Find(
+                    25,
+                    [
+                        markerBlock,
+                        anchorBlock
+                    ]));
+
+        Assert.Equal(
+            "5",
+            reference.Value);
+    }
+
+    [Fact]
+    public void Find_DoesNotUseAmbiguousSpatialAnchorForFirstBlockWord()
+    {
+        var markerBlock =
+            Block(
+                sourceSequence:
+                    0,
+                medianPointSize:
+                    10,
+                [
+                    Word(14, "5", 0.7032, 0.4091, 0.7102, 0.4151, 7.5)
+                ]);
+
+        var firstAnchorBlock =
+            Block(
+                sourceSequence:
+                    1,
+                medianPointSize:
+                    10,
+                [
+                    Word(13, "church.", 0.6500, 0.4087, 0.7032, 0.4175, 10)
+                ]);
+
+        var secondAnchorBlock =
+            Block(
+                sourceSequence:
+                    2,
+                medianPointSize:
+                    10,
+                [
+                    Word(15, "duplicate", 0.6400, 0.4087, 0.7032, 0.4175, 10)
+                ]);
+
+        var references =
+            PdfRaisedNumericReferenceFinder.Find(
+                25,
+                [
+                    markerBlock,
+                    firstAnchorBlock,
+                    secondAnchorBlock
+                ]);
+
+        Assert.Empty(
+            references);
+    }
+
+    [Fact]
+    public void Find_DoesNotUseUnraisedSpatialAnchorForFirstBlockWord()
+    {
+        var markerBlock =
+            Block(
+                sourceSequence:
+                    0,
+                medianPointSize:
+                    10,
+                [
+                    Word(14, "5", 0.7032, 0.4087, 0.7102, 0.4175, 7.5)
+                ]);
+
+        var anchorBlock =
+            Block(
+                sourceSequence:
+                    1,
+                medianPointSize:
+                    10,
+                [
+                    Word(13, "church.", 0.6500, 0.4087, 0.7032, 0.4175, 10)
+                ]);
+
+        var references =
+            PdfRaisedNumericReferenceFinder.Find(
+                25,
+                [
+                    markerBlock,
+                    anchorBlock
+                ]);
+
+        Assert.Empty(
+            references);
+    }
+
     #endregion
 
     #region Helpers

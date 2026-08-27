@@ -27,8 +27,14 @@ internal sealed class PdfDocumentNoteAnalyzer
 {
     #region Variables and Constants
 
-    private readonly IReadOnlyList<IPdfDocumentNoteStrategy>
-        _strategies;
+    private readonly PdfBottomOfPageNoteAnalyzer
+        _bottomOfPageStrategy;
+
+    private readonly PdfLinkedNumericNoteAnalyzer
+        _linkedNumericStrategy;
+
+    private readonly PdfChapterEndNoteAnalyzer
+        _chapterEndStrategy;
 
     #endregion
 
@@ -36,11 +42,14 @@ internal sealed class PdfDocumentNoteAnalyzer
 
     public PdfDocumentNoteAnalyzer()
     {
-        _strategies =
-            [
-                new PdfBottomOfPageNoteAnalyzer(),
-                new PdfChapterEndNoteAnalyzer()
-            ];
+        _bottomOfPageStrategy =
+            new PdfBottomOfPageNoteAnalyzer();
+
+        _linkedNumericStrategy =
+            new PdfLinkedNumericNoteAnalyzer();
+
+        _chapterEndStrategy =
+            new PdfChapterEndNoteAnalyzer();
     }
 
     #endregion
@@ -49,10 +58,22 @@ internal sealed class PdfDocumentNoteAnalyzer
 
     public IReadOnlyList<PagedNativeDocumentNote> Analyze(
         DocumentExtractionResult extraction,
+        CancellationToken cancellationToken = default) =>
+        Analyze(
+            extraction,
+            [],
+            cancellationToken);
+
+    public IReadOnlyList<PagedNativeDocumentNote> Analyze(
+        DocumentExtractionResult extraction,
+        IReadOnlyList<PdfNativeNumericLinkObservation> nativeNumericLinks,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
             extraction);
+
+        ArgumentNullException.ThrowIfNull(
+            nativeNumericLinks);
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -62,39 +83,34 @@ internal sealed class PdfDocumentNoteAnalyzer
         var notes =
             new List<PagedNativeDocumentNote>();
 
-        foreach (var strategy in
-                 _strategies)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
+        AddConcluded(
+            _bottomOfPageStrategy.Analyze(
+                extraction,
+                claimedReferences,
+                cancellationToken),
+            notes,
+            claimedReferences);
 
-            var concluded =
-                strategy.Analyze(
-                    extraction,
-                    claimedReferences,
-                    cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
 
-            foreach (var note in
-                     concluded)
-            {
-                var referenceKeys =
-                    note.References
-                        .Select(
-                            PdfNativeNoteReferenceKey.From)
-                        .ToArray();
+        AddConcluded(
+            _linkedNumericStrategy.Analyze(
+                extraction,
+                nativeNumericLinks,
+                claimedReferences,
+                cancellationToken),
+            notes,
+            claimedReferences);
 
-                if (referenceKeys.Any(
-                        claimedReferences.Contains))
-                {
-                    continue;
-                }
+        cancellationToken.ThrowIfCancellationRequested();
 
-                notes.Add(
-                    note);
-
-                claimedReferences.UnionWith(
-                    referenceKeys);
-            }
-        }
+        AddConcluded(
+            _chapterEndStrategy.Analyze(
+                extraction,
+                claimedReferences,
+                cancellationToken),
+            notes,
+            claimedReferences);
 
         return notes
             .OrderBy(
@@ -113,6 +129,34 @@ internal sealed class PdfDocumentNoteAnalyzer
                         reference =>
                             reference.WordSourceSequence))
             .ToArray();
+    }
+
+    private static void AddConcluded(
+        IReadOnlyList<PagedNativeDocumentNote> concluded,
+        ICollection<PagedNativeDocumentNote> notes,
+        ISet<PdfNativeNoteReferenceKey> claimedReferences)
+    {
+        foreach (var note in
+                 concluded)
+        {
+            var referenceKeys =
+                note.References
+                    .Select(
+                        PdfNativeNoteReferenceKey.From)
+                    .ToArray();
+
+            if (referenceKeys.Any(
+                    claimedReferences.Contains))
+            {
+                continue;
+            }
+
+            notes.Add(
+                note);
+
+            claimedReferences.UnionWith(
+                referenceKeys);
+        }
     }
 
     #endregion

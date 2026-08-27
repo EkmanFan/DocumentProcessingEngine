@@ -95,19 +95,24 @@ public sealed class PdfDocumentFormat
 
         try
         {
-            var currentEvidence =
+            var extractionWithLinks =
                 await _extractor
-                    .ExtractWithRasterObservationsAsync(
+                    .ExtractWithRasterObservationsAndNativeLinksAsync(
                         source,
                         DocumentFormatId.Pdf,
                         _visualRasterObservationSource,
                         cancellationToken)
                     .ConfigureAwait(false);
 
+            var currentEvidence =
+                extractionWithLinks
+                    .ExtractionWithRasterObservations;
+
             var documentNotes =
                 new PdfDocumentNoteAnalyzer()
                     .Analyze(
                         currentEvidence.Extraction,
+                        extractionWithLinks.NativeNumericLinks,
                         cancellationToken);
 
             return new NativeEvidenceExtractionResult
