@@ -8,15 +8,18 @@ public enum ManagerOperatingState
     /// <summary>
     /// The dispatcher must not start work and any active unit is interrupted.
     /// </summary>
-    Stopped,
+    Stopped =
+        0,
 
     /// <summary>
     /// The dispatcher may claim and process queued units.
     /// </summary>
-    Running,
+    Running =
+        1,
 
     /// <summary>
     /// The active unit may finish, but no subsequent unit may start.
     /// </summary>
-    Paused
+    Paused =
+        2
 }

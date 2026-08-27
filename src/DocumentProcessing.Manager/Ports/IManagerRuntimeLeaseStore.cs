@@ -16,6 +16,7 @@ public interface IManagerRuntimeLeaseStore
     /// </summary>
     ValueTask<ManagerRuntimeLease?> TryAcquireAsync(
         string workerId,
+        DateTimeOffset observedAtUtc,
         DateTimeOffset leaseExpiresAtUtc,
         CancellationToken cancellationToken = default);
 
@@ -24,6 +25,7 @@ public interface IManagerRuntimeLeaseStore
     /// </summary>
     ValueTask<bool> RenewAsync(
         ManagerRuntimeLease lease,
+        DateTimeOffset observedAtUtc,
         DateTimeOffset leaseExpiresAtUtc,
         CancellationToken cancellationToken = default);
 

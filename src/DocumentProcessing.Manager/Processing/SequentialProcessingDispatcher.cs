@@ -145,6 +145,7 @@ public sealed class SequentialProcessingDispatcher
                     .ClaimNextAsync(
                         runtimeLease,
                         _options.WorkerId,
+                        now,
                         now +
                         _options.LeaseDuration,
                         cancellationToken)
@@ -350,11 +351,15 @@ public sealed class SequentialProcessingDispatcher
                         cancellationToken)
                     .ConfigureAwait(false);
 
+                var observedAtUtc =
+                    _timeProvider.GetUtcNow();
+
                 var renewed =
                     await _queueStore
                         .RenewLeaseAsync(
                             lease,
-                            _timeProvider.GetUtcNow() +
+                            observedAtUtc,
+                            observedAtUtc +
                             _options.LeaseDuration,
                             cancellationToken)
                         .ConfigureAwait(false);

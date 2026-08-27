@@ -20,8 +20,10 @@ policy.
 - Dual Run: non-authoritative evaluation infrastructure; it is not wired into
   the default Host composition.
 - Manager foundation: durable lifecycle semantics, globally leased sequential
-  dispatch and hexagonal ports; persistence, DPEngine and Blazor adapters are
-  not implemented yet.
+  dispatch and hexagonal ports.
+- PostgreSQL Manager persistence: versioned schema plus durable state, runtime
+  lease and fenced global-queue adapters; filesystem artifact storage,
+  DPEngine and Blazor adapters are not implemented yet.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts
@@ -99,6 +101,7 @@ src/
   DocumentProcessing.Ocr.Adapters/  provider-specific OCR translation/client
   DocumentProcessing/               consumer-facing Host and composition root
   DocumentProcessing.Manager/       queue/control/runtime core and hexagonal ports
+  DocumentProcessing.Manager.Persistence/ PostgreSQL and storage adapters
   DocumentProcessing.DualRunWorker/ isolated non-authoritative worker
 
 tests/
@@ -121,6 +124,22 @@ the native tools exercised by the relevant tests.
 dotnet build DocumentProcessingEngine.sln -c Release --warnaserror
 dotnet test DocumentProcessingEngine.sln -c Release --no-build
 ```
+
+The PostgreSQL Manager integration tests are environment-gated so the ordinary
+deterministic regression does not require Docker or a database server. Run them
+against an isolated initialized test database with:
+
+```bash
+export DOCUMENT_PROCESSING_MANAGER_POSTGRES_CONNECTION_STRING='Host=127.0.0.1;Port=5432;Database=dpengine_manager_test;Username=postgres;Password=...'
+
+dotnet test tests/DocumentProcessing.IntegrationTests \
+  -c Release \
+  --filter FullyQualifiedName~DocumentProcessing.IntegrationTests.Manager
+```
+
+The tests apply the Manager schema themselves and reset only objects inside the
+dedicated `document_processing_manager` schema. Never point them at a database
+containing retained Manager data.
 
 Real layout/OCR semantic scripts have additional Docker, model-cache, memory
 and corpus prerequisites. They are evidence workflows, not substitutes for the

@@ -598,6 +598,7 @@ public sealed class DocumentProcessingManagerRuntimeTests
 
         public ValueTask<ManagerRuntimeLease?> TryAcquireAsync(
             string workerId,
+            DateTimeOffset observedAtUtc,
             DateTimeOffset leaseExpiresAtUtc,
             CancellationToken cancellationToken = default)
         {
@@ -630,6 +631,7 @@ public sealed class DocumentProcessingManagerRuntimeTests
 
         public ValueTask<bool> RenewAsync(
             ManagerRuntimeLease lease,
+            DateTimeOffset observedAtUtc,
             DateTimeOffset leaseExpiresAtUtc,
             CancellationToken cancellationToken = default)
         {
@@ -741,6 +743,7 @@ public sealed class DocumentProcessingManagerRuntimeTests
         public ValueTask<ProcessingLease?> ClaimNextAsync(
             ManagerRuntimeLease runtimeLease,
             string workerId,
+            DateTimeOffset observedAtUtc,
             DateTimeOffset leaseExpiresAtUtc,
             CancellationToken cancellationToken = default)
         {
@@ -771,6 +774,7 @@ public sealed class DocumentProcessingManagerRuntimeTests
 
         public ValueTask<bool> RenewLeaseAsync(
             ProcessingLease lease,
+            DateTimeOffset observedAtUtc,
             DateTimeOffset leaseExpiresAtUtc,
             CancellationToken cancellationToken = default)
         {

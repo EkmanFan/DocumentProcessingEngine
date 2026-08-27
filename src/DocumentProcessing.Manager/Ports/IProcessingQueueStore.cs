@@ -23,6 +23,7 @@ public interface IProcessingQueueStore
     ValueTask<ProcessingLease?> ClaimNextAsync(
         ManagerRuntimeLease runtimeLease,
         string workerId,
+        DateTimeOffset observedAtUtc,
         DateTimeOffset leaseExpiresAtUtc,
         CancellationToken cancellationToken = default);
 
@@ -31,6 +32,7 @@ public interface IProcessingQueueStore
     /// </summary>
     ValueTask<bool> RenewLeaseAsync(
         ProcessingLease lease,
+        DateTimeOffset observedAtUtc,
         DateTimeOffset leaseExpiresAtUtc,
         CancellationToken cancellationToken = default);
 

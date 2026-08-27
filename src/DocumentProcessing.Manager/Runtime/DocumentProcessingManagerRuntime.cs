@@ -207,11 +207,15 @@ public sealed class DocumentProcessingManagerRuntime
                     continue;
                 }
 
+                var observedAtUtc =
+                    _timeProvider.GetUtcNow();
+
                 var lease =
                     await _runtimeLeaseStore
                         .TryAcquireAsync(
                             _options.WorkerId,
-                            _timeProvider.GetUtcNow() +
+                            observedAtUtc,
+                            observedAtUtc +
                             _options.RuntimeLeaseDuration,
                             hostStoppingToken)
                         .ConfigureAwait(false);
@@ -417,11 +421,15 @@ public sealed class DocumentProcessingManagerRuntime
                         cancellationToken)
                     .ConfigureAwait(false);
 
+                var observedAtUtc =
+                    _timeProvider.GetUtcNow();
+
                 var renewed =
                     await _runtimeLeaseStore
                         .RenewAsync(
                             lease,
-                            _timeProvider.GetUtcNow() +
+                            observedAtUtc,
+                            observedAtUtc +
                             _options.RuntimeLeaseDuration,
                             cancellationToken)
                         .ConfigureAwait(false);

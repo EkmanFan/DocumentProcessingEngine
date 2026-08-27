@@ -614,6 +614,7 @@ public sealed class SequentialProcessingDispatcherTests
         public ValueTask<ProcessingLease?> ClaimNextAsync(
             ManagerRuntimeLease runtimeLease,
             string workerId,
+            DateTimeOffset observedAtUtc,
             DateTimeOffset leaseExpiresAtUtc,
             CancellationToken cancellationToken = default)
         {
@@ -628,6 +629,7 @@ public sealed class SequentialProcessingDispatcherTests
 
         public ValueTask<bool> RenewLeaseAsync(
             ProcessingLease lease,
+            DateTimeOffset observedAtUtc,
             DateTimeOffset leaseExpiresAtUtc,
             CancellationToken cancellationToken = default)
         {

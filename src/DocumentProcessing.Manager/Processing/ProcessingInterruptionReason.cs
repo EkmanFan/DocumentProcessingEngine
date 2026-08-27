@@ -8,15 +8,18 @@ public enum ProcessingInterruptionReason
     /// <summary>
     /// The Manager received an explicit stop command.
     /// </summary>
-    ManagerStop,
+    ManagerStop =
+        0,
 
     /// <summary>
     /// The process host is shutting down.
     /// </summary>
-    HostShutdown,
+    HostShutdown =
+        1,
 
     /// <summary>
     /// This process lost exclusive ownership of the global Manager runtime.
     /// </summary>
-    RuntimeLeaseLost
+    RuntimeLeaseLost =
+        2
 }
