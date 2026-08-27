@@ -1,10 +1,11 @@
 @page "/not-found"
+@inject IStringLocalizer<StandaloneUiResources> Localizer
 
-<PageTitle>Page introuvable — Atelier documentaire</PageTitle>
+<PageTitle>@Localizer["NotFoundPageTitle"]</PageTitle>
 
 <main class="standalone-message">
     <p class="eyebrow">404</p>
-    <h1>Cette étagère est vide.</h1>
-    <p>La page demandée n’existe pas dans l’atelier.</p>
-    <a href="/">Retourner à l’atelier</a>
+    <h1>@Localizer["NotFoundTitle"]</h1>
+    <p>@Localizer["NotFoundDetail"]</p>
+    <a href="/">@Localizer["ReturnToWorkshop"]</a>
 </main>

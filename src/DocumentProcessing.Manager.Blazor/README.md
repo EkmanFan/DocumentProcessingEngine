@@ -31,6 +31,15 @@ existing history and failures never do. CSS respects `prefers-reduced-motion`.
 The component exposes `ImageSource` when an embedding host needs to serve the
 sprite sheet from a different static-assets path.
 
+English and French resources cover the complete workshop and animation. The
+standalone executable uses English as its default culture. The reusable
+component does not own a language setting: it reads the ambient .NET
+`CurrentCulture` and `CurrentUICulture`. An embedding application such as
+Apologia Studio therefore applies its application-wide language setting once,
+and `ManagerWorkshop` follows it without a component parameter or a second
+configuration source. The standalone host honors the standard
+`.AspNetCore.Culture` cookie and otherwise falls back to English.
+
 `Home.razor` is only the standalone route shell. The reusable
 `ManagerWorkshop` component owns the workshop presentation and its isolated
 styles, so embedding it does not restyle the host application. A server-side
@@ -44,6 +53,11 @@ builder.Services.AddDocumentProcessingManagerWorkshop(
 ```razor
 <ManagerWorkshop />
 ```
+
+`AddDocumentProcessingManagerWorkshop` registers localization services but
+does not configure or override the host application's supported cultures or
+request-culture providers. Its assembly-owned resource location also remains
+independent from any resource directory configured by the host.
 
 The UI itself has no end-user authentication yet. Keep it bound to loopback or
 behind an authenticated reverse proxy.

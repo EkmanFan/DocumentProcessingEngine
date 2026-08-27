@@ -12,7 +12,8 @@ public static class ManagerWorkshopServiceCollectionExtensions
 
     /// <summary>
     /// Registers the server-side authenticated Manager HTTP adapter consumed by
-    /// the workshop component.
+    /// the workshop component. Localized presentation follows the host's
+    /// ambient <see cref="System.Globalization.CultureInfo.CurrentUICulture"/>.
     /// </summary>
     public static IServiceCollection AddDocumentProcessingManagerWorkshop(
         this IServiceCollection services,
@@ -24,6 +25,8 @@ public static class ManagerWorkshopServiceCollectionExtensions
         var options =
             ManagerApiOptions.Load(
                 configuration);
+
+        services.AddLocalization();
 
         services.AddSingleton(
             options);

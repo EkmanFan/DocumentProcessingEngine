@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="WorkshopTitle" xml:space="preserve"><value>Document workshop</value></data>
+  <data name="ManagerControlsLabel" xml:space="preserve"><value>Manager controls</value></data>
+  <data name="Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Resume" xml:space="preserve"><value>Resume</value></data>
+  <data name="Pause" xml:space="preserve"><value>Pause</value></data>
+  <data name="Stop" xml:space="preserve"><value>Stop</value></data>
+  <data name="ManagerUnavailableTitle" xml:space="preserve"><value>Manager unavailable</value></data>
+  <data name="Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="PendingKicker" xml:space="preserve"><value>Up next</value></data>
+  <data name="PendingTitle" xml:space="preserve"><value>To process</value></data>
+  <data name="QueueLoadingLabel" xml:space="preserve"><value>Loading queue</value></data>
+  <data name="QueueEmptyTitle" xml:space="preserve"><value>The queue is empty</value></data>
+  <data name="QueueEmptyDetail" xml:space="preserve"><value>No document is waiting.</value></data>
+  <data name="AttemptLabel" xml:space="preserve"><value>Attempt {0}</value></data>
+  <data name="GlobalQueue" xml:space="preserve"><value>Global queue</value></data>
+  <data name="ActiveKicker" xml:space="preserve"><value>On the desk</value></data>
+  <data name="ActiveTitle" xml:space="preserve"><value>In progress</value></data>
+  <data name="ActiveBadge" xml:space="preserve"><value>Active</value></data>
+  <data name="NoActiveTitle" xml:space="preserve"><value>No processing in progress</value></data>
+  <data name="SequentialProcessingDetail" xml:space="preserve"><value>Only one document is processed at a time</value></data>
+  <data name="CompletedKicker" xml:space="preserve"><value>Recent archives</value></data>
+  <data name="CompletedTitle" xml:space="preserve"><value>Processed</value></data>
+  <data name="CompletedLoadingLabel" xml:space="preserve"><value>Loading completed processing</value></data>
+  <data name="NoResultsTitle" xml:space="preserve"><value>No results</value></data>
+  <data name="NoResultsDetail" xml:space="preserve"><value>Processed documents will appear here.</value></data>
+  <data name="FailedStatus" xml:space="preserve"><value>Failed</value></data>
+  <data name="CompletedStatus" xml:space="preserve"><value>Completed</value></data>
+  <data name="MostRecentFirst" xml:space="preserve"><value>Most recent first</value></data>
+  <data name="ResultCountSingular" xml:space="preserve"><value>{0} result</value></data>
+  <data name="ResultCountPlural" xml:space="preserve"><value>{0} results</value></data>
+  <data name="StateRunning" xml:space="preserve"><value>Running</value></data>
+  <data name="StatePaused" xml:space="preserve"><value>Paused</value></data>
+  <data name="StateStopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="StateConnecting" xml:space="preserve"><value>Connecting…</value></data>
+  <data name="IdlePaused" xml:space="preserve"><value>The queue is paused.</value></data>
+  <data name="IdleStopped" xml:space="preserve"><value>The Manager is stopped.</value></data>
+  <data name="IdlePending" xml:space="preserve"><value>The next document will be picked up shortly.</value></data>
+  <data name="IdleEmpty" xml:space="preserve"><value>The librarian is waiting for a new document.</value></data>
+  <data name="Synchronizing" xml:space="preserve"><value>Synchronizing…</value></data>
+  <data name="RefreshedAt" xml:space="preserve"><value>Updated at {0}</value></data>
+  <data name="ControlFailedDetail" xml:space="preserve"><value>The command could not be applied.</value></data>
+  <data name="HostUnavailableDetail" xml:space="preserve"><value>Check that the Host is running and that the API key is correct.</value></data>
+  <data name="WholeDocumentScope" xml:space="preserve"><value>Whole document</value></data>
+  <data name="PageRangeScope" xml:space="preserve"><value>{0} · pages {1}–{2}</value></data>
+  <data name="TodayAt" xml:space="preserve"><value>Today at {0}</value></data>
+</root>

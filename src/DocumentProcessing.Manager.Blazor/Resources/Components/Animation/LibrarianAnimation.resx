@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="StatusCompleted" xml:space="preserve"><value>Completed</value></data>
+  <data name="StatusConnecting" xml:space="preserve"><value>Connecting</value></data>
+  <data name="StatusWaiting" xml:space="preserve"><value>Waiting</value></data>
+  <data name="StatusReading" xml:space="preserve"><value>Reading</value></data>
+  <data name="StatusPaused" xml:space="preserve"><value>Paused</value></data>
+  <data name="StatusStopped" xml:space="preserve"><value>Workshop closed</value></data>
+  <data name="StatusUnavailable" xml:space="preserve"><value>Host unavailable</value></data>
+  <data name="TitleCelebrating" xml:space="preserve"><value>Processing completed!</value></data>
+  <data name="TitleConnecting" xml:space="preserve"><value>The librarian is opening the workshop…</value></data>
+  <data name="TitleWaiting" xml:space="preserve"><value>Waiting for a new book.</value></data>
+  <data name="TitleReading" xml:space="preserve"><value>Reading carefully.</value></data>
+  <data name="TitlePaused" xml:space="preserve"><value>The page is safely held.</value></data>
+  <data name="TitleStopped" xml:space="preserve"><value>The librarian is resting.</value></data>
+  <data name="TitleUnavailable" xml:space="preserve"><value>Unable to reach the Manager.</value></data>
+  <data name="DetailCelebrating" xml:space="preserve"><value>The result has just joined the archives.</value></data>
+  <data name="DetailWaiting" xml:space="preserve"><value>The queue will come alive with the next document.</value></data>
+  <data name="DetailPaused" xml:space="preserve"><value>Work will resume from exactly the same place.</value></data>
+  <data name="DetailStopped" xml:space="preserve"><value>Start the Manager to reopen the workshop.</value></data>
+  <data name="DetailUnavailable" xml:space="preserve"><value>Reconnection is attempted automatically.</value></data>
+  <data name="DetailConnecting" xml:space="preserve"><value>Synchronizing with the Host.</value></data>
+  <data name="AccessibleLabel" xml:space="preserve"><value>{0}. {1} {2}</value></data>
+  <data name="DefaultDocumentTitle" xml:space="preserve"><value>Document in progress</value></data>
+</root>

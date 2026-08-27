@@ -1,10 +1,11 @@
 @page "/error"
+@inject IStringLocalizer<StandaloneUiResources> Localizer
 
-<PageTitle>Erreur — Atelier documentaire</PageTitle>
+<PageTitle>@Localizer["ErrorPageTitle"]</PageTitle>
 
 <main class="standalone-message">
-    <p class="eyebrow">Atelier documentaire</p>
-    <h1>Une erreur inattendue est survenue.</h1>
-    <p>Recharge la page. Si le problème persiste, vérifie les journaux du serveur Blazor.</p>
-    <a href="/">Retourner à l’atelier</a>
+    <p class="eyebrow">@Localizer["WorkshopTitle"]</p>
+    <h1>@Localizer["UnexpectedErrorTitle"]</h1>
+    <p>@Localizer["UnexpectedErrorDetail"]</p>
+    <a href="/">@Localizer["ReturnToWorkshop"]</a>
 </main>

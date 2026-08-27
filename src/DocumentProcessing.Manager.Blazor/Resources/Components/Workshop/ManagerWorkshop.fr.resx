@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="WorkshopTitle" xml:space="preserve"><value>Atelier documentaire</value></data>
+  <data name="ManagerControlsLabel" xml:space="preserve"><value>Commandes du Manager</value></data>
+  <data name="Start" xml:space="preserve"><value>Démarrer</value></data>
+  <data name="Resume" xml:space="preserve"><value>Reprendre</value></data>
+  <data name="Pause" xml:space="preserve"><value>Pause</value></data>
+  <data name="Stop" xml:space="preserve"><value>Arrêter</value></data>
+  <data name="ManagerUnavailableTitle" xml:space="preserve"><value>Manager indisponible</value></data>
+  <data name="Retry" xml:space="preserve"><value>Réessayer</value></data>
+  <data name="PendingKicker" xml:space="preserve"><value>Prochainement</value></data>
+  <data name="PendingTitle" xml:space="preserve"><value>À traiter</value></data>
+  <data name="QueueLoadingLabel" xml:space="preserve"><value>Chargement de la file</value></data>
+  <data name="QueueEmptyTitle" xml:space="preserve"><value>La file est vide</value></data>
+  <data name="QueueEmptyDetail" xml:space="preserve"><value>Aucun document n’attend son tour.</value></data>
+  <data name="AttemptLabel" xml:space="preserve"><value>Essai {0}</value></data>
+  <data name="GlobalQueue" xml:space="preserve"><value>File globale</value></data>
+  <data name="ActiveKicker" xml:space="preserve"><value>Sur le bureau</value></data>
+  <data name="ActiveTitle" xml:space="preserve"><value>En cours</value></data>
+  <data name="ActiveBadge" xml:space="preserve"><value>Actif</value></data>
+  <data name="NoActiveTitle" xml:space="preserve"><value>Aucun traitement en cours</value></data>
+  <data name="SequentialProcessingDetail" xml:space="preserve"><value>Un seul document est traité à la fois</value></data>
+  <data name="CompletedKicker" xml:space="preserve"><value>Archives récentes</value></data>
+  <data name="CompletedTitle" xml:space="preserve"><value>Traités</value></data>
+  <data name="CompletedLoadingLabel" xml:space="preserve"><value>Chargement des traitements terminés</value></data>
+  <data name="NoResultsTitle" xml:space="preserve"><value>Aucun résultat</value></data>
+  <data name="NoResultsDetail" xml:space="preserve"><value>Les documents traités apparaîtront ici.</value></data>
+  <data name="FailedStatus" xml:space="preserve"><value>Échec</value></data>
+  <data name="CompletedStatus" xml:space="preserve"><value>Terminé</value></data>
+  <data name="MostRecentFirst" xml:space="preserve"><value>Plus récents en premier</value></data>
+  <data name="ResultCountSingular" xml:space="preserve"><value>{0} résultat</value></data>
+  <data name="ResultCountPlural" xml:space="preserve"><value>{0} résultats</value></data>
+  <data name="StateRunning" xml:space="preserve"><value>En marche</value></data>
+  <data name="StatePaused" xml:space="preserve"><value>En pause</value></data>
+  <data name="StateStopped" xml:space="preserve"><value>Arrêté</value></data>
+  <data name="StateConnecting" xml:space="preserve"><value>Connexion…</value></data>
+  <data name="IdlePaused" xml:space="preserve"><value>La file est en pause.</value></data>
+  <data name="IdleStopped" xml:space="preserve"><value>Le Manager est arrêté.</value></data>
+  <data name="IdlePending" xml:space="preserve"><value>Le prochain document va être pris en charge.</value></data>
+  <data name="IdleEmpty" xml:space="preserve"><value>Le bibliothécaire attend un nouveau document.</value></data>
+  <data name="Synchronizing" xml:space="preserve"><value>Synchronisation…</value></data>
+  <data name="RefreshedAt" xml:space="preserve"><value>Actualisé à {0}</value></data>
+  <data name="ControlFailedDetail" xml:space="preserve"><value>La commande n’a pas pu être appliquée.</value></data>
+  <data name="HostUnavailableDetail" xml:space="preserve"><value>Vérifie que le Host est démarré et que la clé API est correcte.</value></data>
+  <data name="WholeDocumentScope" xml:space="preserve"><value>Document entier</value></data>
+  <data name="PageRangeScope" xml:space="preserve"><value>{0} · pages {1}–{2}</value></data>
+  <data name="TodayAt" xml:space="preserve"><value>Aujourd’hui à {0}</value></data>
+</root>

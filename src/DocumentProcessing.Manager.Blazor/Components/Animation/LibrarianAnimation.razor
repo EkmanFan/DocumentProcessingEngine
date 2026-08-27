@@ -1,4 +1,5 @@
 @implements IAsyncDisposable
+@inject IStringLocalizer<LibrarianAnimation> Localizer
 
 <div class="librarian-scene @ModeCssClass @(_celebrating ? "scene-celebrating" : null)"
      role="img"
@@ -94,73 +95,77 @@
 
     private string StatusLabel =>
         _celebrating
-            ? "Terminé"
+            ? Localizer["StatusCompleted"]
             : Mode switch
             {
                 LibrarianAnimationMode.Connecting =>
-                    "Connexion",
+                    Localizer["StatusConnecting"],
                 LibrarianAnimationMode.Waiting =>
-                    "En attente",
+                    Localizer["StatusWaiting"],
                 LibrarianAnimationMode.Reading =>
-                    "Lecture en cours",
+                    Localizer["StatusReading"],
                 LibrarianAnimationMode.Paused =>
-                    "En pause",
+                    Localizer["StatusPaused"],
                 LibrarianAnimationMode.Stopped =>
-                    "Atelier fermé",
+                    Localizer["StatusStopped"],
                 LibrarianAnimationMode.Unavailable =>
-                    "Host indisponible",
+                    Localizer["StatusUnavailable"],
                 _ =>
                     string.Empty
             };
 
     private string CaptionTitle =>
         _celebrating
-            ? "Traitement terminé !"
+            ? Localizer["TitleCelebrating"]
             : Mode switch
             {
                 LibrarianAnimationMode.Connecting =>
-                    "Le bibliothécaire ouvre l’atelier…",
+                    Localizer["TitleConnecting"],
                 LibrarianAnimationMode.Waiting =>
-                    "Il attend un nouvel ouvrage.",
+                    Localizer["TitleWaiting"],
                 LibrarianAnimationMode.Reading =>
-                    "Lecture attentive en cours.",
+                    Localizer["TitleReading"],
                 LibrarianAnimationMode.Paused =>
-                    "La page est soigneusement gardée.",
+                    Localizer["TitlePaused"],
                 LibrarianAnimationMode.Stopped =>
-                    "Le bibliothécaire se repose.",
+                    Localizer["TitleStopped"],
                 LibrarianAnimationMode.Unavailable =>
-                    "Impossible de joindre le Manager.",
+                    Localizer["TitleUnavailable"],
                 _ =>
                     string.Empty
             };
 
     private string CaptionDetail =>
         _celebrating
-            ? "Le résultat vient de rejoindre les archives."
+            ? Localizer["DetailCelebrating"]
             : Mode ==
               LibrarianAnimationMode.Reading
                 ? NormalizedDocumentTitle
                 : Mode switch
                 {
                     LibrarianAnimationMode.Waiting =>
-                        "La file reprendra vie au prochain document.",
+                        Localizer["DetailWaiting"],
                     LibrarianAnimationMode.Paused =>
-                        "Le travail reprendra exactement au même endroit.",
+                        Localizer["DetailPaused"],
                     LibrarianAnimationMode.Stopped =>
-                        "Démarre le Manager pour rouvrir le bureau.",
+                        Localizer["DetailStopped"],
                     LibrarianAnimationMode.Unavailable =>
-                        "La reconnexion est tentée automatiquement.",
+                        Localizer["DetailUnavailable"],
                     _ =>
-                        "Synchronisation avec le Host."
+                        Localizer["DetailConnecting"]
                 };
 
     private string AccessibleLabel =>
-        $"{StatusLabel}. {CaptionTitle} {CaptionDetail}";
+        Localizer[
+            "AccessibleLabel",
+            StatusLabel,
+            CaptionTitle,
+            CaptionDetail];
 
     private string NormalizedDocumentTitle =>
         string.IsNullOrWhiteSpace(
             DocumentTitle)
-            ? "Document en cours"
+            ? Localizer["DefaultDocumentTitle"]
             : DocumentTitle.Trim();
 
     #endregion

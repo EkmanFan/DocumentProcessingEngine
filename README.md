@@ -36,7 +36,8 @@ policy.
   completed work with lifecycle controls while retaining the Manager API key
   outside the browser. Its reusable sprite-animated librarian reflects waiting,
   reading, paused, stopped and unavailable states and celebrates newly
-  completed work.
+  completed work. English and French presentation follows the embedding
+  application's ambient .NET culture, with English as the standalone default.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts

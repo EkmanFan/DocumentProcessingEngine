@@ -3,6 +3,7 @@
 @inject IManagerHostClient ManagerClient
 @inject DocumentProcessing.Manager.Blazor.Configuration.ManagerApiOptions Options
 @inject ILogger<ManagerWorkshop> Logger
+@inject IStringLocalizer<ManagerWorkshop> Localizer
 
 <main class="workshop-shell">
     <header class="workshop-header">
@@ -14,7 +15,7 @@
             </div>
             <div>
                 <p class="eyebrow">DPEngine Manager</p>
-                <h1>Atelier documentaire</h1>
+                <h1>@Localizer["WorkshopTitle"]</h1>
             </div>
         </div>
 
@@ -24,14 +25,14 @@
                 <span>@StateLabel</span>
             </div>
 
-            <div class="control-group" aria-label="Commandes du Manager">
+            <div class="control-group" aria-label="@(Localizer["ManagerControlsLabel"])">
                 @if (_snapshot?.State == ManagerHostState.Stopped)
                 {
                     <button class="control-button control-primary"
                             type="button"
                             disabled="@_commandRunning"
                             @onclick="() => ExecuteControlAsync(ManagerControlAction.Start)">
-                        Démarrer
+                        @Localizer["Start"]
                     </button>
                 }
                 else if (_snapshot?.State == ManagerHostState.Paused)
@@ -40,7 +41,7 @@
                             type="button"
                             disabled="@_commandRunning"
                             @onclick="() => ExecuteControlAsync(ManagerControlAction.Resume)">
-                        Reprendre
+                        @Localizer["Resume"]
                     </button>
                 }
                 else
@@ -49,7 +50,7 @@
                             type="button"
                             disabled="@(_commandRunning || _snapshot is null)"
                             @onclick="() => ExecuteControlAsync(ManagerControlAction.Pause)">
-                        Pause
+                        @Localizer["Pause"]
                     </button>
                 }
 
@@ -57,20 +58,20 @@
                         type="button"
                         disabled="@(_commandRunning || _snapshot is null || _snapshot.State == ManagerHostState.Stopped)"
                         @onclick="() => ExecuteControlAsync(ManagerControlAction.Stop)">
-                    Arrêter
+                    @Localizer["Stop"]
                 </button>
             </div>
         </div>
     </header>
 
-    @if (_errorMessage is not null)
+    @if (_error is not null)
     {
         <div class="connection-alert" role="alert">
             <div>
-                <strong>Manager indisponible</strong>
-                <span>@_errorMessage</span>
+                <strong>@Localizer["ManagerUnavailableTitle"]</strong>
+                <span>@ErrorMessage</span>
             </div>
-            <button type="button" @onclick="RefreshFromUserAsync">Réessayer</button>
+            <button type="button" @onclick="RefreshFromUserAsync">@Localizer["Retry"]</button>
         </div>
     }
 
@@ -78,8 +79,8 @@
         <section class="work-column queue-column" aria-labelledby="queue-title">
             <div class="column-heading">
                 <div>
-                    <p class="column-kicker">Prochainement</p>
-                    <h2 id="queue-title">À traiter</h2>
+                    <p class="column-kicker">@Localizer["PendingKicker"]</p>
+                    <h2 id="queue-title">@Localizer["PendingTitle"]</h2>
                 </div>
                 <span class="count-badge">@PendingCount</span>
             </div>
@@ -88,7 +89,7 @@
 
             @if (_snapshot is null)
             {
-                <div class="skeleton-list" aria-label="Chargement de la file">
+                <div class="skeleton-list" aria-label="@(Localizer["QueueLoadingLabel"])">
                     <div></div>
                     <div></div>
                     <div></div>
@@ -98,8 +99,8 @@
             {
                 <div class="empty-state">
                     <span class="empty-icon" aria-hidden="true">✓</span>
-                    <strong>La file est vide</strong>
-                    <p>Aucun document n’attend son tour.</p>
+                    <strong>@Localizer["QueueEmptyTitle"]</strong>
+                    <p>@Localizer["QueueEmptyDetail"]</p>
                 </div>
             }
             else
@@ -111,11 +112,11 @@
                             <span class="queue-position">@item.QueuePosition</span>
                             <div class="work-copy">
                                 <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
-                                <span>@item.ScopeLabel</span>
+                                <span>@FormatScope(item.Scope)</span>
                             </div>
                             @if (item.AttemptNumber > 1)
                             {
-                                <span class="attempt-badge">Essai @item.AttemptNumber</span>
+                                <span class="attempt-badge">@Localizer["AttemptLabel", item.AttemptNumber]</span>
                             }
                         </li>
                     }
@@ -123,7 +124,7 @@
             }
 
             <footer class="column-footer">
-                <span>File globale</span>
+                <span>@Localizer["GlobalQueue"]</span>
                 <span>v@(QueueVersion)</span>
             </footer>
         </section>
@@ -131,12 +132,12 @@
         <section class="work-column active-column" aria-labelledby="active-title">
             <div class="column-heading active-heading">
                 <div>
-                    <p class="column-kicker">Sur le bureau</p>
-                    <h2 id="active-title">En cours</h2>
+                    <p class="column-kicker">@Localizer["ActiveKicker"]</p>
+                    <h2 id="active-title">@Localizer["ActiveTitle"]</h2>
                 </div>
                 @if (_snapshot?.ActiveItem is not null)
                 {
-                    <span class="live-badge"><span></span>Actif</span>
+                    <span class="live-badge"><span></span>@Localizer["ActiveBadge"]</span>
                 }
             </div>
 
@@ -146,14 +147,14 @@
                     <div class="document-monogram" aria-hidden="true">@GetMonogram(activeItem.DocumentTitle)</div>
                     <div>
                         <strong>@activeItem.DocumentTitle</strong>
-                        <span>@activeItem.ScopeLabel</span>
+                        <span>@FormatScope(activeItem.Scope)</span>
                     </div>
                 }
                 else
                 {
                     <div class="document-monogram document-monogram-empty" aria-hidden="true">—</div>
                     <div>
-                        <strong>Aucun traitement en cours</strong>
+                        <strong>@Localizer["NoActiveTitle"]</strong>
                         <span>@IdleMessage</span>
                     </div>
                 }
@@ -166,7 +167,7 @@
             </div>
 
             <footer class="active-footer">
-                <span>Un seul document est traité à la fois</span>
+                <span>@Localizer["SequentialProcessingDetail"]</span>
                 <span>@LastRefreshLabel</span>
             </footer>
         </section>
@@ -174,8 +175,8 @@
         <section class="work-column completed-column" aria-labelledby="completed-title">
             <div class="column-heading">
                 <div>
-                    <p class="column-kicker">Archives récentes</p>
-                    <h2 id="completed-title">Traités</h2>
+                    <p class="column-kicker">@Localizer["CompletedKicker"]</p>
+                    <h2 id="completed-title">@Localizer["CompletedTitle"]</h2>
                 </div>
                 <span class="count-badge count-complete">@CompletedCount</span>
             </div>
@@ -184,7 +185,7 @@
 
             @if (_snapshot is null)
             {
-                <div class="skeleton-list" aria-label="Chargement des traitements terminés">
+                <div class="skeleton-list" aria-label="@(Localizer["CompletedLoadingLabel"])">
                     <div></div>
                     <div></div>
                     <div></div>
@@ -194,8 +195,8 @@
             {
                 <div class="empty-state">
                     <span class="empty-icon empty-icon-book" aria-hidden="true">◇</span>
-                    <strong>Aucun résultat</strong>
-                    <p>Les documents traités apparaîtront ici.</p>
+                    <strong>@Localizer["NoResultsTitle"]</strong>
+                    <p>@Localizer["NoResultsDetail"]</p>
                 </div>
             }
             else
@@ -209,11 +210,13 @@
                             </span>
                             <div class="work-copy">
                                 <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
-                                <span>@item.ScopeLabel</span>
+                                <span>@FormatScope(item.Scope)</span>
                                 <time datetime="@item.UpdatedAtUtc.ToString("O")">@FormatCompletedAt(item.UpdatedAtUtc)</time>
                             </div>
                             <span class="result-status">
-                                @(item.Status == ManagerQueueItemStatus.Failed ? "Échec" : "Terminé")
+                                @(item.Status == ManagerQueueItemStatus.Failed
+                                    ? Localizer["FailedStatus"]
+                                    : Localizer["CompletedStatus"])
                             </span>
                         </li>
                     }
@@ -221,8 +224,8 @@
             }
 
             <footer class="column-footer">
-                <span>Plus récents en premier</span>
-                <span>@CompletedCount résultat(s)</span>
+                <span>@Localizer["MostRecentFirst"]</span>
+                <span>@CompletedResultCountLabel</span>
             </footer>
         </section>
     </section>
@@ -256,8 +259,8 @@
     private Task?
         _refreshLoop;
 
-    private string?
-        _errorMessage;
+    private ManagerWorkshopError?
+        _error;
 
     private DateTimeOffset?
         _lastRefreshUtc;
@@ -276,6 +279,16 @@
     private int CompletedCount =>
         _snapshot?.CompletedItems.Count ??
         0;
+
+    private string CompletedResultCountLabel =>
+        CompletedCount ==
+        1
+            ? Localizer[
+                "ResultCountSingular",
+                CompletedCount]
+            : Localizer[
+                "ResultCountPlural",
+                CompletedCount];
 
     private long QueueVersion =>
         _snapshot?.QueueVersion ??
@@ -298,35 +311,52 @@
         _snapshot?.State switch
         {
             ManagerHostState.Running =>
-                "En marche",
+                Localizer["StateRunning"],
             ManagerHostState.Paused =>
-                "En pause",
+                Localizer["StatePaused"],
             ManagerHostState.Stopped =>
-                "Arrêté",
+                Localizer["StateStopped"],
             _ =>
-                "Connexion…"
+                Localizer["StateConnecting"]
         };
 
     private string IdleMessage =>
         _snapshot?.State switch
         {
             ManagerHostState.Paused =>
-                "La file est en pause.",
+                Localizer["IdlePaused"],
             ManagerHostState.Stopped =>
-                "Le Manager est arrêté.",
+                Localizer["IdleStopped"],
             _ when PendingCount > 0 =>
-                "Le prochain document va être pris en charge.",
+                Localizer["IdlePending"],
             _ =>
-                "Le bibliothécaire attend un nouveau document."
+                Localizer["IdleEmpty"]
         };
 
     private string LastRefreshLabel =>
         _lastRefreshUtc is null
-            ? "Synchronisation…"
-            : $"Actualisé à {_lastRefreshUtc.Value.ToLocalTime():HH:mm:ss}";
+            ? Localizer["Synchronizing"]
+            : Localizer[
+                "RefreshedAt",
+                _lastRefreshUtc.Value
+                    .ToLocalTime()
+                    .ToString(
+                        "T",
+                        CultureInfo.CurrentCulture)];
+
+    private string ErrorMessage =>
+        _error switch
+        {
+            ManagerWorkshopError.Control =>
+                Localizer["ControlFailedDetail"],
+            ManagerWorkshopError.Connection =>
+                Localizer["HostUnavailableDetail"],
+            _ =>
+                string.Empty
+        };
 
     private LibrarianAnimationMode LibrarianMode =>
-        _errorMessage is not null
+        _error is not null
             ? LibrarianAnimationMode.Unavailable
             : _snapshot?.State switch
             {
@@ -399,7 +429,7 @@
         _commandRunning =
             true;
 
-        _errorMessage =
+        _error =
             null;
 
         try
@@ -425,8 +455,8 @@
                 "Manager control command {ManagerControlAction} failed.",
                 action);
 
-            _errorMessage =
-                "La commande n’a pas pu être appliquée.";
+            _error =
+                ManagerWorkshopError.Control;
         }
         finally
         {
@@ -495,7 +525,7 @@
             _lastRefreshUtc =
                 DateTimeOffset.UtcNow;
 
-            _errorMessage =
+            _error =
                 null;
         }
         catch (OperationCanceledException)
@@ -508,8 +538,8 @@
                 exception,
                 "Manager workshop refresh failed.");
 
-            _errorMessage =
-                "Vérifie que le Host est démarré et que la clé API est correcte.";
+            _error =
+                ManagerWorkshopError.Connection;
         }
         finally
         {
@@ -536,7 +566,26 @@
             .ToString()
             .ToUpperInvariant();
 
-    private static string FormatCompletedAt(
+    private string FormatScope(
+        ManagerWorkItemScopeView scope) =>
+        scope.Kind switch
+        {
+            ManagerWorkItemScopeKind.WholeDocument =>
+                Localizer["WholeDocumentScope"],
+            ManagerWorkItemScopeKind.PageRange =>
+                Localizer[
+                    "PageRangeScope",
+                    scope.Title!,
+                    scope.StartPhysicalPageNumber!,
+                    scope.EndPhysicalPageNumber!],
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(scope),
+                    scope.Kind,
+                    "Unknown Manager work-item scope kind.")
+        };
+
+    private string FormatCompletedAt(
         DateTimeOffset value)
     {
         var local =
@@ -544,9 +593,24 @@
 
         return local.Date ==
                DateTimeOffset.Now.Date
-            ? $"Aujourd’hui à {local:HH:mm}"
+            ? Localizer[
+                "TodayAt",
+                local.ToString(
+                    "t",
+                    CultureInfo.CurrentCulture)]
             : local.ToString(
-                "dd/MM/yyyy · HH:mm");
+                "g",
+                CultureInfo.CurrentCulture);
+    }
+
+    #endregion
+
+    #region Types
+
+    private enum ManagerWorkshopError
+    {
+        Control,
+        Connection
     }
 
     #endregion

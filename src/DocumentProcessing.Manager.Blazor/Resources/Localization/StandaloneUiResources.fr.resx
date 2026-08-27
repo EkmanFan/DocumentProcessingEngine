@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="WorkshopTitle" xml:space="preserve"><value>Atelier documentaire</value></data>
+  <data name="ErrorPageTitle" xml:space="preserve"><value>Erreur — Atelier documentaire</value></data>
+  <data name="UnexpectedErrorTitle" xml:space="preserve"><value>Une erreur inattendue est survenue.</value></data>
+  <data name="UnexpectedErrorDetail" xml:space="preserve"><value>Recharge la page. Si le problème persiste, vérifie les journaux du serveur Blazor.</value></data>
+  <data name="ReturnToWorkshop" xml:space="preserve"><value>Retourner à l’atelier</value></data>
+  <data name="NotFoundPageTitle" xml:space="preserve"><value>Page introuvable — Atelier documentaire</value></data>
+  <data name="NotFoundTitle" xml:space="preserve"><value>Cette étagère est vide.</value></data>
+  <data name="NotFoundDetail" xml:space="preserve"><value>La page demandée n’existe pas dans l’atelier.</value></data>
+</root>

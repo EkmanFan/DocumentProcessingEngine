@@ -121,7 +121,7 @@ internal sealed record ManagerWorkItemView(
     Guid UnitId,
     string DocumentTitle,
     string OriginalFileName,
-    string ScopeLabel,
+    ManagerWorkItemScopeView Scope,
     int AttemptNumber,
     ManagerQueueItemStatus Status,
     long? QueuePosition,
@@ -193,7 +193,7 @@ internal sealed record ManagerWorkItemView(
                 ? leafFileName
                 : documentTitle,
             leafFileName,
-            FormatScope(
+            ManagerWorkItemScopeView.Create(
                 item.Scope),
             item.AttemptNumber,
             item.Status,
@@ -203,7 +203,18 @@ internal sealed record ManagerWorkItemView(
             item.UpdatedAtUtc.ToUniversalTime());
     }
 
-    private static string FormatScope(
+    #endregion
+}
+
+internal sealed record ManagerWorkItemScopeView(
+    ManagerWorkItemScopeKind Kind,
+    int? StartPhysicalPageNumber,
+    int? EndPhysicalPageNumber,
+    string? Title)
+{
+    #region Methods Factory
+
+    public static ManagerWorkItemScopeView Create(
         ManagerScopeContract scope)
     {
         ArgumentNullException.ThrowIfNull(
@@ -212,13 +223,24 @@ internal sealed record ManagerWorkItemView(
         return scope.Kind switch
         {
             "wholeDocument" =>
-                "Document entier",
+                new ManagerWorkItemScopeView(
+                    ManagerWorkItemScopeKind.WholeDocument,
+                    StartPhysicalPageNumber:
+                        null,
+                    EndPhysicalPageNumber:
+                        null,
+                    Title:
+                        null),
             "pageRange"
                 when scope.StartPhysicalPageNumber is not null &&
                      scope.EndPhysicalPageNumber is not null &&
                      !string.IsNullOrWhiteSpace(
                          scope.Title) =>
-                $"{scope.Title.Trim()} · pages {scope.StartPhysicalPageNumber}–{scope.EndPhysicalPageNumber}",
+                new ManagerWorkItemScopeView(
+                    ManagerWorkItemScopeKind.PageRange,
+                    scope.StartPhysicalPageNumber,
+                    scope.EndPhysicalPageNumber,
+                    scope.Title.Trim()),
             _ =>
                 throw new InvalidDataException(
                     "The Manager returned an unsupported processing scope.")
@@ -226,4 +248,10 @@ internal sealed record ManagerWorkItemView(
     }
 
     #endregion
+}
+
+internal enum ManagerWorkItemScopeKind
+{
+    WholeDocument,
+    PageRange
 }

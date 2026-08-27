@@ -108,7 +108,14 @@ public sealed class ManagerWorkshopAnimationTrackerTests
             Guid.NewGuid(),
             "document",
             "document.pdf",
-            "Document entier",
+            new ManagerWorkItemScopeView(
+                ManagerWorkItemScopeKind.WholeDocument,
+                StartPhysicalPageNumber:
+                    null,
+                EndPhysicalPageNumber:
+                    null,
+                Title:
+                    null),
             AttemptNumber:
                 1,
             status,

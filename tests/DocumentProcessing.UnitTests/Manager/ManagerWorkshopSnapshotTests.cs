@@ -91,6 +91,13 @@ public sealed class ManagerWorkshopSnapshotTests
             "bauckham",
             workshop.ActiveItem?.DocumentTitle);
 
+        Assert.All(
+            workshop.PendingItems,
+            item =>
+                Assert.Equal(
+                    ManagerWorkItemScopeKind.WholeDocument,
+                    item.Scope.Kind));
+
         Assert.Equal(
             ["ehrman", "decretis"],
             workshop.CompletedItems
@@ -129,6 +136,60 @@ public sealed class ManagerWorkshopSnapshotTests
             "multiple active",
             exception.Message,
             StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Create_PreservesPageRangeSemanticsWithoutPresentationText()
+    {
+        var item =
+            CreateItem(
+                "bauckham.pdf",
+                ManagerQueueItemStatus.Pending,
+                queuePosition:
+                    1) with
+            {
+                Scope =
+                    new ManagerScopeContract(
+                        "pageRange",
+                        StartPhysicalPageNumber:
+                            281,
+                        EndPhysicalPageNumber:
+                            326,
+                        Title:
+                            "Chapter 7")
+            };
+
+        var workshop =
+            ManagerWorkshopSnapshot.Create(
+                new ManagerStateContract(
+                    ManagerHostState.Running,
+                    Version:
+                        1),
+                new ManagerQueueContract(
+                    Version:
+                        1,
+                    [item]));
+
+        var scope =
+            Assert.Single(
+                    workshop.PendingItems)
+                .Scope;
+
+        Assert.Equal(
+            ManagerWorkItemScopeKind.PageRange,
+            scope.Kind);
+
+        Assert.Equal(
+            281,
+            scope.StartPhysicalPageNumber);
+
+        Assert.Equal(
+            326,
+            scope.EndPhysicalPageNumber);
+
+        Assert.Equal(
+            "Chapter 7",
+            scope.Title);
     }
 
     #endregion

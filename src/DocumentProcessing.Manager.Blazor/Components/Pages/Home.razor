@@ -1,5 +1,6 @@
 @page "/"
+@inject IStringLocalizer<StandaloneUiResources> Localizer
 
-<PageTitle>Atelier documentaire</PageTitle>
+<PageTitle>@Localizer["WorkshopTitle"]</PageTitle>
 
 <ManagerWorkshop />

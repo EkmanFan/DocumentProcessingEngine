@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="WorkshopTitle" xml:space="preserve"><value>Document workshop</value></data>
+  <data name="ErrorPageTitle" xml:space="preserve"><value>Error — Document workshop</value></data>
+  <data name="UnexpectedErrorTitle" xml:space="preserve"><value>An unexpected error occurred.</value></data>
+  <data name="UnexpectedErrorDetail" xml:space="preserve"><value>Reload the page. If the problem persists, check the Blazor server logs.</value></data>
+  <data name="ReturnToWorkshop" xml:space="preserve"><value>Return to the workshop</value></data>
+  <data name="NotFoundPageTitle" xml:space="preserve"><value>Page not found — Document workshop</value></data>
+  <data name="NotFoundTitle" xml:space="preserve"><value>This shelf is empty.</value></data>
+  <data name="NotFoundDetail" xml:space="preserve"><value>The requested page does not exist in the workshop.</value></data>
+</root>

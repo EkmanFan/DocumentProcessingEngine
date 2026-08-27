@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 using DocumentProcessing.Manager.Blazor.Components;
 using DocumentProcessing.Manager.Blazor.DependencyInjection;
 
@@ -28,6 +30,34 @@ public static class Program
             .AddRazorComponents()
             .AddInteractiveServerComponents();
 
+        builder.Services.Configure<RequestLocalizationOptions>(
+            options =>
+            {
+                var supportedCultures =
+                    new[]
+                    {
+                        new CultureInfo(
+                            "en"),
+                        new CultureInfo(
+                            "fr")
+                    };
+
+                options.DefaultRequestCulture =
+                    new RequestCulture(
+                        "en");
+
+                options.SupportedCultures =
+                    supportedCultures;
+
+                options.SupportedUICultures =
+                    supportedCultures;
+
+                options.RequestCultureProviders =
+                [
+                    new CookieRequestCultureProvider()
+                ];
+            });
+
         var application =
             builder.Build();
 
@@ -41,6 +71,8 @@ public static class Program
             "/not-found",
             createScopeForStatusCodePages:
                 true);
+
+        application.UseRequestLocalization();
 
         application.UseAntiforgery();
 
