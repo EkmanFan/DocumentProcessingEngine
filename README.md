@@ -19,10 +19,14 @@ policy.
 - Consumer result: format-neutral `DocumentProcessingResult`.
 - Dual Run: non-authoritative evaluation infrastructure; it is not wired into
   the default Host composition.
+- Manager foundation: durable lifecycle semantics, globally leased sequential
+  dispatch and hexagonal ports; persistence, DPEngine and Blazor adapters are
+  not implemented yet.
 
-The project deliberately excludes RAG, embeddings, retrieval chunking, vector
-storage, LLM/VLM processing, application-specific concepts and persistent
-document storage.
+The processing library deliberately excludes RAG, embeddings, retrieval
+chunking, vector storage, LLM/VLM processing, application-specific concepts
+and persistent document storage. The separate Manager bounded context owns
+durable execution orchestration without moving those concerns into the Engine.
 
 ## Architecture
 
@@ -94,6 +98,7 @@ src/
   DocumentProcessing.Layout.Adapters/ provider-specific layout translation/client
   DocumentProcessing.Ocr.Adapters/  provider-specific OCR translation/client
   DocumentProcessing/               consumer-facing Host and composition root
+  DocumentProcessing.Manager/       queue/control/runtime core and hexagonal ports
   DocumentProcessing.DualRunWorker/ isolated non-authoritative worker
 
 tests/
