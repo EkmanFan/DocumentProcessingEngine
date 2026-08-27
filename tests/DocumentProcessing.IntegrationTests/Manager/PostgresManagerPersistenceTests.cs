@@ -1,9 +1,13 @@
+using System.Security.Cryptography;
 using DocumentProcessing.Manager.Control;
+using DocumentProcessing.Manager.Custody;
+using DocumentProcessing.Manager.Persistence.Files;
 using DocumentProcessing.Manager.Persistence.Postgres;
 using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Processing;
 using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Runtime;
+using DocumentProcessing.Manager.Submissions;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -61,6 +65,629 @@ public sealed class PostgresManagerPersistenceTests
 
         Assert.Null(
             stale);
+
+        await using var versionCommand =
+            context.DataSource.CreateCommand(
+                "SELECT MAX(version) FROM document_processing_manager.schema_versions;");
+
+        Assert.Equal(
+            2,
+            Convert.ToInt32(
+                await versionCommand.ExecuteScalarAsync()));
+    }
+
+    [PostgresFact]
+    public async Task SubmitDocument_PreservesSourceAndRegistersQueueIdempotently()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var custodyRoot =
+            CreateTemporaryCustodyRoot();
+
+        try
+        {
+            var custodyStore =
+                new FileSystemSourceArtifactCustodyStore(
+                    new FileSystemSourceArtifactCustodyOptions(
+                        custodyRoot,
+                        maximumArtifactBytes:
+                            1024 * 1024));
+
+            var submittedAtUtc =
+                new DateTimeOffset(
+                    2026,
+                    8,
+                    27,
+                    12,
+                    0,
+                    0,
+                    TimeSpan.Zero);
+
+            var service =
+                new SubmitDocumentService(
+                    custodyStore,
+                    context.SubmissionStore,
+                    new FixedTimeProvider(
+                        submittedAtUtc));
+
+            var submissionId =
+                DocumentSubmissionId.New();
+
+            var sourceBytes =
+                "exact pdf bytes\0\u00ff"u8.ToArray();
+
+            await using var firstSource =
+                new MemoryStream(
+                    sourceBytes,
+                    writable:
+                        false);
+
+            var first =
+                await service.SubmitAsync(
+                    new SubmitDocumentCommand(
+                        submissionId,
+                        firstSource,
+                        "/imports/book.pdf",
+                        "application/pdf",
+                        "manual fixture"));
+
+            await using var retrySource =
+                new MemoryStream(
+                    sourceBytes,
+                    writable:
+                        false);
+
+            var retry =
+                await service.SubmitAsync(
+                    new SubmitDocumentCommand(
+                        submissionId,
+                        retrySource,
+                        "book.pdf",
+                        "application/pdf",
+                        "manual fixture"));
+
+            Assert.True(
+                first.Created);
+
+            Assert.False(
+                retry.Created);
+
+            Assert.Equal(
+                first.ProcessingUnitIds,
+                retry.ProcessingUnitIds);
+
+            var persisted =
+                await context.SubmissionStore.GetAsync(
+                    submissionId);
+
+            Assert.Equal(
+                first.Submission,
+                persisted);
+
+            Assert.Equal(
+                submittedAtUtc,
+                persisted?.SubmittedAtUtc);
+
+            Assert.True(
+                await custodyStore.VerifyAsync(
+                    first.Submission.SourceArtifact));
+
+            await using var retained =
+                await custodyStore.OpenReadAsync(
+                    first.Submission.SourceArtifact);
+
+            await using var copied =
+                new MemoryStream();
+
+            await retained.CopyToAsync(
+                copied);
+
+            Assert.Equal(
+                sourceBytes,
+                copied.ToArray());
+
+            Assert.Equal(
+                new SubmissionCounts(
+                    Artifacts:
+                        1,
+                    Submissions:
+                        1,
+                    Events:
+                        1,
+                    Units:
+                        1,
+                    QueueVersion:
+                        1),
+                await ReadSubmissionCountsAsync(
+                    context.DataSource));
+        }
+        finally
+        {
+            DeleteTemporaryCustodyRoot(
+                custodyRoot);
+        }
+    }
+
+    [PostgresFact]
+    public async Task SubmissionStore_ConcurrentEquivalentRegistrationHasSingleCreation()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var submission =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    'a');
+
+        var registrations =
+            Enumerable.Range(
+                    0,
+                    8)
+                .Select(
+                    _ =>
+                        context.SubmissionStore
+                            .RegisterAndEnqueueAsync(
+                                submission,
+                                [
+                                    new ProcessingWorkItem(
+                                        ProcessingUnitId.New(),
+                                        submission.SubmissionId,
+                                        new ProcessingUnitScope.WholeDocument(),
+                                        attemptNumber:
+                                            1)
+                                ])
+                            .AsTask())
+                .ToArray();
+
+        var results =
+            await Task.WhenAll(
+                registrations);
+
+        Assert.Single(
+            results,
+            result =>
+                result.Created);
+
+        Assert.Single(
+            results
+                .Select(
+                    result =>
+                        Assert.Single(
+                            result.ProcessingUnitIds))
+                .Distinct());
+
+        Assert.Equal(
+            new SubmissionCounts(
+                Artifacts:
+                    1,
+                Submissions:
+                    1,
+                Events:
+                    1,
+                Units:
+                    1,
+                QueueVersion:
+                    1),
+            await ReadSubmissionCountsAsync(
+                context.DataSource));
+    }
+
+    [PostgresFact]
+    public async Task SubmissionStore_IdempotentReplayPreservesInitialBatchOrder()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var submission =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    '8');
+
+        var scopes =
+            new ProcessingUnitScope[]
+            {
+                new ProcessingUnitScope.PageRange(
+                    startPhysicalPageNumber:
+                        1,
+                    endPhysicalPageNumber:
+                        10,
+                    title:
+                        "Chapter one"),
+                new ProcessingUnitScope.PageRange(
+                    startPhysicalPageNumber:
+                        11,
+                    endPhysicalPageNumber:
+                        20,
+                    title:
+                        "Chapter two"),
+                new ProcessingUnitScope.PageRange(
+                    startPhysicalPageNumber:
+                        21,
+                    endPhysicalPageNumber:
+                        30,
+                    title:
+                        "Chapter three")
+            };
+
+        var initialUnits =
+            scopes
+                .Select(
+                    scope =>
+                        new ProcessingWorkItem(
+                            ProcessingUnitId.New(),
+                            submission.SubmissionId,
+                            scope,
+                            attemptNumber:
+                                1))
+                .ToArray();
+
+        var created =
+            await context.SubmissionStore.RegisterAndEnqueueAsync(
+                submission,
+                initialUnits);
+
+        await context.QueueStore.ReorderPendingAsync(
+            new ReorderProcessingQueueCommand(
+                initialUnits
+                    .Reverse()
+                    .Select(
+                        unit =>
+                            unit.UnitId),
+                expectedQueueVersion:
+                    1));
+
+        var replayUnits =
+            scopes
+                .Select(
+                    scope =>
+                        new ProcessingWorkItem(
+                            ProcessingUnitId.New(),
+                            submission.SubmissionId,
+                            scope,
+                            attemptNumber:
+                                1))
+                .ToArray();
+
+        var replay =
+            await context.SubmissionStore.RegisterAndEnqueueAsync(
+                submission,
+                replayUnits);
+
+        Assert.False(
+            replay.Created);
+
+        Assert.Equal(
+            created.ProcessingUnitIds,
+            replay.ProcessingUnitIds);
+
+        var conflictingPlan =
+            new ProcessingWorkItem[]
+            {
+                replayUnits[0],
+                replayUnits[1],
+                new(
+                    ProcessingUnitId.New(),
+                    submission.SubmissionId,
+                    new ProcessingUnitScope.PageRange(
+                        startPhysicalPageNumber:
+                            21,
+                        endPhysicalPageNumber:
+                            31,
+                        title:
+                            "Changed chapter three"),
+                    attemptNumber:
+                        1)
+            };
+
+        await Assert.ThrowsAsync<DocumentSubmissionConflictException>(
+            () =>
+                context.SubmissionStore
+                    .RegisterAndEnqueueAsync(
+                        submission,
+                        conflictingPlan)
+                    .AsTask());
+
+        Assert.Equal(
+            new SubmissionCounts(
+                Artifacts:
+                    1,
+                Submissions:
+                    1,
+                Events:
+                    1,
+                Units:
+                    3,
+                QueueVersion:
+                    2),
+            await ReadSubmissionCountsAsync(
+                context.DataSource));
+    }
+
+    [PostgresFact]
+    public async Task SubmissionStore_RejectsIdempotencyConflict()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var submissionId =
+            DocumentSubmissionId.New();
+
+        var original =
+            CreateSubmission(
+                submissionId,
+                digestCharacter:
+                    'b');
+
+        var unit =
+            new ProcessingWorkItem(
+                ProcessingUnitId.New(),
+                submissionId,
+                new ProcessingUnitScope.WholeDocument(),
+                attemptNumber:
+                    1);
+
+        await context.SubmissionStore.RegisterAndEnqueueAsync(
+            original,
+            [unit]);
+
+        var conflicting =
+            CreateSubmission(
+                submissionId,
+                digestCharacter:
+                    'c');
+
+        var exception =
+            await Assert.ThrowsAsync<DocumentSubmissionConflictException>(
+                () =>
+                    context.SubmissionStore
+                        .RegisterAndEnqueueAsync(
+                            conflicting,
+                            [
+                                new ProcessingWorkItem(
+                                    ProcessingUnitId.New(),
+                                    submissionId,
+                                    new ProcessingUnitScope.WholeDocument(),
+                                    attemptNumber:
+                                        1)
+                            ])
+                        .AsTask());
+
+        Assert.Equal(
+            submissionId,
+            exception.SubmissionId);
+
+        Assert.Equal(
+            new SubmissionCounts(
+                Artifacts:
+                    1,
+                Submissions:
+                    1,
+                Events:
+                    1,
+                Units:
+                    1,
+                QueueVersion:
+                    1),
+            await ReadSubmissionCountsAsync(
+                context.DataSource));
+    }
+
+    [PostgresFact]
+    public async Task SubmissionStore_RollsBackManifestWhenInitialEnqueueFails()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var first =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    'd');
+
+        var sharedUnitId =
+            ProcessingUnitId.New();
+
+        await context.SubmissionStore.RegisterAndEnqueueAsync(
+            first,
+            [
+                new ProcessingWorkItem(
+                    sharedUnitId,
+                    first.SubmissionId,
+                    new ProcessingUnitScope.WholeDocument(),
+                    attemptNumber:
+                        1)
+            ]);
+
+        var second =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    'e');
+
+        var exception =
+            await Assert.ThrowsAsync<PostgresException>(
+                () =>
+                    context.SubmissionStore
+                        .RegisterAndEnqueueAsync(
+                            second,
+                            [
+                                new ProcessingWorkItem(
+                                    sharedUnitId,
+                                    second.SubmissionId,
+                                    new ProcessingUnitScope.WholeDocument(),
+                                    attemptNumber:
+                                        1)
+                            ])
+                        .AsTask());
+
+        Assert.Equal(
+            PostgresErrorCodes.UniqueViolation,
+            exception.SqlState);
+
+        Assert.Null(
+            await context.SubmissionStore.GetAsync(
+                second.SubmissionId));
+
+        Assert.Equal(
+            new SubmissionCounts(
+                Artifacts:
+                    1,
+                Submissions:
+                    1,
+                Events:
+                    1,
+                Units:
+                    1,
+                QueueVersion:
+                    1),
+            await ReadSubmissionCountsAsync(
+                context.DataSource));
+    }
+
+    [PostgresFact]
+    public async Task ImmutableSubmissionRecords_RejectMutation()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var submission =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    'f');
+
+        await context.SubmissionStore.RegisterAndEnqueueAsync(
+            submission,
+            [
+                new ProcessingWorkItem(
+                    ProcessingUnitId.New(),
+                    submission.SubmissionId,
+                    new ProcessingUnitScope.WholeDocument(),
+                    attemptNumber:
+                        1)
+            ]);
+
+        var mutations =
+            new[]
+            {
+                """
+                UPDATE document_processing_manager.source_artifacts
+                SET byte_length = byte_length
+                WHERE sha256_digest =
+                    (SELECT source_sha256_digest
+                     FROM document_processing_manager.document_submissions
+                     WHERE submission_id = @submission_id);
+                """,
+                """
+                UPDATE document_processing_manager.document_submissions
+                SET original_file_name = original_file_name
+                WHERE submission_id = @submission_id;
+                """,
+                """
+                UPDATE document_processing_manager.custody_events
+                SET occurred_at_utc = occurred_at_utc
+                WHERE submission_id = @submission_id;
+                """,
+                """
+                UPDATE document_processing_manager.processing_units
+                SET submission_unit_ordinal = submission_unit_ordinal + 1
+                WHERE submission_id = @submission_id;
+                """
+            };
+
+        foreach (var mutation in mutations)
+        {
+            await using var command =
+                context.DataSource.CreateCommand(
+                    mutation);
+
+            command.Parameters.AddWithValue(
+                "submission_id",
+                NpgsqlDbType.Uuid,
+                submission.SubmissionId.Value);
+
+            var exception =
+                await Assert.ThrowsAsync<PostgresException>(
+                    () =>
+                        command.ExecuteNonQueryAsync());
+
+            Assert.Equal(
+                PostgresErrorCodes.RaiseException,
+                exception.SqlState);
+        }
+    }
+
+    [PostgresFact]
+    public async Task CustodySchema_RejectsEventForDifferentSource()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var submission =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    '9');
+
+        await context.SubmissionStore.RegisterAndEnqueueAsync(
+            submission,
+            [
+                new ProcessingWorkItem(
+                    ProcessingUnitId.New(),
+                    submission.SubmissionId,
+                    new ProcessingUnitScope.WholeDocument(),
+                    attemptNumber:
+                        1)
+            ]);
+
+        await using var command =
+            context.DataSource.CreateCommand(
+                """
+                INSERT INTO document_processing_manager.custody_events
+                (
+                    submission_id,
+                    event_kind,
+                    source_sha256_digest,
+                    occurred_at_utc
+                )
+                VALUES
+                (
+                    @submission_id,
+                    0,
+                    @wrong_source_sha256_digest,
+                    @occurred_at_utc
+                );
+                """);
+
+        command.Parameters.AddWithValue(
+            "submission_id",
+            NpgsqlDbType.Uuid,
+            submission.SubmissionId.Value);
+
+        command.Parameters.AddWithValue(
+            "wrong_source_sha256_digest",
+            NpgsqlDbType.Text,
+            new string(
+                '0',
+                count:
+                    64));
+
+        command.Parameters.AddWithValue(
+            "occurred_at_utc",
+            NpgsqlDbType.TimestampTz,
+            DateTimeOffset.UnixEpoch);
+
+        var exception =
+            await Assert.ThrowsAsync<PostgresException>(
+                () =>
+                    command.ExecuteNonQueryAsync());
+
+        Assert.Equal(
+            PostgresErrorCodes.ForeignKeyViolation,
+            exception.SqlState);
     }
 
     [PostgresFact]
@@ -616,7 +1243,12 @@ public sealed class PostgresManagerPersistenceTests
         await using var command =
             dataSource.CreateCommand(
                 """
-                TRUNCATE TABLE document_processing_manager.processing_units;
+                TRUNCATE TABLE
+                    document_processing_manager.custody_events,
+                    document_processing_manager.processing_units,
+                    document_processing_manager.document_submissions,
+                    document_processing_manager.source_artifacts
+                RESTART IDENTITY;
 
                 UPDATE document_processing_manager.queue_metadata
                 SET version = 0
@@ -642,6 +1274,10 @@ public sealed class PostgresManagerPersistenceTests
         ProcessingWorkItem workItem,
         long queuePosition)
     {
+        await EnsureSubmissionFixtureAsync(
+            dataSource,
+            workItem.SubmissionId);
+
         var scopeKind =
             workItem.Scope is ProcessingUnitScope.WholeDocument
                 ? (short)0
@@ -733,6 +1369,10 @@ public sealed class PostgresManagerPersistenceTests
         ProcessingWorkItem workItem,
         DateTimeOffset expiredAtUtc)
     {
+        await EnsureSubmissionFixtureAsync(
+            dataSource,
+            workItem.SubmissionId);
+
         await using var command =
             dataSource.CreateCommand(
                 """
@@ -800,6 +1440,68 @@ public sealed class PostgresManagerPersistenceTests
         await command.ExecuteNonQueryAsync();
     }
 
+    private static async Task EnsureSubmissionFixtureAsync(
+        NpgsqlDataSource dataSource,
+        DocumentSubmissionId submissionId)
+    {
+        var sourceBytes =
+            submissionId.Value.ToByteArray();
+
+        var digest =
+            Convert.ToHexString(
+                    SHA256.HashData(
+                        sourceBytes))
+                .ToLowerInvariant();
+
+        await using var command =
+            dataSource.CreateCommand(
+                """
+                INSERT INTO document_processing_manager.source_artifacts
+                    (sha256_digest, byte_length)
+                VALUES
+                    (@sha256_digest, @byte_length)
+                ON CONFLICT (sha256_digest) DO NOTHING;
+
+                INSERT INTO document_processing_manager.document_submissions
+                (
+                    submission_id,
+                    source_sha256_digest,
+                    original_file_name,
+                    submitted_at_utc
+                )
+                VALUES
+                (
+                    @submission_id,
+                    @sha256_digest,
+                    'postgres-fixture.pdf',
+                    @submitted_at_utc
+                )
+                ON CONFLICT (submission_id) DO NOTHING;
+                """);
+
+        command.Parameters.AddWithValue(
+            "submission_id",
+            NpgsqlDbType.Uuid,
+            submissionId.Value);
+
+        command.Parameters.AddWithValue(
+            "sha256_digest",
+            NpgsqlDbType.Text,
+            digest);
+
+        command.Parameters.AddWithValue(
+            "byte_length",
+            NpgsqlDbType.Bigint,
+            sourceBytes.LongLength);
+
+        command.Parameters.AddWithValue(
+            "submitted_at_utc",
+            NpgsqlDbType.TimestampTz,
+            DateTimeOffset.UnixEpoch);
+
+        await command.ExecuteNonQueryAsync();
+    }
+
     private static async Task<IReadOnlyList<ProcessingUnitId>>
         ReadPendingOrderAsync(
         NpgsqlDataSource dataSource)
@@ -828,6 +1530,97 @@ public sealed class PostgresManagerPersistenceTests
         }
 
         return result;
+    }
+
+    private static async Task<SubmissionCounts> ReadSubmissionCountsAsync(
+        NpgsqlDataSource dataSource)
+    {
+        await using var command =
+            dataSource.CreateCommand(
+                """
+                SELECT
+                    (SELECT COUNT(*) FROM document_processing_manager.source_artifacts),
+                    (SELECT COUNT(*) FROM document_processing_manager.document_submissions),
+                    (SELECT COUNT(*) FROM document_processing_manager.custody_events),
+                    (SELECT COUNT(*) FROM document_processing_manager.processing_units),
+                    (SELECT version
+                     FROM document_processing_manager.queue_metadata
+                     WHERE singleton = TRUE);
+                """);
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        Assert.True(
+            await reader.ReadAsync());
+
+        return new SubmissionCounts(
+            Artifacts:
+                reader.GetInt64(
+                    0),
+            Submissions:
+                reader.GetInt64(
+                    1),
+            Events:
+                reader.GetInt64(
+                    2),
+            Units:
+                reader.GetInt64(
+                    3),
+            QueueVersion:
+                reader.GetInt64(
+                    4));
+    }
+
+    private static DocumentSubmission CreateSubmission(
+        DocumentSubmissionId submissionId,
+        char digestCharacter) =>
+        new(
+            submissionId,
+            new SourceArtifact(
+                new Sha256Digest(
+                    new string(
+                        digestCharacter,
+                        count:
+                            64)),
+                byteLength:
+                    128),
+            "fixture.pdf",
+            "application/pdf",
+            "integration test",
+            DateTimeOffset.UnixEpoch);
+
+    private static string CreateTemporaryCustodyRoot() =>
+        Path.Combine(
+            Path.GetTempPath(),
+            $"dpengine-postgres-custody-{Guid.NewGuid():N}");
+
+    private static void DeleteTemporaryCustodyRoot(
+        string root)
+    {
+        if (!Directory.Exists(
+                root))
+        {
+            return;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            foreach (var file in Directory.EnumerateFiles(
+                         root,
+                         "*",
+                         SearchOption.AllDirectories))
+            {
+                File.SetAttributes(
+                    file,
+                    FileAttributes.Normal);
+            }
+        }
+
+        Directory.Delete(
+            root,
+            recursive:
+                true);
     }
 
     #endregion
@@ -872,6 +1665,13 @@ public sealed class PostgresManagerPersistenceTests
             new(
                 dataSource);
 
+        public PostgresDocumentSubmissionStore SubmissionStore
+        {
+            get;
+        } =
+            new(
+                dataSource);
+
         public ValueTask DisposeAsync() =>
             DataSource.DisposeAsync();
     }
@@ -889,6 +1689,21 @@ public sealed class PostgresManagerPersistenceTests
                     workItem,
                     cancellationToken));
     }
+
+    private sealed class FixedTimeProvider(
+        DateTimeOffset utcNow)
+        : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() =>
+            utcNow;
+    }
+
+    private readonly record struct SubmissionCounts(
+        long Artifacts,
+        long Submissions,
+        long Events,
+        long Units,
+        long QueueVersion);
 
     #endregion
 }

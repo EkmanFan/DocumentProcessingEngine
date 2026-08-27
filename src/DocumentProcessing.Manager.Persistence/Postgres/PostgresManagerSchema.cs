@@ -155,13 +155,145 @@ public sealed class PostgresManagerSchema
                 WHERE status = 1;
             """;
 
+    private const string
+        MigrationTwoSql =
+            """
+            CREATE TABLE document_processing_manager.source_artifacts
+            (
+                sha256_digest text PRIMARY KEY
+                    CHECK (sha256_digest ~ '^[0-9a-f]{64}$'),
+                byte_length bigint NOT NULL
+                    CHECK (byte_length > 0),
+                first_stored_at_utc timestamp with time zone NOT NULL
+                    DEFAULT clock_timestamp()
+            );
+
+            CREATE TABLE document_processing_manager.document_submissions
+            (
+                submission_id uuid PRIMARY KEY,
+                source_sha256_digest text NOT NULL
+                    REFERENCES document_processing_manager.source_artifacts
+                        (sha256_digest),
+                original_file_name text NOT NULL
+                    CHECK (length(original_file_name) > 0),
+                declared_media_type text NULL,
+                source_origin text NULL,
+                submitted_at_utc timestamp with time zone NOT NULL,
+                UNIQUE
+                    (submission_id, source_sha256_digest)
+            );
+
+            CREATE TABLE document_processing_manager.custody_events
+            (
+                event_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                submission_id uuid NOT NULL,
+                event_kind smallint NOT NULL
+                    CHECK (event_kind >= 0),
+                source_sha256_digest text NOT NULL,
+                occurred_at_utc timestamp with time zone NOT NULL,
+                FOREIGN KEY
+                    (submission_id, source_sha256_digest)
+                REFERENCES document_processing_manager.document_submissions
+                    (submission_id, source_sha256_digest)
+            );
+
+            CREATE OR REPLACE FUNCTION
+                document_processing_manager.reject_custody_mutation()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $$
+            BEGIN
+                RAISE EXCEPTION 'Custody records are append-only: %.', TG_TABLE_NAME;
+            END;
+            $$;
+
+            CREATE TRIGGER source_artifacts_are_immutable
+            BEFORE UPDATE OR DELETE
+            ON document_processing_manager.source_artifacts
+            FOR EACH ROW
+            EXECUTE FUNCTION document_processing_manager.reject_custody_mutation();
+
+            CREATE TRIGGER document_submissions_are_immutable
+            BEFORE UPDATE OR DELETE
+            ON document_processing_manager.document_submissions
+            FOR EACH ROW
+            EXECUTE FUNCTION document_processing_manager.reject_custody_mutation();
+
+            CREATE TRIGGER custody_events_are_append_only
+            BEFORE UPDATE OR DELETE
+            ON document_processing_manager.custody_events
+            FOR EACH ROW
+            EXECUTE FUNCTION document_processing_manager.reject_custody_mutation();
+
+            ALTER TABLE document_processing_manager.processing_units
+                ADD COLUMN submission_unit_ordinal integer NULL
+                    CHECK (submission_unit_ordinal > 0);
+
+            CREATE OR REPLACE FUNCTION
+                document_processing_manager.reject_processing_unit_identity_mutation()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $$
+            BEGIN
+                IF NEW.unit_id IS DISTINCT FROM OLD.unit_id
+                    OR NEW.submission_id IS DISTINCT FROM OLD.submission_id
+                    OR NEW.scope_kind IS DISTINCT FROM OLD.scope_kind
+                    OR NEW.start_physical_page_number IS DISTINCT FROM OLD.start_physical_page_number
+                    OR NEW.end_physical_page_number IS DISTINCT FROM OLD.end_physical_page_number
+                    OR NEW.scope_title IS DISTINCT FROM OLD.scope_title
+                    OR NEW.submission_unit_ordinal IS DISTINCT FROM OLD.submission_unit_ordinal
+                    OR NEW.created_at_utc IS DISTINCT FROM OLD.created_at_utc
+                THEN
+                    RAISE EXCEPTION 'Processing-unit identity and source scope are immutable.';
+                END IF;
+
+                RETURN NEW;
+            END;
+            $$;
+
+            CREATE TRIGGER processing_unit_identity_is_immutable
+            BEFORE UPDATE
+            ON document_processing_manager.processing_units
+            FOR EACH ROW
+            EXECUTE FUNCTION
+                document_processing_manager.reject_processing_unit_identity_mutation();
+
+            CREATE INDEX ix_document_submissions_source_digest
+                ON document_processing_manager.document_submissions
+                    (source_sha256_digest);
+
+            CREATE INDEX ix_custody_events_submission
+                ON document_processing_manager.custody_events
+                    (submission_id, event_id);
+
+            CREATE INDEX ix_processing_units_submission
+                ON document_processing_manager.processing_units
+                    (submission_id);
+
+            CREATE UNIQUE INDEX ux_processing_units_submission_ordinal
+                ON document_processing_manager.processing_units
+                    (submission_id, submission_unit_ordinal)
+                WHERE submission_unit_ordinal IS NOT NULL;
+
+            ALTER TABLE document_processing_manager.processing_units
+                ADD CONSTRAINT fk_processing_units_document_submission
+                FOREIGN KEY (submission_id)
+                REFERENCES document_processing_manager.document_submissions
+                    (submission_id)
+                NOT VALID;
+            """;
+
     private static readonly Migration[]
         Migrations =
         [
             new(
                 Version:
                     1,
-                MigrationOneSql)
+                MigrationOneSql),
+            new(
+                Version:
+                    2,
+                MigrationTwoSql)
         ];
 
     private readonly NpgsqlDataSource

@@ -40,6 +40,22 @@ public sealed record ProcessingWorkItem
         ProcessingUnitScope scope,
         int attemptNumber)
     {
+        if (unitId.Value ==
+            Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Processing-unit identifier cannot be empty.",
+                nameof(unitId));
+        }
+
+        if (submissionId.Value ==
+            Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Document-submission identifier cannot be empty.",
+                nameof(submissionId));
+        }
+
         ArgumentNullException.ThrowIfNull(
             scope);
 

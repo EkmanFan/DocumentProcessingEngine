@@ -21,9 +21,11 @@ policy.
   the default Host composition.
 - Manager foundation: durable lifecycle semantics, globally leased sequential
   dispatch and hexagonal ports.
-- PostgreSQL Manager persistence: versioned schema plus durable state, runtime
-  lease and fenced global-queue adapters; filesystem artifact storage,
-  DPEngine and Blazor adapters are not implemented yet.
+- Manager persistence: versioned PostgreSQL state, runtime lease, fenced global
+  queue, immutable submission manifests and append-only custody events.
+- Source custody: exact bytes are retained through a content-addressed SHA-256
+  filesystem adapter and verified before reading; DPEngine execution, result
+  storage and Blazor adapters are not implemented yet.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts
