@@ -19,9 +19,17 @@ dotnet run --project src/DocumentProcessing.Manager.Blazor
 ```
 
 The API key remains in the server process and is never sent to the browser.
-This first increment provides Manager controls and read-only pending, active and
-completed views. Queue reordering, source submission, result download and the
-animated librarian remain later increments.
+The workshop provides Manager controls, read-only pending, active and completed
+views, and a reusable sprite-animated librarian whose deterministic states
+follow Manager observations. Queue reordering, source submission and result
+download remain later increments.
+
+The librarian waits when the queue has no active work, reads while a unit is
+active, holds its page while paused, rests while stopped and reports a lost Host
+connection. A newly observed successful unit triggers one short celebration;
+existing history and failures never do. CSS respects `prefers-reduced-motion`.
+The component exposes `ImageSource` when an embedding host needs to serve the
+sprite sheet from a different static-assets path.
 
 `Home.razor` is only the standalone route shell. The reusable
 `ManagerWorkshop` component owns the workshop presentation and its isolated

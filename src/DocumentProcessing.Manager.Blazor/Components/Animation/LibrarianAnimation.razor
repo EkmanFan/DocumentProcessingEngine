@@ -1,0 +1,277 @@
+@implements IAsyncDisposable
+
+<div class="librarian-scene @ModeCssClass @(_celebrating ? "scene-celebrating" : null)"
+     role="img"
+     aria-label="@AccessibleLabel"
+     data-animation-mode="@ModeCssClass"
+     data-celebration-sequence="@CelebrationSequence"
+     data-celebrating="@_celebrating.ToString().ToLowerInvariant()">
+    <span class="scene-status">@StatusLabel</span>
+
+    <div class="sprite-window" aria-hidden="true">
+        <img class="librarian-sprite"
+             src="@ImageSource"
+             alt=""
+             draggable="false" />
+
+        <span class="state-emblem pause-emblem">Ⅱ</span>
+        <span class="state-emblem sleep-emblem">Zzz</span>
+        <span class="state-emblem unavailable-emblem">!</span>
+    </div>
+
+    <div class="scene-caption" aria-hidden="true">
+        <strong>@CaptionTitle</strong>
+        <span>@CaptionDetail</span>
+    </div>
+</div>
+
+@code {
+    #region Variables and Constants
+
+    private const string
+        DefaultImageSource =
+            "/images/librarian-animation-v1.png";
+
+    private static readonly TimeSpan
+        CelebrationDuration =
+            TimeSpan.FromMilliseconds(
+                4000);
+
+    private CancellationTokenSource?
+        _celebrationCancellation;
+
+    private Task?
+        _celebrationTask;
+
+    private long
+        _observedCelebrationSequence;
+
+    private bool
+        _celebrating;
+
+    #endregion
+
+    #region Parameters
+
+    [Parameter]
+    public LibrarianAnimationMode Mode { get; set; }
+
+    [Parameter]
+    public string? DocumentTitle { get; set; }
+
+    [Parameter]
+    public long CelebrationSequence { get; set; }
+
+    [Parameter]
+    public string ImageSource { get; set; } =
+        DefaultImageSource;
+
+    #endregion
+
+    #region Properties
+
+    private string ModeCssClass =>
+        Mode switch
+        {
+            LibrarianAnimationMode.Connecting =>
+                "scene-connecting",
+            LibrarianAnimationMode.Waiting =>
+                "scene-waiting",
+            LibrarianAnimationMode.Reading =>
+                "scene-reading",
+            LibrarianAnimationMode.Paused =>
+                "scene-paused",
+            LibrarianAnimationMode.Stopped =>
+                "scene-stopped",
+            LibrarianAnimationMode.Unavailable =>
+                "scene-unavailable",
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(Mode),
+                    Mode,
+                    "Unknown librarian animation mode.")
+        };
+
+    private string StatusLabel =>
+        _celebrating
+            ? "Terminé"
+            : Mode switch
+            {
+                LibrarianAnimationMode.Connecting =>
+                    "Connexion",
+                LibrarianAnimationMode.Waiting =>
+                    "En attente",
+                LibrarianAnimationMode.Reading =>
+                    "Lecture en cours",
+                LibrarianAnimationMode.Paused =>
+                    "En pause",
+                LibrarianAnimationMode.Stopped =>
+                    "Atelier fermé",
+                LibrarianAnimationMode.Unavailable =>
+                    "Host indisponible",
+                _ =>
+                    string.Empty
+            };
+
+    private string CaptionTitle =>
+        _celebrating
+            ? "Traitement terminé !"
+            : Mode switch
+            {
+                LibrarianAnimationMode.Connecting =>
+                    "Le bibliothécaire ouvre l’atelier…",
+                LibrarianAnimationMode.Waiting =>
+                    "Il attend un nouvel ouvrage.",
+                LibrarianAnimationMode.Reading =>
+                    "Lecture attentive en cours.",
+                LibrarianAnimationMode.Paused =>
+                    "La page est soigneusement gardée.",
+                LibrarianAnimationMode.Stopped =>
+                    "Le bibliothécaire se repose.",
+                LibrarianAnimationMode.Unavailable =>
+                    "Impossible de joindre le Manager.",
+                _ =>
+                    string.Empty
+            };
+
+    private string CaptionDetail =>
+        _celebrating
+            ? "Le résultat vient de rejoindre les archives."
+            : Mode ==
+              LibrarianAnimationMode.Reading
+                ? NormalizedDocumentTitle
+                : Mode switch
+                {
+                    LibrarianAnimationMode.Waiting =>
+                        "La file reprendra vie au prochain document.",
+                    LibrarianAnimationMode.Paused =>
+                        "Le travail reprendra exactement au même endroit.",
+                    LibrarianAnimationMode.Stopped =>
+                        "Démarre le Manager pour rouvrir le bureau.",
+                    LibrarianAnimationMode.Unavailable =>
+                        "La reconnexion est tentée automatiquement.",
+                    _ =>
+                        "Synchronisation avec le Host."
+                };
+
+    private string AccessibleLabel =>
+        $"{StatusLabel}. {CaptionTitle} {CaptionDetail}";
+
+    private string NormalizedDocumentTitle =>
+        string.IsNullOrWhiteSpace(
+            DocumentTitle)
+            ? "Document en cours"
+            : DocumentTitle.Trim();
+
+    #endregion
+
+    #region Methods Lifecycle
+
+    protected override void OnParametersSet()
+    {
+        if (!Enum.IsDefined(
+                Mode))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(Mode),
+                Mode,
+                "Unknown librarian animation mode.");
+        }
+
+        if (CelebrationSequence <
+            0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(CelebrationSequence),
+                CelebrationSequence,
+                "The celebration sequence cannot be negative.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                ImageSource))
+        {
+            throw new ArgumentException(
+                "The librarian sprite image source cannot be empty.",
+                nameof(ImageSource));
+        }
+
+        if (CelebrationSequence <=
+            _observedCelebrationSequence)
+        {
+            return;
+        }
+
+        _observedCelebrationSequence =
+            CelebrationSequence;
+
+        StartCelebration();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_celebrationCancellation is null)
+        {
+            return;
+        }
+
+        await _celebrationCancellation
+            .CancelAsync();
+
+        if (_celebrationTask is not null)
+        {
+            try
+            {
+                await _celebrationTask;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        _celebrationCancellation.Dispose();
+    }
+
+    #endregion
+
+    #region Methods Animation
+
+    private void StartCelebration()
+    {
+        _celebrationCancellation?.Cancel();
+        _celebrationCancellation?.Dispose();
+
+        _celebrationCancellation =
+            new CancellationTokenSource();
+
+        _celebrating =
+            true;
+
+        _celebrationTask =
+            CompleteCelebrationAsync(
+                _celebrationCancellation.Token);
+    }
+
+    private async Task CompleteCelebrationAsync(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(
+                CelebrationDuration,
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _celebrating =
+            false;
+
+        await InvokeAsync(
+            StateHasChanged);
+    }
+
+    #endregion
+}

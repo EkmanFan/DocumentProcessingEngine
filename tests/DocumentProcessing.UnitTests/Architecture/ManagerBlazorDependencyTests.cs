@@ -35,8 +35,14 @@ public sealed class ManagerBlazorDependencyTests
         var workshopType =
             typeof(global::DocumentProcessing.Manager.Blazor.Components.Workshop.ManagerWorkshop);
 
+        var animationType =
+            typeof(global::DocumentProcessing.Manager.Blazor.Components.Animation.LibrarianAnimation);
+
         Assert.True(
             workshopType.IsPublic);
+
+        Assert.True(
+            animationType.IsPublic);
 
         Assert.True(
             typeof(global::DocumentProcessing.Manager.Blazor.DependencyInjection.ManagerWorkshopServiceCollectionExtensions)

@@ -34,7 +34,9 @@ policy.
   submission, queue observation/reordering and result retrieval.
 - Manager workshop: a server-side Blazor adapter presents pending, active and
   completed work with lifecycle controls while retaining the Manager API key
-  outside the browser. The animation stage is reserved for the next increment.
+  outside the browser. Its reusable sprite-animated librarian reflects waiting,
+  reading, paused, stopped and unavailable states and celebrates newly
+  completed work.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts

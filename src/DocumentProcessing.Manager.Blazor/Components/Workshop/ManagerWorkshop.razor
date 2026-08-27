@@ -160,24 +160,9 @@
             </div>
 
             <div class="animation-stage">
-                <span class="reserved-label">Espace animation · incrément 2</span>
-                <div class="stage-glow" aria-hidden="true"></div>
-                <svg class="book-placeholder"
-                     viewBox="0 0 320 220"
-                     role="img"
-                     aria-label="Emplacement réservé au bibliothécaire animé">
-                    <path class="desk-shadow" d="M33 184h254c10 0 18 7 18 16H15c0-9 8-16 18-16Z" />
-                    <path class="book-cover" d="M42 77c43-9 82-2 118 26v81c-36-25-75-32-118-23V77Z" />
-                    <path class="book-cover" d="M278 77c-43-9-82-2-118 26v81c36-25 75-32 118-23V77Z" />
-                    <path class="book-page" d="M50 68c40-5 77 4 110 30v78c-34-23-70-31-110-24V68Z" />
-                    <path class="book-page" d="M270 68c-40-5-77 4-110 30v78c34-23 70-31 110-24V68Z" />
-                    <path class="book-line" d="M72 94c24 0 45 6 64 17M72 113c24 1 45 7 64 18M72 132c20 1 38 6 54 15M248 94c-24 0-45 6-64 17M248 113c-24 1-45 7-64 18M248 132c-20 1-38 6-54 15" />
-                    <path class="bookmark" d="M154 99h12v88l-6-7-6 7V99Z" />
-                </svg>
-                <div class="stage-caption">
-                    <strong>Le bibliothécaire prendra place ici.</strong>
-                    <span>Illustration éditoriale 2D · animation SVG</span>
-                </div>
+                <LibrarianAnimation Mode="@LibrarianMode"
+                                    DocumentTitle="@_snapshot?.ActiveItem?.DocumentTitle"
+                                    CelebrationSequence="@_animationTracker.CelebrationSequence" />
             </div>
 
             <footer class="active-footer">
@@ -248,6 +233,10 @@
 
     private readonly CancellationTokenSource
         _lifetime =
+            new();
+
+    private readonly ManagerWorkshopAnimationTracker
+        _animationTracker =
             new();
 
     private readonly SemaphoreSlim
@@ -335,6 +324,23 @@
         _lastRefreshUtc is null
             ? "Synchronisation…"
             : $"Actualisé à {_lastRefreshUtc.Value.ToLocalTime():HH:mm:ss}";
+
+    private LibrarianAnimationMode LibrarianMode =>
+        _errorMessage is not null
+            ? LibrarianAnimationMode.Unavailable
+            : _snapshot?.State switch
+            {
+                null =>
+                    LibrarianAnimationMode.Connecting,
+                ManagerHostState.Stopped =>
+                    LibrarianAnimationMode.Stopped,
+                ManagerHostState.Paused =>
+                    LibrarianAnimationMode.Paused,
+                _ when _snapshot.ActiveItem is not null =>
+                    LibrarianAnimationMode.Reading,
+                _ =>
+                    LibrarianAnimationMode.Waiting
+            };
 
     #endregion
 
@@ -475,10 +481,16 @@
 
         try
         {
-            _snapshot =
+            var snapshot =
                 await ManagerClient
                     .GetWorkshopAsync(
                         cancellationToken);
+
+            _animationTracker.Observe(
+                snapshot);
+
+            _snapshot =
+                snapshot;
 
             _lastRefreshUtc =
                 DateTimeOffset.UtcNow;
