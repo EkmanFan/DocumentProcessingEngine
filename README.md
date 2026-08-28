@@ -41,12 +41,28 @@ policy.
   Its persistent animation stage also accepts streamed PDF/EPUB submissions;
   immutable custody and queue registration remain owned by the Manager Host.
   New documents are shelved by default, can be released explicitly or marked
-  ready at reception, and pending units can be reordered across documents.
+  ready at reception, and pending units can be reordered across documents by
+  buttons or drag and drop. Successful retained JSON results can be downloaded
+  through the authenticated server-side workshop circuit.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts
 and persistent document storage. The separate Manager bounded context owns
 durable execution orchestration without moving those concerns into the Engine.
+
+## Run the Manager locally
+
+Start or reuse the development PostgreSQL container, then launch the Manager
+Host and its Blazor workshop with one command:
+
+```bash
+./scripts/run-manager-dev.sh
+```
+
+Open `http://127.0.0.1:5092` and press `Ctrl+C` when finished. The Host and UI
+are stopped together; the PostgreSQL container and its named volume remain
+available for the next run. `DPE_MANAGER_*` environment variables can override
+the development ports, credentials, API key, container names and custody root.
 
 ## Architecture
 

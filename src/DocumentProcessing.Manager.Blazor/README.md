@@ -14,18 +14,29 @@ export ManagerApi__ApiKey='the-same-at-least-32-character-key-as-the-host'
 export ManagerApi__MaximumUploadBytes='2147483648'
 # Optional; source streaming defaults to one hour independently of short API calls.
 export ManagerApi__SubmissionTimeoutSeconds='3600'
+# Optional; result streaming through the authenticated Blazor circuit also defaults to one hour.
+export ManagerApi__ResultDownloadTimeoutSeconds='3600'
 ```
 
 Run locally:
 
 ```bash
-dotnet run --project src/DocumentProcessing.Manager.Blazor
+./scripts/run-manager-dev.sh
 ```
+
+The repository-level launcher starts or reuses the development PostgreSQL
+container, waits for the Manager Host readiness endpoint and then starts this
+Blazor application. Both application processes stop together on `Ctrl+C`;
+PostgreSQL remains available for the next run.
 
 The API key remains in the server process and is never sent to the browser.
 The workshop provides Manager controls, pending, active and completed views,
 and a reusable sprite-animated librarian whose deterministic states follow
-Manager observations. Result download remains a later increment.
+Manager observations. Successful retained results can be streamed from the
+authenticated server-side client and downloaded without exposing the Manager
+API key or an unauthenticated result URL to the browser. The current browser
+adapter materializes the result payload before saving it, which is appropriate
+for the JSON-only V1 result but not for future large visual-asset bundles.
 
 The complete animation stage is a permanent PDF/EPUB file input: clicking it or
 dropping one file on the librarian streams the exact source to the authenticated
@@ -43,7 +54,9 @@ order but cannot be claimed until the user selects `Run` on that queue item.
 Selecting `Run` before reception makes the new unit immediately eligible while
 still respecting the Manager's global Start/Pause/Stop state and strictly
 sequential dispatcher. Queue items can be moved earlier or later across
-documents and future chapter units. The public drop-zone component exposes
+documents and future chapter units. The same order can be changed by dragging
+the dedicated grip on a pending card; the arrow buttons remain available for
+keyboard access and as a deterministic fallback. The public drop-zone component exposes
 `DefaultSubmissionBehavior` so an embedding application can choose its initial
 toggle state without replacing the user's in-session choice.
 

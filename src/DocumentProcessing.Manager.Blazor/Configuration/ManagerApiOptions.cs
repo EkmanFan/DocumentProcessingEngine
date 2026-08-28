@@ -25,6 +25,8 @@ internal sealed class ManagerApiOptions
 
     public TimeSpan SubmissionTimeout { get; }
 
+    public TimeSpan ResultDownloadTimeout { get; }
+
     public long MaximumUploadBytes { get; }
 
     #endregion
@@ -37,6 +39,7 @@ internal sealed class ManagerApiOptions
         TimeSpan refreshInterval,
         TimeSpan requestTimeout,
         TimeSpan submissionTimeout,
+        TimeSpan resultDownloadTimeout,
         long maximumUploadBytes)
     {
         BaseAddress =
@@ -53,6 +56,9 @@ internal sealed class ManagerApiOptions
 
         SubmissionTimeout =
             submissionTimeout;
+
+        ResultDownloadTimeout =
+            resultDownloadTimeout;
 
         MaximumUploadBytes =
             maximumUploadBytes;
@@ -117,6 +123,13 @@ internal sealed class ManagerApiOptions
             ReadSeconds(
                 configuration,
                 "ManagerApi:SubmissionTimeoutSeconds",
+                defaultValue:
+                    3600,
+                maximumValue:
+                    86400),
+            ReadSeconds(
+                configuration,
+                "ManagerApi:ResultDownloadTimeoutSeconds",
                 defaultValue:
                     3600,
                 maximumValue:

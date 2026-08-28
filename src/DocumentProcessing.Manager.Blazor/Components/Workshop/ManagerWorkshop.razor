@@ -1,9 +1,11 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @implements IAsyncDisposable
 @inject IManagerHostClient ManagerClient
+@inject IManagerResultClient ResultClient
 @inject DocumentProcessing.Manager.Blazor.Configuration.ManagerApiOptions Options
 @inject ILogger<ManagerWorkshop> Logger
 @inject IStringLocalizer<ManagerWorkshop> Localizer
+@inject IJSRuntime JavaScript
 
 <main class="workshop-shell">
     <header class="workshop-header">
@@ -105,12 +107,18 @@
             }
             else
             {
-                <ol class="work-list queue-list">
+                <ol class="work-list queue-list" @ref="_queueList">
                     @for (var index = 0; index < _snapshot.PendingItems.Count; index++)
                     {
                         var item = _snapshot.PendingItems[index];
 
-                        <li class="work-item pending-item">
+                        <li @key="item.UnitId"
+                            class="work-item pending-item"
+                            data-queue-drop-unit-id="@item.UnitId">
+                            <span class="queue-drag-handle"
+                                  data-queue-drag-unit-id="@item.UnitId"
+                                  title="@(Localizer["DragQueueItemLabel", item.DocumentTitle])"
+                                  aria-hidden="true">⠿</span>
                             <span class="queue-position">@item.QueuePosition</span>
                             <div class="work-copy">
                                 <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
@@ -250,12 +258,40 @@
                                 <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
                                 <span>@FormatScope(item.Scope)</span>
                                 <time datetime="@item.UpdatedAtUtc.ToString("O")">@FormatCompletedAt(item.UpdatedAtUtc)</time>
+                                @if (item.Status == ManagerQueueItemStatus.Failed)
+                                {
+                                    <span class="processing-failure-message"
+                                          title="@(Localizer["ProcessingFailureLabel", item.FailureMessage!])">
+                                        @item.FailureMessage
+                                    </span>
+                                }
                             </div>
-                            <span class="result-status">
-                                @(item.Status == ManagerQueueItemStatus.Failed
-                                    ? Localizer["FailedStatus"]
-                                    : Localizer["CompletedStatus"])
-                            </span>
+                            <div class="result-actions">
+                                <span class="result-status">
+                                    @(item.Status == ManagerQueueItemStatus.Failed
+                                        ? Localizer["FailedStatus"]
+                                        : Localizer["CompletedStatus"])
+                                </span>
+                                @if (item.Status == ManagerQueueItemStatus.Succeeded)
+                                {
+                                    <button class="result-download-button"
+                                            type="button"
+                                            disabled="@(_downloadingResultUnitId is not null)"
+                                            title="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
+                                            aria-label="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
+                                            @onclick="() => DownloadResultAsync(item)">
+                                        @(_downloadingResultUnitId == item.UnitId
+                                            ? Localizer["DownloadingResult"]
+                                            : Localizer["DownloadResult"])
+                                    </button>
+                                    @if (_resultDownloadFailureUnitId == item.UnitId)
+                                    {
+                                        <span class="result-download-error" role="alert">
+                                            @_resultDownloadFailureMessage
+                                        </span>
+                                    }
+                                }
+                            </div>
                         </li>
                     }
                 </ol>
@@ -275,6 +311,14 @@
     private readonly CancellationTokenSource
         _lifetime =
             new();
+
+    private const string
+        EmbeddedResultDownloadModulePath =
+            "./_content/DocumentProcessing.Manager.Blazor/js/manager-result-download.js";
+
+    private const string
+        StandaloneResultDownloadModulePath =
+            "./js/manager-result-download.js";
 
     private readonly ManagerWorkshopAnimationTracker
         _animationTracker =
@@ -305,6 +349,24 @@
 
     private bool
         _commandRunning;
+
+    private Guid?
+        _downloadingResultUnitId;
+
+    private Guid?
+        _resultDownloadFailureUnitId;
+
+    private string?
+        _resultDownloadFailureMessage;
+
+    private IJSObjectReference?
+        _workshopModule;
+
+    private DotNetObjectReference<ManagerWorkshop>?
+        _workshopReference;
+
+    private ElementReference
+        _queueList;
 
     private string?
         _receivedDocumentTitle;
@@ -344,6 +406,12 @@
     private long QueueVersion =>
         _snapshot?.QueueVersion ??
         0;
+
+    private static string ResultDownloadModulePath =>
+        System.Reflection.Assembly.GetEntryAssembly() ==
+        typeof(ManagerWorkshop).Assembly
+            ? StandaloneResultDownloadModulePath
+            : EmbeddedResultDownloadModulePath;
 
     private string StateCssClass =>
         _snapshot?.State switch
@@ -458,6 +526,49 @@
                 _lifetime.Token);
     }
 
+    protected override async Task OnAfterRenderAsync(
+        bool firstRender)
+    {
+        if (_snapshot?.PendingItems.Count is not >
+                0 ||
+            _lifetime.IsCancellationRequested)
+        {
+            return;
+        }
+
+        try
+        {
+            _workshopReference ??=
+                DotNetObjectReference.Create(
+                    this);
+
+            var module =
+                await GetWorkshopModuleAsync(
+                    _lifetime.Token);
+
+            await module
+                .InvokeVoidAsync(
+                    "initializeQueueReorder",
+                    _lifetime.Token,
+                    _queueList,
+                    _workshopReference);
+        }
+        catch (OperationCanceledException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (JSDisconnectedException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager queue pointer-reorder initialization failed. Arrow controls remain available.");
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _lifetime
@@ -475,6 +586,20 @@
             {
             }
         }
+
+        if (_workshopModule is not null)
+        {
+            try
+            {
+                await _workshopModule
+                    .DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        _workshopReference?.Dispose();
 
         _refreshGate.Dispose();
         _lifetime.Dispose();
@@ -598,6 +723,187 @@
                     orderedUnitIds,
                     cancellationToken),
             "reorder");
+    }
+
+    /// <summary>
+    /// Applies one pointer-based queue reorder requested by the browser adapter.
+    /// </summary>
+    [JSInvokable]
+    public async Task ReorderQueueFromPointerAsync(
+        string movingUnitId,
+        string targetUnitId)
+    {
+        if (_commandRunning ||
+            _snapshot is null ||
+            !Guid.TryParse(
+                movingUnitId,
+                out var movingId) ||
+            !Guid.TryParse(
+                targetUnitId,
+                out var targetId) ||
+            movingId ==
+                targetId)
+        {
+            return;
+        }
+
+        var expectedVersion =
+            _snapshot.QueueVersion;
+
+        IReadOnlyList<Guid> orderedUnitIds;
+
+        try
+        {
+            orderedUnitIds =
+                ManagerQueueOrder.MoveToTargetPosition(
+                    _snapshot.PendingItems
+                        .Select(
+                            item =>
+                                item.UnitId)
+                        .ToArray(),
+                    movingId,
+                    targetId);
+        }
+        catch (ArgumentException exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager queue pointer-reorder referenced stale processing units.");
+
+            _error =
+                ManagerWorkshopError.Queue;
+
+            return;
+        }
+
+        await ExecuteQueueMutationAsync(
+            cancellationToken =>
+                ManagerClient.ReorderQueueAsync(
+                    expectedVersion,
+                    orderedUnitIds,
+                    cancellationToken),
+            "drag-reorder");
+    }
+
+    private async Task DownloadResultAsync(
+        ManagerWorkItemView item)
+    {
+        if (_downloadingResultUnitId is not null ||
+            item.Status !=
+                ManagerQueueItemStatus.Succeeded ||
+            string.IsNullOrWhiteSpace(
+                item.ResultReference))
+        {
+            return;
+        }
+
+        _downloadingResultUnitId =
+            item.UnitId;
+
+        _resultDownloadFailureUnitId =
+            null;
+
+        _resultDownloadFailureMessage =
+            null;
+
+        using var timeout =
+            CancellationTokenSource.CreateLinkedTokenSource(
+                _lifetime.Token);
+
+        timeout.CancelAfter(
+            Options.ResultDownloadTimeout);
+
+        try
+        {
+            await using var result =
+                await ResultClient
+                    .OpenResultAsync(
+                        item.ResultReference,
+                        timeout.Token);
+
+            if (result is null)
+            {
+                SetResultDownloadFailure(
+                    item.UnitId,
+                    Localizer["ResultNotFoundError"]);
+
+                return;
+            }
+
+            var module =
+                await GetWorkshopModuleAsync(
+                    timeout.Token);
+
+            using var streamReference =
+                new DotNetStreamReference(
+                    result.Content,
+                    leaveOpen:
+                        true);
+
+            await module
+                .InvokeVoidAsync(
+                    "downloadFile",
+                    timeout.Token,
+                    ManagerResultDownloadFileName.Create(
+                        item.OriginalFileName,
+                        item.Scope),
+                    result.MediaType,
+                    streamReference);
+        }
+        catch (OperationCanceledException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (OperationCanceledException)
+        {
+            SetResultDownloadFailure(
+                item.UnitId,
+                Localizer["ResultDownloadTimeoutError"]);
+        }
+        catch (JSDisconnectedException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager result download failed for processing unit {ProcessingUnitId}.",
+                item.UnitId);
+
+            SetResultDownloadFailure(
+                item.UnitId,
+                Localizer["ResultDownloadError"]);
+        }
+        finally
+        {
+            _downloadingResultUnitId =
+                null;
+        }
+    }
+
+    private void SetResultDownloadFailure(
+        Guid unitId,
+        string message)
+    {
+        _resultDownloadFailureUnitId =
+            unitId;
+
+        _resultDownloadFailureMessage =
+            message;
+    }
+
+    private async ValueTask<IJSObjectReference> GetWorkshopModuleAsync(
+        CancellationToken cancellationToken)
+    {
+        _workshopModule ??=
+            await JavaScript
+                .InvokeAsync<IJSObjectReference>(
+                    "import",
+                    cancellationToken,
+                    ResultDownloadModulePath);
+
+        return _workshopModule;
     }
 
     private Task ReleaseProcessingUnitAsync(

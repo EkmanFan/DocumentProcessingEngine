@@ -76,6 +76,30 @@ public sealed class ManagerBlazorLocalizationTests
     [Theory]
     [InlineData(
         "en",
+        "Download")]
+    [InlineData(
+        "fr",
+        "Télécharger")]
+    public void WorkshopResources_LocalizeResultDownload(
+        string cultureName,
+        string expectedDownloadLabel)
+    {
+        var resourceManager =
+            new ResourceManager(
+                WorkshopResourceName,
+                BlazorAssembly);
+
+        Assert.Equal(
+            expectedDownloadLabel,
+            resourceManager.GetString(
+                "DownloadResult",
+                CultureInfo.GetCultureInfo(
+                    cultureName)));
+    }
+
+    [Theory]
+    [InlineData(
+        "en",
         "The browser reported no readable content for this file. If it is not empty, choose it by clicking the drop zone.")]
     [InlineData(
         "fr",

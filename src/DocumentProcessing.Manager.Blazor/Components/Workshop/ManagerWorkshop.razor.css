@@ -342,6 +342,43 @@ a:focus-visible {
     content: "";
 }
 
+.pending-item {
+    transition: border-color 130ms ease, box-shadow 130ms ease, opacity 130ms ease;
+}
+
+.queue-drag-handle {
+    display: grid;
+    flex: 0 0 18px;
+    width: 18px;
+    min-height: 38px;
+    place-items: center;
+    border-radius: 7px;
+    color: var(--ink-400);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+.queue-drag-handle:hover {
+    color: var(--teal);
+    background: var(--teal-soft);
+}
+
+.queue-drag-handle:active {
+    cursor: grabbing;
+}
+
+.queue-dragging {
+    opacity: 0.42;
+}
+
+.queue-drop-target {
+    border-color: rgba(40, 116, 107, 0.62);
+    box-shadow: 0 0 0 3px rgba(40, 116, 107, 0.12);
+}
+
 .queue-position {
     display: grid;
     flex: 0 0 31px;
@@ -470,6 +507,23 @@ a:focus-visible {
     background: var(--red);
 }
 
+.work-copy .processing-failure-message {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--red);
+    line-height: 1.35;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.result-actions {
+    display: grid;
+    flex: 0 0 auto;
+    justify-items: end;
+    gap: 7px;
+}
+
 .result-status {
     flex: 0 0 auto;
     padding: 5px 8px;
@@ -480,6 +534,37 @@ a:focus-visible {
 .failed-item .result-status {
     color: var(--red);
     background: var(--red-soft);
+}
+
+.result-download-button {
+    min-height: 28px;
+    border: 1px solid rgba(40, 116, 107, 0.18);
+    border-radius: 8px;
+    padding: 0 9px;
+    color: var(--teal);
+    font-size: 0.69rem;
+    font-weight: 800;
+    background: rgba(222, 239, 234, 0.72);
+    cursor: pointer;
+}
+
+.result-download-button:not(:disabled):hover {
+    border-color: var(--teal);
+    background: var(--teal-soft);
+    transform: translateY(-1px);
+}
+
+.result-download-button:disabled {
+    cursor: wait;
+    opacity: 0.58;
+}
+
+.result-download-error {
+    max-width: 120px;
+    color: var(--red);
+    font-size: 0.64rem;
+    line-height: 1.35;
+    text-align: right;
 }
 
 .empty-state {

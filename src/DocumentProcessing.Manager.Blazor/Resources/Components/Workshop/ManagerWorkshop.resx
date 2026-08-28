@@ -34,6 +34,7 @@
   <data name="RunQueuedItemLabel" xml:space="preserve"><value>Make {0} eligible for processing</value></data>
   <data name="MoveEarlierLabel" xml:space="preserve"><value>Move {0} earlier in the queue</value></data>
   <data name="MoveLaterLabel" xml:space="preserve"><value>Move {0} later in the queue</value></data>
+  <data name="DragQueueItemLabel" xml:space="preserve"><value>Drag {0} to reorder the queue</value></data>
   <data name="GlobalQueue" xml:space="preserve"><value>Global queue</value></data>
   <data name="ActiveKicker" xml:space="preserve"><value>On the desk</value></data>
   <data name="ActiveTitle" xml:space="preserve"><value>In progress</value></data>
@@ -47,6 +48,13 @@
   <data name="NoResultsDetail" xml:space="preserve"><value>Processed documents will appear here.</value></data>
   <data name="FailedStatus" xml:space="preserve"><value>Failed</value></data>
   <data name="CompletedStatus" xml:space="preserve"><value>Completed</value></data>
+  <data name="ProcessingFailureLabel" xml:space="preserve"><value>Processing failure: {0}</value></data>
+  <data name="DownloadResult" xml:space="preserve"><value>Download</value></data>
+  <data name="DownloadingResult" xml:space="preserve"><value>Downloading…</value></data>
+  <data name="DownloadResultLabel" xml:space="preserve"><value>Download the processing result for {0}</value></data>
+  <data name="ResultNotFoundError" xml:space="preserve"><value>The retained result was not found.</value></data>
+  <data name="ResultDownloadTimeoutError" xml:space="preserve"><value>The result download timed out.</value></data>
+  <data name="ResultDownloadError" xml:space="preserve"><value>The result could not be downloaded.</value></data>
   <data name="MostRecentFirst" xml:space="preserve"><value>Most recent first</value></data>
   <data name="ResultCountSingular" xml:space="preserve"><value>{0} result</value></data>
   <data name="ResultCountPlural" xml:space="preserve"><value>{0} results</value></data>

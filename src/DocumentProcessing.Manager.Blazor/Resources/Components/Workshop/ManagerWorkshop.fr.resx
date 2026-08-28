@@ -34,6 +34,7 @@
   <data name="RunQueuedItemLabel" xml:space="preserve"><value>Rendre {0} éligible au traitement</value></data>
   <data name="MoveEarlierLabel" xml:space="preserve"><value>Déplacer {0} plus tôt dans la file</value></data>
   <data name="MoveLaterLabel" xml:space="preserve"><value>Déplacer {0} plus tard dans la file</value></data>
+  <data name="DragQueueItemLabel" xml:space="preserve"><value>Faire glisser {0} pour réorganiser la file</value></data>
   <data name="GlobalQueue" xml:space="preserve"><value>File globale</value></data>
   <data name="ActiveKicker" xml:space="preserve"><value>Sur le bureau</value></data>
   <data name="ActiveTitle" xml:space="preserve"><value>En cours</value></data>
@@ -47,6 +48,13 @@
   <data name="NoResultsDetail" xml:space="preserve"><value>Les documents traités apparaîtront ici.</value></data>
   <data name="FailedStatus" xml:space="preserve"><value>Échec</value></data>
   <data name="CompletedStatus" xml:space="preserve"><value>Terminé</value></data>
+  <data name="ProcessingFailureLabel" xml:space="preserve"><value>Échec du traitement : {0}</value></data>
+  <data name="DownloadResult" xml:space="preserve"><value>Télécharger</value></data>
+  <data name="DownloadingResult" xml:space="preserve"><value>Téléchargement…</value></data>
+  <data name="DownloadResultLabel" xml:space="preserve"><value>Télécharger le résultat du traitement de {0}</value></data>
+  <data name="ResultNotFoundError" xml:space="preserve"><value>Le résultat conservé est introuvable.</value></data>
+  <data name="ResultDownloadTimeoutError" xml:space="preserve"><value>Le téléchargement du résultat a expiré.</value></data>
+  <data name="ResultDownloadError" xml:space="preserve"><value>Le résultat n’a pas pu être téléchargé.</value></data>
   <data name="MostRecentFirst" xml:space="preserve"><value>Plus récents en premier</value></data>
   <data name="ResultCountSingular" xml:space="preserve"><value>{0} résultat</value></data>
   <data name="ResultCountPlural" xml:space="preserve"><value>{0} résultats</value></data>

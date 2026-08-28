@@ -52,6 +52,15 @@ public static class ManagerWorkshopServiceCollectionExtensions
                         options,
                         options.SubmissionTimeout));
 
+        services
+            .AddHttpClient<IManagerResultClient,
+                ManagerResultClient>(
+                client =>
+                    ConfigureClient(
+                        client,
+                        options,
+                        options.ResultDownloadTimeout));
+
         return services;
     }
 

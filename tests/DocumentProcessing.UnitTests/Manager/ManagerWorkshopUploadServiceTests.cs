@@ -124,7 +124,7 @@ public sealed class ManagerWorkshopUploadServiceTests
     }
 
     [Fact]
-    public void UploadOptions_KeepSubmissionAndShortRequestTimeoutsDistinct()
+    public void UploadOptions_KeepStreamingAndShortRequestTimeoutsDistinct()
     {
         var options =
             CreateOptions(
@@ -140,6 +140,11 @@ public sealed class ManagerWorkshopUploadServiceTests
             TimeSpan.FromHours(
                 1),
             options.SubmissionTimeout);
+
+        Assert.Equal(
+            TimeSpan.FromHours(
+                1),
+            options.ResultDownloadTimeout);
     }
 
     #endregion
