@@ -25,6 +25,12 @@ internal static class PdfPageNativeTextRepair
     private const double SamePointSizeToleranceRatio = 0.05;
     private const double LineToleranceToReferenceHeightRatio = 0.45;
     private const double MinimumLineTolerance = 0.0010;
+    private const double MinimumDropCapToBodyPointSizeRatio = 1.75;
+    private const double MaximumDropCapToBodyPointSizeRatio = 4.50;
+    private const double MaximumDropCapHorizontalGapToBodyHeightRatio = 1.00;
+    private const double MaximumDropCapTopOffsetToBodyHeightRatio = 0.60;
+    private const double MinimumDropCapDescentToBodyHeightRatio = 0.50;
+    private const double MinimumDropCapVerticalOverlapToBodyHeightRatio = 0.50;
 
     #endregion
 
@@ -56,7 +62,8 @@ internal static class PdfPageNativeTextRepair
 
         if (unresolved.Length == 0)
         {
-            return working;
+            return ReconstructDropCaps(
+                working);
         }
 
         var parent =
@@ -150,7 +157,245 @@ internal static class PdfPageNativeTextRepair
             }
         }
 
+        return ReconstructDropCaps(
+            output);
+    }
+
+    private static IReadOnlyList<DocumentTextBlock> ReconstructDropCaps(
+        IReadOnlyList<DocumentTextBlock> blocks)
+    {
+        var relations =
+            new List<DropCapRelation>();
+
+        for (var dropCapIndex = 0;
+             dropCapIndex < blocks.Count;
+             dropCapIndex++)
+        {
+            var dropCap =
+                blocks[dropCapIndex];
+
+            if (!IsDropCapCandidate(
+                    dropCap))
+            {
+                continue;
+            }
+
+            var bodyCandidates =
+                blocks
+                    .Select(
+                        (body, bodyIndex) =>
+                            new
+                            {
+                                Body = body,
+                                BodyIndex = bodyIndex
+                            })
+                    .Where(candidate =>
+                        candidate.BodyIndex !=
+                            dropCapIndex &&
+                        IsCompatibleDropCapBody(
+                            dropCap,
+                            candidate.Body))
+                    .ToArray();
+
+            if (bodyCandidates.Length != 1)
+            {
+                continue;
+            }
+
+            relations.Add(
+                new DropCapRelation(
+                    dropCapIndex,
+                    bodyCandidates[0].BodyIndex));
+        }
+
+        var unambiguous =
+            relations
+                .GroupBy(relation =>
+                    relation.BodyBlockIndex)
+                .Where(group =>
+                    group.Count() == 1)
+                .Select(group =>
+                    group.Single())
+                .ToArray();
+
+        if (unambiguous.Length == 0)
+        {
+            return blocks;
+        }
+
+        var relationByBodyIndex =
+            unambiguous.ToDictionary(
+                relation =>
+                    relation.BodyBlockIndex);
+        var consumed =
+            unambiguous
+                .SelectMany(relation =>
+                    new[]
+                    {
+                        relation.DropCapBlockIndex,
+                        relation.BodyBlockIndex
+                    })
+                .ToHashSet();
+        var output =
+            new List<DocumentTextBlock>(
+                blocks.Count -
+                unambiguous.Length);
+
+        for (var index = 0;
+             index < blocks.Count;
+             index++)
+        {
+            if (relationByBodyIndex.TryGetValue(
+                    index,
+                    out var relation))
+            {
+                output.Add(
+                    ReconstructDropCap(
+                        blocks[relation.DropCapBlockIndex],
+                        blocks[relation.BodyBlockIndex]));
+                continue;
+            }
+
+            if (!consumed.Contains(
+                    index))
+            {
+                output.Add(
+                    blocks[index]);
+            }
+        }
+
         return output;
+    }
+
+    private static bool IsDropCapCandidate(
+        DocumentTextBlock block) =>
+        block.WordCount == 1 &&
+        block.MedianPointSize is > 0 &&
+        block.Words[0].MedianPointSize is > 0 &&
+        IsSingleUppercaseLetter(
+            block.Words[0].Text);
+
+    private static bool IsCompatibleDropCapBody(
+        DocumentTextBlock dropCap,
+        DocumentTextBlock body)
+    {
+        if (body.WordCount < 3 ||
+            body.LineCount < 2 ||
+            body.MedianPointSize is not > 0 ||
+            body.Words[0].MedianPointSize is not > 0 ||
+            !IsLowercaseAlphabeticSuffix(
+                body.Words[0].Text))
+        {
+            return false;
+        }
+
+        var dropCapWord =
+            dropCap.Words[0];
+        var bodyWord =
+            body.Words[0];
+        var bodyHeight =
+            Height(
+                bodyWord);
+
+        if (bodyHeight <= 0)
+        {
+            return false;
+        }
+
+        var pointSizeRatio =
+            dropCapWord.MedianPointSize!.Value /
+            bodyWord.MedianPointSize!.Value;
+
+        if (pointSizeRatio <
+                MinimumDropCapToBodyPointSizeRatio ||
+            pointSizeRatio >
+                MaximumDropCapToBodyPointSizeRatio)
+        {
+            return false;
+        }
+
+        var horizontalGap =
+            bodyWord.Bounds.Left -
+            dropCapWord.Bounds.Right;
+        var topOffset =
+            Math.Abs(
+                dropCapWord.Bounds.Top -
+                bodyWord.Bounds.Top);
+        var descent =
+            dropCapWord.Bounds.Bottom -
+            bodyWord.Bounds.Bottom;
+        var overlap =
+            Math.Min(
+                dropCapWord.Bounds.Bottom,
+                bodyWord.Bounds.Bottom) -
+            Math.Max(
+                dropCapWord.Bounds.Top,
+                bodyWord.Bounds.Top);
+
+        return horizontalGap >= 0 &&
+               horizontalGap <=
+               bodyHeight *
+               MaximumDropCapHorizontalGapToBodyHeightRatio &&
+               topOffset <=
+               bodyHeight *
+               MaximumDropCapTopOffsetToBodyHeightRatio &&
+               descent >=
+               bodyHeight *
+               MinimumDropCapDescentToBodyHeightRatio &&
+               overlap >=
+               bodyHeight *
+               MinimumDropCapVerticalOverlapToBodyHeightRatio;
+    }
+
+    private static bool IsSingleUppercaseLetter(
+        string text) =>
+        text.Length == 1 &&
+        char.IsLetter(
+            text[0]) &&
+        char.IsUpper(
+            text[0]);
+
+    private static bool IsLowercaseAlphabeticSuffix(
+        string text) =>
+        text.Length >= 1 &&
+        char.IsLower(
+            text[0]) &&
+        text.All(
+            char.IsLetter);
+
+    private static DocumentTextBlock ReconstructDropCap(
+        DocumentTextBlock dropCap,
+        DocumentTextBlock body)
+    {
+        var words =
+            body.Words
+                .Prepend(
+                    dropCap.Words[0])
+                .ToArray();
+        return new DocumentTextBlock(
+            Math.Min(
+                dropCap.SourceSequence,
+                body.SourceSequence),
+            body.ReadingOrder,
+            dropCap.Words[0].Text +
+            body.Text,
+            new NormalizedRectangle(
+                Math.Min(
+                    dropCap.Bounds.Left,
+                    body.Bounds.Left),
+                Math.Min(
+                    dropCap.Bounds.Top,
+                    body.Bounds.Top),
+                Math.Max(
+                    dropCap.Bounds.Right,
+                    body.Bounds.Right),
+                Math.Max(
+                    dropCap.Bounds.Bottom,
+                    body.Bounds.Bottom)),
+            words,
+            body.DominantFontName,
+            body.MedianPointSize,
+            body.LineCount);
     }
 
     private static IReadOnlyList<Relation> FindRelations(
@@ -782,6 +1027,10 @@ internal static class PdfPageNativeTextRepair
         WordPosition Anchor,
         WordPosition? TrailingPunctuation,
         bool IsAlreadyAdjacent);
+
+    private sealed record DropCapRelation(
+        int DropCapBlockIndex,
+        int BodyBlockIndex);
 
     private sealed record PositionedWord(
         DocumentWord Word,

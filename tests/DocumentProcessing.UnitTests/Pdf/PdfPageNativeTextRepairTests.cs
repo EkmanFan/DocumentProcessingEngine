@@ -8,6 +8,187 @@ public sealed class PdfPageNativeTextRepairTests
     #region Tests
 
     [Fact]
+    public void Reconstruct_AttachesGeometricallyEvidencedDropCapToParagraph()
+    {
+        var body =
+            Block(
+                0,
+                0,
+                lineCount:
+                    3,
+                Word(1, "ven", 0.155, 0.100, 0.190, 0.120, 11),
+                Word(2, "if", 0.195, 0.100, 0.210, 0.120, 11),
+                Word(3, "all", 0.215, 0.100, 0.240, 0.120, 11));
+        var dropCap =
+            Block(
+                1,
+                1,
+                lineCount:
+                    1,
+                Word(0, "E", 0.100, 0.104, 0.148, 0.164, 30));
+
+        var result =
+            Assert.Single(
+                PdfPageNativeTextRepair.Reconstruct(
+                    [body, dropCap]));
+
+        Assert.Equal(
+            "Even if all",
+            result.Text);
+        Assert.Equal(
+            new[]
+            {
+                0,
+                1,
+                2,
+                3
+            },
+            result.Words.Select(word =>
+                word.SourceSequence));
+        Assert.Equal(
+            0,
+            result.SourceSequence);
+        Assert.Equal(
+            0,
+            result.ReadingOrder);
+        Assert.Equal(
+            3,
+            result.LineCount);
+        Assert.Equal(
+            11,
+            result.MedianPointSize);
+    }
+
+    [Fact]
+    public void Reconstruct_RepairsNumericSuperscriptBeforeAttachingDropCap()
+    {
+        var body =
+            Block(
+                0,
+                4,
+                lineCount:
+                    2,
+                Word(1, "ccording", 0.100, 0.100, 0.170, 0.120, 11),
+                Word(2, "thing", 0.180, 0.100, 0.230, 0.120, 11),
+                Word(6, "their", 0.100, 0.140, 0.150, 0.160, 11));
+        var numericFragment =
+            Block(
+                1,
+                3,
+                Word(3, "749", 0.230, 0.095, 0.250, 0.105, 9.13),
+                Word(4, "’;", 0.260, 0.100, 0.280, 0.120, 11),
+                Word(5, "and", 0.290, 0.100, 0.330, 0.120, 11));
+        var dropCap =
+            Block(
+                2,
+                0,
+                lineCount:
+                    1,
+                Word(0, "A", 0.050, 0.104, 0.095, 0.164, 30));
+
+        var result =
+            Assert.Single(
+                PdfPageNativeTextRepair.Reconstruct(
+                    [dropCap, numericFragment, body]));
+
+        Assert.Equal(
+            "According thing 749 ’; and\ntheir",
+            result.Text);
+        Assert.Equal(
+            new[]
+            {
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            },
+            result.Words.Select(word =>
+                word.SourceSequence));
+        Assert.Equal(
+            3,
+            result.ReadingOrder);
+    }
+
+    [Theory]
+    [InlineData("Ordinary", 3)]
+    [InlineData("ordinary", 1)]
+    public void Reconstruct_DoesNotAttachSingleLetterWithoutCompleteDropCapEvidence(
+        string firstBodyWord,
+        int lineCount)
+    {
+        var body =
+            Block(
+                0,
+                0,
+                lineCount,
+                Word(1, firstBodyWord, 0.155, 0.100, 0.220, 0.120, 11),
+                Word(2, "body", 0.225, 0.100, 0.260, 0.120, 11),
+                Word(3, "text", 0.265, 0.100, 0.300, 0.120, 11));
+        var isolatedLetter =
+            Block(
+                1,
+                1,
+                lineCount:
+                    1,
+                Word(0, "A", 0.100, 0.104, 0.148, 0.164, 30));
+
+        var result =
+            PdfPageNativeTextRepair.Reconstruct(
+                [body, isolatedLetter]);
+
+        Assert.Equal(
+            2,
+            result.Count);
+        Assert.Same(
+            body,
+            result[0]);
+        Assert.Same(
+            isolatedLetter,
+            result[1]);
+    }
+
+    [Fact]
+    public void Reconstruct_DoesNotAttachDropCapWhenGeometryMatchesTwoBodies()
+    {
+        var first =
+            Block(
+                0,
+                0,
+                lineCount:
+                    2,
+                Word(1, "lpha", 0.155, 0.100, 0.200, 0.120, 11),
+                Word(2, "body", 0.205, 0.100, 0.240, 0.120, 11),
+                Word(3, "text", 0.245, 0.100, 0.280, 0.120, 11));
+        var second =
+            Block(
+                1,
+                1,
+                lineCount:
+                    2,
+                Word(4, "nother", 0.155, 0.101, 0.210, 0.121, 11),
+                Word(5, "body", 0.215, 0.101, 0.250, 0.121, 11),
+                Word(6, "text", 0.255, 0.101, 0.290, 0.121, 11));
+        var isolatedLetter =
+            Block(
+                2,
+                1,
+                lineCount:
+                    1,
+                Word(0, "A", 0.100, 0.104, 0.148, 0.164, 30));
+
+        var result =
+            PdfPageNativeTextRepair.Reconstruct(
+                [first, second, isolatedLetter]);
+
+        Assert.Equal(
+            3,
+            result.Count);
+    }
+
+    [Fact]
     public void Reconstruct_RepairsCrossBlock749Morphology()
     {
         var main =
@@ -425,6 +606,18 @@ public sealed class PdfPageNativeTextRepairTests
         int sourceSequence,
         int readingOrder,
         params DocumentWord[] words) =>
+        Block(
+            sourceSequence,
+            readingOrder,
+            lineCount:
+                1,
+            words);
+
+    private static DocumentTextBlock Block(
+        int sourceSequence,
+        int readingOrder,
+        int lineCount,
+        params DocumentWord[] words) =>
         new(
             sourceSequence,
             readingOrder,
@@ -446,7 +639,7 @@ public sealed class PdfPageNativeTextRepairTests
             words.Max(word =>
                 word.MedianPointSize ?? 11),
             lineCount:
-                1);
+                lineCount);
 
     #endregion
 }

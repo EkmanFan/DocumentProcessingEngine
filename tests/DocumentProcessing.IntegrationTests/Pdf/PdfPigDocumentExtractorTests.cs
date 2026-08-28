@@ -1,4 +1,7 @@
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Segmentation;
+using DocumentProcessing.Engine.Normalization;
+using DocumentProcessing.Engine.Segmentation;
 using DocumentProcessing.Pdf;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
@@ -11,6 +14,166 @@ namespace DocumentProcessing.IntegrationTests.Pdf;
 
 public sealed class PdfPigDocumentExtractorTests
 {
+    [Theory]
+    [InlineData("habermas-p0070.pdf", "Chapter 7", "Even if all")]
+    [InlineData("habermas-p0078.pdf", "Chapter 8", "Naturalism views")]
+    public async Task ExtractAsync_ReconstructsQualifiedDropCapsAfterChapterHeading(
+        string fileName,
+        string expectedHeading,
+        string expectedParagraphPrefix)
+    {
+        var path =
+            Path.Combine(
+                FindRepositoryRoot(),
+                "tests",
+                "document_corpus",
+                "pdf",
+                "pages",
+                fileName);
+
+        if (!File.Exists(path))
+        {
+            throw Xunit.Sdk.SkipException.ForSkip(
+                $"Qualified drop-cap fixture '{fileName}' is unavailable.");
+        }
+
+        await using var stream =
+            File.OpenRead(path);
+        var source =
+            new DocumentSource(
+                stream,
+                fileName,
+                "application/pdf");
+        var extraction =
+            await new PdfPigDocumentExtractor()
+                .ExtractAsync(
+                    source,
+                    DocumentFormatId.Pdf);
+        var page =
+            Assert.Single(
+                extraction.Pages);
+        var heading =
+            Assert.Single(
+                page.Blocks,
+                block =>
+                    string.Equals(
+                        block.Text,
+                        expectedHeading,
+                        StringComparison.Ordinal));
+        var paragraph =
+            Assert.Single(
+                page.Blocks,
+                block =>
+                    block.Text.StartsWith(
+                        expectedParagraphPrefix,
+                        StringComparison.Ordinal));
+
+        Assert.True(
+            heading.ReadingOrder <
+            paragraph.ReadingOrder);
+        Assert.Equal(
+            expectedParagraphPrefix[0].ToString(),
+            paragraph.Words[0].Text);
+        Assert.StartsWith(
+            expectedParagraphPrefix[1..].Split(' ')[0],
+            paragraph.Words[1].Text,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            page.Blocks,
+            block =>
+                string.Equals(
+                    block.Text,
+                    expectedParagraphPrefix[0].ToString(),
+                    StringComparison.Ordinal));
+
+        var segmentation =
+            new HeuristicDocumentSegmenter()
+                .Segment(
+                    new DocumentTextNormalizer()
+                        .Normalize(
+                            extraction),
+                    new DocumentSegmentationOptions(
+                        [expectedHeading]));
+        var chapter =
+            Assert.Single(
+                segmentation.Segments,
+                segment =>
+                    string.Equals(
+                        segment.HeadingText,
+                        expectedHeading,
+                        StringComparison.Ordinal));
+        var paragraphSegment =
+            Assert.Single(
+                segmentation.Segments,
+                segment =>
+                    segment.Text.Contains(
+                        expectedParagraphPrefix,
+                        StringComparison.Ordinal));
+
+        Assert.True(
+            paragraphSegment.Ordinal >=
+            chapter.Ordinal);
+        Assert.NotNull(
+            paragraphSegment.HeadingText);
+        Assert.DoesNotContain(
+            segmentation.Segments.Where(segment =>
+                segment.Ordinal < chapter.Ordinal),
+            segment =>
+                segment.Text.Contains(
+                    expectedParagraphPrefix,
+                    StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("ehrman-p0079.pdf")]
+    [InlineData("decretis-p0512.pdf")]
+    public async Task ExtractAsync_DoesNotInventDropCapsInQualifiedNegativeCorpora(
+        string fileName)
+    {
+        var path =
+            Path.Combine(
+                FindRepositoryRoot(),
+                "tests",
+                "document_corpus",
+                "pdf",
+                "pages",
+                fileName);
+
+        if (!File.Exists(path))
+        {
+            throw Xunit.Sdk.SkipException.ForSkip(
+                $"Qualified negative fixture '{fileName}' is unavailable.");
+        }
+
+        await using var stream =
+            File.OpenRead(path);
+        var page =
+            Assert.Single(
+                (await new PdfPigDocumentExtractor()
+                    .ExtractAsync(
+                        new DocumentSource(
+                            stream,
+                            fileName,
+                            "application/pdf"),
+                        DocumentFormatId.Pdf))
+                .Pages);
+
+        Assert.DoesNotContain(
+            page.Blocks,
+            block =>
+                block.Words.Count >= 2 &&
+                block.Words[0].Text.Length == 1 &&
+                char.IsUpper(
+                    block.Words[0].Text[0]) &&
+                block.Words[0].MedianPointSize is { } initialSize &&
+                block.Words[1].MedianPointSize is { } bodySize &&
+                initialSize >= bodySize * 1.75 &&
+                block.Text.StartsWith(
+                    block.Words[0].Text +
+                    block.Words[1].Text,
+                    StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task ExtractAsync_ExtractsNativeTextWordsAndLayoutBlocksFromGeneratedPdf()
     {
@@ -487,6 +650,30 @@ public sealed class PdfPigDocumentExtractorTests
             Pop.Value);
 
         return builder.Build();
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var current =
+            new DirectoryInfo(
+                AppContext.BaseDirectory);
+
+        while (current is not null)
+        {
+            if (File.Exists(
+                    Path.Combine(
+                        current.FullName,
+                        "DocumentProcessingEngine.sln")))
+            {
+                return current.FullName;
+            }
+
+            current =
+                current.Parent;
+        }
+
+        throw new DirectoryNotFoundException(
+            "Could not locate the repository root from the integration-test output directory.");
     }
 
 }
