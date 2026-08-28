@@ -132,7 +132,7 @@ public sealed class ManagerBlazorLocalizationTests
 
         Assert.Equal(
             ManagerDocumentSubmissionBehavior.Shelve,
-            component.DefaultSubmissionBehavior);
+            component.SubmissionBehavior);
     }
 
     [Theory]

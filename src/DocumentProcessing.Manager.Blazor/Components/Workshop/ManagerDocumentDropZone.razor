@@ -18,16 +18,16 @@
         <button type="button"
                 class="@SubmissionBehaviorButtonClass(ManagerDocumentSubmissionBehavior.Shelve)"
                 aria-pressed="@FormatPressedState(ManagerDocumentSubmissionBehavior.Shelve)"
-                disabled="@_uploading"
-                @onclick="() => SelectSubmissionBehavior(ManagerDocumentSubmissionBehavior.Shelve)"
+                disabled="@(_uploading || SubmissionBehaviorDisabled)"
+                @onclick="() => SelectSubmissionBehaviorAsync(ManagerDocumentSubmissionBehavior.Shelve)"
                 @onclick:stopPropagation="true">
             @Localizer["ShelveBehavior"]
         </button>
         <button type="button"
                 class="@SubmissionBehaviorButtonClass(ManagerDocumentSubmissionBehavior.Run)"
                 aria-pressed="@FormatPressedState(ManagerDocumentSubmissionBehavior.Run)"
-                disabled="@_uploading"
-                @onclick="() => SelectSubmissionBehavior(ManagerDocumentSubmissionBehavior.Run)"
+                disabled="@(_uploading || SubmissionBehaviorDisabled)"
+                @onclick="() => SelectSubmissionBehaviorAsync(ManagerDocumentSubmissionBehavior.Run)"
                 @onclick:stopPropagation="true">
             @Localizer["RunBehavior"]
         </button>
@@ -69,12 +69,6 @@
     private bool
         _uploading;
 
-    private bool
-        _submissionBehaviorInitialized;
-
-    private ManagerDocumentSubmissionBehavior
-        _submissionBehavior;
-
     private ManagerDocumentDropState
         _uploadState;
 
@@ -102,8 +96,14 @@
     public EventCallback<string> DocumentSubmitted { get; set; }
 
     [Parameter]
-    public ManagerDocumentSubmissionBehavior DefaultSubmissionBehavior { get; set; } =
+    public ManagerDocumentSubmissionBehavior SubmissionBehavior { get; set; } =
         ManagerDocumentSubmissionBehavior.Shelve;
+
+    [Parameter]
+    public EventCallback<ManagerDocumentSubmissionBehavior> SubmissionBehaviorChanged { get; set; }
+
+    [Parameter]
+    public bool SubmissionBehaviorDisabled { get; set; }
 
     #endregion
 
@@ -192,7 +192,7 @@
             };
 
     private string SubmissionBehaviorDescription =>
-        _submissionBehavior switch
+        SubmissionBehavior switch
         {
             ManagerDocumentSubmissionBehavior.Shelve =>
                 Localizer["ShelveBehaviorDetail"],
@@ -209,21 +209,12 @@
     protected override void OnParametersSet()
     {
         if (!Enum.IsDefined(
-                DefaultSubmissionBehavior))
+                SubmissionBehavior))
         {
             throw new ArgumentOutOfRangeException(
-                nameof(DefaultSubmissionBehavior),
-                DefaultSubmissionBehavior,
+                nameof(SubmissionBehavior),
+                SubmissionBehavior,
                 "Unknown default document submission behavior.");
-        }
-
-        if (!_submissionBehaviorInitialized)
-        {
-            _submissionBehavior =
-                DefaultSubmissionBehavior;
-
-            _submissionBehaviorInitialized =
-                true;
         }
     }
 
@@ -239,28 +230,31 @@
 
     #region Methods Interaction
 
-    private void SelectSubmissionBehavior(
+    private async Task SelectSubmissionBehaviorAsync(
         ManagerDocumentSubmissionBehavior submissionBehavior)
     {
-        if (_uploading)
+        if (_uploading ||
+            SubmissionBehaviorDisabled ||
+            submissionBehavior ==
+                SubmissionBehavior)
         {
             return;
         }
 
-        _submissionBehavior =
-            submissionBehavior;
+        await SubmissionBehaviorChanged.InvokeAsync(
+            submissionBehavior);
     }
 
     private string SubmissionBehaviorButtonClass(
         ManagerDocumentSubmissionBehavior submissionBehavior) =>
-        _submissionBehavior ==
+        SubmissionBehavior ==
         submissionBehavior
             ? "selected"
             : string.Empty;
 
     private string FormatPressedState(
         ManagerDocumentSubmissionBehavior submissionBehavior) =>
-        (_submissionBehavior ==
+        (SubmissionBehavior ==
          submissionBehavior)
         .ToString()
         .ToLowerInvariant();
@@ -336,7 +330,7 @@
                 await UploadService
                     .SubmitAsync(
                         file,
-                        _submissionBehavior,
+                        SubmissionBehavior,
                         _lifetime.Token);
         }
         catch (OperationCanceledException)

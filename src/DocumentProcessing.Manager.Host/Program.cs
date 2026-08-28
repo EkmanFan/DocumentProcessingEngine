@@ -87,6 +87,9 @@ public static class Program
             configuration);
 
         services.AddSingleton(
+            TimeProvider.System);
+
+        services.AddSingleton(
             _ =>
                 NpgsqlDataSource.Create(
                     configuration.ConnectionString));
@@ -97,6 +100,11 @@ public static class Program
         services.AddSingleton<IManagerStateStore>(
             provider =>
                 provider.GetRequiredService<PostgresManagerStateStore>());
+
+        services.AddSingleton<PostgresManagerSettingsStore>();
+        services.AddSingleton<IManagerSettingsStore>(
+            provider =>
+                provider.GetRequiredService<PostgresManagerSettingsStore>());
 
         services.AddSingleton<PostgresManagerRuntimeLeaseStore>();
         services.AddSingleton<IManagerRuntimeLeaseStore>(
@@ -110,6 +118,9 @@ public static class Program
 
         services.AddSingleton<PostgresProcessingQueueReader>();
         services.AddSingleton<IProcessingQueueReader>(
+            provider =>
+                provider.GetRequiredService<PostgresProcessingQueueReader>());
+        services.AddSingleton<IProcessingHistoryReader>(
             provider =>
                 provider.GetRequiredService<PostgresProcessingQueueReader>());
 
@@ -155,8 +166,18 @@ public static class Program
             provider =>
                 provider.GetRequiredService<FileSystemProcessingResultArtifactStore>());
 
-        services.AddSingleton(
+        services.AddSingleton<IProcessingVisualAssetStore>(
             _ =>
+                new FileSystemProcessingVisualAssetStore(
+                    maximumVisualBytes:
+                        Math.Min(
+                            FileSystemProcessingVisualAssetStore.DefaultMaximumVisualBytes,
+                            configuration.MaximumResultBytes),
+                    maximumVisualSetBytes:
+                        configuration.MaximumResultBytes));
+
+        services.AddSingleton(
+            provider =>
                 new global::DocumentProcessing.DocumentProcessingHost(
                     new global::DocumentProcessing.DocumentProcessingHostOptions(
                         configuration.EngineVersion,
@@ -164,7 +185,11 @@ public static class Program
                             configuration.LayoutEndpoint),
                         new PaddleOcrOptions(
                             configuration.OcrEndpoint,
-                            configuration.OcrProfileId))));
+                            configuration.OcrProfileId),
+                        loggerFactory:
+                            provider.GetRequiredService<ILoggerFactory>(),
+                        providerLifecycle:
+                            configuration.ProviderLifecycle)));
 
         services.AddSingleton<IDocumentProcessingResultEncoder,
             PagedDocumentProcessingResultJsonEncoder>();

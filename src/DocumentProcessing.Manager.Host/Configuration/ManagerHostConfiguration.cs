@@ -1,3 +1,5 @@
+using DocumentProcessing.ProviderLifecycle;
+
 namespace DocumentProcessing.Manager.Host.Configuration;
 
 internal sealed class ManagerHostConfiguration
@@ -37,6 +39,8 @@ internal sealed class ManagerHostConfiguration
 
     public string OcrProfileId { get; }
 
+    public ProcessingProviderLifecycleOptions ProviderLifecycle { get; }
+
     public TimeSpan ProcessingLeaseDuration { get; }
 
     public TimeSpan ProcessingLeaseRenewalInterval { get; }
@@ -65,6 +69,7 @@ internal sealed class ManagerHostConfiguration
         Uri layoutEndpoint,
         Uri ocrEndpoint,
         string ocrProfileId,
+        ProcessingProviderLifecycleOptions providerLifecycle,
         TimeSpan processingLeaseDuration,
         TimeSpan processingLeaseRenewalInterval,
         TimeSpan runtimeLeaseDuration,
@@ -104,6 +109,9 @@ internal sealed class ManagerHostConfiguration
 
         OcrProfileId =
             ocrProfileId;
+
+        ProviderLifecycle =
+            providerLifecycle;
 
         ProcessingLeaseDuration =
             processingLeaseDuration;
@@ -238,7 +246,9 @@ internal sealed class ManagerHostConfiguration
                 "ManagerHost:OcrEndpoint"),
             ReadOptional(
                 configuration["ManagerHost:OcrProfileId"]) ??
-            "paddleocr-default",
+            "paddleocr-3.7.0-ppocrv6-medium-cpu-v1",
+            ReadProviderLifecycle(
+                configuration),
             processingLeaseDuration,
             processingLeaseRenewalInterval,
             runtimeLeaseDuration,
@@ -374,6 +384,32 @@ internal sealed class ManagerHostConfiguration
         }
 
         return uri;
+    }
+
+    private static ProcessingProviderLifecycleOptions ReadProviderLifecycle(
+        IConfiguration configuration)
+    {
+        var value =
+            ReadOptional(
+                configuration["ManagerHost:ProviderLifecycle"]) ??
+            "managedDocker";
+
+        return value.ToLowerInvariant() switch
+        {
+            "manageddocker" =>
+                ProcessingProviderLifecycleOptions.CreateManagedDocker(
+                    new ManagedDockerProcessingProviderOptions(
+                        repositoryRoot:
+                            ReadOptional(
+                                configuration[
+                                    "ManagerHost:ProviderRepositoryRoot"]))),
+            "external" =>
+                ProcessingProviderLifecycleOptions.External,
+            _ =>
+                throw new InvalidOperationException(
+                    "Configuration 'ManagerHost:ProviderLifecycle' must be " +
+                    "'managedDocker' or 'external'.")
+        };
     }
 
     #endregion

@@ -47,7 +47,9 @@ public sealed class DocumentProcessingHost
         _sharedProcessingCapabilities =
             new SharedProcessingCapabilities(
                 options.PpStructureV3,
-                options.PaddleOcr);
+                options.PaddleOcr,
+                options.ProviderLifecycle,
+                options.LoggerFactory);
 
         try
         {

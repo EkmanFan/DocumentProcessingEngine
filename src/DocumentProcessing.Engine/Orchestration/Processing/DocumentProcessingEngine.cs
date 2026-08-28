@@ -113,6 +113,10 @@ public sealed class DocumentProcessingEngine
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        var userVisualAssetWriter =
+            options.UserVisualAssetWriter ??
+            _userVisualAssetWriter;
+
         var formatSelector =
             _formatSelector ??
             throw new InvalidOperationException(
@@ -187,6 +191,7 @@ public sealed class DocumentProcessingEngine
                         textRecognizer,
                         engineVersion,
                         layoutAnalysisIdentity,
+                        userVisualAssetWriter,
                         cancellationToken)
                     .ConfigureAwait(false);
 
@@ -199,7 +204,7 @@ public sealed class DocumentProcessingEngine
                         success.DocumentFormat,
                         structuredEvidence,
                         engineVersion,
-                        _userVisualAssetWriter,
+                        userVisualAssetWriter,
                         layoutAnalyzer,
                         layoutAnalysisIdentity,
                         options.QualifyUnresolvedVisuals,
@@ -224,6 +229,7 @@ public sealed class DocumentProcessingEngine
             IRegionTextRecognizer textRecognizer,
             string engineVersion,
             ProcessingComponentIdentity layoutAnalysisIdentity,
+            UserVisualAssetWriter? userVisualAssetWriter,
             CancellationToken cancellationToken)
     {
         var pagedEvidence =
@@ -274,10 +280,10 @@ public sealed class DocumentProcessingEngine
 
         Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
             openVisualDestinationAsync =
-                _userVisualAssetWriter is null
+                userVisualAssetWriter is null
                     ? null
                     : (visual, token) =>
-                        _userVisualAssetWriter(
+                        userVisualAssetWriter(
                             prepared.Source,
                             new UserLayoutVisualAssetWriteRequest(
                                 selection.DocumentFormat.Format,

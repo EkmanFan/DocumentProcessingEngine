@@ -99,6 +99,13 @@ they do not implement Core capability ports and do not own Engine processing
 policy. Provider outputs remain untrusted evidence interpreted by deterministic
 Engine policy.
 
+The Host defaults to a managed-Docker lifecycle strategy. It probes and starts
+only the concrete provider first requested by the Engine, reuses an already
+healthy configured endpoint, and stops only containers created by that Host.
+An external lifecycle strategy keeps deployment ownership in the embedding
+infrastructure. Neither strategy changes Engine planning or provider-neutral
+Core contracts.
+
 ### Core
 
 `DocumentProcessing.Core` contains format-neutral contracts and portable
@@ -136,6 +143,31 @@ Required constraints:
 - provider serving clients return provider-native results and do not implement
   Core capability ports.
 - the Host is the production composition root for concrete provider selection.
+
+## Manager bounded context
+
+`DocumentProcessing.Manager` owns sequential durable orchestration contracts,
+queue/lifecycle policy, custody identities and outbound ports. It has no Engine,
+filesystem, PostgreSQL or UI dependency. `DocumentProcessing.Manager.Persistence`
+implements PostgreSQL and filesystem adapters; the PostgreSQL adapter persists
+the queue, leases, registrations and versioned Manager settings, while the
+filesystem adapters retain source, result and visual bytes.
+
+`DocumentProcessing.Manager.DPEngine` is the bridge from a claimed Manager work
+item to `DocumentProcessingHost`. It supplies the request-scoped visual writer
+required by the Engine. Visual bytes remain caller-owned: they are staged by
+the Manager filesystem adapter, reconciled with the Engine's length and SHA-256
+descriptors, and atomically published with a manifest only after processing
+succeeds.
+
+`DocumentProcessing.Manager.Host` is the composition/API adapter. The reusable
+server-side Blazor workshop depends only on its authenticated HTTP contract.
+Its directory-picker port is host-replaceable, so Apologia Studio may supply a
+native shell adapter while inheriting the same Manager settings and storage
+semantics. Terminal work keeps its durable `Succeeded` or `Failed` state;
+"recent" and "archived" are PostgreSQL-backed read projections separated by a
+versioned retention setting, not additional lifecycle states. Archive searches
+are bounded and support title/date filters plus deterministic title/date sorts.
 
 ## Current format and execution status
 

@@ -10,6 +10,7 @@ using DocumentProcessing.Pdf;
 using DocumentProcessing.Epub;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
 using DocumentProcessing.Ocr.Adapters.PaddleOCR;
+using DocumentProcessing.ProviderLifecycle;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 
@@ -40,6 +41,34 @@ public sealed class SharedProcessingCapabilityOwnershipTests
                         global::DocumentProcessing.DocumentProcessingHostOptions
                             .PaddleOcr))!
                 .PropertyType);
+
+        Assert.Equal(
+            typeof(ProcessingProviderLifecycleOptions),
+            hostOptionsType
+                .GetProperty(
+                    nameof(
+                        global::DocumentProcessing.DocumentProcessingHostOptions
+                            .ProviderLifecycle))!
+                .PropertyType);
+    }
+
+    [Fact]
+    public void HostOptions_DefaultToManagedDockerAndAllowExternalStrategy()
+    {
+        var managed =
+            CreateHostOptions();
+
+        Assert.Equal(
+            ProcessingProviderLifecycleMode.ManagedDocker,
+            managed.ProviderLifecycle.Mode);
+
+        var external =
+            CreateHostOptions(
+                ProcessingProviderLifecycleOptions.External);
+
+        Assert.Equal(
+            ProcessingProviderLifecycleMode.External,
+            external.ProviderLifecycle.Mode);
     }
 
     [Fact]
@@ -167,7 +196,29 @@ public sealed class SharedProcessingCapabilityOwnershipTests
         Assert.Equal(
             2,
             httpClientFields.Length);
+
+        Assert.Contains(
+            sharedType.GetFields(
+                BindingFlags.NonPublic |
+                BindingFlags.Instance),
+            field =>
+                field.FieldType ==
+                typeof(IProcessingProviderRuntime));
     }
+
+    private static global::DocumentProcessing.DocumentProcessingHostOptions CreateHostOptions(
+        ProcessingProviderLifecycleOptions? lifecycle = null) =>
+        new(
+            "test-engine-v1",
+            new PpStructureV3Options(
+                new Uri(
+                    "http://127.0.0.1:8080/layout-parsing")),
+            new PaddleOcrOptions(
+                new Uri(
+                    "http://127.0.0.1:8081/ocr"),
+                "test-ocr-profile"),
+            providerLifecycle:
+                lifecycle);
 
     #endregion
 }

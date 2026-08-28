@@ -4,6 +4,7 @@ using DocumentProcessing.Layout.Adapters.PpStructureV3;
 using DocumentProcessing.Manager.Control;
 using DocumentProcessing.Manager.Custody;
 using DocumentProcessing.Manager.DPEngine;
+using DocumentProcessing.Manager.History;
 using DocumentProcessing.Manager.Persistence.Files;
 using DocumentProcessing.Manager.Persistence.Postgres;
 using DocumentProcessing.Manager.Ports;
@@ -11,8 +12,10 @@ using DocumentProcessing.Manager.Processing;
 using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Results;
 using DocumentProcessing.Manager.Runtime;
+using DocumentProcessing.Manager.Settings;
 using DocumentProcessing.Manager.Submissions;
 using DocumentProcessing.Ocr.Adapters.PaddleOCR;
+using DocumentProcessing.ProviderLifecycle;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -76,9 +79,184 @@ public sealed class PostgresManagerPersistenceTests
                 "SELECT MAX(version) FROM document_processing_manager.schema_versions;");
 
         Assert.Equal(
-            4,
+            6,
             Convert.ToInt32(
                 await versionCommand.ExecuteScalarAsync()));
+    }
+
+    [PostgresFact]
+    public async Task SettingsStore_PersistsAndRejectsStaleUpdates()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var initial =
+            await context.SettingsStore.GetAsync();
+
+        Assert.Equal(
+            ProcessingUnitDispatchState.Shelved,
+            initial.DefaultSubmissionDispatchState);
+
+        Assert.Null(
+            initial.VisualDestinationRoot);
+
+        Assert.Equal(
+            0,
+            initial.Version);
+
+        Assert.Equal(
+            ManagerSettingsSnapshot.DefaultCompletedRetentionDays,
+            initial.CompletedRetentionDays);
+
+        var visualRoot =
+            Path.Combine(
+                Path.GetTempPath(),
+                "dpengine-manager-visuals");
+
+        var updated =
+            await context.SettingsStore.TryUpdateAsync(
+                new UpdateManagerSettingsCommand(
+                    expectedVersion:
+                        0,
+                    ProcessingUnitDispatchState.Ready,
+                    visualRoot,
+                    completedRetentionDays:
+                        75));
+
+        Assert.NotNull(
+            updated);
+
+        Assert.Equal(
+            ProcessingUnitDispatchState.Ready,
+            updated.DefaultSubmissionDispatchState);
+
+        Assert.Equal(
+            visualRoot,
+            updated.VisualDestinationRoot);
+
+        Assert.Equal(
+            1,
+            updated.Version);
+
+        Assert.Equal(
+            75,
+            updated.CompletedRetentionDays);
+
+        Assert.Null(
+            await context.SettingsStore.TryUpdateAsync(
+                new UpdateManagerSettingsCommand(
+                    expectedVersion:
+                        0,
+                    ProcessingUnitDispatchState.Shelved,
+                    visualDestinationRoot:
+                        null)));
+
+        Assert.Equal(
+            updated,
+            await context.SettingsStore.GetAsync());
+    }
+
+    [PostgresFact]
+    public async Task HistoryReader_SeparatesRecentItemsAndSearchesArchives()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var now =
+            DateTimeOffset.UtcNow;
+
+        var pending =
+            CreateWorkItem();
+
+        var recent =
+            CreateWorkItem();
+
+        var archiveAlpha =
+            CreateWorkItem();
+
+        var archiveZulu =
+            CreateWorkItem();
+
+        await InsertPendingAsync(
+            context.DataSource,
+            pending,
+            queuePosition:
+                1);
+
+        await InsertTerminalAsync(
+            context.DataSource,
+            recent,
+            "Recent.pdf",
+            ProcessingUnitStatus.Succeeded,
+            now.AddDays(
+                -5));
+
+        await InsertTerminalAsync(
+            context.DataSource,
+            archiveAlpha,
+            "Archive Alpha.pdf",
+            ProcessingUnitStatus.Succeeded,
+            now.AddDays(
+                -60));
+
+        await InsertTerminalAsync(
+            context.DataSource,
+            archiveZulu,
+            "Archive Zulu.pdf",
+            ProcessingUnitStatus.Failed,
+            now.AddDays(
+                -90));
+
+        var recentSnapshot =
+            await context.QueueReader
+                .GetRecentSnapshotAsync(
+                    now.AddDays(
+                        -30));
+
+        Assert.Equal(
+            [pending.UnitId, recent.UnitId],
+            recentSnapshot.Items
+                .Select(
+                    item =>
+                        item.WorkItem.UnitId));
+
+        var archivePage =
+            await context.QueueReader
+                .SearchArchiveAsync(
+                    new ProcessingArchiveQuery(
+                        now.AddDays(
+                            -30),
+                        titleContains:
+                            "archive",
+                        sort:
+                            ProcessingArchiveSort.TitleAscending));
+
+        Assert.Equal(
+            2,
+            archivePage.TotalCount);
+
+        Assert.Equal(
+            ["Archive Alpha.pdf", "Archive Zulu.pdf"],
+            archivePage.Items
+                .Select(
+                    item =>
+                        item.OriginalFileName));
+
+        var boundedPage =
+            await context.QueueReader
+                .SearchArchiveAsync(
+                    new ProcessingArchiveQuery(
+                        now.AddDays(
+                            -30),
+                        completedFromUtc:
+                            now.AddDays(
+                                -75)));
+
+        Assert.Equal(
+            archiveAlpha.UnitId,
+            Assert.Single(
+                    boundedPage.Items)
+                .WorkItem.UnitId);
     }
 
     [PostgresFact]
@@ -1740,6 +1918,22 @@ public sealed class PostgresManagerPersistenceTests
                         maximumArtifactBytes:
                             64 * 1024 * 1024));
 
+            var visualRoot =
+                Path.Combine(
+                    custodyRoot,
+                    "visuals");
+
+            Directory.CreateDirectory(
+                visualRoot);
+
+            Assert.NotNull(
+                await context.SettingsStore.TryUpdateAsync(
+                    new UpdateManagerSettingsCommand(
+                        expectedVersion:
+                            0,
+                        ProcessingUnitDispatchState.Shelved,
+                        visualRoot)));
+
             var submitter =
                 new SubmitDocumentService(
                     sourceStore,
@@ -1780,7 +1974,9 @@ public sealed class PostgresManagerPersistenceTests
                         new PaddleOcrOptions(
                             new Uri(
                                 "http://127.0.0.1:1/ocr"),
-                            "manager-integration-ocr")));
+                            "manager-integration-ocr"),
+                        providerLifecycle:
+                            ProcessingProviderLifecycleOptions.External));
 
             var executor =
                 new DocumentProcessingHostExecutor(
@@ -1791,7 +1987,9 @@ public sealed class PostgresManagerPersistenceTests
                     resultStore,
                     context.ResultRegistry,
                     context.ResultRegistry,
-                    new PagedDocumentProcessingResultJsonEncoder());
+                    new PagedDocumentProcessingResultJsonEncoder(),
+                    context.SettingsStore,
+                    new FileSystemProcessingVisualAssetStore());
 
             var workerId =
                 $"managed-page-{Guid.NewGuid():N}";
@@ -1975,6 +2173,13 @@ public sealed class PostgresManagerPersistenceTests
                 SET operating_state = 0,
                     version = 0
                 WHERE singleton = TRUE;
+
+                UPDATE document_processing_manager.manager_settings
+                SET default_submission_dispatch_state = 0,
+                    visual_destination_root = NULL,
+                    completed_retention_days = 30,
+                    version = 0
+                WHERE singleton = TRUE;
                 """);
 
         await command.ExecuteNonQueryAsync();
@@ -2075,6 +2280,123 @@ public sealed class PostgresManagerPersistenceTests
         await command.ExecuteNonQueryAsync();
     }
 
+    private static async Task InsertTerminalAsync(
+        NpgsqlDataSource dataSource,
+        ProcessingWorkItem workItem,
+        string originalFileName,
+        ProcessingUnitStatus status,
+        DateTimeOffset updatedAtUtc)
+    {
+        if (status is not (
+                ProcessingUnitStatus.Succeeded or
+                ProcessingUnitStatus.Failed))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(status));
+        }
+
+        await EnsureSubmissionFixtureAsync(
+            dataSource,
+            workItem.SubmissionId,
+            originalFileName);
+
+        await using var command =
+            dataSource.CreateCommand(
+                """
+                INSERT INTO document_processing_manager.processing_units
+                (
+                    unit_id,
+                    submission_id,
+                    scope_kind,
+                    attempt_number,
+                    status,
+                    result_reference,
+                    failure_code,
+                    failure_message,
+                    created_at_utc,
+                    updated_at_utc,
+                    released_at_utc
+                )
+                VALUES
+                (
+                    @unit_id,
+                    @submission_id,
+                    0,
+                    @attempt_number,
+                    @status,
+                    @result_reference,
+                    @failure_code,
+                    @failure_message,
+                    @created_at_utc,
+                    @updated_at_utc,
+                    @released_at_utc
+                );
+                """);
+
+        command.Parameters.AddWithValue(
+            "unit_id",
+            NpgsqlDbType.Uuid,
+            workItem.UnitId.Value);
+
+        command.Parameters.AddWithValue(
+            "submission_id",
+            NpgsqlDbType.Uuid,
+            workItem.SubmissionId.Value);
+
+        command.Parameters.AddWithValue(
+            "attempt_number",
+            NpgsqlDbType.Integer,
+            workItem.AttemptNumber);
+
+        command.Parameters.AddWithValue(
+            "status",
+            NpgsqlDbType.Smallint,
+            (short)status);
+
+        command.Parameters.AddWithValue(
+            "result_reference",
+            NpgsqlDbType.Text,
+            status ==
+                ProcessingUnitStatus.Succeeded
+                ? $"result-{workItem.UnitId.Value:D}"
+                : DBNull.Value);
+
+        command.Parameters.AddWithValue(
+            "failure_code",
+            NpgsqlDbType.Text,
+            status ==
+                ProcessingUnitStatus.Failed
+                ? "fixture.failure"
+                : DBNull.Value);
+
+        command.Parameters.AddWithValue(
+            "failure_message",
+            NpgsqlDbType.Text,
+            status ==
+                ProcessingUnitStatus.Failed
+                ? "Fixture failure."
+                : DBNull.Value);
+
+        command.Parameters.AddWithValue(
+            "created_at_utc",
+            NpgsqlDbType.TimestampTz,
+            updatedAtUtc.AddMinutes(
+                -1));
+
+        command.Parameters.AddWithValue(
+            "updated_at_utc",
+            NpgsqlDbType.TimestampTz,
+            updatedAtUtc);
+
+        command.Parameters.AddWithValue(
+            "released_at_utc",
+            NpgsqlDbType.TimestampTz,
+            updatedAtUtc.AddMinutes(
+                -1));
+
+        await command.ExecuteNonQueryAsync();
+    }
+
     private static async Task InsertExpiredActiveAsync(
         NpgsqlDataSource dataSource,
         ProcessingWorkItem workItem,
@@ -2153,7 +2475,8 @@ public sealed class PostgresManagerPersistenceTests
 
     private static async Task EnsureSubmissionFixtureAsync(
         NpgsqlDataSource dataSource,
-        DocumentSubmissionId submissionId)
+        DocumentSubmissionId submissionId,
+        string originalFileName = "postgres-fixture.pdf")
     {
         var sourceBytes =
             submissionId.Value.ToByteArray();
@@ -2184,7 +2507,7 @@ public sealed class PostgresManagerPersistenceTests
                 (
                     @submission_id,
                     @sha256_digest,
-                    'postgres-fixture.pdf',
+                    @original_file_name,
                     @submitted_at_utc
                 )
                 ON CONFLICT (submission_id) DO NOTHING;
@@ -2204,6 +2527,11 @@ public sealed class PostgresManagerPersistenceTests
             "byte_length",
             NpgsqlDbType.Bigint,
             sourceBytes.LongLength);
+
+        command.Parameters.AddWithValue(
+            "original_file_name",
+            NpgsqlDbType.Text,
+            originalFileName);
 
         command.Parameters.AddWithValue(
             "submitted_at_utc",
@@ -2378,6 +2706,13 @@ public sealed class PostgresManagerPersistenceTests
                 dataSource);
 
         public PostgresManagerStateStore StateStore
+        {
+            get;
+        } =
+            new(
+                dataSource);
+
+        public PostgresManagerSettingsStore SettingsStore
         {
             get;
         } =

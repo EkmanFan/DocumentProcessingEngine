@@ -1,5 +1,8 @@
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Results;
+using DocumentProcessing.Core.Visual;
+using DocumentProcessing.Manager.Custody;
 using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Processing;
 using DocumentProcessing.Manager.Queue;
@@ -39,6 +42,12 @@ public sealed class DocumentProcessingHostExecutor
     private readonly IDocumentProcessingResultEncoder
         _resultEncoder;
 
+    private readonly IManagerSettingsStore
+        _settingsStore;
+
+    private readonly IProcessingVisualAssetStore
+        _visualAssetStore;
+
     private readonly TimeProvider
         _timeProvider;
 
@@ -58,6 +67,8 @@ public sealed class DocumentProcessingHostExecutor
         IProcessingResultRegistryWriter resultRegistryWriter,
         IProcessingResultRegistryReader resultRegistryReader,
         IDocumentProcessingResultEncoder resultEncoder,
+        IManagerSettingsStore settingsStore,
+        IProcessingVisualAssetStore visualAssetStore,
         TimeProvider? timeProvider = null)
     {
         _host =
@@ -99,6 +110,16 @@ public sealed class DocumentProcessingHostExecutor
             resultEncoder ??
             throw new ArgumentNullException(
                 nameof(resultEncoder));
+
+        _settingsStore =
+            settingsStore ??
+            throw new ArgumentNullException(
+                nameof(settingsStore));
+
+        _visualAssetStore =
+            visualAssetStore ??
+            throw new ArgumentNullException(
+                nameof(visualAssetStore));
 
         _timeProvider =
             timeProvider ??
@@ -178,6 +199,32 @@ public sealed class DocumentProcessingHostExecutor
                     cancellationToken)
                 .ConfigureAwait(false);
 
+        var settings =
+            await _settingsStore
+                .GetAsync(
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        await using var visualSession =
+            settings.VisualDestinationRoot is null
+                ? null
+                : await _visualAssetStore
+                    .BeginWriteAsync(
+                        settings.VisualDestinationRoot,
+                        workItem.UnitId,
+                        submission.OriginalFileName,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+        UserVisualAssetWriter visualWriter =
+            visualSession is null
+                ? MissingVisualDestinationAsync
+                : (_, visual, token) =>
+                    visualSession.OpenWriteAsync(
+                        ResolveVisualMediaType(
+                            visual),
+                        token);
+
         var outcome =
             await _host
                 .ProcessDocumentAsync(
@@ -185,6 +232,9 @@ public sealed class DocumentProcessingHostExecutor
                         sourceContent,
                         submission.OriginalFileName,
                         submission.DeclaredMediaType),
+                    new DocumentProcessingRequestOptions(
+                        userVisualAssetWriter:
+                            visualWriter),
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -206,12 +256,22 @@ public sealed class DocumentProcessingHostExecutor
             submission.SourceArtifact.ByteLength,
             result);
 
-        if (result.VisualAssets.Count >
-            0)
+        if (visualSession is not null)
         {
-            return new ProcessingExecutionOutcome.Failure(
-                "manager.visual_result_not_supported",
-                "Managed execution V1 cannot yet retain external visual-asset bytes.");
+            await visualSession
+                .CompleteAsync(
+                    result.VisualAssets
+                        .Select(
+                            visual =>
+                                new ProcessingVisualAssetDescriptor(
+                                    visual.AssetId,
+                                    visual.MediaType,
+                                    visual.ContentLength,
+                                    new Sha256Digest(
+                                        visual.ContentSha256)))
+                        .ToArray(),
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
 
         var encoded =
@@ -265,6 +325,34 @@ public sealed class DocumentProcessingHostExecutor
                 "DPEngine result source custody does not match the submitted source artifact.");
         }
     }
+
+    private static ValueTask<Stream> MissingVisualDestinationAsync(
+        DocumentSource source,
+        UserVisualAssetWriteRequest visual,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return ValueTask.FromException<Stream>(
+            new InvalidOperationException(
+                "The Manager visual destination is not configured. " +
+                "Choose an existing directory in Manager Settings before processing this document."));
+    }
+
+    private static string ResolveVisualMediaType(
+        UserVisualAssetWriteRequest visual) =>
+        visual switch
+        {
+            UserLayoutVisualAssetWriteRequest =>
+                "image/png",
+            UserSourceVisualAssetWriteRequest sourceVisual =>
+                sourceVisual.MediaType,
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(visual),
+                    visual.GetType().FullName,
+                    "Unknown visual destination request.")
+        };
 
     #endregion
 }

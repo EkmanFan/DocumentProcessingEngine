@@ -16,19 +16,23 @@ policy.
 - Supported source formats: PDF and EPUB.
 - Native extraction: PdfPig.
 - Optional paged enrichment: `pdftoppm`, PP-StructureV3 and PaddleOCR.
+- Provider lifecycle: PP-StructureV3 and PaddleOCR start lazily through the Host
+  by default; external endpoint ownership remains configurable.
 - Consumer result: format-neutral `DocumentProcessingResult`.
 - Dual Run: non-authoritative evaluation infrastructure; it is not wired into
   the default Host composition.
 - Manager foundation: durable lifecycle semantics, globally leased sequential
   dispatch and hexagonal ports.
 - Manager persistence: versioned PostgreSQL state, runtime lease, fenced global
-  queue, immutable submission/result manifests and append-only custody events.
+  queue, durable workshop settings, immutable submission/result manifests and
+  append-only custody events.
 - Source custody: exact bytes are retained through a content-addressed SHA-256
   filesystem adapter and verified before reading.
-- Managed execution V1: `WholeDocument` paged results without external visual
-  assets run through the Host, are retained as verified content-addressed JSON,
-  and are registered idempotently in PostgreSQL. Page-range execution, visual
-  result assets and advanced workshop interactions remain future increments.
+- Managed execution V1: `WholeDocument` results run through the Host, are
+  retained as verified content-addressed JSON and are registered idempotently
+  in PostgreSQL. Caller-owned visual bytes are staged, checked against the
+  Engine result and atomically published in one subdirectory per processing
+  unit. Page-range execution remains a future increment.
 - Manager Host: a key-protected ASP.NET Core process composes schema migration,
   source/result custody, sequential background execution, lifecycle commands,
   submission, queue observation/reordering and result retrieval.
@@ -43,7 +47,11 @@ policy.
   New documents are shelved by default, can be released explicitly or marked
   ready at reception, and pending units can be reordered across documents by
   buttons or drag and drop. Successful retained JSON results can be downloaded
-  through the authenticated server-side workshop circuit.
+  through the authenticated server-side workshop circuit. A settings dialog
+  persists the reception default and validates the filesystem destination used
+  for completed visual assets. The three workshop columns remain viewport-bound;
+  recent results scroll independently, while a configurable retention window
+  exposes older terminal work through a paged, filtered archive dialog.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts
@@ -61,8 +69,10 @@ Host and its Blazor workshop with one command:
 
 Open `http://127.0.0.1:5092` and press `Ctrl+C` when finished. The Host and UI
 are stopped together; the PostgreSQL container and its named volume remain
-available for the next run. `DPE_MANAGER_*` environment variables can override
-the development ports, credentials, API key, container names and custody root.
+available for the next run. The launcher creates a `visuals` directory below
+the development custody root and prints the path to select in Manager Settings.
+`DPE_MANAGER_*` environment variables can override the development ports,
+credentials, API key, container names and custody root.
 
 ## Architecture
 
@@ -244,10 +254,10 @@ using DocumentProcessing.Ocr.Adapters.PaddleOCR;
 var options = new DocumentProcessingHostOptions(
     engineVersion: "my-application-v1",
     ppStructureV3: new PpStructureV3Options(
-        new Uri("http://localhost:8080")),
+        new Uri("http://localhost:8080/layout-parsing")),
     paddleOcr: new PaddleOcrOptions(
-        new Uri("http://localhost:8081"),
-        profileId: "paddleocr-profile-v1"));
+        new Uri("http://localhost:8081/ocr"),
+        profileId: "paddleocr-3.7.0-ppocrv6-medium-cpu-v1"));
 
 using var host = new DocumentProcessingHost(options);
 await using var content = File.OpenRead("document.pdf");

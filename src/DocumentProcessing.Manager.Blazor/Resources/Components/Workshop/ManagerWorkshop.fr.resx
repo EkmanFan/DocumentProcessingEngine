@@ -74,4 +74,45 @@
   <data name="WholeDocumentScope" xml:space="preserve"><value>Document entier</value></data>
   <data name="PageRangeScope" xml:space="preserve"><value>{0} · pages {1}–{2}</value></data>
   <data name="TodayAt" xml:space="preserve"><value>Aujourd’hui à {0}</value></data>
+  <data name="Settings" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="OpenSettings" xml:space="preserve"><value>Ouvrir les paramètres du Manager</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>Paramètres du Manager</value></data>
+  <data name="CloseSettings" xml:space="preserve"><value>Fermer les paramètres</value></data>
+  <data name="DefaultSubmissionBehavior" xml:space="preserve"><value>Comportement des nouveaux documents</value></data>
+  <data name="ShelveBehavior" xml:space="preserve"><value>Ranger</value></data>
+  <data name="RunBehavior" xml:space="preserve"><value>Lancer</value></data>
+  <data name="DefaultSubmissionBehaviorDetail" xml:space="preserve"><value>Ce choix est synchronisé avec le contrôle situé au-dessus du bibliothécaire.</value></data>
+  <data name="VisualDestination" xml:space="preserve"><value>Dossier de destination des visuels</value></data>
+  <data name="VisualDestinationPlaceholder" xml:space="preserve"><value>/chemin/absolu/vers/les/visuels</value></data>
+  <data name="VisualDestinationDetail" xml:space="preserve"><value>Le dossier doit déjà exister et être accessible en écriture. Chaque traitement terminé reçoit son propre sous-dossier vérifié.</value></data>
+  <data name="Browse" xml:space="preserve"><value>Parcourir…</value></data>
+  <data name="Browsing" xml:space="preserve"><value>Ouverture…</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="Saving" xml:space="preserve"><value>Enregistrement…</value></data>
+  <data name="SettingsUpdateFailedTitle" xml:space="preserve"><value>Modification des paramètres impossible</value></data>
+  <data name="SettingsUpdateFailedDetail" xml:space="preserve"><value>Les paramètres du Manager n’ont pas pu être enregistrés. Actualise puis réessaie.</value></data>
+  <data name="CompletedRetention" xml:space="preserve"><value>Conserver dans Traités (jours)</value></data>
+  <data name="CompletedRetentionDetail" xml:space="preserve"><value>Les traitements terminés ou en échec plus anciens restent disponibles dans les Archives.</value></data>
+  <data name="OpenArchives" xml:space="preserve"><value>Voir les archives</value></data>
+  <data name="ArchivesTitle" xml:space="preserve"><value>Archives des traitements</value></data>
+  <data name="CloseArchives" xml:space="preserve"><value>Fermer les archives</value></data>
+  <data name="ArchiveTitleFilter" xml:space="preserve"><value>Titre</value></data>
+  <data name="ArchiveTitlePlaceholder" xml:space="preserve"><value>Rechercher par titre</value></data>
+  <data name="ArchiveFromDate" xml:space="preserve"><value>Du</value></data>
+  <data name="ArchiveToDate" xml:space="preserve"><value>Au</value></data>
+  <data name="ArchiveSort" xml:space="preserve"><value>Tri</value></data>
+  <data name="ArchiveNewest" xml:space="preserve"><value>Plus récents d’abord</value></data>
+  <data name="ArchiveOldest" xml:space="preserve"><value>Plus anciens d’abord</value></data>
+  <data name="ArchiveTitleAscending" xml:space="preserve"><value>Titre A–Z</value></data>
+  <data name="ArchiveTitleDescending" xml:space="preserve"><value>Titre Z–A</value></data>
+  <data name="ApplyArchiveFilters" xml:space="preserve"><value>Appliquer</value></data>
+  <data name="ArchiveEmptyTitle" xml:space="preserve"><value>Aucun traitement archivé</value></data>
+  <data name="ArchiveEmptyDetail" xml:space="preserve"><value>Aucun élément archivé ne correspond à ces filtres.</value></data>
+  <data name="ArchiveNoMatches" xml:space="preserve"><value>Aucun résultat</value></data>
+  <data name="ArchiveResultRange" xml:space="preserve"><value>{0}–{1} sur {2}</value></data>
+  <data name="PreviousPage" xml:space="preserve"><value>Précédent</value></data>
+  <data name="NextPage" xml:space="preserve"><value>Suivant</value></data>
+  <data name="ArchiveDateRangeInvalid" xml:space="preserve"><value>Saisis une plage de dates valide.</value></data>
+  <data name="ArchiveLoadFailed" xml:space="preserve"><value>Les archives n’ont pas pu être chargées.</value></data>
 </root>

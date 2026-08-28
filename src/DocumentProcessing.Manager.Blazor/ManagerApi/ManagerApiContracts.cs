@@ -41,8 +41,26 @@ internal sealed record ManagerStateContract(
     ManagerHostState State,
     long Version);
 
+internal sealed record ManagerSettingsContract(
+    string DefaultSubmissionBehavior,
+    string? VisualDestinationRoot,
+    long Version,
+    int CompletedRetentionDays);
+
+internal sealed record ManagerSettingsUpdateRequest(
+    long ExpectedVersion,
+    string DefaultSubmissionBehavior,
+    string? VisualDestinationRoot,
+    int CompletedRetentionDays);
+
 internal sealed record ManagerQueueContract(
     long Version,
+    IReadOnlyList<ManagerQueueItemContract> Items);
+
+internal sealed record ManagerArchiveContract(
+    long TotalCount,
+    int Offset,
+    int Limit,
     IReadOnlyList<ManagerQueueItemContract> Items);
 
 internal sealed record ManagerQueueItemContract(

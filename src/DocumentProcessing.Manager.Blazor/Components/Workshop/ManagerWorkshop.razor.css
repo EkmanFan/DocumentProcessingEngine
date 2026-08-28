@@ -173,7 +173,8 @@ a:focus-visible {
 }
 
 .control-button,
-.connection-alert button {
+.connection-alert button,
+.settings-button {
     min-height: 37px;
     border: 0;
     border-radius: 10px;
@@ -185,13 +186,33 @@ a:focus-visible {
 }
 
 .control-button:not(:disabled):hover,
-.connection-alert button:hover {
+.connection-alert button:hover,
+.settings-button:not(:disabled):hover {
     transform: translateY(-1px);
 }
 
 .control-button:disabled {
     cursor: not-allowed;
     opacity: 0.45;
+}
+
+.settings-button {
+    display: inline-flex;
+    min-height: 47px;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid var(--line);
+    color: var(--ink-800);
+    background: rgba(255, 255, 255, 0.62);
+}
+
+.settings-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.settings-button span {
+    font-size: 1rem;
 }
 
 .control-primary {
@@ -238,13 +259,15 @@ a:focus-visible {
     display: grid;
     grid-template-columns: minmax(245px, 0.92fr) minmax(390px, 1.38fr) minmax(245px, 0.92fr);
     gap: clamp(14px, 1.7vw, 25px);
-    min-height: calc(100vh - 145px);
+    height: max(620px, calc(100dvh - 145px));
+    min-height: 0;
 }
 
 .work-column {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
     overflow: hidden;
     border: 1px solid rgba(44, 57, 54, 0.09);
     border-radius: 22px;
@@ -319,6 +342,66 @@ a:focus-visible {
     list-style: none;
     scrollbar-color: rgba(45, 58, 56, 0.2) transparent;
     scrollbar-width: thin;
+}
+
+.completed-scroll-region {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.completed-scroll-region::after {
+    position: absolute;
+    right: 7px;
+    bottom: 3px;
+    width: 23px;
+    height: 3px;
+    border-radius: 999px;
+    opacity: 0;
+    background: rgba(40, 116, 107, 0.45);
+    box-shadow: 0 0 0 3px rgba(222, 239, 234, 0.72);
+    pointer-events: none;
+    content: "";
+    transition: opacity 130ms ease;
+}
+
+.completed-scroll-region.has-scroll-overflow::after {
+    opacity: 0.52;
+}
+
+.completed-scroll-region:hover::after,
+.completed-scroll-region:focus-within::after {
+    opacity: 0;
+}
+
+.completed-list {
+    width: 100%;
+    scrollbar-color: transparent transparent;
+}
+
+.completed-scroll-region:hover .completed-list,
+.completed-scroll-region:focus-within .completed-list {
+    scrollbar-color: rgba(45, 58, 56, 0.34) transparent;
+}
+
+.completed-list::-webkit-scrollbar {
+    width: 7px;
+}
+
+.completed-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.completed-list::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: transparent;
+}
+
+.completed-scroll-region:hover .completed-list::-webkit-scrollbar-thumb,
+.completed-scroll-region:focus-within .completed-list::-webkit-scrollbar-thumb {
+    background: rgba(45, 58, 56, 0.28);
 }
 
 .work-item {
@@ -633,6 +716,21 @@ a:focus-visible {
     font-size: 0.65rem;
 }
 
+.archive-open-button {
+    border: 0;
+    padding: 0;
+    color: var(--teal);
+    font-size: inherit;
+    font-weight: 800;
+    background: transparent;
+    cursor: pointer;
+}
+
+.archive-open-button:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
 .active-heading {
     min-height: 38px;
 }
@@ -704,6 +802,300 @@ a:focus-visible {
     font-size: 0.72rem;
 }
 
+.settings-overlay {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    padding: 24px;
+    place-items: center;
+    background: rgba(18, 27, 27, 0.46);
+    backdrop-filter: blur(5px);
+    --ink-950: #17201f;
+    --ink-600: #66716f;
+    --navy: #1d3342;
+    --navy-soft: #e8eef0;
+    --teal: #28746b;
+    --teal-soft: #deefea;
+    --red: #a34b45;
+    --red-soft: #f8e7e3;
+}
+
+.settings-dialog {
+    width: min(590px, 100%);
+    overflow: hidden;
+    border: 1px solid rgba(44, 57, 54, 0.14);
+    border-radius: 22px;
+    color: #17201f;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #fffefb;
+    box-shadow: 0 30px 90px rgba(18, 27, 27, 0.28);
+}
+
+.settings-dialog-header,
+.settings-actions,
+.settings-path-row {
+    display: flex;
+    align-items: center;
+}
+
+.settings-dialog-header {
+    justify-content: space-between;
+    padding: 23px 25px 18px;
+    border-bottom: 1px solid rgba(44, 57, 54, 0.1);
+}
+
+.settings-dialog-header h2 {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.55rem;
+    font-weight: 500;
+}
+
+.settings-close {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 11px;
+    color: #66716f;
+    font-size: 1.45rem;
+    line-height: 1;
+    background: #f4f0e8;
+    cursor: pointer;
+}
+
+.settings-field {
+    display: grid;
+    gap: 9px;
+    padding: 21px 25px 0;
+}
+
+.settings-label {
+    color: #2d3a38;
+    font-size: 0.78rem;
+    font-weight: 760;
+}
+
+.settings-field small {
+    color: #66716f;
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.settings-choice {
+    display: inline-flex;
+    width: fit-content;
+    padding: 4px;
+    border: 1px solid rgba(29, 51, 66, 0.13);
+    border-radius: 999px;
+    background: #f4f0e8;
+}
+
+.settings-choice button {
+    min-width: 94px;
+    padding: 8px 16px;
+    border: 0;
+    border-radius: 999px;
+    color: rgba(29, 51, 66, 0.68);
+    font: inherit;
+    font-size: 0.73rem;
+    font-weight: 760;
+    background: transparent;
+    cursor: pointer;
+}
+
+.settings-choice button.selected {
+    color: #fff;
+    background: #28746b;
+    box-shadow: 0 3px 9px rgba(40, 116, 107, 0.24);
+}
+
+.settings-path-row {
+    gap: 9px;
+}
+
+.settings-path-row input {
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    border: 1px solid rgba(44, 57, 54, 0.18);
+    border-radius: 11px;
+    padding: 0 12px;
+    color: #17201f;
+    font: inherit;
+    font-size: 0.78rem;
+    background: #fbf9f4;
+}
+
+.settings-retention-field input {
+    width: 118px;
+    height: 42px;
+    border: 1px solid rgba(44, 57, 54, 0.18);
+    border-radius: 11px;
+    padding: 0 12px;
+    color: #17201f;
+    font: inherit;
+    font-size: 0.78rem;
+    background: #fbf9f4;
+}
+
+.archive-dialog {
+    display: flex;
+    width: min(940px, 100%);
+    max-height: min(840px, calc(100dvh - 48px));
+    flex-direction: column;
+}
+
+.archive-filters {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.6fr) repeat(2, minmax(125px, 0.8fr)) minmax(155px, 1fr) auto;
+    align-items: end;
+    gap: 11px;
+    padding: 18px 25px;
+    border-bottom: 1px solid rgba(44, 57, 54, 0.1);
+    background: #fbf9f4;
+}
+
+.archive-filters label {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+}
+
+.archive-filters label span {
+    color: #2d3a38;
+    font-size: 0.69rem;
+    font-weight: 760;
+}
+
+.archive-filters input,
+.archive-filters select {
+    width: 100%;
+    min-width: 0;
+    height: 39px;
+    border: 1px solid rgba(44, 57, 54, 0.16);
+    border-radius: 9px;
+    padding: 0 10px;
+    color: #17201f;
+    font: inherit;
+    font-size: 0.72rem;
+    background: #fffefb;
+}
+
+.archive-filter-button,
+.archive-pagination button {
+    min-height: 39px;
+    border: 0;
+    border-radius: 9px;
+    padding: 0 14px;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 780;
+    background: var(--navy);
+    cursor: pointer;
+}
+
+.archive-results {
+    display: flex;
+    min-height: 260px;
+    flex: 1;
+    padding: 16px 22px;
+    overflow: hidden;
+}
+
+.archive-list {
+    width: 100%;
+    padding-right: 5px;
+}
+
+.archive-skeleton,
+.archive-empty {
+    width: 100%;
+}
+
+.archive-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 14px 25px;
+    border-top: 1px solid rgba(44, 57, 54, 0.1);
+    color: #66716f;
+    font-size: 0.72rem;
+    background: #fbf9f4;
+}
+
+.archive-pagination div {
+    display: flex;
+    gap: 8px;
+}
+
+.archive-pagination button {
+    min-height: 34px;
+    color: var(--navy);
+    background: var(--navy-soft);
+}
+
+.archive-filter-button:disabled,
+.archive-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+}
+
+.settings-path-row button,
+.settings-actions button {
+    min-height: 40px;
+    border: 0;
+    border-radius: 10px;
+    padding: 0 15px;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 760;
+    cursor: pointer;
+}
+
+.settings-path-row button {
+    color: #1d3342;
+    background: #e8eef0;
+}
+
+.settings-error {
+    margin: 18px 25px 0;
+    padding: 11px 13px;
+    border: 1px solid rgba(163, 75, 69, 0.18);
+    border-radius: 11px;
+    color: #713b36;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    background: #f8e7e3;
+}
+
+.settings-actions {
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 24px;
+    padding: 17px 25px;
+    border-top: 1px solid rgba(44, 57, 54, 0.1);
+    background: #fbf9f4;
+}
+
+.settings-cancel {
+    color: #2d3a38;
+    background: transparent;
+}
+
+.settings-save {
+    color: #fff;
+    background: #1d3342;
+    box-shadow: 0 7px 15px rgba(29, 51, 66, 0.16);
+}
+
+.settings-dialog button:disabled,
+.settings-dialog input:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 @keyframes shimmer {
     from {
         background-position: 200% 0;
@@ -716,6 +1108,8 @@ a:focus-visible {
 
 @media (max-width: 1120px) {
     .workshop-grid {
+        height: auto;
+        min-height: calc(100dvh - 145px);
         grid-template-columns: 1fr 1.35fr;
     }
 
@@ -725,6 +1119,11 @@ a:focus-visible {
 
     .completed-column {
         grid-column: 1;
+        max-height: min(700px, 72dvh);
+    }
+
+    .archive-filters {
+        grid-template-columns: 1fr 1fr;
     }
 }
 
@@ -759,6 +1158,10 @@ a:focus-visible {
         flex: 1;
     }
 
+    .settings-button {
+        justify-content: center;
+    }
+
     .workshop-grid {
         display: flex;
         min-height: auto;
@@ -774,6 +1177,28 @@ a:focus-visible {
     }
 
     .connection-alert {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .settings-overlay {
+        padding: 12px;
+    }
+
+    .settings-path-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .archive-dialog {
+        max-height: calc(100dvh - 24px);
+    }
+
+    .archive-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .archive-pagination {
         align-items: stretch;
         flex-direction: column;
     }

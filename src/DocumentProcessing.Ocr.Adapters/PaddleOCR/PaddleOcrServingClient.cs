@@ -26,6 +26,8 @@ public sealed class PaddleOcrServingClient
     private readonly TimeSpan _requestTimeout;
     private readonly long _maxInputBytes;
     private readonly long _maxResponseBytes;
+    private readonly Func<CancellationToken, ValueTask>? _ensureAvailable;
+    private readonly Action? _reportUnavailable;
 
     #endregion
 
@@ -37,7 +39,9 @@ public sealed class PaddleOcrServingClient
         Uri endpoint,
         TimeSpan? requestTimeout = null,
         long maxInputBytes = DefaultMaxInputBytes,
-        long maxResponseBytes = DefaultMaxResponseBytes)
+        long maxResponseBytes = DefaultMaxResponseBytes,
+        Func<CancellationToken, ValueTask>? ensureAvailable = null,
+        Action? reportUnavailable = null)
     {
         _httpClient =
             httpClient ??
@@ -102,6 +106,12 @@ public sealed class PaddleOcrServingClient
 
         _maxResponseBytes =
             maxResponseBytes;
+
+        _ensureAvailable =
+            ensureAvailable;
+
+        _reportUnavailable =
+            reportUnavailable;
     }
 
     #endregion
@@ -124,6 +134,13 @@ public sealed class PaddleOcrServingClient
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (_ensureAvailable is not null)
+        {
+            await _ensureAvailable(
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         var imageBytes =
             await ReadBoundedAsync(
@@ -190,6 +207,11 @@ public sealed class PaddleOcrServingClient
             throw new TimeoutException(
                 $"PaddleOCR request exceeded {_requestTimeout}.",
                 exception);
+        }
+        catch (HttpRequestException)
+        {
+            _reportUnavailable?.Invoke();
+            throw;
         }
 
         using (response)

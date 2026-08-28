@@ -7,6 +7,7 @@ using DocumentProcessing.Epub;
 using DocumentProcessing.UnitTests.Epub;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
 using DocumentProcessing.Ocr.Adapters.PaddleOCR;
+using DocumentProcessing.ProviderLifecycle;
 
 namespace DocumentProcessing.UnitTests.Orchestration;
 
@@ -113,7 +114,9 @@ public sealed class DocumentProcessingHostPdfRoutingTests
                     epub:
                         new EpubDocumentFormatOptions(
                             new EpubCheckOptions(
-                                missingDistribution))));
+                                missingDistribution)),
+                    providerLifecycle:
+                        ProcessingProviderLifecycleOptions.External));
 
         await using var stream =
             new MemoryStream(
@@ -174,7 +177,9 @@ public sealed class DocumentProcessingHostPdfRoutingTests
                 new PaddleOcrOptions(
                     new Uri(
                         "http://127.0.0.1:1/ocr"),
-                    "test-ocr-profile")));
+                    "test-ocr-profile"),
+                providerLifecycle:
+                    ProcessingProviderLifecycleOptions.External));
 
     #endregion
 }

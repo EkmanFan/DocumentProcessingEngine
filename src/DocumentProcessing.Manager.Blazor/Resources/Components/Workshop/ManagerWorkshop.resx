@@ -74,4 +74,45 @@
   <data name="WholeDocumentScope" xml:space="preserve"><value>Whole document</value></data>
   <data name="PageRangeScope" xml:space="preserve"><value>{0} · pages {1}–{2}</value></data>
   <data name="TodayAt" xml:space="preserve"><value>Today at {0}</value></data>
+  <data name="Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="OpenSettings" xml:space="preserve"><value>Open Manager settings</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>Manager settings</value></data>
+  <data name="CloseSettings" xml:space="preserve"><value>Close settings</value></data>
+  <data name="DefaultSubmissionBehavior" xml:space="preserve"><value>New document behavior</value></data>
+  <data name="ShelveBehavior" xml:space="preserve"><value>Shelve</value></data>
+  <data name="RunBehavior" xml:space="preserve"><value>Run</value></data>
+  <data name="DefaultSubmissionBehaviorDetail" xml:space="preserve"><value>This is synchronized with the control above the librarian.</value></data>
+  <data name="VisualDestination" xml:space="preserve"><value>Visual destination</value></data>
+  <data name="VisualDestinationPlaceholder" xml:space="preserve"><value>/absolute/path/to/visuals</value></data>
+  <data name="VisualDestinationDetail" xml:space="preserve"><value>The directory must already exist and be writable. Each completed processing gets its own verified subdirectory.</value></data>
+  <data name="Browse" xml:space="preserve"><value>Browse…</value></data>
+  <data name="Browsing" xml:space="preserve"><value>Browsing…</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Saving" xml:space="preserve"><value>Saving…</value></data>
+  <data name="SettingsUpdateFailedTitle" xml:space="preserve"><value>Settings update failed</value></data>
+  <data name="SettingsUpdateFailedDetail" xml:space="preserve"><value>The Manager settings could not be saved. Refresh and try again.</value></data>
+  <data name="CompletedRetention" xml:space="preserve"><value>Keep items in Processed (days)</value></data>
+  <data name="CompletedRetentionDetail" xml:space="preserve"><value>Older completed or failed items remain available in Archives.</value></data>
+  <data name="OpenArchives" xml:space="preserve"><value>View archives</value></data>
+  <data name="ArchivesTitle" xml:space="preserve"><value>Processing archives</value></data>
+  <data name="CloseArchives" xml:space="preserve"><value>Close archives</value></data>
+  <data name="ArchiveTitleFilter" xml:space="preserve"><value>Title</value></data>
+  <data name="ArchiveTitlePlaceholder" xml:space="preserve"><value>Search by title</value></data>
+  <data name="ArchiveFromDate" xml:space="preserve"><value>From</value></data>
+  <data name="ArchiveToDate" xml:space="preserve"><value>To</value></data>
+  <data name="ArchiveSort" xml:space="preserve"><value>Sort</value></data>
+  <data name="ArchiveNewest" xml:space="preserve"><value>Newest first</value></data>
+  <data name="ArchiveOldest" xml:space="preserve"><value>Oldest first</value></data>
+  <data name="ArchiveTitleAscending" xml:space="preserve"><value>Title A–Z</value></data>
+  <data name="ArchiveTitleDescending" xml:space="preserve"><value>Title Z–A</value></data>
+  <data name="ApplyArchiveFilters" xml:space="preserve"><value>Apply</value></data>
+  <data name="ArchiveEmptyTitle" xml:space="preserve"><value>No archived processing</value></data>
+  <data name="ArchiveEmptyDetail" xml:space="preserve"><value>No archived item matches these filters.</value></data>
+  <data name="ArchiveNoMatches" xml:space="preserve"><value>No matches</value></data>
+  <data name="ArchiveResultRange" xml:space="preserve"><value>{0}–{1} of {2}</value></data>
+  <data name="PreviousPage" xml:space="preserve"><value>Previous</value></data>
+  <data name="NextPage" xml:space="preserve"><value>Next</value></data>
+  <data name="ArchiveDateRangeInvalid" xml:space="preserve"><value>Enter a valid date range.</value></data>
+  <data name="ArchiveLoadFailed" xml:space="preserve"><value>The archives could not be loaded.</value></data>
 </root>

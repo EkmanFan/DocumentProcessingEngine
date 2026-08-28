@@ -262,6 +262,9 @@ public sealed class StructuredNativeDocumentProcessingTests
         var writerCalls =
             0;
 
+        var fallbackWriterCalls =
+            0;
+
         var destination =
             new MemoryStream();
 
@@ -277,15 +280,12 @@ public sealed class StructuredNativeDocumentProcessingTests
                 "test-engine-v1",
                 LayoutIdentity,
                 userVisualAssetWriter:
-                    (_, request, _) =>
+                    (_, _, _) =>
                     {
-                        writerCalls++;
-
-                        observedRequest =
-                            request;
+                        fallbackWriterCalls++;
 
                         return ValueTask.FromResult<Stream>(
-                            destination);
+                            new MemoryStream());
                     });
 
         await using var stream =
@@ -298,7 +298,18 @@ public sealed class StructuredNativeDocumentProcessingTests
                     stream),
                 new DocumentProcessingRequestOptions(
                     qualifyUnresolvedVisuals:
-                        true));
+                        true,
+                    userVisualAssetWriter:
+                        (_, request, _) =>
+                        {
+                            writerCalls++;
+
+                            observedRequest =
+                                request;
+
+                            return ValueTask.FromResult<Stream>(
+                                destination);
+                        }));
 
         var request =
             Assert.IsType<UserSourceVisualAssetWriteRequest>(
@@ -315,6 +326,10 @@ public sealed class StructuredNativeDocumentProcessingTests
         Assert.Equal(
             1,
             writerCalls);
+
+        Assert.Equal(
+            0,
+            fallbackWriterCalls);
 
         Assert.Same(
             visualLocation,

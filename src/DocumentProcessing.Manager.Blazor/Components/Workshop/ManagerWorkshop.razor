@@ -6,6 +6,7 @@
 @inject ILogger<ManagerWorkshop> Logger
 @inject IStringLocalizer<ManagerWorkshop> Localizer
 @inject IJSRuntime JavaScript
+@inject IManagerVisualDestinationPicker VisualDestinationPicker
 
 <main class="workshop-shell">
     <header class="workshop-header">
@@ -63,6 +64,16 @@
                     @Localizer["Stop"]
                 </button>
             </div>
+
+            <button class="settings-button"
+                    type="button"
+                    disabled="@(_settings is null)"
+                    title="@(Localizer["OpenSettings"])"
+                    aria-label="@(Localizer["OpenSettings"])"
+                    @onclick="OpenSettings">
+                <span aria-hidden="true">⚙</span>
+                @Localizer["Settings"]
+            </button>
         </div>
     </header>
 
@@ -204,7 +215,10 @@
                 }
             </div>
 
-            <ManagerDocumentDropZone DocumentSubmitted="HandleDocumentSubmittedAsync">
+            <ManagerDocumentDropZone DocumentSubmitted="HandleDocumentSubmittedAsync"
+                                     SubmissionBehavior="@CurrentSubmissionBehavior"
+                                     SubmissionBehaviorChanged="ChangeSubmissionBehaviorAsync"
+                                     SubmissionBehaviorDisabled="@(_settings is null || _settingsSaving)">
                 <LibrarianAnimation Mode="@LibrarianMode"
                                     DocumentTitle="@_snapshot?.ActiveItem?.DocumentTitle"
                                     CelebrationSequence="@_animationTracker.CelebrationSequence"
@@ -247,63 +261,299 @@
             }
             else
             {
-                <ol class="work-list completed-list">
-                    @foreach (var item in _snapshot.CompletedItems)
-                    {
-                        <li class="work-item completed-item @(item.Status == ManagerQueueItemStatus.Failed ? "failed-item" : null)">
-                            <span class="result-indicator" aria-hidden="true">
-                                @(item.Status == ManagerQueueItemStatus.Failed ? "!" : "✓")
-                            </span>
-                            <div class="work-copy">
-                                <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
-                                <span>@FormatScope(item.Scope)</span>
-                                <time datetime="@item.UpdatedAtUtc.ToString("O")">@FormatCompletedAt(item.UpdatedAtUtc)</time>
-                                @if (item.Status == ManagerQueueItemStatus.Failed)
-                                {
-                                    <span class="processing-failure-message"
-                                          title="@(Localizer["ProcessingFailureLabel", item.FailureMessage!])">
-                                        @item.FailureMessage
-                                    </span>
-                                }
-                            </div>
-                            <div class="result-actions">
-                                <span class="result-status">
-                                    @(item.Status == ManagerQueueItemStatus.Failed
-                                        ? Localizer["FailedStatus"]
-                                        : Localizer["CompletedStatus"])
+                <div class="completed-scroll-region" @ref="_completedScrollRegion">
+                    <ol class="work-list completed-list">
+                        @foreach (var item in _snapshot.CompletedItems)
+                        {
+                            <li class="work-item completed-item @(item.Status == ManagerQueueItemStatus.Failed ? "failed-item" : null)">
+                                <span class="result-indicator" aria-hidden="true">
+                                    @(item.Status == ManagerQueueItemStatus.Failed ? "!" : "✓")
                                 </span>
-                                @if (item.Status == ManagerQueueItemStatus.Succeeded)
-                                {
-                                    <button class="result-download-button"
-                                            type="button"
-                                            disabled="@(_downloadingResultUnitId is not null)"
-                                            title="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
-                                            aria-label="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
-                                            @onclick="() => DownloadResultAsync(item)">
-                                        @(_downloadingResultUnitId == item.UnitId
-                                            ? Localizer["DownloadingResult"]
-                                            : Localizer["DownloadResult"])
-                                    </button>
-                                    @if (_resultDownloadFailureUnitId == item.UnitId)
+                                <div class="work-copy">
+                                    <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
+                                    <span>@FormatScope(item.Scope)</span>
+                                    <time datetime="@item.UpdatedAtUtc.ToString("O")">@FormatCompletedAt(item.UpdatedAtUtc)</time>
+                                    @if (item.Status == ManagerQueueItemStatus.Failed)
                                     {
-                                        <span class="result-download-error" role="alert">
-                                            @_resultDownloadFailureMessage
+                                        <span class="processing-failure-message"
+                                              title="@(Localizer["ProcessingFailureLabel", item.FailureMessage!])">
+                                            @item.FailureMessage
                                         </span>
                                     }
-                                }
-                            </div>
-                        </li>
-                    }
-                </ol>
+                                </div>
+                                <div class="result-actions">
+                                    <span class="result-status">
+                                        @(item.Status == ManagerQueueItemStatus.Failed
+                                            ? Localizer["FailedStatus"]
+                                            : Localizer["CompletedStatus"])
+                                    </span>
+                                    @if (item.Status == ManagerQueueItemStatus.Succeeded)
+                                    {
+                                        <button class="result-download-button"
+                                                type="button"
+                                                disabled="@(_downloadingResultUnitId is not null)"
+                                                title="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
+                                                aria-label="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
+                                                @onclick="() => DownloadResultAsync(item)">
+                                            @(_downloadingResultUnitId == item.UnitId
+                                                ? Localizer["DownloadingResult"]
+                                                : Localizer["DownloadResult"])
+                                        </button>
+                                        @if (_resultDownloadFailureUnitId == item.UnitId)
+                                        {
+                                            <span class="result-download-error" role="alert">
+                                                @_resultDownloadFailureMessage
+                                            </span>
+                                        }
+                                    }
+                                </div>
+                            </li>
+                        }
+                    </ol>
+                </div>
             }
 
             <footer class="column-footer">
-                <span>@Localizer["MostRecentFirst"]</span>
+                <button class="archive-open-button"
+                        type="button"
+                        @onclick="OpenArchiveAsync">
+                    @Localizer["OpenArchives"]
+                </button>
                 <span>@CompletedResultCountLabel</span>
             </footer>
         </section>
     </section>
 </main>
+
+@if (_settingsOpen)
+{
+    <div class="settings-overlay" role="presentation">
+        <section class="settings-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="manager-settings-title">
+            <header class="settings-dialog-header">
+                <div>
+                    <p class="column-kicker">DPEngine Manager</p>
+                    <h2 id="manager-settings-title">@Localizer["SettingsTitle"]</h2>
+                </div>
+                <button class="settings-close"
+                        type="button"
+                        disabled="@_settingsSaving"
+                        title="@(Localizer["CloseSettings"])"
+                        aria-label="@(Localizer["CloseSettings"])"
+                        @onclick="CloseSettings">×</button>
+            </header>
+
+            <div class="settings-field">
+                <span class="settings-label">@Localizer["DefaultSubmissionBehavior"]</span>
+                <div class="settings-choice"
+                     role="group"
+                     aria-label="@(Localizer["DefaultSubmissionBehavior"])">
+                    <button type="button"
+                            class="@SettingsBehaviorButtonClass(ManagerDocumentSubmissionBehavior.Shelve)"
+                            disabled="@_settingsSaving"
+                            aria-pressed="@FormatSettingsPressedState(ManagerDocumentSubmissionBehavior.Shelve)"
+                            @onclick="() => SelectSettingsBehavior(ManagerDocumentSubmissionBehavior.Shelve)">
+                        @Localizer["ShelveBehavior"]
+                    </button>
+                    <button type="button"
+                            class="@SettingsBehaviorButtonClass(ManagerDocumentSubmissionBehavior.Run)"
+                            disabled="@_settingsSaving"
+                            aria-pressed="@FormatSettingsPressedState(ManagerDocumentSubmissionBehavior.Run)"
+                            @onclick="() => SelectSettingsBehavior(ManagerDocumentSubmissionBehavior.Run)">
+                        @Localizer["RunBehavior"]
+                    </button>
+                </div>
+                <small>@Localizer["DefaultSubmissionBehaviorDetail"]</small>
+            </div>
+
+            <div class="settings-field">
+                <label class="settings-label" for="visual-destination-root">
+                    @Localizer["VisualDestination"]
+                </label>
+                <div class="settings-path-row">
+                    <input id="visual-destination-root"
+                           type="text"
+                           spellcheck="false"
+                           autocomplete="off"
+                           disabled="@_settingsSaving"
+                           placeholder="@(Localizer["VisualDestinationPlaceholder"])"
+                           @bind="_settingsDraftVisualRoot"
+                           @bind:event="oninput" />
+                    <button type="button"
+                            disabled="@(_settingsSaving || _pickerRunning)"
+                            @onclick="BrowseVisualDestinationAsync">
+                        @(_pickerRunning
+                            ? Localizer["Browsing"]
+                            : Localizer["Browse"])
+                    </button>
+                </div>
+                <small>@Localizer["VisualDestinationDetail"]</small>
+            </div>
+
+            <div class="settings-field settings-retention-field">
+                <label class="settings-label" for="completed-retention-days">
+                    @Localizer["CompletedRetention"]
+                </label>
+                <input id="completed-retention-days"
+                       type="number"
+                       min="@ManagerWorkshopSettings.MinimumCompletedRetentionDays"
+                       max="@ManagerWorkshopSettings.MaximumCompletedRetentionDays"
+                       disabled="@_settingsSaving"
+                       @bind="_settingsDraftRetentionDays"
+                       @bind:event="oninput" />
+                <small>@Localizer["CompletedRetentionDetail"]</small>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_settingsFailure))
+            {
+                <div class="settings-error" role="alert">@_settingsFailure</div>
+            }
+
+            <footer class="settings-actions">
+                <button class="settings-cancel"
+                        type="button"
+                        disabled="@_settingsSaving"
+                        @onclick="CloseSettings">
+                    @Localizer["Cancel"]
+                </button>
+                <button class="settings-save"
+                        type="button"
+                        disabled="@(_settingsSaving || string.IsNullOrWhiteSpace(_settingsDraftVisualRoot) || _settingsDraftRetentionDays is < ManagerWorkshopSettings.MinimumCompletedRetentionDays or > ManagerWorkshopSettings.MaximumCompletedRetentionDays)"
+                        @onclick="SaveSettingsAsync">
+                    @(_settingsSaving
+                        ? Localizer["Saving"]
+                        : Localizer["Save"])
+                </button>
+            </footer>
+        </section>
+    </div>
+}
+
+@if (_archiveOpen)
+{
+    <div class="settings-overlay archive-overlay" role="presentation">
+        <section class="settings-dialog archive-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="manager-archive-title">
+            <header class="settings-dialog-header">
+                <div>
+                    <p class="column-kicker">DPEngine Manager</p>
+                    <h2 id="manager-archive-title">@Localizer["ArchivesTitle"]</h2>
+                </div>
+                <button class="settings-close"
+                        type="button"
+                        title="@(Localizer["CloseArchives"])"
+                        aria-label="@(Localizer["CloseArchives"])"
+                        @onclick="CloseArchive">×</button>
+            </header>
+
+            <div class="archive-filters">
+                <label>
+                    <span>@Localizer["ArchiveTitleFilter"]</span>
+                    <input type="search"
+                           autocomplete="off"
+                           placeholder="@(Localizer["ArchiveTitlePlaceholder"])"
+                           @bind="_archiveTitleFilter"
+                           @bind:event="oninput" />
+                </label>
+                <label>
+                    <span>@Localizer["ArchiveFromDate"]</span>
+                    <input type="date"
+                           value="@_archiveFromDate"
+                           @onchange="eventArgs => _archiveFromDate = eventArgs.Value?.ToString()" />
+                </label>
+                <label>
+                    <span>@Localizer["ArchiveToDate"]</span>
+                    <input type="date"
+                           value="@_archiveToDate"
+                           @onchange="eventArgs => _archiveToDate = eventArgs.Value?.ToString()" />
+                </label>
+                <label>
+                    <span>@Localizer["ArchiveSort"]</span>
+                    <select @bind="_archiveSort">
+                        <option value="@ManagerArchiveSort.CompletedNewest">@Localizer["ArchiveNewest"]</option>
+                        <option value="@ManagerArchiveSort.CompletedOldest">@Localizer["ArchiveOldest"]</option>
+                        <option value="@ManagerArchiveSort.TitleAscending">@Localizer["ArchiveTitleAscending"]</option>
+                        <option value="@ManagerArchiveSort.TitleDescending">@Localizer["ArchiveTitleDescending"]</option>
+                    </select>
+                </label>
+                <button class="archive-filter-button"
+                        type="button"
+                        disabled="@_archiveLoading"
+                        @onclick="ApplyArchiveFiltersAsync">
+                    @Localizer["ApplyArchiveFilters"]
+                </button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_archiveFailure))
+            {
+                <div class="settings-error" role="alert">@_archiveFailure</div>
+            }
+
+            <div class="archive-results" aria-busy="@_archiveLoading">
+                @if (_archiveLoading)
+                {
+                    <div class="skeleton-list archive-skeleton"><div></div><div></div><div></div></div>
+                }
+                else if (_archivePage?.Items.Count is not > 0)
+                {
+                    <div class="empty-state archive-empty">
+                        <span class="empty-icon empty-icon-book" aria-hidden="true">◇</span>
+                        <strong>@Localizer["ArchiveEmptyTitle"]</strong>
+                        <p>@Localizer["ArchiveEmptyDetail"]</p>
+                    </div>
+                }
+                else
+                {
+                    <ol class="work-list archive-list">
+                        @foreach (var item in _archivePage.Items)
+                        {
+                            <li class="work-item completed-item @(item.Status == ManagerQueueItemStatus.Failed ? "failed-item" : null)">
+                                <span class="result-indicator" aria-hidden="true">@(item.Status == ManagerQueueItemStatus.Failed ? "!" : "✓")</span>
+                                <div class="work-copy">
+                                    <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
+                                    <span>@FormatScope(item.Scope)</span>
+                                    <time datetime="@item.UpdatedAtUtc.ToString("O")">@FormatCompletedAt(item.UpdatedAtUtc)</time>
+                                    @if (item.Status == ManagerQueueItemStatus.Failed)
+                                    {
+                                        <span class="processing-failure-message">@item.FailureMessage</span>
+                                    }
+                                </div>
+                                <div class="result-actions">
+                                    <span class="result-status">@(item.Status == ManagerQueueItemStatus.Failed ? Localizer["FailedStatus"] : Localizer["CompletedStatus"])</span>
+                                    @if (item.Status == ManagerQueueItemStatus.Succeeded)
+                                    {
+                                        <button class="result-download-button"
+                                                type="button"
+                                                disabled="@(_downloadingResultUnitId is not null)"
+                                                @onclick="() => DownloadResultAsync(item)">
+                                            @(_downloadingResultUnitId == item.UnitId ? Localizer["DownloadingResult"] : Localizer["DownloadResult"])
+                                        </button>
+                                    }
+                                </div>
+                            </li>
+                        }
+                    </ol>
+                }
+            </div>
+
+            <footer class="archive-pagination">
+                <span>@ArchiveResultSummary</span>
+                <div>
+                    <button type="button"
+                            disabled="@(_archiveLoading || !ArchiveHasPreviousPage)"
+                            @onclick="LoadPreviousArchivePageAsync">@Localizer["PreviousPage"]</button>
+                    <button type="button"
+                            disabled="@(_archiveLoading || !ArchiveHasNextPage)"
+                            @onclick="LoadNextArchivePageAsync">@Localizer["NextPage"]</button>
+                </div>
+            </footer>
+        </section>
+    </div>
+}
 
 @code {
     #region Variables and Constants
@@ -334,6 +584,57 @@
 
     private ManagerWorkshopSnapshot?
         _snapshot;
+
+    private ManagerWorkshopSettings?
+        _settings;
+
+    private bool
+        _settingsOpen;
+
+    private bool
+        _settingsSaving;
+
+    private bool
+        _pickerRunning;
+
+    private ManagerDocumentSubmissionBehavior
+        _settingsDraftBehavior =
+            ManagerDocumentSubmissionBehavior.Shelve;
+
+    private string?
+        _settingsDraftVisualRoot;
+
+    private int
+        _settingsDraftRetentionDays =
+            ManagerWorkshopSettings.DefaultCompletedRetentionDays;
+
+    private string?
+        _settingsFailure;
+
+    private bool
+        _archiveOpen;
+
+    private bool
+        _archiveLoading;
+
+    private ManagerArchivePage?
+        _archivePage;
+
+    private string?
+        _archiveFailure;
+
+    private string?
+        _archiveTitleFilter;
+
+    private string?
+        _archiveFromDate;
+
+    private string?
+        _archiveToDate;
+
+    private ManagerArchiveSort
+        _archiveSort =
+            ManagerArchiveSort.CompletedNewest;
 
     private PeriodicTimer?
         _refreshTimer;
@@ -368,6 +669,9 @@
     private ElementReference
         _queueList;
 
+    private ElementReference
+        _completedScrollRegion;
+
     private string?
         _receivedDocumentTitle;
 
@@ -381,6 +685,10 @@
     private int PendingCount =>
         _snapshot?.PendingItems.Count ??
         0;
+
+    private ManagerDocumentSubmissionBehavior CurrentSubmissionBehavior =>
+        _settings?.DefaultSubmissionBehavior ??
+        ManagerDocumentSubmissionBehavior.Shelve;
 
     private int ReadyPendingCount =>
         _snapshot?.PendingItems.Count(
@@ -402,6 +710,27 @@
             : Localizer[
                 "ResultCountPlural",
                 CompletedCount];
+
+    private bool ArchiveHasPreviousPage =>
+        _archivePage?.Offset >
+        0;
+
+    private bool ArchiveHasNextPage =>
+        _archivePage is not null &&
+        _archivePage.Offset +
+            _archivePage.Items.Count <
+        _archivePage.TotalCount;
+
+    private string ArchiveResultSummary =>
+        _archivePage is null ||
+        _archivePage.TotalCount ==
+            0
+            ? Localizer["ArchiveNoMatches"]
+            : Localizer[
+                "ArchiveResultRange",
+                _archivePage.Offset + 1,
+                _archivePage.Offset + _archivePage.Items.Count,
+                _archivePage.TotalCount];
 
     private long QueueVersion =>
         _snapshot?.QueueVersion ??
@@ -444,6 +773,8 @@
         {
             ManagerWorkshopError.Queue =>
                 Localizer["QueueUpdateFailedTitle"],
+            ManagerWorkshopError.Settings =>
+                Localizer["SettingsUpdateFailedTitle"],
             _ =>
                 Localizer["ManagerUnavailableTitle"]
         };
@@ -483,6 +814,8 @@
                 Localizer["HostUnavailableDetail"],
             ManagerWorkshopError.Queue =>
                 Localizer["QueueUpdateFailedDetail"],
+            ManagerWorkshopError.Settings =>
+                Localizer["SettingsUpdateFailedDetail"],
             _ =>
                 string.Empty
         };
@@ -529,29 +862,41 @@
     protected override async Task OnAfterRenderAsync(
         bool firstRender)
     {
-        if (_snapshot?.PendingItems.Count is not >
-                0 ||
-            _lifetime.IsCancellationRequested)
+        if (_lifetime.IsCancellationRequested ||
+            (_snapshot?.PendingItems.Count is not > 0 &&
+             _snapshot?.CompletedItems.Count is not > 0))
         {
             return;
         }
 
         try
         {
-            _workshopReference ??=
-                DotNetObjectReference.Create(
-                    this);
-
             var module =
                 await GetWorkshopModuleAsync(
                     _lifetime.Token);
 
-            await module
-                .InvokeVoidAsync(
-                    "initializeQueueReorder",
-                    _lifetime.Token,
-                    _queueList,
-                    _workshopReference);
+            if (_snapshot?.PendingItems.Count is > 0)
+            {
+                _workshopReference ??=
+                    DotNetObjectReference.Create(
+                        this);
+
+                await module
+                    .InvokeVoidAsync(
+                        "initializeQueueReorder",
+                        _lifetime.Token,
+                        _queueList,
+                        _workshopReference);
+            }
+
+            if (_snapshot?.CompletedItems.Count is > 0)
+            {
+                await module
+                    .InvokeVoidAsync(
+                        "initializeOverflowIndicator",
+                        _lifetime.Token,
+                        _completedScrollRegion);
+            }
         }
         catch (OperationCanceledException)
             when (_lifetime.IsCancellationRequested)
@@ -565,7 +910,7 @@
         {
             Logger.LogWarning(
                 exception,
-                "Manager queue pointer-reorder initialization failed. Arrow controls remain available.");
+                "Manager workshop browser-enhancement initialization failed. Core controls remain available.");
         }
     }
 
@@ -623,6 +968,409 @@
             waitForTurn:
                 true,
             _lifetime.Token);
+    }
+
+    private void OpenSettings()
+    {
+        if (_settings is null)
+        {
+            return;
+        }
+
+        _settingsDraftBehavior =
+            _settings.DefaultSubmissionBehavior;
+
+        _settingsDraftVisualRoot =
+            _settings.VisualDestinationRoot;
+
+        _settingsDraftRetentionDays =
+            _settings.CompletedRetentionDays;
+
+        _settingsFailure =
+            null;
+
+        _settingsOpen =
+            true;
+    }
+
+    private void CloseSettings()
+    {
+        if (_settingsSaving)
+        {
+            return;
+        }
+
+        _settingsOpen =
+            false;
+
+        _settingsFailure =
+            null;
+    }
+
+    private void SelectSettingsBehavior(
+        ManagerDocumentSubmissionBehavior submissionBehavior)
+    {
+        if (!_settingsSaving)
+        {
+            _settingsDraftBehavior =
+                submissionBehavior;
+        }
+    }
+
+    private string SettingsBehaviorButtonClass(
+        ManagerDocumentSubmissionBehavior submissionBehavior) =>
+        _settingsDraftBehavior ==
+        submissionBehavior
+            ? "selected"
+            : string.Empty;
+
+    private string FormatSettingsPressedState(
+        ManagerDocumentSubmissionBehavior submissionBehavior) =>
+        (_settingsDraftBehavior ==
+         submissionBehavior)
+        .ToString()
+        .ToLowerInvariant();
+
+    private async Task ChangeSubmissionBehaviorAsync(
+        ManagerDocumentSubmissionBehavior submissionBehavior)
+    {
+        if (_settings is null ||
+            _settingsSaving ||
+            submissionBehavior ==
+                _settings.DefaultSubmissionBehavior)
+        {
+            return;
+        }
+
+        _settingsSaving =
+            true;
+
+        _error =
+            null;
+
+        try
+        {
+            _settings =
+                await ManagerClient.UpdateSettingsAsync(
+                    _settings.Version,
+                    submissionBehavior,
+                    _settings.VisualDestinationRoot,
+                    _settings.CompletedRetentionDays,
+                    _lifetime.Token);
+        }
+        catch (OperationCanceledException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager default submission behavior update failed.");
+
+            _error =
+                ManagerWorkshopError.Settings;
+        }
+        finally
+        {
+            _settingsSaving =
+                false;
+        }
+    }
+
+    private async Task BrowseVisualDestinationAsync()
+    {
+        if (_pickerRunning ||
+            _settingsSaving)
+        {
+            return;
+        }
+
+        _pickerRunning =
+            true;
+
+        _settingsFailure =
+            null;
+
+        try
+        {
+            var selected =
+                await VisualDestinationPicker.PickAsync(
+                    _settingsDraftVisualRoot,
+                    _lifetime.Token);
+
+            if (!string.IsNullOrWhiteSpace(
+                    selected))
+            {
+                _settingsDraftVisualRoot =
+                    selected;
+            }
+        }
+        catch (OperationCanceledException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager visual destination chooser failed.");
+
+            _settingsFailure =
+                exception.Message;
+        }
+        finally
+        {
+            _pickerRunning =
+                false;
+        }
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        if (_settings is null ||
+            _settingsSaving ||
+            string.IsNullOrWhiteSpace(
+                _settingsDraftVisualRoot))
+        {
+            return;
+        }
+
+        _settingsSaving =
+            true;
+
+        _settingsFailure =
+            null;
+
+        try
+        {
+            _settings =
+                await ManagerClient.UpdateSettingsAsync(
+                    _settings.Version,
+                    _settingsDraftBehavior,
+                    _settingsDraftVisualRoot,
+                    _settingsDraftRetentionDays,
+                    _lifetime.Token);
+
+            _settingsDraftVisualRoot =
+                _settings.VisualDestinationRoot;
+
+            _settingsDraftRetentionDays =
+                _settings.CompletedRetentionDays;
+
+            await RefreshAsync(
+                notifyRenderer:
+                    false,
+                waitForTurn:
+                    true,
+                _lifetime.Token);
+
+            _settingsOpen =
+                false;
+        }
+        catch (OperationCanceledException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (ManagerSettingsRejectedException exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager rejected visual destination settings with code {ManagerErrorCode}.",
+                exception.ManagerCode);
+
+            _settingsFailure =
+                exception.Message;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager settings update failed.");
+
+            _settingsFailure =
+                Localizer["SettingsUpdateFailedDetail"];
+        }
+        finally
+        {
+            _settingsSaving =
+                false;
+        }
+    }
+
+    private async Task OpenArchiveAsync()
+    {
+        _archiveOpen =
+            true;
+
+        await LoadArchivePageAsync(
+            offset:
+                0);
+    }
+
+    private void CloseArchive()
+    {
+        if (!_archiveLoading)
+        {
+            _archiveOpen =
+                false;
+        }
+    }
+
+    private Task ApplyArchiveFiltersAsync() =>
+        LoadArchivePageAsync(
+            offset:
+                0);
+
+    private Task LoadPreviousArchivePageAsync() =>
+        LoadArchivePageAsync(
+            Math.Max(
+                0,
+                (_archivePage?.Offset ?? 0) -
+                ManagerArchiveQuery.DefaultLimit));
+
+    private Task LoadNextArchivePageAsync() =>
+        LoadArchivePageAsync(
+            (_archivePage?.Offset ?? 0) +
+            ManagerArchiveQuery.DefaultLimit);
+
+    private async Task LoadArchivePageAsync(
+        int offset)
+    {
+        if (_archiveLoading)
+        {
+            return;
+        }
+
+        if (!TryCreateArchiveDateRange(
+                out var fromUtc,
+                out var beforeUtc))
+        {
+            _archiveFailure =
+                Localizer["ArchiveDateRangeInvalid"];
+
+            return;
+        }
+
+        _archiveLoading =
+            true;
+
+        _archiveFailure =
+            null;
+
+        try
+        {
+            _archivePage =
+                await ManagerClient.SearchArchiveAsync(
+                    new ManagerArchiveQuery(
+                        _archiveTitleFilter,
+                        fromUtc,
+                        beforeUtc,
+                        _archiveSort,
+                        offset),
+                    _lifetime.Token);
+        }
+        catch (OperationCanceledException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager archive search failed.");
+
+            _archiveFailure =
+                Localizer["ArchiveLoadFailed"];
+        }
+        finally
+        {
+            _archiveLoading =
+                false;
+        }
+    }
+
+    private bool TryCreateArchiveDateRange(
+        out DateTimeOffset? fromUtc,
+        out DateTimeOffset? beforeUtc)
+    {
+        fromUtc =
+            null;
+
+        beforeUtc =
+            null;
+
+        if (!TryParseArchiveDate(
+                _archiveFromDate,
+                addOneDay:
+                    false,
+                out fromUtc) ||
+            !TryParseArchiveDate(
+                _archiveToDate,
+                addOneDay:
+                    true,
+                out beforeUtc))
+        {
+            return false;
+        }
+
+        return !fromUtc.HasValue ||
+               !beforeUtc.HasValue ||
+               fromUtc.Value <
+               beforeUtc.Value;
+    }
+
+    private static bool TryParseArchiveDate(
+        string? value,
+        bool addOneDay,
+        out DateTimeOffset? utcValue)
+    {
+        utcValue =
+            null;
+
+        if (string.IsNullOrWhiteSpace(
+                value))
+        {
+            return true;
+        }
+
+        if (!DateOnly.TryParseExact(
+                value,
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var date))
+        {
+            return false;
+        }
+
+        if (addOneDay)
+        {
+            if (date ==
+                DateOnly.MaxValue)
+            {
+                return false;
+            }
+
+            date =
+                date.AddDays(
+                    1);
+        }
+
+        var localDateTime =
+            DateTime.SpecifyKind(
+                date.ToDateTime(
+                    TimeOnly.MinValue),
+                DateTimeKind.Unspecified);
+
+        utcValue =
+            new DateTimeOffset(
+                    localDateTime,
+                    TimeZoneInfo.Local.GetUtcOffset(
+                        localDateTime))
+                .ToUniversalTime();
+
+        return true;
     }
 
     private async Task ExecuteControlAsync(
@@ -1031,16 +1779,33 @@
 
         try
         {
-            var snapshot =
-                await ManagerClient
+            var workshopTask =
+                ManagerClient
                     .GetWorkshopAsync(
-                        cancellationToken);
+                        cancellationToken)
+                    .AsTask();
+
+            var settingsTask =
+                ManagerClient
+                    .GetSettingsAsync(
+                        cancellationToken)
+                    .AsTask();
+
+            await Task.WhenAll(
+                workshopTask,
+                settingsTask);
+
+            var snapshot =
+                await workshopTask;
 
             _animationTracker.Observe(
                 snapshot);
 
             _snapshot =
                 snapshot;
+
+            _settings =
+                await settingsTask;
 
             _lastRefreshUtc =
                 DateTimeOffset.UtcNow;
@@ -1131,7 +1896,8 @@
     {
         Control,
         Connection,
-        Queue
+        Queue,
+        Settings
     }
 
     #endregion

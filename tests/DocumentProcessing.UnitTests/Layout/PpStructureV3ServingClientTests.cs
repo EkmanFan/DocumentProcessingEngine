@@ -176,6 +176,86 @@ public sealed class PpStructureV3ServingClientTests
     }
 
     [Fact]
+    public async Task AnalyzeAsync_EnsuresProviderBeforeSendingRequest()
+    {
+        var providerReady =
+            false;
+
+        using var httpClient =
+            CreateHttpClient(
+                new StubHttpMessageHandler(
+                    (_, _) =>
+                    {
+                        Assert.True(
+                            providerReady);
+
+                        return Task.FromResult(
+                            JsonResponse(
+                                SuccessfulSingleTextResponse));
+                    }));
+
+        var client =
+            new PpStructureV3ServingClient(
+                httpClient,
+                Endpoint,
+                ensureAvailable:
+                    _ =>
+                    {
+                        providerReady =
+                            true;
+
+                        return ValueTask.CompletedTask;
+                    });
+
+        await using var image =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        await client.AnalyzeAsync(
+            image);
+    }
+
+    [Fact]
+    public async Task AnalyzeAsync_TransportFailureReportsProviderUnavailable()
+    {
+        var unavailableReports =
+            0;
+
+        using var httpClient =
+            CreateHttpClient(
+                new StubHttpMessageHandler(
+                    (_, _) =>
+                        throw new HttpRequestException(
+                            "Connection refused.")));
+
+        var client =
+            new PpStructureV3ServingClient(
+                httpClient,
+                Endpoint,
+                reportUnavailable:
+                    () =>
+                        unavailableReports++);
+
+        await using var image =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        await Assert.ThrowsAsync<HttpRequestException>(
+            async () =>
+                await client.AnalyzeAsync(
+                        image)
+                    .AsTask());
+
+        Assert.Equal(
+            1,
+            unavailableReports);
+    }
+
+    [Fact]
     public async Task AnalyzeAsync_RejectsOversizedInputBeforeSendingRequest()
     {
         var sendCount = 0;

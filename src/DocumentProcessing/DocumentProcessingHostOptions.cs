@@ -5,6 +5,7 @@ using DocumentProcessing.Epub;
 using Microsoft.Extensions.Logging;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
 using DocumentProcessing.Ocr.Adapters.PaddleOCR;
+using DocumentProcessing.ProviderLifecycle;
 
 namespace DocumentProcessing;
 
@@ -53,6 +54,12 @@ public sealed class DocumentProcessingHostOptions
     /// </summary>
     public ILoggerFactory? LoggerFactory { get; }
 
+    /// <summary>
+    /// Gets the strategy used by the Host to own or consume shared provider
+    /// service lifecycles.
+    /// </summary>
+    public ProcessingProviderLifecycleOptions ProviderLifecycle { get; }
+
     #endregion
 
     #region ctor
@@ -66,7 +73,9 @@ public sealed class DocumentProcessingHostOptions
         EpubDocumentFormatOptions?
             epub = null,
         ILoggerFactory?
-            loggerFactory = null)
+            loggerFactory = null,
+        ProcessingProviderLifecycleOptions?
+            providerLifecycle = null)
     {
         if (string.IsNullOrWhiteSpace(
                 engineVersion))
@@ -98,6 +107,11 @@ public sealed class DocumentProcessingHostOptions
 
         LoggerFactory =
             loggerFactory;
+
+        ProviderLifecycle =
+            providerLifecycle ??
+            ProcessingProviderLifecycleOptions
+                .CreateManagedDocker();
     }
 
     #endregion

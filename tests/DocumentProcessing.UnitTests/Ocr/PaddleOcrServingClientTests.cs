@@ -230,6 +230,86 @@ public sealed class PaddleOcrServingClientTests
     }
 
     [Fact]
+    public async Task RecognizeAsync_EnsuresProviderBeforeSendingRequest()
+    {
+        var providerReady =
+            false;
+
+        using var httpClient =
+            CreateHttpClient(
+                new StubHttpMessageHandler(
+                    (_, _) =>
+                    {
+                        Assert.True(
+                            providerReady);
+
+                        return Task.FromResult(
+                            JsonResponse(
+                                SuccessfulEmptyResponse));
+                    }));
+
+        var client =
+            new PaddleOcrServingClient(
+                httpClient,
+                Endpoint,
+                ensureAvailable:
+                    _ =>
+                    {
+                        providerReady =
+                            true;
+
+                        return ValueTask.CompletedTask;
+                    });
+
+        await using var image =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        await client.RecognizeAsync(
+            image);
+    }
+
+    [Fact]
+    public async Task RecognizeAsync_TransportFailureReportsProviderUnavailable()
+    {
+        var unavailableReports =
+            0;
+
+        using var httpClient =
+            CreateHttpClient(
+                new StubHttpMessageHandler(
+                    (_, _) =>
+                        throw new HttpRequestException(
+                            "Connection refused.")));
+
+        var client =
+            new PaddleOcrServingClient(
+                httpClient,
+                Endpoint,
+                reportUnavailable:
+                    () =>
+                        unavailableReports++);
+
+        await using var image =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        await Assert.ThrowsAsync<HttpRequestException>(
+            async () =>
+                await client.RecognizeAsync(
+                        image)
+                    .AsTask());
+
+        Assert.Equal(
+            1,
+            unavailableReports);
+    }
+
+    [Fact]
     public async Task RecognizeAsync_RequestTimeout_ThrowsTimeoutException()
     {
         var handler =

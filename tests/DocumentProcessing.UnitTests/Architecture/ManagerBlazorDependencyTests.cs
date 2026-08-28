@@ -44,6 +44,9 @@ public sealed class ManagerBlazorDependencyTests
         var submissionBehaviorType =
             typeof(global::DocumentProcessing.Manager.Blazor.Components.Workshop.ManagerDocumentSubmissionBehavior);
 
+        var visualDestinationPickerType =
+            typeof(global::DocumentProcessing.Manager.Blazor.Workshop.IManagerVisualDestinationPicker);
+
         Assert.True(
             workshopType.IsPublic);
 
@@ -55,6 +58,9 @@ public sealed class ManagerBlazorDependencyTests
 
         Assert.True(
             submissionBehaviorType.IsPublic);
+
+        Assert.True(
+            visualDestinationPickerType.IsPublic);
 
         Assert.True(
             typeof(global::DocumentProcessing.Manager.Blazor.DependencyInjection.ManagerWorkshopServiceCollectionExtensions)

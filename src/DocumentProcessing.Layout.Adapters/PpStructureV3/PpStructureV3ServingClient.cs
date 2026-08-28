@@ -8,9 +8,9 @@ namespace DocumentProcessing.Layout.Adapters.PpStructureV3;
 /// Calls a self-hosted PP-StructureV3 serving endpoint and returns its
 /// single-page native pruned result.
 ///
-/// The .NET engine does not launch Python, Paddle, Docker, or the model process.
-/// Model hosting remains an external infrastructure concern behind the official
-/// PP-StructureV3 HTTP contract.
+/// This transport client does not own Python, Paddle, Docker, or model-process
+/// lifecycle. A composing Host may manage that lifecycle before forwarding the
+/// request through this official PP-StructureV3 HTTP contract.
 /// </summary>
 public sealed class PpStructureV3ServingClient
 {
@@ -27,6 +27,8 @@ public sealed class PpStructureV3ServingClient
     private readonly TimeSpan _requestTimeout;
     private readonly long _maxInputBytes;
     private readonly long _maxResponseBytes;
+    private readonly Func<CancellationToken, ValueTask>? _ensureAvailable;
+    private readonly Action? _reportUnavailable;
 
     #endregion
 
@@ -38,7 +40,9 @@ public sealed class PpStructureV3ServingClient
         Uri endpoint,
         TimeSpan? requestTimeout = null,
         long maxInputBytes = DefaultMaxInputBytes,
-        long maxResponseBytes = DefaultMaxResponseBytes)
+        long maxResponseBytes = DefaultMaxResponseBytes,
+        Func<CancellationToken, ValueTask>? ensureAvailable = null,
+        Action? reportUnavailable = null)
     {
         _httpClient =
             httpClient ??
@@ -92,6 +96,8 @@ public sealed class PpStructureV3ServingClient
         _endpoint = endpoint;
         _maxInputBytes = maxInputBytes;
         _maxResponseBytes = maxResponseBytes;
+        _ensureAvailable = ensureAvailable;
+        _reportUnavailable = reportUnavailable;
     }
 
     #endregion
@@ -113,6 +119,13 @@ public sealed class PpStructureV3ServingClient
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (_ensureAvailable is not null)
+        {
+            await _ensureAvailable(
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         var imageBytes =
             await ReadBoundedAsync(
@@ -179,6 +192,11 @@ public sealed class PpStructureV3ServingClient
             throw new TimeoutException(
                 $"PP-StructureV3 request exceeded {_requestTimeout}.",
                 exception);
+        }
+        catch (HttpRequestException)
+        {
+            _reportUnavailable?.Invoke();
+            throw;
         }
 
         using (response)

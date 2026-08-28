@@ -5,6 +5,8 @@ using DocumentProcessing.Engine.Layout;
 using DocumentProcessing.Engine.Ocr;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
 using DocumentProcessing.Ocr.Adapters.PaddleOCR;
+using DocumentProcessing.ProviderLifecycle;
+using Microsoft.Extensions.Logging;
 
 namespace DocumentProcessing.Shared;
 
@@ -34,6 +36,9 @@ internal sealed class SharedProcessingCapabilities
     private readonly HttpClient _layoutHttpClient;
     private readonly HttpClient _ocrHttpClient;
 
+    private readonly IProcessingProviderRuntime
+        _providerRuntime;
+
     private bool _disposed;
 
     #endregion
@@ -53,13 +58,25 @@ internal sealed class SharedProcessingCapabilities
 
     public SharedProcessingCapabilities(
         PpStructureV3Options ppStructureV3,
-        PaddleOcrOptions paddleOcr)
+        PaddleOcrOptions paddleOcr,
+        ProcessingProviderLifecycleOptions providerLifecycle,
+        ILoggerFactory? loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(
             ppStructureV3);
 
         ArgumentNullException.ThrowIfNull(
             paddleOcr);
+
+        ArgumentNullException.ThrowIfNull(
+            providerLifecycle);
+
+        _providerRuntime =
+            ProcessingProviderRuntimeFactory.Create(
+                providerLifecycle,
+                ppStructureV3,
+                paddleOcr,
+                loggerFactory);
 
         _layoutHttpClient =
             CreateServiceHttpClient();
@@ -74,20 +91,39 @@ internal sealed class SharedProcessingCapabilities
                     new PpStructureV3ServingClient(
                         _layoutHttpClient,
                         ppStructureV3.Endpoint,
-                        ppStructureV3.RequestTimeout));
+                        ppStructureV3.RequestTimeout,
+                        ensureAvailable:
+                            cancellationToken =>
+                                _providerRuntime.EnsureAvailableAsync(
+                                    ProcessingProviderCapability.Layout,
+                                    cancellationToken),
+                        reportUnavailable:
+                            () =>
+                                _providerRuntime.ReportUnavailable(
+                                    ProcessingProviderCapability.Layout)));
 
             TextRecognizer =
                 new PaddleOcrAdapter(
                     new PaddleOcrServingClient(
                         _ocrHttpClient,
                         paddleOcr.Endpoint,
-                        paddleOcr.RequestTimeout),
+                        paddleOcr.RequestTimeout,
+                        ensureAvailable:
+                            cancellationToken =>
+                                _providerRuntime.EnsureAvailableAsync(
+                                    ProcessingProviderCapability.Ocr,
+                                    cancellationToken),
+                        reportUnavailable:
+                            () =>
+                                _providerRuntime.ReportUnavailable(
+                                    ProcessingProviderCapability.Ocr)),
                     paddleOcr.ProfileId);
         }
         catch
         {
             _layoutHttpClient.Dispose();
             _ocrHttpClient.Dispose();
+            _providerRuntime.Dispose();
 
             throw;
         }
@@ -109,6 +145,7 @@ internal sealed class SharedProcessingCapabilities
 
         _layoutHttpClient.Dispose();
         _ocrHttpClient.Dispose();
+        _providerRuntime.Dispose();
     }
 
     private static HttpClient CreateServiceHttpClient() =>

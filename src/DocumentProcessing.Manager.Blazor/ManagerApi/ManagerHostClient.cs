@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using DocumentProcessing.Manager.Blazor.Components.Workshop;
 using DocumentProcessing.Manager.Blazor.Workshop;
 
 namespace DocumentProcessing.Manager.Blazor.ManagerApi;
@@ -40,6 +42,19 @@ internal sealed class ManagerHostClient(
             queue);
     }
 
+    public async ValueTask<ManagerWorkshopSettings> GetSettingsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var contract =
+            await GetRequiredAsync<ManagerSettingsContract>(
+                    "api/manager/settings",
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return ManagerWorkshopSettings.Create(
+            contract);
+    }
+
     private async ValueTask<T> GetRequiredAsync<T>(
         string relativeUri,
         CancellationToken cancellationToken)
@@ -61,6 +76,155 @@ internal sealed class ManagerHostClient(
                    .ConfigureAwait(false) ??
                throw new InvalidDataException(
                    "The Manager returned an empty response.");
+    }
+
+    #endregion
+
+    #region Methods Settings
+
+    public async ValueTask<ManagerWorkshopSettings> UpdateSettingsAsync(
+        long expectedVersion,
+        ManagerDocumentSubmissionBehavior submissionBehavior,
+        string? visualDestinationRoot,
+        int completedRetentionDays,
+        CancellationToken cancellationToken = default)
+    {
+        if (expectedVersion < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(expectedVersion));
+        }
+
+        if (!Enum.IsDefined(
+                submissionBehavior))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(submissionBehavior));
+        }
+
+        if (completedRetentionDays is <
+                ManagerWorkshopSettings.MinimumCompletedRetentionDays or >
+                ManagerWorkshopSettings.MaximumCompletedRetentionDays)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(completedRetentionDays));
+        }
+
+        using var response =
+            await _httpClient
+                .PutAsJsonAsync(
+                    "api/manager/settings",
+                    new ManagerSettingsUpdateRequest(
+                        expectedVersion,
+                        submissionBehavior ==
+                            ManagerDocumentSubmissionBehavior.Shelve
+                            ? "shelve"
+                            : "run",
+                        string.IsNullOrWhiteSpace(
+                            visualDestinationRoot)
+                            ? null
+                            : visualDestinationRoot.Trim(),
+                        completedRetentionDays),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await ThrowSettingsRejectedAsync(
+                    response,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        var contract =
+            await response.Content
+                .ReadFromJsonAsync<ManagerSettingsContract>(
+                    cancellationToken)
+                .ConfigureAwait(false) ??
+            throw new InvalidDataException(
+                "The Manager returned empty settings.");
+
+        return ManagerWorkshopSettings.Create(
+            contract);
+    }
+
+    private static async ValueTask ThrowSettingsRejectedAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        ManagerApiErrorContract? error =
+            null;
+
+        try
+        {
+            error =
+                await response.Content
+                    .ReadFromJsonAsync<ManagerApiErrorContract>(
+                        cancellationToken)
+                    .ConfigureAwait(false);
+        }
+        catch (JsonException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+
+        throw new ManagerSettingsRejectedException(
+            response.StatusCode,
+            error?.Code,
+            error?.Message ??
+            error?.Detail ??
+            error?.Title ??
+            response.ReasonPhrase ??
+            "The Manager rejected the settings update.");
+    }
+
+    #endregion
+
+    #region Methods Archive
+
+    public async ValueTask<ManagerArchivePage> SearchArchiveAsync(
+        ManagerArchiveQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            query);
+
+        var parameters =
+            new List<string>
+            {
+                $"sort={query.Sort.ToApiValue()}",
+                $"offset={query.Offset}",
+                $"limit={query.Limit}"
+            };
+
+        if (query.TitleContains is not null)
+        {
+            parameters.Add(
+                $"title={Uri.EscapeDataString(query.TitleContains)}");
+        }
+
+        if (query.CompletedFromUtc.HasValue)
+        {
+            parameters.Add(
+                $"fromUtc={Uri.EscapeDataString(query.CompletedFromUtc.Value.ToString("O"))}");
+        }
+
+        if (query.CompletedBeforeUtc.HasValue)
+        {
+            parameters.Add(
+                $"beforeUtc={Uri.EscapeDataString(query.CompletedBeforeUtc.Value.ToString("O"))}");
+        }
+
+        var contract =
+            await GetRequiredAsync<ManagerArchiveContract>(
+                    $"api/manager/archive?{string.Join('&', parameters)}",
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return ManagerArchivePage.Create(
+            contract);
     }
 
     #endregion

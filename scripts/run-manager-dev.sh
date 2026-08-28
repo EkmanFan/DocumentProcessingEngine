@@ -22,6 +22,7 @@ API_KEY="${DPE_MANAGER_API_KEY:-dpengine-manager-local-development-key-2026}"
 CUSTODY_ROOT="${DPE_MANAGER_CUSTODY_ROOT:-${REPO_ROOT}/tests/document_manager_custody}"
 SOURCE_ROOT="${CUSTODY_ROOT}/sources"
 RESULT_ROOT="${CUSTODY_ROOT}/results"
+VISUAL_ROOT="${CUSTODY_ROOT}/visuals"
 
 HOST_PID=""
 UI_PID=""
@@ -143,7 +144,7 @@ require_positive_port "DPE_MANAGER_UI_PORT" "$UI_PORT"
 
 [[ "$HOST_PORT" != "$UI_PORT" ]] || fail "Host and Blazor UI ports must be distinct."
 
-mkdir -p "$SOURCE_ROOT" "$RESULT_ROOT"
+mkdir -p "$SOURCE_ROOT" "$RESULT_ROOT" "$VISUAL_ROOT"
 
 printf 'DPEngine Manager development launcher\n'
 printf '=====================================\n\n'
@@ -217,6 +218,7 @@ wait_for_http \
 
 printf '\nManager is ready.\n'
 printf 'Open: %s\n' "$UI_URL"
+printf 'Visual directory to select in Settings: %s\n' "$VISUAL_ROOT"
 printf 'Press Ctrl+C to stop the Host and UI.\n\n'
 
 set +e

@@ -28,9 +28,10 @@ curl --request PUT \
   http://127.0.0.1:5080/api/manager/submissions/00000000-0000-0000-0000-000000000001
 ```
 
-Submission defaults to `?dispatch=shelve`, which retains the ordered unit but
-keeps it ineligible for dispatch. Use `?dispatch=run` to create an immediately
-eligible unit. This eligibility is independent of the global Manager state.
+Submission without a `dispatch` query uses the persisted Manager default,
+initially `shelve`, which retains the ordered unit but keeps it ineligible for
+dispatch. Use `?dispatch=run` or `?dispatch=shelve` to override that default for
+one submission. This eligibility is independent of the global Manager state.
 
 HTTP clients may send the original filename through the standard
 `Content-Disposition: attachment; filename*=UTF-8''...` content header. The
@@ -41,11 +42,14 @@ Control and observation endpoints:
 
 ```text
 GET  /api/manager/state
+GET  /api/manager/settings
+PUT  /api/manager/settings
 POST /api/manager/control/start
 POST /api/manager/control/pause
 POST /api/manager/control/resume
 POST /api/manager/control/stop
 GET  /api/manager/queue
+GET  /api/manager/archive
 PUT  /api/manager/queue/order
 POST /api/manager/queue/{unitId}/release
 GET  /api/manager/results/{resultReference}
@@ -53,6 +57,25 @@ GET  /health/live
 GET  /health/ready
 ```
 
+Manager settings persist the default submission behavior, an absolute
+visual-destination directory and the number of days terminal work remains in
+the recent queue view. The Host validates that this directory already exists
+and is writable before accepting it. `/archive` applies the same durable
+retention boundary and provides bounded title/date filtering and title/date
+sorting without changing the processing-unit lifecycle state. During
+processing, visual bytes
+are staged below that root, verified against the result's byte length and
+SHA-256 digest, then atomically published into one read-only subdirectory per
+processing unit with a manifest. A document that requires visual preservation
+fails with an actionable diagnostic when no destination has been configured.
+
 The Host applies Manager schema migrations before it starts listening. A
 persisted `Running` state resumes automatically after restart; PostgreSQL
 runtime and unit leases fence stale processes and recover expired work.
+
+PP-StructureV3 and PaddleOCR are managed lazily by `DocumentProcessingHost` by
+default: Docker is not touched for native-only work, and the required pinned
+provider starts only when the Engine plans that enrichment. Set
+`ManagerHost__ProviderLifecycle=external` when deployment infrastructure owns
+both endpoints instead. `ManagerHost__ProviderRepositoryRoot` can identify an
+absolute source checkout when a missing pinned image must be built locally.

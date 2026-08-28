@@ -27,7 +27,8 @@ Run locally:
 The repository-level launcher starts or reuses the development PostgreSQL
 container, waits for the Manager Host readiness endpoint and then starts this
 Blazor application. Both application processes stop together on `Ctrl+C`;
-PostgreSQL remains available for the next run.
+PostgreSQL remains available for the next run. The launcher also creates and
+prints the development visual directory that can be selected in Settings.
 
 The API key remains in the server process and is never sent to the browser.
 The workshop provides Manager controls, pending, active and completed views,
@@ -49,16 +50,31 @@ A successful custody registration briefly shows the librarian's
 reception reaction and refreshes the queue. The Host remains solely responsible
 for content hashing, immutable custody and atomic processing registration.
 
-The reception toggle defaults to `Shelve`: the source enters the durable global
-order but cannot be claimed until the user selects `Run` on that queue item.
+The persisted reception toggle initially defaults to `Shelve`: the source
+enters the durable global order but cannot be claimed until the user selects
+`Run` on that queue item.
 Selecting `Run` before reception makes the new unit immediately eligible while
 still respecting the Manager's global Start/Pause/Stop state and strictly
 sequential dispatcher. Queue items can be moved earlier or later across
 documents and future chapter units. The same order can be changed by dragging
 the dedicated grip on a pending card; the arrow buttons remain available for
-keyboard access and as a deterministic fallback. The public drop-zone component exposes
-`DefaultSubmissionBehavior` so an embedding application can choose its initial
-toggle state without replacing the user's in-session choice.
+keyboard access and as a deterministic fallback. The public drop-zone component
+exposes the controlled `SubmissionBehavior`/`SubmissionBehaviorChanged` pair;
+the workshop synchronizes it with the duplicate control in Manager settings.
+
+The settings dialog also accepts an absolute visual-destination path. The Host,
+not the browser, verifies that the directory exists and is writable before the
+setting is persisted. The standalone Linux adapter can open `kdialog` or
+`zenity`; pasting a path always remains available. An embedding host such as
+Apologia Studio can replace `IManagerVisualDestinationPicker` with its own
+desktop-shell adapter without changing the reusable workshop component.
+
+The desktop workshop grid has a bounded height so a growing result history does
+not move the librarian. `Processed` scrolls independently; its scrollbar is
+revealed on hover or keyboard focus and a small persistent marker indicates
+hidden overflow. The retention period is persisted in Settings (30 days by
+default). Older succeeded and failed units remain available in a separate,
+paged Archives dialog with title/date filters and title/date ordering.
 
 The librarian waits when the queue has no active work, reads while a unit is
 active, holds its page while paused, rests while stopped and reports a lost Host

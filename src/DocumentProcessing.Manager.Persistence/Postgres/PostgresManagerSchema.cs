@@ -393,6 +393,49 @@ public sealed class PostgresManagerSchema
                     AND released_at_utc IS NOT NULL;
             """;
 
+    private const string
+        MigrationFiveSql =
+            """
+            CREATE TABLE document_processing_manager.manager_settings
+            (
+                singleton boolean PRIMARY KEY DEFAULT TRUE
+                    CHECK (singleton),
+                default_submission_dispatch_state smallint NOT NULL
+                    CHECK (default_submission_dispatch_state BETWEEN 0 AND 1),
+                visual_destination_root text NULL
+                    CHECK
+                    (
+                        visual_destination_root IS NULL
+                        OR length(visual_destination_root) > 0
+                    ),
+                version bigint NOT NULL
+                    CHECK (version >= 0)
+            );
+
+            INSERT INTO document_processing_manager.manager_settings
+                (
+                    singleton,
+                    default_submission_dispatch_state,
+                    visual_destination_root,
+                    version
+                )
+            VALUES
+                (TRUE, 0, NULL, 0);
+            """;
+
+    private const string
+        MigrationSixSql =
+            """
+            ALTER TABLE document_processing_manager.manager_settings
+            ADD COLUMN completed_retention_days integer NOT NULL DEFAULT 30
+                CHECK (completed_retention_days BETWEEN 1 AND 3650);
+
+            CREATE INDEX ix_processing_units_terminal_updated
+                ON document_processing_manager.processing_units
+                    (updated_at_utc DESC, unit_id)
+                WHERE status IN (2, 3);
+            """;
+
     private static readonly Migration[]
         Migrations =
         [
@@ -411,7 +454,15 @@ public sealed class PostgresManagerSchema
             new(
                 Version:
                     4,
-                MigrationFourSql)
+                MigrationFourSql),
+            new(
+                Version:
+                    5,
+                MigrationFiveSql),
+            new(
+                Version:
+                    6,
+                MigrationSixSql)
         ];
 
     private readonly NpgsqlDataSource

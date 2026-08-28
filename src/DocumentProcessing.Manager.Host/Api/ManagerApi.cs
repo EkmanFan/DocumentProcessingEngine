@@ -1,8 +1,10 @@
 using DocumentProcessing.Manager.Control;
+using DocumentProcessing.Manager.History;
 using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Processing;
 using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Runtime;
+using DocumentProcessing.Manager.Settings;
 using DocumentProcessing.Manager.Submissions;
 using DocumentProcessing.Manager.Host.Security;
 using Microsoft.Net.Http.Headers;
@@ -45,6 +47,14 @@ internal static class ManagerApi
         group.MapGet(
             "/state",
             GetStateAsync);
+
+        group.MapGet(
+            "/settings",
+            GetSettingsAsync);
+
+        group.MapPut(
+            "/settings",
+            UpdateSettingsAsync);
 
         group.MapPost(
             "/control/start",
@@ -92,12 +102,14 @@ internal static class ManagerApi
                 Guid submissionId,
                 HttpRequest request,
                 SubmitDocumentService submitter,
+                IManagerSettingsStore settingsStore,
                 DocumentProcessingManagerRuntime runtime,
                 CancellationToken cancellationToken) =>
                 SubmitAsync(
                     submissionId,
                     request,
                     submitter,
+                    settingsStore,
                     runtime,
                     maximumSourceBytes,
                     cancellationToken));
@@ -105,6 +117,10 @@ internal static class ManagerApi
         group.MapGet(
             "/queue",
             GetQueueAsync);
+
+        group.MapGet(
+            "/archive",
+            SearchArchiveAsync);
 
         group.MapPut(
             "/queue/order",
@@ -128,6 +144,144 @@ internal static class ManagerApi
         application.MapGet(
             "/health/ready",
             GetReadyAsync);
+    }
+
+    #endregion
+
+    #region Methods Settings
+
+    private static async Task<IResult> GetSettingsAsync(
+        IManagerSettingsStore settingsStore,
+        CancellationToken cancellationToken)
+    {
+        var settings =
+            await settingsStore
+                .GetAsync(
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return HttpResults.Ok(
+            ToResponse(
+                settings));
+    }
+
+    private static async Task<IResult> UpdateSettingsAsync(
+        ManagerSettingsUpdateRequest request,
+        IManagerSettingsStore settingsStore,
+        IProcessingVisualAssetStore visualAssetStore,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        if (!TryMapSubmissionBehavior(
+                request.DefaultSubmissionBehavior,
+                out var dispatchState))
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.settings_dispatch_invalid",
+                    "Default submission behavior must be either 'shelve' or 'run'."));
+        }
+
+        if (request.CompletedRetentionDays is <
+                ManagerSettingsSnapshot.MinimumCompletedRetentionDays or >
+                ManagerSettingsSnapshot.MaximumCompletedRetentionDays)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.completed_retention_invalid",
+                    $"Completed retention must be between {ManagerSettingsSnapshot.MinimumCompletedRetentionDays} and {ManagerSettingsSnapshot.MaximumCompletedRetentionDays} days."));
+        }
+
+        string? visualDestinationRoot =
+            null;
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(
+                    request.VisualDestinationRoot))
+            {
+                if (!Path.IsPathFullyQualified(
+                        request.VisualDestinationRoot.Trim()))
+                {
+                    return HttpResults.BadRequest(
+                        new ApiConflictResponse(
+                            "manager.visual_destination_invalid",
+                            "Visual destination must be an absolute directory path."));
+                }
+
+                visualDestinationRoot =
+                    Path.TrimEndingDirectorySeparator(
+                        Path.GetFullPath(
+                            request.VisualDestinationRoot.Trim()));
+
+                await visualAssetStore
+                    .ValidateRootAsync(
+                        visualDestinationRoot,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            var updated =
+                await settingsStore
+                    .TryUpdateAsync(
+                        new UpdateManagerSettingsCommand(
+                            request.ExpectedVersion,
+                            dispatchState,
+                            visualDestinationRoot,
+                            request.CompletedRetentionDays),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            if (updated is not null)
+            {
+                return HttpResults.Ok(
+                    ToResponse(
+                        updated));
+            }
+
+            var current =
+                await settingsStore
+                    .GetAsync(
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            return HttpResults.Conflict(
+                new ManagerSettingsVersionConflictResponse(
+                    "manager.settings_version_conflict",
+                    "Manager settings changed before this update was applied.",
+                    request.ExpectedVersion,
+                    current.Version));
+        }
+        catch (ArgumentException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.visual_destination_invalid",
+                    exception.Message));
+        }
+        catch (DirectoryNotFoundException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.visual_destination_missing",
+                    exception.Message));
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.visual_destination_not_writable",
+                    exception.Message));
+        }
+        catch (IOException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.visual_destination_not_writable",
+                    exception.Message));
+        }
     }
 
     #endregion
@@ -187,6 +341,7 @@ internal static class ManagerApi
         Guid submissionId,
         HttpRequest request,
         SubmitDocumentService submitter,
+        IManagerSettingsStore settingsStore,
         DocumentProcessingManagerRuntime runtime,
         long maximumSourceBytes,
         CancellationToken cancellationToken)
@@ -233,9 +388,26 @@ internal static class ManagerApi
                     StatusCodes.Status413PayloadTooLarge);
         }
 
-        if (!TryReadInitialDispatchState(
-                request,
-                out var initialDispatchState))
+        var dispatchValue =
+            request.Query[
+                    "dispatch"]
+                .ToString();
+
+        ProcessingUnitDispatchState initialDispatchState;
+
+        if (string.IsNullOrWhiteSpace(
+                dispatchValue))
+        {
+            initialDispatchState =
+                (await settingsStore
+                    .GetAsync(
+                        cancellationToken)
+                    .ConfigureAwait(false))
+                .DefaultSubmissionDispatchState;
+        }
+        else if (!TryMapSubmissionBehavior(
+                     dispatchValue,
+                     out initialDispatchState))
         {
             return HttpResults.BadRequest(
                 new ApiConflictResponse(
@@ -312,12 +484,16 @@ internal static class ManagerApi
     #region Methods Queue
 
     private static async Task<IResult> GetQueueAsync(
-        IProcessingQueueReader queueReader,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         var snapshot =
-            await queueReader
-                .GetSnapshotAsync(
+            await GetRecentSnapshotAsync(
+                    historyReader,
+                    settingsStore,
+                    timeProvider,
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -326,10 +502,72 @@ internal static class ManagerApi
                 snapshot));
     }
 
+    private static async Task<IResult> SearchArchiveAsync(
+        string? title,
+        DateTimeOffset? fromUtc,
+        DateTimeOffset? beforeUtc,
+        string? sort,
+        int? offset,
+        int? limit,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (!TryMapArchiveSort(
+                sort,
+                out var archiveSort))
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.archive_sort_invalid",
+                    "Archive sort must be completedNewest, completedOldest, titleAscending or titleDescending."));
+        }
+
+        try
+        {
+            var settings =
+                await settingsStore
+                    .GetAsync(
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            var page =
+                await historyReader
+                    .SearchArchiveAsync(
+                        new ProcessingArchiveQuery(
+                            timeProvider.GetUtcNow().AddDays(
+                                -settings.CompletedRetentionDays),
+                            title,
+                            fromUtc,
+                            beforeUtc,
+                            archiveSort,
+                            offset ??
+                                0,
+                            limit ??
+                                ProcessingArchiveQuery.DefaultLimit),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            return HttpResults.Ok(
+                ToResponse(
+                    page));
+        }
+        catch (ArgumentException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.archive_query_invalid",
+                    exception.Message));
+        }
+    }
+
     private static async Task<IResult> ReorderQueueAsync(
         QueueReorderRequest request,
         IProcessingQueueStore queueStore,
-        IProcessingQueueReader queueReader,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
         DocumentProcessingManagerRuntime runtime,
         CancellationToken cancellationToken)
     {
@@ -360,8 +598,10 @@ internal static class ManagerApi
             runtime.NotifyQueueChanged();
 
             var snapshot =
-                await queueReader
-                    .GetSnapshotAsync(
+                await GetRecentSnapshotAsync(
+                        historyReader,
+                        settingsStore,
+                        timeProvider,
                         cancellationToken)
                     .ConfigureAwait(false);
 
@@ -398,7 +638,9 @@ internal static class ManagerApi
         Guid unitId,
         QueueReleaseRequest request,
         IProcessingQueueStore queueStore,
-        IProcessingQueueReader queueReader,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
         DocumentProcessingManagerRuntime runtime,
         CancellationToken cancellationToken)
     {
@@ -419,8 +661,10 @@ internal static class ManagerApi
             runtime.NotifyQueueChanged();
 
             var snapshot =
-                await queueReader
-                    .GetSnapshotAsync(
+                await GetRecentSnapshotAsync(
+                        historyReader,
+                        settingsStore,
+                        timeProvider,
                         cancellationToken)
                     .ConfigureAwait(false);
 
@@ -519,30 +763,75 @@ internal static class ManagerApi
             snapshot.State,
             snapshot.Version);
 
+    private static ManagerSettingsResponse ToResponse(
+        ManagerSettingsSnapshot settings) =>
+        new(
+            settings.DefaultSubmissionDispatchState ==
+                ProcessingUnitDispatchState.Shelved
+                ? "shelve"
+                : "run",
+            settings.VisualDestinationRoot,
+            settings.Version,
+            settings.CompletedRetentionDays);
+
     private static ProcessingQueueResponse ToResponse(
         ProcessingQueueSnapshot snapshot) =>
         new(
             snapshot.Version,
             snapshot.Items
                 .Select(
-                    item =>
-                        new ProcessingQueueItemResponse(
-                            item.WorkItem.UnitId.Value,
-                            item.WorkItem.SubmissionId.Value,
-                            item.OriginalFileName,
-                            ToResponse(
-                                item.WorkItem.Scope),
-                            item.WorkItem.AttemptNumber,
-                            item.Status,
-                            item.DispatchState,
-                            item.QueuePosition,
-                            item.ResultReference,
-                            item.LastFailure?.Code,
-                            item.LastFailure?.Message,
-                            item.LastInterruptionReason,
-                            item.CreatedAtUtc,
-                            item.UpdatedAtUtc))
+                    ToResponse)
                 .ToArray());
+
+    private static ProcessingArchiveResponse ToResponse(
+        ProcessingArchivePage page) =>
+        new(
+            page.TotalCount,
+            page.Offset,
+            page.Limit,
+            page.Items
+                .Select(
+                    ToResponse)
+                .ToArray());
+
+    private static ProcessingQueueItemResponse ToResponse(
+        ProcessingQueueItemSnapshot item) =>
+        new(
+            item.WorkItem.UnitId.Value,
+            item.WorkItem.SubmissionId.Value,
+            item.OriginalFileName,
+            ToResponse(
+                item.WorkItem.Scope),
+            item.WorkItem.AttemptNumber,
+            item.Status,
+            item.DispatchState,
+            item.QueuePosition,
+            item.ResultReference,
+            item.LastFailure?.Code,
+            item.LastFailure?.Message,
+            item.LastInterruptionReason,
+            item.CreatedAtUtc,
+            item.UpdatedAtUtc);
+
+    private static async ValueTask<ProcessingQueueSnapshot> GetRecentSnapshotAsync(
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        var settings =
+            await settingsStore
+                .GetAsync(
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return await historyReader
+            .GetRecentSnapshotAsync(
+                timeProvider.GetUtcNow().AddDays(
+                    -settings.CompletedRetentionDays),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
 
     private static ProcessingScopeResponse ToResponse(
         ProcessingUnitScope scope) =>
@@ -583,18 +872,11 @@ internal static class ManagerApi
             : value;
     }
 
-    private static bool TryReadInitialDispatchState(
-        HttpRequest request,
+    private static bool TryMapSubmissionBehavior(
+        string? value,
         out ProcessingUnitDispatchState dispatchState)
     {
-        var value =
-            request.Query[
-                    "dispatch"]
-                .ToString();
-
-        if (string.IsNullOrWhiteSpace(
-                value) ||
-            string.Equals(
+        if (string.Equals(
                 value,
                 "shelve",
                 StringComparison.OrdinalIgnoreCase))
@@ -620,6 +902,42 @@ internal static class ManagerApi
             default;
 
         return false;
+    }
+
+    private static bool TryMapArchiveSort(
+        string? value,
+        out ProcessingArchiveSort sort)
+    {
+        if (string.IsNullOrWhiteSpace(
+                value) ||
+            string.Equals(
+                value,
+                "completedNewest",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            sort =
+                ProcessingArchiveSort.CompletedNewest;
+
+            return true;
+        }
+
+        var mapped =
+            value.ToLowerInvariant() switch
+            {
+                "completedoldest" =>
+                    ProcessingArchiveSort.CompletedOldest,
+                "titleascending" =>
+                    ProcessingArchiveSort.TitleAscending,
+                "titledescending" =>
+                    ProcessingArchiveSort.TitleDescending,
+                _ =>
+                    (ProcessingArchiveSort?)null
+            };
+
+        sort =
+            mapped.GetValueOrDefault();
+
+        return mapped.HasValue;
     }
 
     private static string ReadDocumentFileName(
@@ -679,6 +997,24 @@ internal static class ManagerApi
         bool Changed,
         long Version);
 
+    internal sealed record ManagerSettingsResponse(
+        string DefaultSubmissionBehavior,
+        string? VisualDestinationRoot,
+        long Version,
+        int CompletedRetentionDays);
+
+    internal sealed record ManagerSettingsUpdateRequest(
+        long ExpectedVersion,
+        string DefaultSubmissionBehavior,
+        string? VisualDestinationRoot,
+        int CompletedRetentionDays);
+
+    internal sealed record ManagerSettingsVersionConflictResponse(
+        string Code,
+        string Message,
+        long ExpectedVersion,
+        long ActualVersion);
+
     internal sealed record DocumentSubmissionResponse(
         Guid SubmissionId,
         string SourceSha256,
@@ -696,6 +1032,12 @@ internal static class ManagerApi
 
     internal sealed record ProcessingQueueResponse(
         long Version,
+        IReadOnlyList<ProcessingQueueItemResponse> Items);
+
+    internal sealed record ProcessingArchiveResponse(
+        long TotalCount,
+        int Offset,
+        int Limit,
         IReadOnlyList<ProcessingQueueItemResponse> Items);
 
     internal sealed record ProcessingQueueItemResponse(

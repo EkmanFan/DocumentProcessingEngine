@@ -18,6 +18,43 @@ export async function downloadFile(fileName, mediaType, contentStreamReference) 
 }
 
 const queueControllers = new WeakMap();
+const overflowControllers = new WeakMap();
+
+export function initializeOverflowIndicator(regionElement) {
+    const currentController = overflowControllers.get(regionElement);
+
+    if (currentController) {
+        currentController.update();
+        return;
+    }
+
+    const scrollElement = regionElement.querySelector(".completed-list");
+
+    if (!scrollElement) {
+        return;
+    }
+
+    const update = () => {
+        const hasOverflow = scrollElement.scrollHeight > scrollElement.clientHeight + 1;
+        const atScrollEnd = scrollElement.scrollTop + scrollElement.clientHeight >= scrollElement.scrollHeight - 1;
+
+        regionElement.classList.toggle("has-scroll-overflow", hasOverflow);
+        regionElement.classList.toggle("at-scroll-end", !hasOverflow || atScrollEnd);
+    };
+
+    const resizeObserver = new ResizeObserver(update);
+
+    resizeObserver.observe(regionElement);
+    resizeObserver.observe(scrollElement);
+    scrollElement.addEventListener("scroll", update, { passive: true });
+
+    overflowControllers.set(regionElement, {
+        resizeObserver,
+        update
+    });
+
+    update();
+}
 
 export function initializeQueueReorder(queueElement, workshopReference) {
     const currentController = queueControllers.get(queueElement);

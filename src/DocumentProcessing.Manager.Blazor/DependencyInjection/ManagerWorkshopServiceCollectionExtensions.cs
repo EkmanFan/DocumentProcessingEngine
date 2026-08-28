@@ -1,6 +1,7 @@
 using DocumentProcessing.Manager.Blazor.Configuration;
 using DocumentProcessing.Manager.Blazor.ManagerApi;
 using DocumentProcessing.Manager.Blazor.Workshop;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DocumentProcessing.Manager.Blazor.DependencyInjection;
 
@@ -33,6 +34,9 @@ public static class ManagerWorkshopServiceCollectionExtensions
             options);
 
         services.AddTransient<ManagerWorkshopUploadService>();
+
+        services.TryAddSingleton<IManagerVisualDestinationPicker,
+            LinuxDesktopVisualDestinationPicker>();
 
         services
             .AddHttpClient<IManagerHostClient,
