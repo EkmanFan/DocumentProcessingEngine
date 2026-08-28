@@ -40,5 +40,7 @@ public interface IProcessingVisualAssetWriteSession
     /// </summary>
     ValueTask<string> CompleteAsync(
         IReadOnlyList<ProcessingVisualAssetDescriptor> assets,
+        ReadOnlyMemory<byte> resultPayload,
+        ProcessingResultArtifact resultArtifact,
         CancellationToken cancellationToken = default);
 }

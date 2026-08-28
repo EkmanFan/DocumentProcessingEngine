@@ -5,7 +5,8 @@ using HttpResults = Microsoft.AspNetCore.Http.Results;
 namespace DocumentProcessing.Manager.Host.Security;
 
 internal sealed class ManagerApiKeyEndpointFilter(
-    string expectedApiKey)
+    string expectedApiKey,
+    string headerName = ManagerApiKeyEndpointFilter.HeaderName)
     : IEndpointFilter
 {
     #region Variables and Constants
@@ -18,6 +19,10 @@ internal sealed class ManagerApiKeyEndpointFilter(
             Encoding.UTF8.GetBytes(
                 expectedApiKey);
 
+    private readonly string
+        _headerName =
+            headerName;
+
     #endregion
 
     #region Methods
@@ -28,7 +33,7 @@ internal sealed class ManagerApiKeyEndpointFilter(
     {
         var supplied =
             context.HttpContext.Request.Headers[
-                    HeaderName]
+                    _headerName]
                 .ToString();
 
         var suppliedBytes =

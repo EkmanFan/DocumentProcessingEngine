@@ -31,6 +31,7 @@ The root [README](../README.md) is the current operational entry point.
 | `evaluation/habermas-epub-native-reference-v1.md` | Frozen evidence | Production Host native EPUB result, non-paged custody and text fingerprint. |
 | `evaluation/habermas-pdf-epub-text-comparison-v1.md` | Frozen evidence | Cross-format text comparison, EPUB footnote correction and aggregate parity measurements. |
 | `evaluation/epub-notes-v1.md` | Current design and evidence | Portable Note/Notes v3 contract, EPUB V4 correlation rules and targeted Habermas/Allison controls. |
+| `integration/result-publication-v1.md` | Current contract | Durable ResultAvailable claim/ack protocol, readable export and Apologia integration rules. |
 | `epub/epub-1-validation-boundary-v1.md` | Current design | Official EPUBCheck boundary and its integration with native non-paged EPUB processing. |
 | `epub/epub-publication-export-prototype-v1.md` | Current prototype | Reflowable EPUB writing from `DocumentProcessingResult`, current limits and first Ehrman experiment. |
 | `evaluation/` | Historical evidence | Reproducible corpus, diagnostic, performance and semantic observations. |

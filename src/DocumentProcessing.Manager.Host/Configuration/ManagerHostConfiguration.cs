@@ -21,6 +21,10 @@ internal sealed class ManagerHostConfiguration
 
     public string ApiKey { get; }
 
+    public string ConsumerApiKey { get; }
+
+    public TimeSpan ConsumerClaimDuration { get; }
+
     public string SourceRoot { get; }
 
     public string ResultRoot { get; }
@@ -60,6 +64,8 @@ internal sealed class ManagerHostConfiguration
     private ManagerHostConfiguration(
         string connectionString,
         string apiKey,
+        string consumerApiKey,
+        TimeSpan consumerClaimDuration,
         string sourceRoot,
         string resultRoot,
         long maximumSourceBytes,
@@ -82,6 +88,12 @@ internal sealed class ManagerHostConfiguration
 
         ApiKey =
             apiKey;
+
+        ConsumerApiKey =
+            consumerApiKey;
+
+        ConsumerClaimDuration =
+            consumerClaimDuration;
 
         SourceRoot =
             sourceRoot;
@@ -160,6 +172,23 @@ internal sealed class ManagerHostConfiguration
                 "ManagerHost:ApiKey must contain at least 32 characters.");
         }
 
+        var consumerApiKey =
+            Require(
+                configuration["ManagerHost:ConsumerApiKey"],
+                "ManagerHost:ConsumerApiKey");
+
+        if (consumerApiKey.Length < 32)
+        {
+            throw new InvalidOperationException(
+                "ManagerHost:ConsumerApiKey must contain at least 32 characters.");
+        }
+
+        if (string.Equals(apiKey, consumerApiKey, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Manager UI and consumer API keys must be distinct.");
+        }
+
         var sourceRoot =
             RequireAbsolutePath(
                 configuration["ManagerHost:SourceRoot"],
@@ -220,6 +249,11 @@ internal sealed class ManagerHostConfiguration
         return new ManagerHostConfiguration(
             connectionString,
             apiKey,
+            consumerApiKey,
+            ReadPositiveDuration(
+                configuration,
+                "ManagerHost:ConsumerClaimSeconds",
+                TimeSpan.FromMinutes(5)),
             sourceRoot,
             resultRoot,
             ReadPositiveLong(

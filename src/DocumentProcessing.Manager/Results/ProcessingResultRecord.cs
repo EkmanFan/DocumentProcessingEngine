@@ -44,6 +44,11 @@ public sealed record ProcessingResultRecord
     /// </summary>
     public DateTimeOffset ProducedAtUtc { get; }
 
+    /// <summary>
+    /// Gets the absolute readable-export directory, when publication was configured.
+    /// </summary>
+    public string? PublicationDirectory { get; }
+
     #endregion
 
     #region ctor
@@ -58,7 +63,8 @@ public sealed record ProcessingResultRecord
         ProcessingResultArtifact artifact,
         string mediaType,
         string schemaVersion,
-        DateTimeOffset producedAtUtc)
+        DateTimeOffset producedAtUtc,
+        string? publicationDirectory = null)
     {
         if (string.IsNullOrWhiteSpace(
                 resultReference))
@@ -123,6 +129,13 @@ public sealed record ProcessingResultRecord
 
         ProducedAtUtc =
             producedAtUtc.ToUniversalTime();
+
+        PublicationDirectory =
+            string.IsNullOrWhiteSpace(
+                publicationDirectory)
+                ? null
+                : Path.GetFullPath(
+                    publicationDirectory.Trim());
     }
 
     #endregion

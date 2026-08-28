@@ -265,18 +265,33 @@ public sealed class PostgresProcessingQueueStore
         await using var command =
             CreateOwnedLeaseCommand(
                 """
-                UPDATE document_processing_manager.processing_units AS processing_unit
-                SET status = 2,
-                    unit_lease_token = NULL,
-                    runtime_lease_token = NULL,
-                    worker_id = NULL,
-                    unit_lease_expires_at_utc = NULL,
-                    result_reference = @result_reference,
-                    failure_code = NULL,
-                    failure_message = NULL,
-                    interruption_reason = NULL,
-                    updated_at_utc = @completed_at_utc
-                WHERE {0};
+                WITH completed AS
+                (
+                    UPDATE document_processing_manager.processing_units AS processing_unit
+                    SET status = 2,
+                        unit_lease_token = NULL,
+                        runtime_lease_token = NULL,
+                        worker_id = NULL,
+                        unit_lease_expires_at_utc = NULL,
+                        result_reference = @result_reference,
+                        failure_code = NULL,
+                        failure_message = NULL,
+                        interruption_reason = NULL,
+                        updated_at_utc = @completed_at_utc
+                    WHERE {0}
+                        AND EXISTS
+                        (
+                            SELECT 1
+                            FROM document_processing_manager.processing_results AS processing_result
+                            WHERE processing_result.result_reference = @result_reference
+                                AND processing_result.processing_unit_id = processing_unit.unit_id
+                        )
+                    RETURNING result_reference, updated_at_utc
+                )
+                INSERT INTO document_processing_manager.result_available_events
+                    (result_reference, available_at_utc)
+                SELECT result_reference, updated_at_utc
+                FROM completed;
                 """,
                 lease);
 

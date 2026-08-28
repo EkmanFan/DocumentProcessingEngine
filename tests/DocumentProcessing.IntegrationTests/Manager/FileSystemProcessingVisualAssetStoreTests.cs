@@ -3,6 +3,7 @@ using DocumentProcessing.Manager.Custody;
 using DocumentProcessing.Manager.Persistence.Files;
 using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Results;
+using DocumentProcessing.Manager.Submissions;
 
 namespace DocumentProcessing.IntegrationTests.Manager;
 
@@ -87,24 +88,83 @@ public sealed class FileSystemProcessingVisualAssetStoreTests
                     firstDirectory));
 
             Assert.Equal(
-                3,
+                2,
                 Directory.EnumerateFiles(
                         firstDirectory)
+                    .Count());
+
+            Assert.Equal(
+                CreateResultPayload(),
+                await File.ReadAllBytesAsync(
+                    Path.Combine(
+                        firstDirectory,
+                        "result.dpengine.json")));
+
+            var visualDirectory =
+                Path.Combine(
+                    firstDirectory,
+                    "visuals");
+
+            Assert.Equal(
+                2,
+                Directory.EnumerateFiles(
+                        visualDirectory)
                     .Count());
 
             Assert.Equal(
                 first,
                 await File.ReadAllBytesAsync(
                     Path.Combine(
-                        firstDirectory,
+                        visualDirectory,
                         "0001-page-1-figure-1.png")));
 
             Assert.Equal(
                 second,
                 await File.ReadAllBytesAsync(
                     Path.Combine(
-                        firstDirectory,
+                        visualDirectory,
                         "0002-page-2-source.jpg")));
+
+            var publishedResult =
+                new ProcessingResultRecord(
+                    "result-1",
+                    unitId,
+                    DocumentSubmissionId.New(),
+                    CreateResultArtifact(),
+                    "application/json",
+                    "document-processing-result-v3",
+                    DateTimeOffset.UtcNow,
+                    firstDirectory);
+
+            var publishedAssets =
+                await store.GetAssetsAsync(
+                    publishedResult);
+
+            Assert.Equal(
+                descriptors.Select(
+                    descriptor =>
+                        descriptor.AssetId),
+                publishedAssets.Select(
+                    asset =>
+                        asset.AssetId));
+
+            await using var publishedContent =
+                await store.OpenReadAsync(
+                    publishedResult,
+                    "page:1/figure:1");
+
+            Assert.NotNull(
+                publishedContent);
+
+            using var copied =
+                new MemoryStream();
+
+            await publishedContent.Content.CopyToAsync(
+                copied);
+
+            Assert.Equal(
+                first,
+                copied.ToArray());
 
             var replayDirectory =
                 await WriteAndCompleteAsync(
@@ -171,6 +231,7 @@ public sealed class FileSystemProcessingVisualAssetStoreTests
             var completedFile =
                 Path.Combine(
                     completedDirectory,
+                    "visuals",
                     "0001-visual-1.png");
 
             File.SetAttributes(
@@ -236,7 +297,9 @@ public sealed class FileSystemProcessingVisualAssetStoreTests
                 await Assert.ThrowsAsync<InvalidDataException>(
                     () =>
                         session.CompleteAsync(
-                                [])
+                                [],
+                                CreateResultPayload(),
+                                CreateResultArtifact())
                             .AsTask());
             }
 
@@ -291,7 +354,26 @@ public sealed class FileSystemProcessingVisualAssetStoreTests
         }
 
         return await session.CompleteAsync(
-            descriptors);
+            descriptors,
+            CreateResultPayload(),
+            CreateResultArtifact());
+    }
+
+    private static byte[] CreateResultPayload() =>
+        "{\"schemaVersion\":\"document-processing-result-v3\"}"u8.ToArray();
+
+    private static ProcessingResultArtifact CreateResultArtifact()
+    {
+        var content =
+            CreateResultPayload();
+
+        return new ProcessingResultArtifact(
+            new Sha256Digest(
+                Convert.ToHexString(
+                        SHA256.HashData(
+                            content))
+                    .ToLowerInvariant()),
+            content.LongLength);
     }
 
     private static ProcessingVisualAssetDescriptor CreateDescriptor(

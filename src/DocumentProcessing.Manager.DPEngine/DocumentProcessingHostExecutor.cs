@@ -256,24 +256,6 @@ public sealed class DocumentProcessingHostExecutor
             submission.SourceArtifact.ByteLength,
             result);
 
-        if (visualSession is not null)
-        {
-            await visualSession
-                .CompleteAsync(
-                    result.VisualAssets
-                        .Select(
-                            visual =>
-                                new ProcessingVisualAssetDescriptor(
-                                    visual.AssetId,
-                                    visual.MediaType,
-                                    visual.ContentLength,
-                                    new Sha256Digest(
-                                        visual.ContentSha256)))
-                        .ToArray(),
-                    cancellationToken)
-                .ConfigureAwait(false);
-        }
-
         var encoded =
             _resultEncoder.Encode(
                 result);
@@ -291,6 +273,26 @@ public sealed class DocumentProcessingHostExecutor
                     cancellationToken)
                 .ConfigureAwait(false);
 
+        var publicationDirectory =
+            visualSession is null
+                ? null
+                : await visualSession
+                    .CompleteAsync(
+                        result.VisualAssets
+                            .Select(
+                                visual =>
+                                    new ProcessingVisualAssetDescriptor(
+                                        visual.AssetId,
+                                        visual.MediaType,
+                                        visual.ContentLength,
+                                        new Sha256Digest(
+                                            visual.ContentSha256)))
+                            .ToArray(),
+                        encoded,
+                        artifact,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
         var registration =
             await _resultRegistryWriter
                 .RegisterAsync(
@@ -301,7 +303,8 @@ public sealed class DocumentProcessingHostExecutor
                         artifact,
                         _resultEncoder.MediaType,
                         _resultEncoder.SchemaVersion,
-                        _timeProvider.GetUtcNow()),
+                        _timeProvider.GetUtcNow(),
+                        publicationDirectory),
                     cancellationToken)
                 .ConfigureAwait(false);
 

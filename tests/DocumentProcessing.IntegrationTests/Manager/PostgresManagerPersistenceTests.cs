@@ -79,7 +79,7 @@ public sealed class PostgresManagerPersistenceTests
                 "SELECT MAX(version) FROM document_processing_manager.schema_versions;");
 
         Assert.Equal(
-            6,
+            7,
             Convert.ToInt32(
                 await versionCommand.ExecuteScalarAsync()));
     }
@@ -1266,6 +1266,27 @@ public sealed class PostgresManagerPersistenceTests
         Assert.NotNull(
             claimed);
 
+        const string resultReference =
+            "durable-result";
+        var digest =
+            new Sha256Digest(
+                new string(
+                    'a',
+                    64));
+
+        await context.ResultRegistry.RegisterAsync(
+            new ProcessingResultRecord(
+                resultReference,
+                workItem.UnitId,
+                workItem.SubmissionId,
+                new ProcessingResultArtifact(
+                    digest,
+                    byteLength:
+                        123),
+                "application/json",
+                "document-processing-result-v3",
+                now));
+
         Assert.True(
             await context.RuntimeLeaseStore.ReleaseAsync(
                 firstRuntime,
@@ -1285,7 +1306,7 @@ public sealed class PostgresManagerPersistenceTests
             await context.QueueStore.CompleteAsync(
                 claimed,
                 new ProcessingExecutionOutcome.Success(
-                    "stale-result"),
+                    resultReference),
                 DateTimeOffset.UtcNow));
 
         await Task.Delay(
@@ -1316,8 +1337,109 @@ public sealed class PostgresManagerPersistenceTests
             await context.QueueStore.CompleteAsync(
                 recovered,
                 new ProcessingExecutionOutcome.Success(
-                    "durable-result"),
+                    resultReference),
                 DateTimeOffset.UtcNow));
+
+        var firstDelivery =
+            await context.ResultPublicationStore.ClaimNextAsync(
+                "apologia",
+                now,
+                now.AddMinutes(
+                    1));
+
+        Assert.NotNull(
+            firstDelivery);
+        Assert.Equal(
+            resultReference,
+            firstDelivery.ResultReference);
+        Assert.Equal(
+            digest,
+            firstDelivery.Digest);
+        Assert.Equal(
+            123,
+            firstDelivery.ByteLength);
+        Assert.IsType<ProcessingUnitScope.WholeDocument>(
+            firstDelivery.Scope);
+
+        Assert.True(
+            await context.ResultPublicationStore.OwnsClaimAsync(
+                "apologia",
+                resultReference,
+                firstDelivery.ClaimToken,
+                now.AddSeconds(
+                    30)));
+
+        Assert.False(
+            await context.ResultPublicationStore.OwnsClaimAsync(
+                "apologia",
+                resultReference,
+                Guid.NewGuid(),
+                now.AddSeconds(
+                    30)));
+
+        Assert.Null(
+            await context.ResultPublicationStore.ClaimNextAsync(
+                "apologia",
+                now.AddSeconds(
+                    30),
+                now.AddMinutes(
+                    2)));
+
+        var independentConsumer =
+            await context.ResultPublicationStore.ClaimNextAsync(
+                "audit",
+                now,
+                now.AddMinutes(
+                    1));
+
+        Assert.NotNull(
+            independentConsumer);
+
+        Assert.True(
+            await context.ResultPublicationStore.AcknowledgeAsync(
+                "apologia",
+                resultReference,
+                firstDelivery.ClaimToken,
+                now.AddSeconds(
+                    30)));
+
+        Assert.True(
+            await context.ResultPublicationStore.AcknowledgeAsync(
+                "apologia",
+                resultReference,
+                firstDelivery.ClaimToken,
+                now.AddSeconds(
+                    31)));
+
+        Assert.False(
+            await context.ResultPublicationStore.OwnsClaimAsync(
+                "apologia",
+                resultReference,
+                firstDelivery.ClaimToken,
+                now.AddSeconds(
+                    32)));
+
+        Assert.Null(
+            await context.ResultPublicationStore.ClaimNextAsync(
+                "apologia",
+                now.AddMinutes(
+                    2),
+                now.AddMinutes(
+                    3)));
+
+        var redelivery =
+            await context.ResultPublicationStore.ClaimNextAsync(
+                "audit",
+                now.AddMinutes(
+                    2),
+                now.AddMinutes(
+                    3));
+
+        Assert.NotNull(
+            redelivery);
+        Assert.NotEqual(
+            independentConsumer.ClaimToken,
+            redelivery.ClaimToken);
     }
 
     [PostgresFact]
@@ -2162,6 +2284,8 @@ public sealed class PostgresManagerPersistenceTests
             dataSource.CreateCommand(
                 """
                 TRUNCATE TABLE
+                    document_processing_manager.result_consumer_deliveries,
+                    document_processing_manager.result_available_events,
                     document_processing_manager.processing_results,
                     document_processing_manager.processing_result_artifacts,
                     document_processing_manager.custody_events,
@@ -2759,6 +2883,13 @@ public sealed class PostgresManagerPersistenceTests
                 dataSource);
 
         public PostgresProcessingResultRegistry ResultRegistry
+        {
+            get;
+        } =
+            new(
+                dataSource);
+
+        public PostgresResultPublicationStore ResultPublicationStore
         {
             get;
         } =

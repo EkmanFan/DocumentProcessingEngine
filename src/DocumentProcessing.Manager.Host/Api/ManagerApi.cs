@@ -2,6 +2,7 @@ using DocumentProcessing.Manager.Control;
 using DocumentProcessing.Manager.History;
 using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Processing;
+using DocumentProcessing.Manager.Publication;
 using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Runtime;
 using DocumentProcessing.Manager.Settings;
@@ -24,6 +25,18 @@ internal static class ManagerApi
         SourceOriginHeader =
             "X-Source-Origin";
 
+    private const string
+        ConsumerIdHeader =
+            "X-Consumer-Id";
+
+    private const string
+        ConsumerApiKeyHeader =
+            "X-Manager-Consumer-Key";
+
+    private const string
+        ResultClaimTokenHeader =
+            "X-Result-Claim-Token";
+
     #endregion
 
     #region Methods Mapping
@@ -31,6 +44,8 @@ internal static class ManagerApi
     public static void Map(
         WebApplication application,
         string apiKey,
+        string consumerApiKey,
+        TimeSpan consumerClaimDuration,
         long maximumSourceBytes)
     {
         ArgumentNullException.ThrowIfNull(
@@ -133,6 +148,45 @@ internal static class ManagerApi
         group.MapGet(
             "/results/{resultReference}",
             GetResultAsync);
+
+        var consumerGroup =
+            application
+                .MapGroup(
+                    "/api/manager-consumers")
+                .AddEndpointFilter(
+                    new ManagerApiKeyEndpointFilter(
+                        consumerApiKey,
+                        ConsumerApiKeyHeader));
+
+        consumerGroup.MapPost(
+            "/results/claims",
+            (
+                HttpRequest request,
+                IResultPublicationStore publicationStore,
+                TimeProvider timeProvider,
+                CancellationToken cancellationToken) =>
+                ClaimNextResultAsync(
+                    request,
+                    publicationStore,
+                    timeProvider,
+                    consumerClaimDuration,
+                    cancellationToken));
+
+        consumerGroup.MapPost(
+            "/results/{resultReference}/ack",
+            AcknowledgeResultAsync);
+
+        consumerGroup.MapGet(
+            "/results/{resultReference}/content",
+            GetConsumerResultAsync);
+
+        consumerGroup.MapGet(
+            "/results/{resultReference}/visuals",
+            GetResultVisualsAsync);
+
+        consumerGroup.MapGet(
+            "/results/{resultReference}/visuals/{**assetId}",
+            GetResultVisualAsync);
 
         application.MapGet(
             "/health/live",
@@ -701,6 +755,104 @@ internal static class ManagerApi
 
     #region Methods Results
 
+    private static async Task<IResult> ClaimNextResultAsync(
+        HttpRequest request,
+        IResultPublicationStore publicationStore,
+        TimeProvider timeProvider,
+        TimeSpan claimDuration,
+        CancellationToken cancellationToken)
+    {
+        var consumerId =
+            ReadOptionalHeader(
+                request,
+                ConsumerIdHeader);
+
+        if (consumerId is null)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.consumer_id_required",
+                    $"Header '{ConsumerIdHeader}' is required."));
+        }
+
+        try
+        {
+            var observedAtUtc =
+                timeProvider.GetUtcNow();
+            var delivery =
+                await publicationStore
+                    .ClaimNextAsync(
+                        consumerId,
+                        observedAtUtc,
+                        observedAtUtc.Add(
+                            claimDuration),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            return delivery is null
+                ? HttpResults.NoContent()
+                : HttpResults.Ok(
+                    ToResponse(
+                        delivery));
+        }
+        catch (ArgumentException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.invalid_consumer",
+                    exception.Message));
+        }
+    }
+
+    private static async Task<IResult> AcknowledgeResultAsync(
+        string resultReference,
+        ResultAcknowledgementRequest acknowledgement,
+        HttpRequest request,
+        IResultPublicationStore publicationStore,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        var consumerId =
+            ReadOptionalHeader(
+                request,
+                ConsumerIdHeader);
+
+        if (consumerId is null)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.consumer_id_required",
+                    $"Header '{ConsumerIdHeader}' is required."));
+        }
+
+        try
+        {
+            var acknowledged =
+                await publicationStore
+                    .AcknowledgeAsync(
+                        consumerId,
+                        resultReference,
+                        acknowledgement.ClaimToken,
+                        timeProvider.GetUtcNow(),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            return acknowledged
+                ? HttpResults.NoContent()
+                : HttpResults.Conflict(
+                    new ApiConflictResponse(
+                        "manager.result_claim_not_owned",
+                        "The result claim is missing, expired or owned by another delivery attempt."));
+        }
+        catch (ArgumentException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.invalid_result_acknowledgement",
+                    exception.Message));
+        }
+    }
+
     private static async Task<IResult> GetResultAsync(
         string resultReference,
         IProcessingResultRegistryReader registry,
@@ -733,6 +885,168 @@ internal static class ManagerApi
                 null,
             enableRangeProcessing:
                 false);
+    }
+
+    private static async Task<IResult> GetResultVisualsAsync(
+        string resultReference,
+        HttpRequest request,
+        IProcessingResultRegistryReader registry,
+        IResultPublicationStore publicationStore,
+        IProcessingVisualAssetReader visualReader,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (!await OwnsReadableClaimAsync(
+                request,
+                resultReference,
+                publicationStore,
+                timeProvider,
+                cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return HttpResults.Unauthorized();
+        }
+
+        var result =
+            await registry
+                .GetByReferenceAsync(
+                    resultReference,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        if (result is null ||
+            result.PublicationDirectory is null)
+        {
+            return HttpResults.NotFound();
+        }
+
+        var assets =
+            await visualReader
+                .GetAssetsAsync(
+                    result,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return HttpResults.Ok(
+            assets.Select(
+                    asset =>
+                        new PublishedVisualAssetResponse(
+                            asset.AssetId,
+                            asset.MediaType,
+                            asset.ByteLength,
+                            asset.Digest.Value))
+                .ToArray());
+    }
+
+    private static async Task<IResult> GetResultVisualAsync(
+        string resultReference,
+        string assetId,
+        HttpRequest request,
+        IProcessingResultRegistryReader registry,
+        IResultPublicationStore publicationStore,
+        IProcessingVisualAssetReader visualReader,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (!await OwnsReadableClaimAsync(
+                request,
+                resultReference,
+                publicationStore,
+                timeProvider,
+                cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return HttpResults.Unauthorized();
+        }
+
+        var result =
+            await registry
+                .GetByReferenceAsync(
+                    resultReference,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        if (result is null ||
+            result.PublicationDirectory is null)
+        {
+            return HttpResults.NotFound();
+        }
+
+        var content =
+            await visualReader
+                .OpenReadAsync(
+                    result,
+                    assetId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return content is null
+            ? HttpResults.NotFound()
+            : HttpResults.Stream(
+                content.Content,
+                content.Asset.MediaType,
+                fileDownloadName:
+                    null,
+                enableRangeProcessing:
+                    false);
+    }
+
+    private static async Task<IResult> GetConsumerResultAsync(
+        string resultReference,
+        HttpRequest request,
+        IProcessingResultRegistryReader registry,
+        IProcessingResultArtifactReader artifactReader,
+        IResultPublicationStore publicationStore,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (!await OwnsReadableClaimAsync(
+                request,
+                resultReference,
+                publicationStore,
+                timeProvider,
+                cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return HttpResults.Unauthorized();
+        }
+
+        return await GetResultAsync(
+                resultReference,
+                registry,
+                artifactReader,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private static async ValueTask<bool> OwnsReadableClaimAsync(
+        HttpRequest request,
+        string resultReference,
+        IResultPublicationStore publicationStore,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        var consumerId =
+            ReadOptionalHeader(
+                request,
+                ConsumerIdHeader);
+        var claimTokenValue =
+            ReadOptionalHeader(
+                request,
+                ResultClaimTokenHeader);
+
+        return consumerId is not null &&
+            Guid.TryParse(
+                claimTokenValue,
+                out var claimToken) &&
+            await publicationStore
+                .OwnsClaimAsync(
+                    consumerId,
+                    resultReference,
+                    claimToken,
+                    timeProvider.GetUtcNow(),
+                    cancellationToken)
+                .ConfigureAwait(false);
     }
 
     #endregion
@@ -856,6 +1170,22 @@ internal static class ManagerApi
                 throw new InvalidOperationException(
                     $"Unsupported processing scope '{scope.GetType().FullName}'.")
         };
+
+    private static ResultAvailableResponse ToResponse(
+        ResultAvailableDelivery delivery) =>
+        new(
+            delivery.ResultReference,
+            delivery.SubmissionId.Value,
+            delivery.ProcessingUnitId.Value,
+            ToResponse(
+                delivery.Scope),
+            delivery.SchemaVersion,
+            delivery.MediaType,
+            delivery.ByteLength,
+            delivery.Digest.Value,
+            delivery.AvailableAtUtc,
+            delivery.ClaimToken,
+            delivery.ClaimExpiresAtUtc);
 
     private static string? ReadOptionalHeader(
         HttpRequest request,
@@ -1067,6 +1397,28 @@ internal static class ManagerApi
         string Message,
         long ExpectedVersion,
         long ActualVersion);
+
+    internal sealed record ResultAcknowledgementRequest(
+        Guid ClaimToken);
+
+    internal sealed record ResultAvailableResponse(
+        string ResultReference,
+        Guid SubmissionId,
+        Guid ProcessingUnitId,
+        ProcessingScopeResponse Scope,
+        string SchemaVersion,
+        string MediaType,
+        long ByteLength,
+        string Sha256,
+        DateTimeOffset AvailableAtUtc,
+        Guid ClaimToken,
+        DateTimeOffset ClaimExpiresAtUtc);
+
+    internal sealed record PublishedVisualAssetResponse(
+        string AssetId,
+        string MediaType,
+        long ByteLength,
+        string Sha256);
 
     internal sealed record ApiConflictResponse(
         string Code,

@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using DocumentProcessing.Manager.Custody;
 using DocumentProcessing.Manager.Ports;
+using DocumentProcessing.Manager.Publication;
 using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Results;
 
@@ -12,7 +13,8 @@ namespace DocumentProcessing.Manager.Persistence.Files;
 /// completed processing unit.
 /// </summary>
 public sealed class FileSystemProcessingVisualAssetStore
-    : IProcessingVisualAssetStore
+    : IProcessingVisualAssetStore,
+      IProcessingVisualAssetReader
 {
     #region Variables and Constants
 
@@ -158,6 +160,206 @@ public sealed class FileSystemProcessingVisualAssetStore
             _maximumVisualSetBytes);
     }
 
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<PublishedVisualAsset>> GetAssetsAsync(
+        ProcessingResultRecord result,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            result);
+
+        var manifest =
+            await ReadManifestAsync(
+                    result,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return manifest.Assets
+            .Select(
+                asset =>
+                    new PublishedVisualAsset(
+                        asset.AssetId,
+                        asset.MediaType,
+                        asset.ByteLength,
+                        new Sha256Digest(
+                            asset.Sha256)))
+            .ToArray();
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<PublishedVisualAssetContent?> OpenReadAsync(
+        ProcessingResultRecord result,
+        string assetId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            result);
+
+        if (string.IsNullOrWhiteSpace(
+                assetId))
+        {
+            throw new ArgumentException(
+                "Visual asset identifier cannot be empty.",
+                nameof(assetId));
+        }
+
+        var manifest =
+            await ReadManifestAsync(
+                    result,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        var asset =
+            manifest.Assets.SingleOrDefault(
+                candidate =>
+                    string.Equals(
+                        candidate.AssetId,
+                        assetId.Trim(),
+                        StringComparison.Ordinal));
+
+        if (asset is null)
+        {
+            return null;
+        }
+
+        var publicationDirectory =
+            RequirePublicationDirectory(
+                result);
+        var fileName =
+            Path.GetFileName(
+                asset.FileName);
+
+        if (!string.Equals(
+                fileName,
+                asset.FileName,
+                StringComparison.Ordinal))
+        {
+            throw new InvalidDataException(
+                "Visual manifest contains an invalid filename.");
+        }
+
+        var stream =
+            new FileStream(
+                Path.Combine(
+                    publicationDirectory,
+                    WriteSession.VisualDirectoryName,
+                    fileName),
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize:
+                    128 * 1024,
+                FileOptions.Asynchronous |
+                FileOptions.SequentialScan);
+
+        try
+        {
+            var digest =
+                Convert.ToHexString(
+                        await SHA256
+                            .HashDataAsync(
+                                stream,
+                                cancellationToken)
+                            .ConfigureAwait(false))
+                    .ToLowerInvariant();
+
+            if (stream.Length !=
+                    asset.ByteLength ||
+                !string.Equals(
+                    digest,
+                    asset.Sha256,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    $"Published visual '{asset.AssetId}' failed custody verification.");
+            }
+
+            stream.Position =
+                0;
+
+            return new PublishedVisualAssetContent(
+                new PublishedVisualAsset(
+                    asset.AssetId,
+                    asset.MediaType,
+                    asset.ByteLength,
+                    new Sha256Digest(
+                        asset.Sha256)),
+                stream);
+        }
+        catch
+        {
+            await stream
+                .DisposeAsync()
+                .ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private static async ValueTask<WriteSession.VisualAssetManifest> ReadManifestAsync(
+        ProcessingResultRecord result,
+        CancellationToken cancellationToken)
+    {
+        var publicationDirectory =
+            RequirePublicationDirectory(
+                result);
+
+        await using var stream =
+            new FileStream(
+                Path.Combine(
+                    publicationDirectory,
+                    WriteSession.ManifestFileName),
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize:
+                    16 * 1024,
+                FileOptions.Asynchronous |
+                FileOptions.SequentialScan);
+
+        var manifest =
+            await JsonSerializer
+                .DeserializeAsync<WriteSession.VisualAssetManifest>(
+                    stream,
+                    WriteSession.ManifestJsonOptions,
+                    cancellationToken)
+                .ConfigureAwait(false) ??
+            throw new InvalidDataException(
+                "Published visual manifest is empty.");
+
+        if (!string.Equals(
+                manifest.SchemaVersion,
+                "manager-visual-assets-v1",
+                StringComparison.Ordinal))
+        {
+            throw new InvalidDataException(
+                $"Unsupported visual manifest schema '{manifest.SchemaVersion}'.");
+        }
+
+        return manifest;
+    }
+
+    private static string RequirePublicationDirectory(
+        ProcessingResultRecord result)
+    {
+        if (result.PublicationDirectory is null)
+        {
+            throw new InvalidOperationException(
+                $"Result '{result.ResultReference}' has no readable publication directory.");
+        }
+
+        var directory =
+            Path.GetFullPath(
+                result.PublicationDirectory);
+
+        if (!Directory.Exists(
+                directory))
+        {
+            throw new DirectoryNotFoundException(
+                $"Published result directory does not exist: {directory}");
+        }
+
+        return directory;
+    }
+
     private static string NormalizeExistingRoot(
         string rootDirectory)
     {
@@ -230,11 +432,19 @@ public sealed class FileSystemProcessingVisualAssetStore
     {
         #region Variables and Constants
 
-        private const string
+        internal const string
             ManifestFileName =
                 "visual-assets.manifest.json";
 
-        private static readonly JsonSerializerOptions
+        private const string
+            ResultFileName =
+                "result.dpengine.json";
+
+        internal const string
+            VisualDirectoryName =
+                "visuals";
+
+        internal static readonly JsonSerializerOptions
             ManifestJsonOptions =
                 new()
                 {
@@ -368,10 +578,38 @@ public sealed class FileSystemProcessingVisualAssetStore
 
         public async ValueTask<string> CompleteAsync(
             IReadOnlyList<ProcessingVisualAssetDescriptor> assets,
+            ReadOnlyMemory<byte> resultPayload,
+            ProcessingResultArtifact resultArtifact,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(
                 assets);
+
+            ArgumentNullException.ThrowIfNull(
+                resultArtifact);
+
+            if (resultPayload.IsEmpty ||
+                resultPayload.Length !=
+                resultArtifact.ByteLength)
+            {
+                throw new InvalidDataException(
+                    "Readable result export does not match its durable byte length.");
+            }
+
+            var resultDigest =
+                Convert.ToHexString(
+                        SHA256.HashData(
+                            resultPayload.Span))
+                    .ToLowerInvariant();
+
+            if (!string.Equals(
+                    resultDigest,
+                    resultArtifact.Digest.Value,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    "Readable result export does not match its durable SHA-256 digest.");
+            }
 
             lock (_sync)
             {
@@ -410,6 +648,14 @@ public sealed class FileSystemProcessingVisualAssetStore
 
             Directory.CreateDirectory(
                 _stagingDirectory);
+
+            var visualDirectory =
+                Path.Combine(
+                    _stagingDirectory,
+                    VisualDirectoryName);
+
+            Directory.CreateDirectory(
+                visualDirectory);
 
             var staged =
                 new List<StagedEvidence>(
@@ -452,7 +698,13 @@ public sealed class FileSystemProcessingVisualAssetStore
             var manifestAssets =
                 MatchAndNameAssets(
                     assets,
-                    staged);
+                    staged,
+                    visualDirectory);
+
+            await WriteResultAsync(
+                    resultPayload,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             await WriteManifestAsync(
                     manifestAssets,
@@ -566,7 +818,8 @@ public sealed class FileSystemProcessingVisualAssetStore
 
         private IReadOnlyList<ManifestAsset> MatchAndNameAssets(
             IReadOnlyList<ProcessingVisualAssetDescriptor> assets,
-            IReadOnlyList<StagedEvidence> staged)
+            IReadOnlyList<StagedEvidence> staged,
+            string visualDirectory)
         {
             var unmatched =
                 staged.ToList();
@@ -614,7 +867,7 @@ public sealed class FileSystemProcessingVisualAssetStore
                 File.Move(
                     match.Path,
                     Path.Combine(
-                        _stagingDirectory,
+                        visualDirectory,
                         fileName));
 
                 manifestAssets.Add(
@@ -627,6 +880,42 @@ public sealed class FileSystemProcessingVisualAssetStore
             }
 
             return manifestAssets;
+        }
+
+        private async ValueTask WriteResultAsync(
+            ReadOnlyMemory<byte> resultPayload,
+            CancellationToken cancellationToken)
+        {
+            var path =
+                Path.Combine(
+                    _stagingDirectory,
+                    ResultFileName);
+
+            await using var stream =
+                new FileStream(
+                    path,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize:
+                        128 * 1024,
+                    FileOptions.Asynchronous |
+                    FileOptions.WriteThrough);
+
+            await stream
+                .WriteAsync(
+                    resultPayload,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            await stream
+                .FlushAsync(
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            stream.Flush(
+                flushToDisk:
+                    true);
         }
 
         private async ValueTask WriteManifestAsync(
@@ -674,11 +963,11 @@ public sealed class FileSystemProcessingVisualAssetStore
             CancellationToken cancellationToken)
         {
             var expectedFiles =
-                assets.Select(
-                        asset =>
-                            asset.FileName)
-                    .Append(
-                        ManifestFileName)
+                new[]
+                    {
+                        ManifestFileName,
+                        ResultFileName
+                    }
                     .ToHashSet(
                         StringComparer.Ordinal);
 
@@ -696,7 +985,36 @@ public sealed class FileSystemProcessingVisualAssetStore
                     expectedFiles))
             {
                 throw new InvalidDataException(
-                    $"Completed visual directory conflicts with processing unit output: {_completedDirectory}");
+                    $"Completed publication directory conflicts with processing unit output: {_completedDirectory}");
+            }
+
+            var expectedVisualFiles =
+                assets.Select(
+                        asset =>
+                            asset.FileName)
+                    .ToHashSet(
+                        StringComparer.Ordinal);
+
+            var completedVisualDirectory =
+                Path.Combine(
+                    _completedDirectory,
+                    VisualDirectoryName);
+
+            var actualVisualFiles =
+                Directory.EnumerateFiles(
+                        completedVisualDirectory,
+                        "*",
+                        SearchOption.TopDirectoryOnly)
+                    .Select(
+                        Path.GetFileName)
+                    .ToHashSet(
+                        StringComparer.Ordinal);
+
+            if (!actualVisualFiles.SetEquals(
+                    expectedVisualFiles))
+            {
+                throw new InvalidDataException(
+                    $"Completed visual directory conflicts with processing unit output: {completedVisualDirectory}");
             }
 
             var expectedManifest =
@@ -723,11 +1041,35 @@ public sealed class FileSystemProcessingVisualAssetStore
                     $"Completed visual manifest conflicts with processing unit output: {_completedDirectory}");
             }
 
+            var expectedResult =
+                await File.ReadAllBytesAsync(
+                        Path.Combine(
+                            _stagingDirectory,
+                            ResultFileName),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            var completedResult =
+                await File.ReadAllBytesAsync(
+                        Path.Combine(
+                            _completedDirectory,
+                            ResultFileName),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            if (!expectedResult.AsSpan()
+                    .SequenceEqual(
+                        completedResult))
+            {
+                throw new InvalidDataException(
+                    $"Completed readable result conflicts with processing unit output: {_completedDirectory}");
+            }
+
             foreach (var asset in assets)
             {
                 var path =
                     Path.Combine(
-                        _completedDirectory,
+                        completedVisualDirectory,
                         asset.FileName);
 
                 await using var content =
@@ -768,7 +1110,7 @@ public sealed class FileSystemProcessingVisualAssetStore
             foreach (var path in Directory.EnumerateFiles(
                          _stagingDirectory,
                          "*",
-                         SearchOption.TopDirectoryOnly))
+                         SearchOption.AllDirectories))
             {
                 File.SetAttributes(
                     path,
@@ -921,11 +1263,11 @@ public sealed class FileSystemProcessingVisualAssetStore
             long ByteLength,
             string Digest);
 
-        private sealed record VisualAssetManifest(
+        internal sealed record VisualAssetManifest(
             string SchemaVersion,
             IReadOnlyList<ManifestAsset> Assets);
 
-        private sealed record ManifestAsset(
+        internal sealed record ManifestAsset(
             string AssetId,
             string FileName,
             string MediaType,

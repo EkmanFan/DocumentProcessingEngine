@@ -62,6 +62,8 @@ public static class Program
         ManagerApi.Map(
             application,
             configuration.ApiKey,
+            configuration.ConsumerApiKey,
+            configuration.ConsumerClaimDuration,
             configuration.MaximumSourceBytes);
 
         await application.Services
@@ -140,6 +142,11 @@ public static class Program
             provider =>
                 provider.GetRequiredService<PostgresProcessingResultRegistry>());
 
+        services.AddSingleton<PostgresResultPublicationStore>();
+        services.AddSingleton<IResultPublicationStore>(
+            provider =>
+                provider.GetRequiredService<PostgresResultPublicationStore>());
+
         services.AddSingleton(
             _ =>
                 new FileSystemSourceArtifactCustodyStore(
@@ -175,6 +182,10 @@ public static class Program
                             configuration.MaximumResultBytes),
                     maximumVisualSetBytes:
                         configuration.MaximumResultBytes));
+        services.AddSingleton<IProcessingVisualAssetReader>(
+            provider =>
+                (IProcessingVisualAssetReader)provider
+                    .GetRequiredService<IProcessingVisualAssetStore>());
 
         services.AddSingleton(
             provider =>

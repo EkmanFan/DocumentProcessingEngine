@@ -200,7 +200,8 @@ public sealed class PostgresProcessingResultRegistry
                     result_sha256_digest,
                     media_type,
                     schema_version,
-                    produced_at_utc
+                    produced_at_utc,
+                    publication_directory
                 )
                 VALUES
                 (
@@ -210,7 +211,8 @@ public sealed class PostgresProcessingResultRegistry
                     @result_sha256_digest,
                     @media_type,
                     @schema_version,
-                    @produced_at_utc
+                    @produced_at_utc,
+                    @publication_directory
                 )
                 ON CONFLICT (processing_unit_id) DO NOTHING
                 RETURNING result_reference;
@@ -329,7 +331,8 @@ public sealed class PostgresProcessingResultRegistry
                 artifact.byte_length,
                 result.media_type,
                 result.schema_version,
-                result.produced_at_utc
+                result.produced_at_utc,
+                result.publication_directory
             FROM document_processing_manager.processing_results AS result
             INNER JOIN document_processing_manager.processing_result_artifacts AS artifact
                 ON artifact.sha256_digest = result.result_sha256_digest
@@ -379,7 +382,12 @@ public sealed class PostgresProcessingResultRegistry
             reader.GetString(
                 6),
             reader.GetFieldValue<DateTimeOffset>(
-                7));
+                7),
+            reader.IsDBNull(
+                8)
+                ? null
+                : reader.GetString(
+                    8));
 
     #endregion
 
@@ -401,6 +409,10 @@ public sealed class PostgresProcessingResultRegistry
         string.Equals(
             existing.SchemaVersion,
             requested.SchemaVersion,
+            StringComparison.Ordinal) &&
+        string.Equals(
+            existing.PublicationDirectory,
+            requested.PublicationDirectory,
             StringComparison.Ordinal);
 
     private static void ValidateUnitId(
@@ -453,6 +465,13 @@ public sealed class PostgresProcessingResultRegistry
             "produced_at_utc",
             NpgsqlDbType.TimestampTz,
             result.ProducedAtUtc);
+
+        command.Parameters.AddWithValue(
+            "publication_directory",
+            NpgsqlDbType.Text,
+            result.PublicationDirectory is null
+                ? DBNull.Value
+                : result.PublicationDirectory);
     }
 
     #endregion

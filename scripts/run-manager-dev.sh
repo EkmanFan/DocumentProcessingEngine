@@ -19,6 +19,7 @@ UI_PORT="${DPE_MANAGER_UI_PORT:-5092}"
 HOST_URL="http://127.0.0.1:${HOST_PORT}"
 UI_URL="http://127.0.0.1:${UI_PORT}"
 API_KEY="${DPE_MANAGER_API_KEY:-dpengine-manager-local-development-key-2026}"
+CONSUMER_API_KEY="${DPE_MANAGER_CONSUMER_API_KEY:-dpengine-consumer-local-development-key-2026}"
 CUSTODY_ROOT="${DPE_MANAGER_CUSTODY_ROOT:-${REPO_ROOT}/tests/document_manager_custody}"
 SOURCE_ROOT="${CUSTODY_ROOT}/sources"
 RESULT_ROOT="${CUSTODY_ROOT}/results"
@@ -186,6 +187,7 @@ env \
   ASPNETCORE_URLS="$HOST_URL" \
   ConnectionStrings__ManagerPostgres="$CONNECTION_STRING" \
   ManagerHost__ApiKey="$API_KEY" \
+  ManagerHost__ConsumerApiKey="$CONSUMER_API_KEY" \
   ManagerHost__SourceRoot="$SOURCE_ROOT" \
   ManagerHost__ResultRoot="$RESULT_ROOT" \
   dotnet run \

@@ -162,8 +162,16 @@ filesystem adapters retain source, result and visual bytes.
 item to `DocumentProcessingHost`. It supplies the request-scoped visual writer
 required by the Engine. Visual bytes remain caller-owned: they are staged by
 the Manager filesystem adapter, reconciled with the Engine's length and SHA-256
-descriptors, and atomically published with a manifest only after processing
-succeeds.
+descriptors, and atomically published with the canonical result export, a
+manifest and a `visuals/` directory after processing succeeds.
+
+Result availability is a durable pull contract. PostgreSQL inserts the
+`ResultAvailable` outbox fact in the same fenced statement that moves a unit to
+`Succeeded`. Named consumers use expiring claim tokens and acknowledge only
+after downstream persistence, providing crash-safe at-least-once delivery. The
+Host protects this read-only integration surface with a service credential
+distinct from the administrative UI credential; payload and visual streams also
+require ownership of the active claim.
 
 `DocumentProcessing.Manager.Host` is the composition/API adapter. The reusable
 server-side Blazor workshop depends only on its authenticated HTTP contract.

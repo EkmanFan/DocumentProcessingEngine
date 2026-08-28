@@ -436,6 +436,66 @@ public sealed class PostgresManagerSchema
                 WHERE status IN (2, 3);
             """;
 
+    private const string
+        MigrationSevenSql =
+            """
+            ALTER TABLE document_processing_manager.processing_results
+                ADD COLUMN publication_directory text NULL
+                    CHECK
+                    (
+                        publication_directory IS NULL
+                        OR length(publication_directory) > 0
+                    );
+
+            CREATE TABLE document_processing_manager.result_available_events
+            (
+                result_reference text PRIMARY KEY
+                    REFERENCES document_processing_manager.processing_results
+                        (result_reference),
+                available_at_utc timestamp with time zone NOT NULL
+            );
+
+            CREATE TABLE document_processing_manager.result_consumer_deliveries
+            (
+                consumer_id text NOT NULL
+                    CHECK (length(consumer_id) > 0),
+                result_reference text NOT NULL
+                    REFERENCES document_processing_manager.result_available_events
+                        (result_reference),
+                claim_token uuid NULL,
+                claim_expires_at_utc timestamp with time zone NULL,
+                acknowledged_at_utc timestamp with time zone NULL,
+                PRIMARY KEY (consumer_id, result_reference),
+                CHECK
+                (
+                    (claim_token IS NULL AND claim_expires_at_utc IS NULL)
+                    OR
+                    (claim_token IS NOT NULL AND claim_expires_at_utc IS NOT NULL)
+                )
+            );
+
+            CREATE TRIGGER result_available_events_are_immutable
+            BEFORE UPDATE OR DELETE
+            ON document_processing_manager.result_available_events
+            FOR EACH ROW
+            EXECUTE FUNCTION document_processing_manager.reject_custody_mutation();
+
+            CREATE INDEX ix_result_consumer_deliveries_pending
+                ON document_processing_manager.result_consumer_deliveries
+                    (consumer_id, acknowledged_at_utc, claim_expires_at_utc);
+
+            INSERT INTO document_processing_manager.result_available_events
+                (result_reference, available_at_utc)
+            SELECT
+                processing_result.result_reference,
+                processing_unit.updated_at_utc
+            FROM document_processing_manager.processing_results AS processing_result
+            INNER JOIN document_processing_manager.processing_units AS processing_unit
+                ON processing_unit.unit_id = processing_result.processing_unit_id
+            WHERE processing_unit.status = 2
+            ON CONFLICT (result_reference) DO NOTHING;
+            """;
+
     private static readonly Migration[]
         Migrations =
         [
@@ -462,7 +522,11 @@ public sealed class PostgresManagerSchema
             new(
                 Version:
                     6,
-                MigrationSixSql)
+                MigrationSixSql),
+            new(
+                Version:
+                    7,
+                MigrationSevenSql)
         ];
 
     private readonly NpgsqlDataSource
