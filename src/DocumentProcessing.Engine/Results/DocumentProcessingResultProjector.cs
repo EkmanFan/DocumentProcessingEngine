@@ -26,24 +26,24 @@ internal static class DocumentProcessingResultProjector
 
     public static DocumentProcessingResult Project(
         DocumentIngestionResult ingestionResult,
-        IReadOnlyList<DocumentFootnote> footnotes)
+        IReadOnlyList<DocumentNote> notes)
     {
         ArgumentNullException.ThrowIfNull(
             ingestionResult);
 
         ArgumentNullException.ThrowIfNull(
-            footnotes);
+            notes);
 
-        var projectedFootnotes =
-            footnotes.ToArray();
+        var projectedNotes =
+            notes.ToArray();
 
-        if (projectedFootnotes.Any(
-                footnote =>
-                    footnote is null))
+        if (projectedNotes.Any(
+                note =>
+                    note is null))
         {
             throw new ArgumentException(
-                "Portable footnote projection cannot contain null values.",
-                nameof(footnotes));
+                "Portable note projection cannot contain null values.",
+                nameof(notes));
         }
 
         var elementsById =
@@ -148,7 +148,7 @@ internal static class DocumentProcessingResultProjector
             visualAssets,
             quality,
             sourceStructure,
-            projectedFootnotes);
+            projectedNotes);
     }
 
     #endregion

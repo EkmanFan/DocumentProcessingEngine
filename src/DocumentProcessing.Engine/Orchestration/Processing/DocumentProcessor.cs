@@ -16,7 +16,7 @@ using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Engine.Hybrid;
 using DocumentProcessing.Engine.Hybrid.Normalization;
 using DocumentProcessing.Engine.Hybrid.Segmentation;
-using DocumentProcessing.Engine.Footnotes;
+using DocumentProcessing.Engine.Notes;
 using DocumentProcessing.Engine.Results;
 using DocumentProcessing.Engine.Planning;
 using DocumentProcessing.Engine.DualRun.InProcess;
@@ -463,7 +463,7 @@ public sealed class DocumentProcessor
         return DocumentProcessingResultProjector
             .Project(
                 model.IngestionResult,
-                model.Footnotes);
+                model.Notes);
     }
 
 
@@ -773,7 +773,7 @@ public sealed class DocumentProcessor
                     cancellationToken);
 
         var contentNormalization =
-            FootnoteTextFlowExcluder
+            NoteTextFlowExcluder
                 .Apply(
                     normalization,
                     documentNotes);
@@ -825,9 +825,9 @@ public sealed class DocumentProcessor
                     segmentation,
                     provenanceContext);
 
-        var footnotes =
+        var projectedNotes =
             DocumentIngestionResultBuilder
-                .BuildFootnotes(
+                .BuildNotes(
                     authoritativeResult,
                     documentNotes);
 
@@ -885,7 +885,7 @@ public sealed class DocumentProcessor
 
         return new DocumentProcessingModel(
             authoritativeResult,
-            footnotes);
+            projectedNotes);
     }
 
     #endregion

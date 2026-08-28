@@ -4,29 +4,29 @@ using DocumentProcessing.Core.Provenance;
 namespace DocumentProcessing.Core.DocumentModel;
 
 /// <summary>
-/// One semantic footnote projected outside the primary document reading flow.
+/// One semantic note projected outside the primary document reading flow.
 /// </summary>
-public sealed record DocumentFootnote
+public sealed record DocumentNote
 {
     #region Properties
 
     /// <summary>
-    /// Gets the stable footnote identifier within this processing result.
+    /// Gets the stable note identifier within this processing result.
     /// </summary>
-    public string FootnoteId { get; }
+    public string NoteId { get; }
 
     /// <summary>
-    /// Gets the zero-based document-wide footnote order.
+    /// Gets the zero-based document-wide note order.
     /// </summary>
     public int Ordinal { get; }
 
     /// <summary>
-    /// Gets the source-visible footnote label.
+    /// Gets the source-visible note label.
     /// </summary>
     public string Label { get; }
 
     /// <summary>
-    /// Gets the authoritative reconstructed footnote text.
+    /// Gets the authoritative reconstructed note text.
     /// </summary>
     public string Text { get; }
 
@@ -36,42 +36,42 @@ public sealed record DocumentFootnote
     public string TextSha256 { get; }
 
     /// <summary>
-    /// Gets source custody for the semantic footnote payload.
+    /// Gets source custody for the semantic note payload.
     /// </summary>
     /// <remarks>
-    /// Multiple locations are intentional. One semantic footnote may cross a
+    /// Multiple locations are intentional. One semantic note may cross a
     /// source boundary without widening the location contract of every document
     /// element.
     /// </remarks>
     public IReadOnlyList<DocumentSourceLocation> SourceLocations { get; }
 
     /// <summary>
-    /// Gets inline markers that reference this footnote.
+    /// Gets inline markers that reference this note.
     /// </summary>
-    public IReadOnlyList<DocumentFootnoteReference> References { get; }
+    public IReadOnlyList<DocumentNoteReference> References { get; }
 
     #endregion
 
     #region ctor
 
     /// <summary>
-    /// Creates one portable semantic footnote.
+    /// Creates one portable semantic note.
     /// </summary>
-    public DocumentFootnote(
-        string footnoteId,
+    public DocumentNote(
+        string noteId,
         int ordinal,
         string label,
         string text,
         string textSha256,
         IReadOnlyList<DocumentSourceLocation> sourceLocations,
-        IReadOnlyList<DocumentFootnoteReference> references)
+        IReadOnlyList<DocumentNoteReference> references)
     {
         if (string.IsNullOrWhiteSpace(
-                footnoteId))
+                noteId))
         {
             throw new ArgumentException(
-                "Footnote ID cannot be empty.",
-                nameof(footnoteId));
+                "Note ID cannot be empty.",
+                nameof(noteId));
         }
 
         if (ordinal <
@@ -85,7 +85,7 @@ public sealed record DocumentFootnote
                 label))
         {
             throw new ArgumentException(
-                "Footnote label cannot be empty.",
+                "Note label cannot be empty.",
                 nameof(label));
         }
 
@@ -93,7 +93,7 @@ public sealed record DocumentFootnote
                 text))
         {
             throw new ArgumentException(
-                "Footnote text cannot be empty.",
+                "Note text cannot be empty.",
                 nameof(text));
         }
 
@@ -101,7 +101,7 @@ public sealed record DocumentFootnote
                 textSha256))
         {
             throw new ArgumentException(
-                "Footnote text SHA-256 cannot be empty.",
+                "Note text SHA-256 cannot be empty.",
                 nameof(textSha256));
         }
 
@@ -123,7 +123,7 @@ public sealed record DocumentFootnote
                         character)))
         {
             throw new ArgumentException(
-                "Footnote text SHA-256 must contain exactly 64 hexadecimal characters.",
+                "Note text SHA-256 must contain exactly 64 hexadecimal characters.",
                 nameof(textSha256));
         }
 
@@ -133,7 +133,7 @@ public sealed record DocumentFootnote
                     normalizedHash))
         {
             throw new ArgumentException(
-                "Footnote text SHA-256 does not match the exact UTF-8 text.",
+                "Note text SHA-256 does not match the exact UTF-8 text.",
                 nameof(textSha256));
         }
 
@@ -144,7 +144,7 @@ public sealed record DocumentFootnote
             0)
         {
             throw new ArgumentException(
-                "A semantic footnote requires source-location custody.",
+                "A semantic note requires source-location custody.",
                 nameof(sourceLocations));
         }
 
@@ -153,7 +153,7 @@ public sealed record DocumentFootnote
                     location is null))
         {
             throw new ArgumentException(
-                "Footnote source locations cannot contain null values.",
+                "Note source locations cannot contain null values.",
                 nameof(sourceLocations));
         }
 
@@ -164,7 +164,7 @@ public sealed record DocumentFootnote
             0)
         {
             throw new ArgumentException(
-                "A semantic footnote requires at least one inline reference.",
+                "A semantic note requires at least one inline reference.",
                 nameof(references));
         }
 
@@ -173,12 +173,12 @@ public sealed record DocumentFootnote
                     reference is null))
         {
             throw new ArgumentException(
-                "Footnote references cannot contain null values.",
+                "Note references cannot contain null values.",
                 nameof(references));
         }
 
-        FootnoteId =
-            footnoteId.Trim();
+        NoteId =
+            noteId.Trim();
 
         Ordinal =
             ordinal;

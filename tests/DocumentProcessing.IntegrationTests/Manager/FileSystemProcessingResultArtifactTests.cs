@@ -20,7 +20,7 @@ public sealed class FileSystemProcessingResultArtifactTests
                     root);
 
             var content =
-                "{\"schemaVersion\":\"document-processing-result-v2\"}"u8.ToArray();
+                "{\"schemaVersion\":\"document-processing-result-v3\"}"u8.ToArray();
 
             await using var firstSource =
                 new MemoryStream(

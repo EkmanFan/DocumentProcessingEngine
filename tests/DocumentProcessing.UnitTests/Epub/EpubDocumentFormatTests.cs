@@ -184,8 +184,8 @@ public sealed class EpubDocumentFormatTests
 
         Assert.Equal(
             [
-                "Before note.",
-                "1 Inline footnote content.",
+                "Before note.1",
+                "1 Inline footnote content.↩",
                 "Nested footnote paragraph.",
                 "After note."
             ],
@@ -212,6 +212,299 @@ public sealed class EpubDocumentFormatTests
                     Assert.IsType<EpubDocumentSourceLocation>(
                             block.Location)
                         .FragmentId));
+
+        var note =
+            Assert.IsType<
+                DocumentProcessing.Core.Documents.Notes.StructuredNativeDocumentNote>(
+                Assert.Single(
+                    evidence.DocumentNotes));
+
+        Assert.Equal(
+            "1",
+            note.Label);
+
+        Assert.Equal(
+            "1 Inline footnote content.",
+            note.Text);
+
+        Assert.Single(
+            note.References);
+
+        Assert.Equal(
+            "before-note",
+            Assert.IsType<EpubDocumentSourceLocation>(
+                    note.References[0].OwnerLocation)
+                .FragmentId);
+
+        Assert.Equal(
+            "inline-note-ref",
+            Assert.IsType<EpubDocumentSourceLocation>(
+                    note.References[0].Location)
+                .FragmentId);
+
+        Assert.Equal(
+            "inline-note",
+            Assert.IsType<EpubDocumentSourceLocation>(
+                    Assert.Single(
+                        note.SourceLocations))
+                .FragmentId);
+    }
+
+    [Fact]
+    public void Extractor_ConcludesCrossResourceEndnoteWithMultipleReferences()
+    {
+        using var stream =
+            new MemoryStream(
+                TestEpubFactory.CreateNotes(
+                    """
+                    <p id="body-1">First reference<a id="ref-1" epub:type="noteref" href="chapter2.xhtml#endnote-7">7</a>.</p>
+                    <p id="body-2">Second reference<a id="ref-2" role="doc-noteref" href="chapter2.xhtml#endnote-7">7</a>.</p>
+                    """,
+                    """
+                    <aside id="endnote-7" role="doc-endnote"><p>Nested endnote payload.</p><a role="doc-backlink" href="chapter1.xhtml#ref-1">back</a></aside>
+                    """));
+
+        var evidence =
+            new EpubPackageExtractor()
+                .Extract(
+                    stream,
+                    new EpubDocumentFormatOptions());
+
+        var note =
+            Assert.IsType<
+                DocumentProcessing.Core.Documents.Notes.StructuredNativeDocumentNote>(
+                Assert.Single(
+                    evidence.DocumentNotes));
+
+        Assert.Equal(
+            "7",
+            note.Label);
+
+        Assert.Equal(
+            "Nested endnote payload.",
+            note.Text);
+
+        Assert.Equal(
+            2,
+            note.References.Count);
+
+        Assert.All(
+            note.References,
+            reference =>
+                Assert.Equal(
+                    "OEBPS/chapter1.xhtml",
+                    Assert.IsType<EpubDocumentSourceLocation>(
+                            reference.OwnerLocation)
+                        .ResourcePath));
+
+        Assert.Equal(
+            "OEBPS/chapter2.xhtml",
+            Assert.IsType<EpubDocumentSourceLocation>(
+                    Assert.Single(
+                        note.SourceLocations))
+                .ResourcePath);
+    }
+
+    [Fact]
+    public void Extractor_ReciprocalBacklinksRepairContradictoryForwardTarget()
+    {
+        using var stream =
+            new MemoryStream(
+                TestEpubFactory.CreateNotes(
+                    """
+                    <p id="body"><span id="marker-21"/><a epub:type="noteref" href="chapter2.xhtml#payload-21">21</a><span id="marker-22"/><a epub:type="noteref" href="chapter2.xhtml#payload-21">22</a></p>
+                    """,
+                    """
+                    <aside id="payload-21" epub:type="footnote"><a href="chapter1.xhtml#marker-21">21</a>. Payload twenty-one.</aside>
+                    <p id="payload-22"><a href="chapter1.xhtml#marker-22">22</a>. Payload twenty-two.</p>
+                    """));
+
+        var evidence =
+            new EpubPackageExtractor()
+                .Extract(
+                    stream,
+                    new EpubDocumentFormatOptions());
+
+        var notes =
+            evidence.DocumentNotes
+                .Cast<DocumentProcessing.Core.Documents.Notes
+                    .StructuredNativeDocumentNote>()
+                .ToArray();
+
+        Assert.Equal(
+            ["21", "22"],
+            notes.Select(
+                note =>
+                    note.Label));
+
+        Assert.Equal(
+            ["Payload twenty-one.", "Payload twenty-two."],
+            notes.Select(
+                note =>
+                    note.Text));
+
+        Assert.Equal(
+            ["payload-21", "payload-22"],
+            notes.Select(
+                note =>
+                    Assert.IsType<EpubDocumentSourceLocation>(
+                            Assert.Single(
+                                note.SourceLocations))
+                        .FragmentId));
+
+        Assert.Equal(
+            2,
+            evidence.NotePayloadCandidateLocations.Count);
+    }
+
+    [Fact]
+    public void Extractor_AmbiguousOrBrokenRelationsRemainOrdinaryContent()
+    {
+        using var stream =
+            new MemoryStream(
+                TestEpubFactory.CreateNotes(
+                    """
+                    <p id="body-1">Ambiguous<a epub:type="noteref" href="#duplicate-note">1</a>.</p>
+                    <p id="body-2">Broken<a epub:type="noteref" href="#missing-note">2</a>.</p>
+                    <p id="body-3">External<a epub:type="noteref" href="https://example.test/note">3</a>.</p>
+                    <p id="body-4">Valid owner<a epub:type="noteref" href="#partially-owned-note">4</a>.</p>
+                    <a epub:type="noteref" href="#partially-owned-note">4</a>
+                    <aside id="duplicate-note" epub:type="footnote">First candidate.</aside>
+                    <aside id="duplicate-note" epub:type="footnote">Second candidate.</aside>
+                    <aside id="partially-owned-note" epub:type="footnote">Partially owned payload.</aside>
+                    <aside id="unreferenced-note" epub:type="footnote">Unreferenced payload.</aside>
+                    <aside epub:type="footnote">Missing ID payload.</aside>
+                    <aside id="ordinary-aside">Ordinary aside.</aside>
+                    """,
+                    "<p>Second chapter.</p>"));
+
+        var evidence =
+            new EpubPackageExtractor()
+                .Extract(
+                    stream,
+                    new EpubDocumentFormatOptions());
+
+        Assert.Empty(
+            evidence.DocumentNotes);
+
+        Assert.Equal(
+            4,
+            evidence.NotePayloadCandidateLocations.Count);
+
+        var text =
+            evidence.ContentUnits
+                .SelectMany(
+                    unit =>
+                        unit.TextBlocks)
+                .Select(
+                    block =>
+                        block.SourceText)
+                .ToArray();
+
+        Assert.Contains(
+            "First candidate.",
+            text);
+
+        Assert.Contains(
+            "Second candidate.",
+            text);
+
+        Assert.Contains(
+            "Unreferenced payload.",
+            text);
+
+        Assert.Contains(
+            "Partially owned payload.",
+            text);
+
+        Assert.Contains(
+            "Missing ID payload.",
+            text);
+
+        Assert.Contains(
+            "Ordinary aside.",
+            text);
+    }
+
+    [Fact]
+    public void Extractor_TargetedLocalCorporaConcludeExpectedNoteRelations()
+    {
+        var repositoryRoot =
+            FindRepositoryRoot();
+
+        var controls =
+            new[]
+            {
+                (FileName: "habermas-case-for-resurrection.epub",
+                    ExpectedNotes: 478),
+                (FileName: "Historical Theology_ An Introduction to Christian Doctrine - Gregg Allison.epub",
+                    ExpectedNotes: 4017)
+            };
+
+        foreach (var control in
+                 controls)
+        {
+            var path =
+                Path.Combine(
+                    repositoryRoot,
+                    "tests",
+                    "document_corpus",
+                    "epub",
+                    control.FileName);
+
+            if (!File.Exists(
+                    path))
+            {
+                throw Xunit.Sdk.SkipException.ForSkip(
+                    $"Targeted EPUB control '{control.FileName}' is unavailable.");
+            }
+
+            using var stream =
+                File.OpenRead(
+                    path);
+
+            var evidence =
+                new EpubPackageExtractor()
+                    .Extract(
+                        stream,
+                        new EpubDocumentFormatOptions());
+
+            Assert.Equal(
+                control.ExpectedNotes,
+                evidence.DocumentNotes.Count);
+
+            if (string.Equals(
+                    control.FileName,
+                    "habermas-case-for-resurrection.epub",
+                    StringComparison.Ordinal))
+            {
+                Assert.Contains(
+                    evidence.DocumentNotes,
+                    note =>
+                        note.Label ==
+                            "21" &&
+                        note is DocumentProcessing.Core.Documents.Notes
+                            .StructuredNativeDocumentNote structured &&
+                        Assert.IsType<EpubDocumentSourceLocation>(
+                                Assert.Single(
+                                    structured.SourceLocations))
+                            .FragmentId ==
+                            "a33X");
+
+                Assert.Contains(
+                    evidence.DocumentNotes,
+                    note =>
+                        note.Label ==
+                            "22" &&
+                        note is DocumentProcessing.Core.Documents.Notes
+                            .StructuredNativeDocumentNote structured &&
+                        Assert.IsType<EpubDocumentSourceLocation>(
+                                Assert.Single(
+                                    structured.SourceLocations))
+                            .FragmentId ==
+                            "a36X");
+            }
+        }
     }
 
     [Fact]
@@ -507,6 +800,30 @@ public sealed class EpubDocumentFormatTests
         Assert.Equal(
             "Le fichier EPUB dépasse la taille maximale prise en charge.",
             invalid.Reason);
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var current =
+            new DirectoryInfo(
+                AppContext.BaseDirectory);
+
+        while (current is not null)
+        {
+            if (File.Exists(
+                    Path.Combine(
+                        current.FullName,
+                        "DocumentProcessingEngine.sln")))
+            {
+                return current.FullName;
+            }
+
+            current =
+                current.Parent;
+        }
+
+        throw new InvalidOperationException(
+            "DocumentProcessingEngine repository root could not be located.");
     }
 
     #endregion

@@ -3,14 +3,14 @@ using DocumentProcessing.Core.Locations;
 namespace DocumentProcessing.Core.DocumentModel;
 
 /// <summary>
-/// Format-neutral provenance for one inline reference to a semantic footnote.
+/// Format-neutral provenance for one inline reference to a semantic note.
 /// </summary>
 /// <remarks>
 /// This record is deliberately autonomous: it depends only on stable document
 /// element identity plus a source location. It does not depend on an ingestion
 /// result, a PDF implementation type, or an Engine-internal topology type.
 /// </remarks>
-public sealed record DocumentFootnoteProvenance
+public sealed record DocumentNoteProvenance
 {
     #region Properties
 
@@ -31,7 +31,7 @@ public sealed record DocumentFootnoteProvenance
     /// <summary>
     /// Creates reference provenance anchored to a stable document element.
     /// </summary>
-    public DocumentFootnoteProvenance(
+    public DocumentNoteProvenance(
         string elementId,
         DocumentSourceLocation location)
     {
@@ -39,7 +39,7 @@ public sealed record DocumentFootnoteProvenance
                 elementId))
         {
             throw new ArgumentException(
-                "Footnote reference element ID cannot be empty.",
+                "Note reference element ID cannot be empty.",
                 nameof(elementId));
         }
 

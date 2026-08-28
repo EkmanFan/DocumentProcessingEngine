@@ -2,14 +2,14 @@ using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Hybrid.Normalization;
 using DocumentProcessing.Core.Normalization;
 
-namespace DocumentProcessing.Engine.Footnotes;
+namespace DocumentProcessing.Engine.Notes;
 
 /// <summary>
 /// Removes format-concluded note payload blocks from the primary structural
 /// text flow while retaining every normalized element and its source evidence.
-/// This component does not create portable footnote objects.
+/// This component does not create portable note objects.
 /// </summary>
-internal static class FootnoteTextFlowExcluder
+internal static class NoteTextFlowExcluder
 {
     #region Methods
 
@@ -52,7 +52,7 @@ internal static class FootnoteTextFlowExcluder
                             page.Elements
                                 .Select(
                                     element =>
-                                        ExcludeIfFootnote(
+                                        ExcludeIfNote(
                                             page.PhysicalPageNumber,
                                             element,
                                             noteSourceBlocks))
@@ -65,7 +65,7 @@ internal static class FootnoteTextFlowExcluder
             pages);
     }
 
-    private static NormalizedHybridDocumentElement ExcludeIfFootnote(
+    private static NormalizedHybridDocumentElement ExcludeIfNote(
         int physicalPageNumber,
         NormalizedHybridDocumentElement element,
         IReadOnlySet<PagedNativeNoteSourceBlock> noteSourceBlocks)
@@ -85,7 +85,7 @@ internal static class FootnoteTextFlowExcluder
         return new NormalizedHybridDocumentElement(
             element.SourceElement,
             element.Text,
-            DocumentBlockExclusionReason.FootnoteContent,
+            DocumentBlockExclusionReason.NoteContent,
             element.NormalizationDehyphenation);
     }
 

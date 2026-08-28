@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Locations;
 using DocumentProcessing.Core.Provenance;
@@ -59,6 +60,33 @@ public sealed class DocumentProcessingResultTests
             typeof(DocumentProcessingResult)
                 .GetProperty(
                     "PhysicalPageCount"));
+    }
+
+    [Fact]
+    public void JsonContract_UsesNotesVocabularyAndV3Schema()
+    {
+        var json =
+            JsonSerializer.SerializeToElement(
+                CreatePortableResult(),
+                new JsonSerializerOptions(
+                    JsonSerializerDefaults.Web));
+
+        Assert.Equal(
+            "document-processing-result-v3",
+            json.GetProperty(
+                    "schemaVersion")
+                .GetString());
+
+        Assert.Equal(
+            JsonValueKind.Array,
+            json.GetProperty(
+                    "notes")
+                .ValueKind);
+
+        Assert.False(
+            json.TryGetProperty(
+                "footnotes",
+                out _));
     }
 
     [Fact]

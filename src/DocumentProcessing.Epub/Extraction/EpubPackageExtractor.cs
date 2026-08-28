@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Xml;
 using System.Xml.Linq;
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Epub.Locations;
 
@@ -22,7 +23,7 @@ internal sealed class EpubPackageExtractor
         NativeExtractionIdentity =
             new(
                 "epub-xhtml",
-                "epub-xhtml-native-v3+epubcheck-5.3.0");
+                "epub-xhtml-native-v4+epubcheck-5.3.0");
 
     private static readonly IReadOnlyDictionary<string,
         StructuredNativeTextBlockKind> BlockKinds =
@@ -40,6 +41,10 @@ internal sealed class EpubPackageExtractor
             ["dt"] =
                 StructuredNativeTextBlockKind.Text,
             ["dd"] =
+                StructuredNativeTextBlockKind.Text,
+            ["td"] =
+                StructuredNativeTextBlockKind.Text,
+            ["th"] =
                 StructuredNativeTextBlockKind.Text,
             ["aside"] =
                 StructuredNativeTextBlockKind.Text,
@@ -203,6 +208,12 @@ internal sealed class EpubPackageExtractor
         var visualUsages =
             new List<VisualUsage>();
 
+        var notePayloadCandidates =
+            new List<NotePayloadCandidate>();
+
+        var noteReferenceCandidates =
+            new List<NoteReferenceCandidate>();
+
         foreach (var spineItem in
                  spineItems)
         {
@@ -229,6 +240,15 @@ internal sealed class EpubPackageExtractor
 
             visualUsages.AddRange(
                 extracted.VisualUsages);
+
+            if (!extracted.ContentUnit.IsPresentationOnly)
+            {
+                notePayloadCandidates.AddRange(
+                    extracted.NotePayloadCandidates);
+
+                noteReferenceCandidates.AddRange(
+                    extracted.NoteReferenceCandidates);
+            }
         }
 
         var structure =
@@ -249,13 +269,20 @@ internal sealed class EpubPackageExtractor
         source.Position =
             0;
 
+        var noteExtraction =
+            BuildDocumentNotes(
+                notePayloadCandidates,
+                noteReferenceCandidates);
+
         return new StructuredNativeDocumentEvidence(
             structure,
             contentUnits,
             NativeExtractionIdentity,
             BuildVisualCandidates(
                 entries,
-                visualUsages));
+                visualUsages),
+            noteExtraction.DocumentNotes,
+            noteExtraction.PayloadCandidateLocations);
     }
 
     #endregion
@@ -815,6 +842,8 @@ internal sealed class EpubPackageExtractor
                 new StructuredNativeContentUnit(
                     spineItem.ResourcePath,
                     []),
+                [],
+                [],
                 []);
         }
 
@@ -858,6 +887,9 @@ internal sealed class EpubPackageExtractor
         var blocks =
             new List<StructuredNativeTextBlock>();
 
+        var blockLocations =
+            new Dictionary<XElement, EpubDocumentSourceLocation>();
+
         foreach (var child in
                  body.Elements())
         {
@@ -865,7 +897,8 @@ internal sealed class EpubPackageExtractor
                 child,
                 spineItem,
                 navigationHeadingBlocks,
-                blocks);
+                blocks,
+                blockLocations);
         }
 
         if (blocks.Count ==
@@ -914,7 +947,15 @@ internal sealed class EpubPackageExtractor
                 blocks,
                 isPresentationOnly:
                     isTerminalPresentationResource),
-            visualUsages);
+            visualUsages,
+            ReadNotePayloadCandidates(
+                document,
+                spineItem,
+                blockLocations),
+            ReadNoteReferenceCandidates(
+                document,
+                spineItem,
+                blockLocations));
     }
 
     private static IReadOnlyList<VisualUsage> ReadVisualUsages(
@@ -1375,7 +1416,8 @@ internal sealed class EpubPackageExtractor
         XElement element,
         EpubSpineItemDescriptor spineItem,
         IReadOnlySet<XElement> navigationHeadingBlocks,
-        ICollection<StructuredNativeTextBlock> blocks)
+        ICollection<StructuredNativeTextBlock> blocks,
+        IDictionary<XElement, EpubDocumentSourceLocation> blockLocations)
     {
         if (BlockKinds.TryGetValue(
                 element.Name.LocalName,
@@ -1384,19 +1426,26 @@ internal sealed class EpubPackageExtractor
             if (!string.IsNullOrWhiteSpace(
                     element.Value))
             {
+                var location =
+                    new EpubDocumentSourceLocation(
+                        spineItem.SpineIndex,
+                        spineItem.ResourcePath,
+                        blocks.Count,
+                        FragmentId(
+                            element));
+
                 blocks.Add(
                     new StructuredNativeTextBlock(
                         navigationHeadingBlocks.Contains(
                             element)
                             ? StructuredNativeTextBlockKind.Heading
                             : kind,
-                        new EpubDocumentSourceLocation(
-                            spineItem.SpineIndex,
-                            spineItem.ResourcePath,
-                            blocks.Count,
-                            FragmentId(
-                                element)),
+                        location,
                         element.Value));
+
+                blockLocations.Add(
+                    element,
+                    location);
             }
 
             return;
@@ -1417,9 +1466,584 @@ internal sealed class EpubPackageExtractor
                 child,
                 spineItem,
                 navigationHeadingBlocks,
-                blocks);
+                blocks,
+                blockLocations);
         }
     }
+
+    #region Methods Notes
+
+    private static string ReadElementText(
+        XElement element,
+        IReadOnlySet<XElement> excludedLinks)
+    {
+        var sourceTextNodes =
+            element
+                .DescendantNodesAndSelf()
+                .OfType<XText>()
+                .ToArray();
+
+        var text =
+            string.Concat(
+                sourceTextNodes
+                .Where(
+                    sourceText =>
+                        !sourceText.Ancestors()
+                            .Any(
+                                excludedLinks.Contains))
+                .Select(
+                    sourceText =>
+                        sourceText.Value));
+
+        var firstMeaningfulText =
+            sourceTextNodes.FirstOrDefault(
+                sourceText =>
+                    !string.IsNullOrWhiteSpace(
+                        sourceText.Value));
+
+        if (firstMeaningfulText is not null &&
+            firstMeaningfulText.Ancestors()
+                .Any(
+                    excludedLinks.Contains))
+        {
+            text =
+                text.TrimStart()
+                    .TrimStart(
+                        '.',
+                        ':',
+                        ')',
+                        '\u200B')
+                    .TrimStart();
+        }
+
+        return text;
+    }
+
+    private static bool IsNoteBacklink(
+        XElement element) =>
+        string.Equals(
+            element.Name.LocalName,
+            "a",
+            StringComparison.OrdinalIgnoreCase) &&
+        (HasToken(
+             AttributeValue(
+                 element,
+                 "type"),
+             "backlink") ||
+         HasToken(
+             AttributeValue(
+                 element,
+                 "role"),
+             "doc-backlink"));
+
+    private static IReadOnlyList<NotePayloadCandidate>
+        ReadNotePayloadCandidates(
+        XDocument document,
+        EpubSpineItemDescriptor spineItem,
+        IReadOnlyDictionary<XElement, EpubDocumentSourceLocation>
+            blockLocations)
+    {
+        var candidates =
+            new List<NotePayloadCandidate>();
+
+        foreach (var pair in
+                 blockLocations)
+        {
+            var fragmentId =
+                FragmentId(
+                    pair.Key);
+
+            if (fragmentId is null)
+            {
+                continue;
+            }
+
+            var backlinks =
+                ReadPotentialNoteBacklinks(
+                    pair.Key,
+                    spineItem.ResourcePath);
+
+            var explicitlyAnnotated =
+                IsNotePayload(
+                    pair.Key);
+
+            if (!explicitlyAnnotated &&
+                backlinks.Count ==
+                    0)
+            {
+                continue;
+            }
+
+            candidates.Add(
+                new NotePayloadCandidate(
+                    new NoteTarget(
+                        spineItem.ResourcePath,
+                        fragmentId),
+                    pair.Value,
+                    pair.Key,
+                    explicitlyAnnotated,
+                    backlinks));
+        }
+
+        return candidates;
+    }
+
+    private static IReadOnlyList<NoteBacklinkCandidate>
+        ReadPotentialNoteBacklinks(
+        XElement payload,
+        string resourcePath)
+    {
+        var backlinks =
+            new List<NoteBacklinkCandidate>();
+
+        foreach (var link in
+                 payload.Descendants()
+                     .Where(
+                         element =>
+                             string.Equals(
+                                 element.Name.LocalName,
+                                 "a",
+                                 StringComparison.OrdinalIgnoreCase) &&
+                             !IsNoteReference(
+                                 element)))
+        {
+            if (!TryResolveNoteTarget(
+                    resourcePath,
+                    AttributeValue(
+                        link,
+                        "href"),
+                    out var target))
+            {
+                continue;
+            }
+
+            backlinks.Add(
+                new NoteBacklinkCandidate(
+                    target,
+                    link.Value.Trim(),
+                    link,
+                    IsNoteBacklink(
+                        link)));
+        }
+
+        return backlinks;
+    }
+
+    private static IReadOnlyList<NoteReferenceCandidate>
+        ReadNoteReferenceCandidates(
+        XDocument document,
+        EpubSpineItemDescriptor spineItem,
+        IReadOnlyDictionary<XElement, EpubDocumentSourceLocation>
+            blockLocations)
+    {
+        var candidates =
+            new List<NoteReferenceCandidate>();
+
+        foreach (var element in
+                 document.Descendants()
+                     .Where(
+                         IsNoteReference))
+        {
+            if (!TryResolveNoteTarget(
+                    spineItem.ResourcePath,
+                    AttributeValue(
+                        element,
+                        "href"),
+                    out var target))
+            {
+                continue;
+            }
+
+            var label =
+                element.Value.Trim();
+
+            var markerTargets =
+                ReadNoteReferenceMarkerTargets(
+                    element,
+                    spineItem.ResourcePath);
+
+            var owner =
+                element.Ancestors()
+                    .FirstOrDefault(
+                        blockLocations.ContainsKey);
+
+            if (owner is null ||
+                label.Length ==
+                    0)
+            {
+                candidates.Add(
+                    new NoteReferenceCandidate(
+                        target,
+                        label,
+                        markerTargets,
+                        OwnerLocation:
+                            null,
+                        Location:
+                            null));
+
+                continue;
+            }
+
+            var ownerLocation =
+                blockLocations[owner];
+
+            candidates.Add(
+                new NoteReferenceCandidate(
+                    target,
+                    label,
+                    markerTargets,
+                    ownerLocation,
+                    new EpubDocumentSourceLocation(
+                        spineItem.SpineIndex,
+                        spineItem.ResourcePath,
+                        ownerLocation.BlockIndex,
+                        FragmentId(
+                            element))));
+        }
+
+        return candidates;
+    }
+
+    private static IReadOnlyList<NoteTarget>
+        ReadNoteReferenceMarkerTargets(
+        XElement reference,
+        string resourcePath)
+    {
+        var fragmentIds =
+            new List<string?>
+            {
+                FragmentId(
+                    reference),
+                reference.ElementsBeforeSelf()
+                    .LastOrDefault() is { } previous
+                    ? FragmentId(
+                        previous)
+                    : null
+            };
+
+        return fragmentIds
+            .Where(
+                fragmentId =>
+                    !string.IsNullOrWhiteSpace(
+                        fragmentId))
+            .Select(
+                fragmentId =>
+                    new NoteTarget(
+                        resourcePath,
+                        fragmentId!))
+            .Distinct()
+            .ToArray();
+    }
+
+    private static DocumentNoteExtraction BuildDocumentNotes(
+        IReadOnlyList<NotePayloadCandidate> payloadCandidates,
+        IReadOnlyList<NoteReferenceCandidate> referenceCandidates)
+    {
+        var payloadsByTarget =
+            payloadCandidates
+                .GroupBy(
+                    candidate =>
+                        candidate.Target)
+                .ToDictionary(
+                    group =>
+                        group.Key,
+                    group =>
+                        group.ToArray());
+
+        var referenceMarkerTargets =
+            referenceCandidates
+                .SelectMany(
+                    reference =>
+                        reference.MarkerTargets)
+                .ToHashSet();
+
+        var qualifiedPayloads =
+            payloadCandidates
+                .Where(
+                    payload =>
+                        payload.IsExplicitlyAnnotated ||
+                        payload.Backlinks.Any(
+                            backlink =>
+                                referenceMarkerTargets.Contains(
+                                    backlink.Target)))
+                .ToArray();
+
+        var mappings =
+            new List<NoteRelationMapping>();
+
+        foreach (var reference in
+                 referenceCandidates)
+        {
+            var reciprocalMatches =
+                qualifiedPayloads
+                    .Where(
+                        payload =>
+                            payload.Backlinks.Any(
+                                backlink =>
+                                    reference.MarkerTargets.Contains(
+                                        backlink.Target) &&
+                                    (backlink.IsSemanticallyAnnotated ||
+                                     string.Equals(
+                                         backlink.Label,
+                                         reference.Label,
+                                         StringComparison.Ordinal))))
+                    .ToArray();
+
+            NotePayloadCandidate? payload =
+                reciprocalMatches.Length ==
+                    1
+                    ? reciprocalMatches[0]
+                    : null;
+
+            if (reciprocalMatches.Length ==
+                    0 &&
+                payloadsByTarget.TryGetValue(
+                    reference.ForwardTarget,
+                    out var forwardPayloads) &&
+                forwardPayloads.Length ==
+                    1 &&
+                forwardPayloads[0].IsExplicitlyAnnotated)
+            {
+                payload =
+                    forwardPayloads[0];
+            }
+
+            if (payload is not null)
+            {
+                mappings.Add(
+                    new NoteRelationMapping(
+                        reference,
+                        payload));
+            }
+        }
+
+        var notes =
+            new List<NativeDocumentNote>();
+
+        foreach (var relationGroup in
+                 mappings
+                     .GroupBy(
+                         mapping =>
+                             mapping.Payload.Target)
+                     .OrderBy(
+                         group =>
+                             group.Min(
+                                 mapping =>
+                                     mapping.Reference.OwnerLocation?
+                                         .SpineIndex ??
+                                     int.MaxValue))
+                     .ThenBy(
+                         group =>
+                             group.Min(
+                                 mapping =>
+                                     mapping.Reference.OwnerLocation?
+                                         .BlockIndex ??
+                                     int.MaxValue)))
+        {
+            var references =
+                relationGroup
+                    .Select(
+                        mapping =>
+                            mapping.Reference)
+                    .ToArray();
+
+            if (references.Any(
+                    reference =>
+                        reference.OwnerLocation is null ||
+                        reference.Location is null))
+            {
+                continue;
+            }
+
+            var labels =
+                references
+                    .Select(
+                        reference =>
+                            reference.Label)
+                    .Distinct(
+                        StringComparer.Ordinal)
+                    .ToArray();
+
+            if (labels.Length !=
+                1)
+            {
+                continue;
+            }
+
+            var payload =
+                relationGroup.First()
+                    .Payload;
+
+            var excludedBacklinks =
+                payload.Backlinks
+                    .Where(
+                        backlink =>
+                            backlink.IsSemanticallyAnnotated ||
+                            references.Any(
+                                reference =>
+                                    reference.MarkerTargets.Contains(
+                                        backlink.Target) &&
+                                    string.Equals(
+                                        backlink.Label,
+                                        reference.Label,
+                                        StringComparison.Ordinal)))
+                    .Select(
+                        backlink =>
+                            backlink.Element)
+                    .ToHashSet();
+
+            var text =
+                ReadElementText(
+                    payload.Element,
+                    excludedBacklinks);
+
+            if (string.IsNullOrWhiteSpace(
+                    text))
+            {
+                continue;
+            }
+
+            notes.Add(
+                new StructuredNativeDocumentNote(
+                    labels[0],
+                    text,
+                    references
+                        .Select(
+                            reference =>
+                                new StructuredNativeNoteReference(
+                                    reference.OwnerLocation!,
+                                    reference.Location!))
+                        .ToArray(),
+                    [payload.Location]));
+        }
+
+        return new DocumentNoteExtraction(
+            notes,
+            qualifiedPayloads
+                .Select(
+                    payload =>
+                        (DocumentProcessing.Core.Locations.DocumentSourceLocation)
+                            payload.Location)
+                .Distinct()
+                .ToArray());
+    }
+
+    private static bool IsNotePayload(
+        XElement element) =>
+        HasToken(
+            AttributeValue(
+                element,
+                "type"),
+            "footnote") ||
+        HasToken(
+            AttributeValue(
+                element,
+                "type"),
+            "endnote") ||
+        HasToken(
+            AttributeValue(
+                element,
+                "type"),
+            "rearnote") ||
+        HasToken(
+            AttributeValue(
+                element,
+                "role"),
+            "doc-footnote") ||
+        HasToken(
+            AttributeValue(
+                element,
+                "role"),
+            "doc-endnote");
+
+    private static bool IsNoteReference(
+        XElement element) =>
+        string.Equals(
+            element.Name.LocalName,
+            "a",
+            StringComparison.OrdinalIgnoreCase) &&
+        (HasToken(
+             AttributeValue(
+                 element,
+                 "type"),
+             "noteref") ||
+         HasToken(
+             AttributeValue(
+                 element,
+                 "role"),
+             "doc-noteref"));
+
+    private static bool TryResolveNoteTarget(
+        string baseResourcePath,
+        string? reference,
+        out NoteTarget target)
+    {
+        target =
+            default;
+
+        if (string.IsNullOrWhiteSpace(
+                reference) ||
+            Uri.TryCreate(
+                reference,
+                UriKind.Absolute,
+                out _))
+        {
+            return false;
+        }
+
+        var value =
+            reference.Trim();
+
+        var fragmentSeparator =
+            value.IndexOf(
+                '#');
+
+        if (fragmentSeparator <
+            0)
+        {
+            return false;
+        }
+
+        var fragment =
+            Uri.UnescapeDataString(
+                value[(fragmentSeparator + 1)..]
+                    .Split(
+                        '?',
+                        2)[0]);
+
+        if (string.IsNullOrWhiteSpace(
+                fragment))
+        {
+            return false;
+        }
+
+        try
+        {
+            var resourceReference =
+                value[..fragmentSeparator];
+
+            var resourcePath =
+                resourceReference.Length ==
+                    0
+                    ? baseResourcePath
+                    : EpubArchivePath.Resolve(
+                        baseResourcePath,
+                        resourceReference);
+
+            target =
+                new NoteTarget(
+                    resourcePath,
+                    fragment);
+
+            return true;
+        }
+        catch (InvalidDataException)
+        {
+            return false;
+        }
+    }
+
+    #endregion
 
     private static string? FragmentId(
         XElement element) =>
@@ -1505,9 +2129,44 @@ internal sealed class EpubPackageExtractor
         bool HasBodyMatterBoundary,
         bool IsTerminalPresentationMatter);
 
+    private readonly record struct NoteTarget(
+        string ResourcePath,
+        string FragmentId);
+
+    private sealed record NotePayloadCandidate(
+        NoteTarget Target,
+        EpubDocumentSourceLocation Location,
+        XElement Element,
+        bool IsExplicitlyAnnotated,
+        IReadOnlyList<NoteBacklinkCandidate> Backlinks);
+
+    private sealed record NoteBacklinkCandidate(
+        NoteTarget Target,
+        string Label,
+        XElement Element,
+        bool IsSemanticallyAnnotated);
+
+    private sealed record NoteReferenceCandidate(
+        NoteTarget ForwardTarget,
+        string Label,
+        IReadOnlyList<NoteTarget> MarkerTargets,
+        EpubDocumentSourceLocation? OwnerLocation,
+        EpubDocumentSourceLocation? Location);
+
+    private sealed record NoteRelationMapping(
+        NoteReferenceCandidate Reference,
+        NotePayloadCandidate Payload);
+
+    private sealed record DocumentNoteExtraction(
+        IReadOnlyList<NativeDocumentNote> DocumentNotes,
+        IReadOnlyList<DocumentProcessing.Core.Locations.DocumentSourceLocation>
+            PayloadCandidateLocations);
+
     private sealed record SpineResourceExtraction(
         StructuredNativeContentUnit ContentUnit,
-        IReadOnlyList<VisualUsage> VisualUsages);
+        IReadOnlyList<VisualUsage> VisualUsages,
+        IReadOnlyList<NotePayloadCandidate> NotePayloadCandidates,
+        IReadOnlyList<NoteReferenceCandidate> NoteReferenceCandidates);
 
     #endregion
 }

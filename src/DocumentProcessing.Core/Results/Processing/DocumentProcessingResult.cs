@@ -21,11 +21,11 @@ public sealed record DocumentProcessingResult
     #region Variables and Constants
 
     /// <summary>
-    /// Stable schema identifier for the first portable processing-result
+    /// Stable schema identifier for the current portable processing-result
     /// contract.
     /// </summary>
     public const string SchemaVersionId =
-        "document-processing-result-v2";
+        "document-processing-result-v3";
 
     #endregion
 
@@ -85,9 +85,9 @@ public sealed record DocumentProcessingResult
     public IReadOnlyList<DocumentVisualAsset> VisualAssets { get; }
 
     /// <summary>
-    /// Gets semantic footnotes projected outside the primary reading flow.
+    /// Gets semantic notes projected outside the primary reading flow.
     /// </summary>
-    public IReadOnlyList<DocumentFootnote> Footnotes { get; }
+    public IReadOnlyList<DocumentNote> Notes { get; }
 
     /// <summary>
     /// Gets non-duplicating quality observations.
@@ -113,7 +113,7 @@ public sealed record DocumentProcessingResult
         IReadOnlyList<DocumentVisualAsset> visualAssets,
         DocumentProcessingQualityObservations qualityObservations,
         DocumentSourceStructure? sourceStructure = null,
-        IReadOnlyList<DocumentFootnote>? footnotes = null)
+        IReadOnlyList<DocumentNote>? notes = null)
     {
         Source =
             source ??
@@ -173,11 +173,11 @@ public sealed record DocumentProcessingResult
                 visualAssets,
                 nameof(visualAssets));
 
-        var footnoteArray =
+        var noteArray =
             CopyWithoutNulls(
-                footnotes ??
-                    Array.Empty<DocumentFootnote>(),
-                nameof(footnotes));
+                notes ??
+                    Array.Empty<DocumentNote>(),
+                nameof(notes));
 
         ValidateUniqueIds(
             elementArray,
@@ -207,18 +207,18 @@ public sealed record DocumentProcessingResult
             "structural segment",
             nameof(structuralSegments));
         ValidateUniqueIds(
-            footnoteArray,
-            footnote =>
-                footnote.FootnoteId,
-            "footnote",
-            nameof(footnotes));
+            noteArray,
+            note =>
+                note.NoteId,
+            "note",
+            nameof(notes));
 
         ValidateContiguousOrdinals(
-            footnoteArray,
-            footnote =>
-                footnote.Ordinal,
-            "footnote",
-            nameof(footnotes));
+            noteArray,
+            note =>
+                note.Ordinal,
+            "note",
+            nameof(notes));
 
         var elementsById =
             elementArray.ToDictionary(
@@ -235,8 +235,8 @@ public sealed record DocumentProcessingResult
         ValidateSourceStructure(
             SourceStructure,
             elementArray);
-        ValidateFootnotes(
-            footnoteArray,
+        ValidateNotes(
+            noteArray,
             elementsById,
             SourceStructure);
 
@@ -288,8 +288,8 @@ public sealed record DocumentProcessingResult
             visualAssetArray;
 
 
-        Footnotes =
-            footnoteArray;
+        Notes =
+            noteArray;
     }
 
     #endregion
@@ -723,16 +723,16 @@ public sealed record DocumentProcessingResult
         }
     }
 
-    private static void ValidateFootnotes(
-        IReadOnlyList<DocumentFootnote> footnotes,
+    private static void ValidateNotes(
+        IReadOnlyList<DocumentNote> notes,
         IReadOnlyDictionary<string, DocumentElement> elementsById,
         DocumentSourceStructure? sourceStructure)
     {
-        foreach (var footnote in
-                 footnotes)
+        foreach (var note in
+                 notes)
         {
             foreach (var reference in
-                     footnote.References)
+                     note.References)
             {
                 var provenance =
                     reference.Provenance;
@@ -742,40 +742,40 @@ public sealed record DocumentProcessingResult
                         out var referencedElement))
                 {
                     throw new ArgumentException(
-                        $"Footnote '{footnote.FootnoteId}' references unknown document element '{provenance.ElementId}'.",
-                        nameof(footnotes));
+                        $"Note '{note.NoteId}' references unknown document element '{provenance.ElementId}'.",
+                        nameof(notes));
                 }
 
-                ValidateFootnoteLocation(
+                ValidateNoteLocation(
                     provenance.Location,
                     sourceStructure,
-                    footnote.FootnoteId,
-                    nameof(footnotes));
+                    note.NoteId,
+                    nameof(notes));
 
-                ValidateFootnoteReferenceLocation(
+                ValidateNoteReferenceLocation(
                     provenance.Location,
                     referencedElement.Location,
-                    footnote.FootnoteId,
+                    note.NoteId,
                     provenance.ElementId,
-                    nameof(footnotes));
+                    nameof(notes));
             }
 
             foreach (var location in
-                     footnote.SourceLocations)
+                     note.SourceLocations)
             {
-                ValidateFootnoteLocation(
+                ValidateNoteLocation(
                     location,
                     sourceStructure,
-                    footnote.FootnoteId,
-                    nameof(footnotes));
+                    note.NoteId,
+                    nameof(notes));
             }
         }
     }
 
-    private static void ValidateFootnoteLocation(
+    private static void ValidateNoteLocation(
         DocumentSourceLocation location,
         DocumentSourceStructure? sourceStructure,
-        string footnoteId,
+        string noteId,
         string parameterName)
     {
         if (sourceStructure is not
@@ -788,7 +788,7 @@ public sealed record DocumentProcessingResult
             PagedDocumentSourceLocation pagedLocation)
         {
             throw new ArgumentException(
-                $"Footnote '{footnoteId}' must use paged source locations when the result retains a paged source structure.",
+                $"Note '{noteId}' must use paged source locations when the result retains a paged source structure.",
                 parameterName);
         }
 
@@ -796,15 +796,15 @@ public sealed record DocumentProcessingResult
             paged.PhysicalPageCount)
         {
             throw new ArgumentException(
-                $"Footnote '{footnoteId}' references physical page {pagedLocation.PhysicalPageNumber}, outside the retained paged source structure.",
+                $"Note '{noteId}' references physical page {pagedLocation.PhysicalPageNumber}, outside the retained paged source structure.",
                 parameterName);
         }
     }
 
-    private static void ValidateFootnoteReferenceLocation(
+    private static void ValidateNoteReferenceLocation(
         DocumentSourceLocation referenceLocation,
         DocumentSourceLocation elementLocation,
-        string footnoteId,
+        string noteId,
         string elementId,
         string parameterName)
     {
@@ -817,7 +817,7 @@ public sealed record DocumentProcessingResult
                 elementPage.PhysicalPageNumber)
             {
                 throw new ArgumentException(
-                    $"Footnote '{footnoteId}' reference '{elementId}' is on physical page {referencePage.PhysicalPageNumber}, but the referenced document element is on physical page {elementPage.PhysicalPageNumber}.",
+                    $"Note '{noteId}' reference '{elementId}' is on physical page {referencePage.PhysicalPageNumber}, but the referenced document element is on physical page {elementPage.PhysicalPageNumber}.",
                     parameterName);
             }
 
@@ -830,7 +830,7 @@ public sealed record DocumentProcessingResult
                 PagedDocumentSourceLocation)
         {
             throw new ArgumentException(
-                $"Footnote '{footnoteId}' reference '{elementId}' must use paged locations consistently with its referenced element.",
+                $"Note '{noteId}' reference '{elementId}' must use paged locations consistently with its referenced element.",
                 parameterName);
         }
     }

@@ -8,5 +8,5 @@ public enum DocumentBlockExclusionReason
 {
     RepeatedHeader = 0,
     RepeatedFooter = 1,
-    FootnoteContent = 2
+    NoteContent = 2
 }

@@ -1,26 +1,26 @@
 namespace DocumentProcessing.Core.DocumentModel;
 
 /// <summary>
-/// One inline reference to a semantic footnote.
+/// One inline reference to a semantic note.
 /// </summary>
-public sealed record DocumentFootnoteReference
+public sealed record DocumentNoteReference
 {
     #region Properties
 
     /// <summary>
     /// Gets the stable element/source-location provenance of this marker.
     /// </summary>
-    public DocumentFootnoteProvenance Provenance { get; }
+    public DocumentNoteProvenance Provenance { get; }
 
     #endregion
 
     #region ctor
 
     /// <summary>
-    /// Creates one footnote reference from autonomous marker provenance.
+    /// Creates one note reference from autonomous marker provenance.
     /// </summary>
-    public DocumentFootnoteReference(
-        DocumentFootnoteProvenance provenance)
+    public DocumentNoteReference(
+        DocumentNoteProvenance provenance)
     {
         Provenance =
             provenance ??

@@ -1,6 +1,9 @@
 using System.Text;
+using DocumentProcessing.Core.DocumentModel;
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Layout;
+using DocumentProcessing.Core.Normalization;
 using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
@@ -92,6 +95,28 @@ internal static class StructuredNativeDocumentProjector
         var usedPaddleVisualAnalysis =
             false;
 
+        var structuredNotes =
+            evidence.DocumentNotes
+                .Select(
+                    note =>
+                        note as StructuredNativeDocumentNote ??
+                        throw new InvalidDataException(
+                            $"Structured processing received unsupported native note evidence '{note.GetType().FullName}'."))
+                .ToArray();
+
+        var notePayloadLocations =
+            evidence.NotePayloadCandidateLocations
+                .Concat(
+                    structuredNotes
+                .SelectMany(
+                    note =>
+                        note.SourceLocations))
+                .ToHashSet();
+
+        var elementsByNativeLocation =
+            new Dictionary<DocumentProcessing.Core.Locations.DocumentSourceLocation,
+                string>();
+
         foreach (var unit in
                  evidence.ContentUnits)
         {
@@ -124,8 +149,19 @@ internal static class StructuredNativeDocumentProjector
                 continue;
             }
 
+            var narrativeBlocks =
+                normalizedBlocks
+                    .Where(
+                        item =>
+                            !notePayloadLocations.Contains(
+                                item.Block.Location))
+                    .ToArray();
+
             var segmentId =
-                $"segment-{segments.Count + 1:D6}";
+                narrativeBlocks.Length ==
+                    0
+                    ? null
+                    : $"segment-{segments.Count + 1:D6}";
 
             var sourceElementIds =
                 new List<string>(
@@ -140,6 +176,10 @@ internal static class StructuredNativeDocumentProjector
                 var elementId =
                     $"element-{elements.Count + 1:D6}";
 
+                var isNotePayload =
+                    notePayloadLocations.Contains(
+                        item.Block.Location);
+
                 var finalTextHash =
                     ProvenanceTextHashing.ComputeUtf8Sha256(
                         item.Text);
@@ -151,7 +191,9 @@ internal static class StructuredNativeDocumentProjector
                         MapKind(
                             item.Block.Kind),
                         item.Block.Location,
-                        segmentId,
+                        isNotePayload
+                            ? null
+                            : segmentId,
                         item.Text,
                         finalTextHash));
 
@@ -187,14 +229,28 @@ internal static class StructuredNativeDocumentProjector
                                 item.Text,
                                 StringComparison.Ordinal),
                         exclusionReason:
-                            null,
+                            isNotePayload
+                                ? DocumentBlockExclusionReason.NoteContent
+                                : null,
                         isResolved:
                             true));
 
-                sourceElementIds.Add(
-                    elementId);
+                if (!elementsByNativeLocation.TryAdd(
+                        item.Block.Location,
+                        elementId))
+                {
+                    throw new InvalidDataException(
+                        "Structured native content contains duplicate source locations.");
+                }
 
-                if (headingText is null &&
+                if (!isNotePayload)
+                {
+                    sourceElementIds.Add(
+                        elementId);
+                }
+
+                if (!isNotePayload &&
+                    headingText is null &&
                     item.Block.Kind ==
                     StructuredNativeTextBlockKind.Heading)
                 {
@@ -203,17 +259,23 @@ internal static class StructuredNativeDocumentProjector
                 }
             }
 
+            if (narrativeBlocks.Length ==
+                0)
+            {
+                continue;
+            }
+
             var segmentText =
                 string.Join(
                     "\n\n",
-                    normalizedBlocks
+                    narrativeBlocks
                         .Select(
                             item =>
                                 item.Text));
 
             segments.Add(
                 new DocumentStructuralSegment(
-                    segmentId,
+                    segmentId!,
                     segments.Count,
                     segmentText,
                     ProvenanceTextHashing.ComputeUtf8Sha256(
@@ -223,7 +285,7 @@ internal static class StructuredNativeDocumentProjector
 
             segmentEvidence.Add(
                 new DocumentSegmentProcessingEvidence(
-                    segmentId,
+                    segmentId!,
                     [
                         DocumentTextSourceKind.Native
                     ],
@@ -444,7 +506,73 @@ internal static class StructuredNativeDocumentProjector
             segmentEvidence,
             visualAssets,
             DocumentProcessingQualityObservations.Empty,
-            evidence.SourceStructure);
+            evidence.SourceStructure,
+            ProjectNotes(
+                structuredNotes,
+                elementsByNativeLocation));
+    }
+
+    #endregion
+
+    #region Methods Notes
+
+    private static IReadOnlyList<DocumentNote> ProjectNotes(
+        IReadOnlyList<StructuredNativeDocumentNote> notes,
+        IReadOnlyDictionary<
+            DocumentProcessing.Core.Locations.DocumentSourceLocation,
+            string> elementsByNativeLocation)
+    {
+        var projected =
+            new List<DocumentNote>(
+                notes.Count);
+
+        for (var ordinal = 0;
+             ordinal <
+             notes.Count;
+             ordinal++)
+        {
+            var note =
+                notes[ordinal];
+
+            var references =
+                new List<DocumentNoteReference>(
+                    note.References.Count);
+
+            foreach (var reference in
+                     note.References)
+            {
+                if (!elementsByNativeLocation.TryGetValue(
+                        reference.OwnerLocation,
+                        out var elementId))
+                {
+                    throw new InvalidDataException(
+                        $"Structured note reference '{note.Label}' does not resolve to exactly one portable element.");
+                }
+
+                references.Add(
+                    new DocumentNoteReference(
+                        new DocumentNoteProvenance(
+                            elementId,
+                            reference.Location)));
+            }
+
+            var text =
+                NormalizeWhitespace(
+                    note.Text);
+
+            projected.Add(
+                new DocumentNote(
+                    $"note-{ordinal:D6}",
+                    ordinal,
+                    note.Label,
+                    text,
+                    ProvenanceTextHashing.ComputeUtf8Sha256(
+                        text),
+                    note.SourceLocations,
+                    references));
+        }
+
+        return projected;
     }
 
     #endregion

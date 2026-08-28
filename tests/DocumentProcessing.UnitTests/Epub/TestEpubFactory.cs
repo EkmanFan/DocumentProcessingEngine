@@ -181,8 +181,8 @@ internal static class TestEpubFactory
                       xmlns:epub="http://www.idpf.org/2007/ops">
                   <head><title>Notes</title></head>
                   <body>
-                    <p id="before-note">Before note.</p>
-                    <aside id="inline-note" epub:type="footnote"><span>1</span> Inline <em>footnote</em> content.</aside>
+                    <p id="before-note">Before note.<a id="inline-note-ref" epub:type="noteref" href="#inline-note">1</a></p>
+                    <aside id="inline-note" epub:type="footnote"><span>1</span> Inline <em>footnote</em> content.<a epub:type="backlink" href="#inline-note-ref">↩</a></aside>
                     <aside id="nested-note" epub:type="footnote"><p>Nested footnote paragraph.</p></aside>
                     <p id="after-note">After note.</p>
                   </body>
@@ -358,6 +358,68 @@ internal static class TestEpubFactory
                     "OEBPS/images/back.jpg",
                     [7, 8, 9]);
             }
+        }
+
+        return output.ToArray();
+    }
+
+    public static byte[] CreateNotes(
+        string chapterOneBody,
+        string chapterTwoBody)
+    {
+        using var output =
+            new MemoryStream();
+
+        using (var archive =
+               new ZipArchive(
+                   output,
+                   ZipArchiveMode.Create,
+                   leaveOpen:
+                       true))
+        {
+            Write(
+                archive,
+                "mimetype",
+                "application/epub+zip",
+                CompressionLevel.NoCompression);
+
+            Write(
+                archive,
+                "META-INF/container.xml",
+                """
+                <?xml version="1.0"?>
+                <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                  <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml" /></rootfiles>
+                </container>
+                """);
+
+            Write(
+                archive,
+                "OEBPS/content.opf",
+                """
+                <?xml version="1.0" encoding="utf-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">
+                  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">urn:test:notes</dc:identifier><dc:title>Notes</dc:title><dc:language>en</dc:language></metadata>
+                  <manifest><item id="chapter-1" href="chapter1.xhtml" media-type="application/xhtml+xml" /><item id="chapter-2" href="chapter2.xhtml" media-type="application/xhtml+xml" /></manifest>
+                  <spine><itemref idref="chapter-1" /><itemref idref="chapter-2" /></spine>
+                </package>
+                """);
+
+            Write(
+                archive,
+                "OEBPS/chapter1.xhtml",
+                $$"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Chapter 1</title></head><body>{{chapterOneBody}}</body></html>
+                """);
+
+            Write(
+                archive,
+                "OEBPS/chapter2.xhtml",
+                $$"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Chapter 2</title></head><body>{{chapterTwoBody}}</body></html>
+                """);
         }
 
         return output.ToArray();

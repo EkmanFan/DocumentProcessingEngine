@@ -10,9 +10,9 @@ using DocumentProcessing.Engine.Results;
 namespace DocumentProcessing.UnitTests.Results;
 
 /// <summary>
-/// Verifies the narrow format-neutral portable footnote model.
+/// Verifies the narrow format-neutral portable note model.
 /// </summary>
-public sealed class DocumentFootnoteTests
+public sealed class DocumentNoteTests
 {
     #region Methods Tests
 
@@ -20,13 +20,13 @@ public sealed class DocumentFootnoteTests
     public void Reference_EmbedsAutonomousProvenance()
     {
         var provenance =
-            new DocumentFootnoteProvenance(
+            new DocumentNoteProvenance(
                 "element-17",
                 new TestSourceLocation(
                     "marker"));
 
         var reference =
-            new DocumentFootnoteReference(
+            new DocumentNoteReference(
                 provenance);
 
         Assert.Same(
@@ -39,15 +39,15 @@ public sealed class DocumentFootnoteTests
     }
 
     [Fact]
-    public void Footnote_RetainsMultipleSourceLocations()
+    public void Note_RetainsMultipleSourceLocations()
     {
         const string text =
             "Cross-boundary footnote text.";
 
-        var footnote =
-            new DocumentFootnote(
-                footnoteId:
-                    "footnote-000000",
+        var note =
+            new DocumentNote(
+                noteId:
+                    "note-000000",
                 ordinal:
                     0,
                 label:
@@ -64,8 +64,8 @@ public sealed class DocumentFootnoteTests
                     ],
                 references:
                     [
-                        new DocumentFootnoteReference(
-                            new DocumentFootnoteProvenance(
+                        new DocumentNoteReference(
+                            new DocumentNoteProvenance(
                                 "element-17",
                                 new TestSourceLocation(
                                     "marker-513")))
@@ -73,20 +73,20 @@ public sealed class DocumentFootnoteTests
 
         Assert.Equal(
             2,
-            footnote.SourceLocations.Count);
+            note.SourceLocations.Count);
 
         Assert.Equal(
             "756",
-            footnote.Label);
+            note.Label);
     }
 
     [Fact]
-    public void Footnote_RejectsTextHashMismatch()
+    public void Note_RejectsTextHashMismatch()
     {
         Assert.Throws<ArgumentException>(
             () =>
-                new DocumentFootnote(
-                    "footnote-000000",
+                new DocumentNote(
+                    "note-000000",
                     ordinal:
                         0,
                     label:
@@ -101,8 +101,8 @@ public sealed class DocumentFootnoteTests
                         [new TestSourceLocation("source")],
                     references:
                         [
-                            new DocumentFootnoteReference(
-                                new DocumentFootnoteProvenance(
+                            new DocumentNoteReference(
+                                new DocumentNoteProvenance(
                                     "element-1",
                                     new TestSourceLocation(
                                         "marker")))
@@ -110,14 +110,14 @@ public sealed class DocumentFootnoteTests
     }
 
     [Fact]
-    public void PortableFootnoteTypes_DoNotDependOnIngestionResult()
+    public void PortableNoteTypes_DoNotDependOnIngestionResult()
     {
         var modelTypes =
             new[]
             {
-                typeof(DocumentFootnote),
-                typeof(DocumentFootnoteReference),
-                typeof(DocumentFootnoteProvenance)
+                typeof(DocumentNote),
+                typeof(DocumentNoteReference),
+                typeof(DocumentNoteProvenance)
             };
 
         Assert.DoesNotContain(
@@ -131,7 +131,7 @@ public sealed class DocumentFootnoteTests
     }
 
     [Fact]
-    public void Projector_FootnotesParameter_IsRequired()
+    public void Projector_NotesParameter_IsRequired()
     {
         var method =
             typeof(DocumentProcessingResultProjector)
@@ -143,31 +143,31 @@ public sealed class DocumentFootnoteTests
         Assert.NotNull(
             method);
 
-        var footnotes =
+        var notes =
             Assert.Single(
                 method.GetParameters(),
                 parameter =>
                     parameter.Name ==
-                    "footnotes");
+                    "notes");
 
         Assert.False(
-            footnotes.IsOptional);
+            notes.IsOptional);
 
         Assert.False(
-            footnotes.HasDefaultValue);
+            notes.HasDefaultValue);
     }
 
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void ProcessingResult_RejectsFootnoteReferenceOnDifferentPageThanOwnerElement(
+    public void ProcessingResult_RejectsNoteReferenceOnDifferentPageThanOwnerElement(
         bool retainPagedSourceStructure)
     {
         const string bodyText =
             "Body text with marker.";
 
         const string footnoteText =
-            "Footnote payload.";
+            "Note payload.";
 
         var element =
             new DocumentElement(
@@ -221,10 +221,10 @@ public sealed class DocumentFootnoteTests
                 layoutKind:
                     null);
 
-        var footnote =
-            new DocumentFootnote(
-                footnoteId:
-                    "footnote-000000",
+        var note =
+            new DocumentNote(
+                noteId:
+                    "note-000000",
                 ordinal:
                     0,
                 label:
@@ -240,8 +240,8 @@ public sealed class DocumentFootnoteTests
                     ],
                 references:
                     [
-                        new DocumentFootnoteReference(
-                            new DocumentFootnoteProvenance(
+                        new DocumentNoteReference(
+                            new DocumentNoteProvenance(
                                 element.ElementId,
                                 new PagedDocumentSourceLocation(
                                     physicalPageNumber:
@@ -319,8 +319,8 @@ public sealed class DocumentFootnoteTests
                             DocumentProcessingQualityObservations.Empty,
                         sourceStructure:
                             sourceStructure,
-                        footnotes:
-                            [footnote]));
+                        notes:
+                            [note]));
 
         Assert.Contains(
             "referenced document element is on physical page 1",

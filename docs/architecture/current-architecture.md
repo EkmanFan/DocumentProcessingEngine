@@ -113,6 +113,11 @@ models. It does not depend on Engine, PDF or provider implementations. Native
 text provenance is represented by `TextSelectionOrigin.Native`, not by a
 format-specific origin.
 
+The portable `document-processing-result-v3` contract represents every
+concluded note relation through `DocumentNote`, `DocumentNoteReference`,
+`DocumentNoteProvenance` and `DocumentProcessingResult.Notes`. It deliberately
+does not promote physical footnote/endnote placement to portable semantics.
+
 ## Current assembly direction
 
 ```text
@@ -190,9 +195,15 @@ are bounded and support title/date filters plus deterministic title/date sorts.
   headings; structured figures, repeated small presentational resources and
   narrowly identified terminal presentation matter are acquired as neutral
   source facts before Engine visual policy.
-- native EPUB extraction retains XHTML `aside` containers, including standard
-  `epub:type="footnote"` notes, as one ordered text block without duplicating
-  nested block content.
+- native EPUB extraction retains XHTML note payloads exactly once and concludes
+  unambiguous `noteref`/payload relations, including cross-resource references
+  and equivalent ARIA roles, as neutral `StructuredNativeDocumentNote`
+  evidence. Reciprocal backlinks may repair a contradictory forward link when
+  they form a unique marker/payload pair.
+- the Engine resolves structured note references to stable portable elements,
+  retains payload elements and provenance for audit, excludes only concluded
+  or independently identified note payloads from narrative segments, and
+  projects `DocumentNote` values only for concluded relations.
 - the EPUBCheck report reader materializes only validation messages and skips
   the potentially large package inventory; the five-corpus regression includes
   a 1,181-item spine whose official report is larger than one MiB.

@@ -79,7 +79,7 @@ public static class DocumentIngestionResultBuilder
             finalQuality);
     }
 
-    internal static IReadOnlyList<DocumentFootnote> BuildFootnotes(
+    internal static IReadOnlyList<DocumentNote> BuildNotes(
         DocumentIngestionResult ingestionResult,
         IReadOnlyList<NativeDocumentNote> notes)
     {
@@ -116,8 +116,8 @@ public static class DocumentIngestionResultBuilder
                     group =>
                         group.ToArray());
 
-        var footnotes =
-            new List<DocumentFootnote>(
+        var projectedNotes =
+            new List<DocumentNote>(
                 pagedNotes.Length);
 
         for (var ordinal = 0;
@@ -129,7 +129,7 @@ public static class DocumentIngestionResultBuilder
                 pagedNotes[ordinal];
 
             var references =
-                new List<DocumentFootnoteReference>(
+                new List<DocumentNoteReference>(
                     entry.References.Count);
 
             foreach (var reference in
@@ -149,7 +149,7 @@ public static class DocumentIngestionResultBuilder
                         1)
                 {
                     throw new InvalidDataException(
-                        $"Footnote reference '{entry.Label}' at p{reference.PhysicalPageNumber}/b{reference.SourceBlockSequence} does not resolve to exactly one stable ingestion element.");
+                        $"Note reference '{entry.Label}' at p{reference.PhysicalPageNumber}/b{reference.SourceBlockSequence} does not resolve to exactly one stable ingestion element.");
                 }
 
                 var owner =
@@ -158,12 +158,12 @@ public static class DocumentIngestionResultBuilder
                 if (owner.IsExcluded)
                 {
                     throw new InvalidDataException(
-                        $"Footnote reference '{entry.Label}' resolves to excluded element '{owner.ElementId}'.");
+                        $"Note reference '{entry.Label}' resolves to excluded element '{owner.ElementId}'.");
                 }
 
                 references.Add(
-                    new DocumentFootnoteReference(
-                        new DocumentFootnoteProvenance(
+                    new DocumentNoteReference(
+                        new DocumentNoteProvenance(
                             owner.ElementId,
                             new PagedDocumentSourceLocation(
                                 reference.PhysicalPageNumber,
@@ -180,10 +180,10 @@ public static class DocumentIngestionResultBuilder
                                     line.Bounds))
                     .ToArray();
 
-            footnotes.Add(
-                new DocumentFootnote(
-                    footnoteId:
-                        $"footnote-{ordinal:D6}",
+            projectedNotes.Add(
+                new DocumentNote(
+                    noteId:
+                        $"note-{ordinal:D6}",
                     ordinal,
                     entry.Label,
                     entry.Text,
@@ -194,7 +194,7 @@ public static class DocumentIngestionResultBuilder
         }
 
         return Array.AsReadOnly(
-            footnotes.ToArray());
+            projectedNotes.ToArray());
     }
 
     private static IReadOnlyList<DocumentIngestionPage>

@@ -5,7 +5,7 @@ namespace DocumentProcessing.Engine.Results;
 
 /// <summary>
 /// Engine-internal carrier that keeps the legacy ingestion result and newly
-/// projected semantic footnotes together until the portable-result boundary.
+/// projected semantic notes together until the portable-result boundary.
 /// </summary>
 internal sealed record DocumentProcessingModel
 {
@@ -13,7 +13,7 @@ internal sealed record DocumentProcessingModel
 
     public DocumentIngestionResult IngestionResult { get; }
 
-    public IReadOnlyList<DocumentFootnote> Footnotes { get; }
+    public IReadOnlyList<DocumentNote> Notes { get; }
 
     #endregion
 
@@ -21,7 +21,7 @@ internal sealed record DocumentProcessingModel
 
     public DocumentProcessingModel(
         DocumentIngestionResult ingestionResult,
-        IReadOnlyList<DocumentFootnote> footnotes)
+        IReadOnlyList<DocumentNote> notes)
     {
         IngestionResult =
             ingestionResult ??
@@ -29,21 +29,21 @@ internal sealed record DocumentProcessingModel
                 nameof(ingestionResult));
 
         ArgumentNullException.ThrowIfNull(
-            footnotes);
+            notes);
 
         var copy =
-            footnotes.ToArray();
+            notes.ToArray();
 
         if (copy.Any(
-                footnote =>
-                    footnote is null))
+                note =>
+                    note is null))
         {
             throw new ArgumentException(
-                "Engine footnote projection cannot contain null values.",
-                nameof(footnotes));
+                "Engine note projection cannot contain null values.",
+                nameof(notes));
         }
 
-        Footnotes =
+        Notes =
             Array.AsReadOnly(
                 copy);
     }

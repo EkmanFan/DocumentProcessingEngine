@@ -1,4 +1,5 @@
 using DocumentProcessing.Core.Extraction;
+using DocumentProcessing.Core.Locations;
 
 namespace DocumentProcessing.Core.Documents.Notes;
 
@@ -52,7 +53,7 @@ public readonly record struct PagedNativeNoteSourceBlock
 }
 
 /// <summary>
-/// One raised inline numeric reference correlated to a footnote label.
+/// One raised inline numeric reference correlated to a note label.
 /// </summary>
 public sealed record PagedNativeNoteReference
 {
@@ -143,7 +144,7 @@ public sealed record PagedNativeNoteReference
 }
 
 /// <summary>
-/// One visual payload line retained as source custody for a footnote entry.
+/// One visual payload line retained as source custody for a note entry.
 /// </summary>
 public sealed record PagedNativeNotePayloadLine
 {
@@ -268,7 +269,7 @@ public abstract record NativeDocumentNote
     public string Label { get; }
 
     /// <summary>
-    /// Gets the normalized textual payload of the note.
+    /// Gets the textual payload concluded from native evidence.
     /// </summary>
     public abstract string Text { get; }
 
@@ -289,6 +290,134 @@ public abstract record NativeDocumentNote
 
         Label =
             label.Trim();
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// One inline reference concluded from a structured, non-paged source.
+/// </summary>
+public sealed record StructuredNativeNoteReference
+{
+    #region Properties
+
+    /// <summary>
+    /// Gets the source location of the content block containing the marker.
+    /// </summary>
+    public DocumentSourceLocation OwnerLocation { get; }
+
+    /// <summary>
+    /// Gets the exact format-appropriate source location of the marker.
+    /// </summary>
+    public DocumentSourceLocation Location { get; }
+
+    #endregion
+
+    #region ctor
+
+    /// <summary>
+    /// Creates a structured note reference with owner and marker custody.
+    /// </summary>
+    public StructuredNativeNoteReference(
+        DocumentSourceLocation ownerLocation,
+        DocumentSourceLocation location)
+    {
+        OwnerLocation =
+            ownerLocation ??
+            throw new ArgumentNullException(
+                nameof(ownerLocation));
+
+        Location =
+            location ??
+            throw new ArgumentNullException(
+                nameof(location));
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// A note relation concluded from a structured, non-paged native
+/// representation.
+/// </summary>
+public sealed record StructuredNativeDocumentNote
+    : NativeDocumentNote
+{
+    #region Properties
+
+    /// <inheritdoc />
+    public override string Text { get; }
+
+    /// <summary>
+    /// Gets inline references correlated to the note payload.
+    /// </summary>
+    public IReadOnlyList<StructuredNativeNoteReference> References { get; }
+
+    /// <summary>
+    /// Gets source locations retaining the note payload.
+    /// </summary>
+    public IReadOnlyList<DocumentSourceLocation> SourceLocations { get; }
+
+    #endregion
+
+    #region ctor
+
+    /// <summary>
+    /// Creates a concluded structured note relation.
+    /// </summary>
+    public StructuredNativeDocumentNote(
+        string label,
+        string text,
+        IReadOnlyList<StructuredNativeNoteReference> references,
+        IReadOnlyList<DocumentSourceLocation> sourceLocations)
+        : base(
+            label)
+    {
+        if (string.IsNullOrWhiteSpace(
+                text))
+        {
+            throw new ArgumentException(
+                "Structured native note text cannot be empty.",
+                nameof(text));
+        }
+
+        ArgumentNullException.ThrowIfNull(
+            references);
+
+        ArgumentNullException.ThrowIfNull(
+            sourceLocations);
+
+        if (references.Count == 0 ||
+            references.Any(
+                reference =>
+                    reference is null))
+        {
+            throw new ArgumentException(
+                "A structured native note requires non-null reference custody.",
+                nameof(references));
+        }
+
+        if (sourceLocations.Count == 0 ||
+            sourceLocations.Any(
+                location =>
+                    location is null))
+        {
+            throw new ArgumentException(
+                "A structured native note requires non-null payload custody.",
+                nameof(sourceLocations));
+        }
+
+        Text =
+            text;
+
+        References =
+            Array.AsReadOnly(
+                references.ToArray());
+
+        SourceLocations =
+            Array.AsReadOnly(
+                sourceLocations.ToArray());
     }
 
     #endregion
@@ -356,21 +485,21 @@ public sealed record PagedNativeDocumentNote
         if (references.Count == 0)
         {
             throw new ArgumentException(
-                "A recognized footnote requires at least one correlated inline reference.",
+                "A recognized note requires at least one correlated inline reference.",
                 nameof(references));
         }
 
         if (payloadLines.Count == 0)
         {
             throw new ArgumentException(
-                "A recognized footnote requires retained payload evidence.",
+                "A recognized note requires retained payload evidence.",
                 nameof(payloadLines));
         }
 
         if (sourceBlocks.Count == 0)
         {
             throw new ArgumentException(
-                "A recognized footnote requires source-block custody.",
+                "A recognized note requires source-block custody.",
                 nameof(sourceBlocks));
         }
 

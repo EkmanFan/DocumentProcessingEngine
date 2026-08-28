@@ -2059,7 +2059,7 @@ public sealed class PostgresManagerPersistenceTests
                 json.RootElement;
 
             Assert.Equal(
-                "document-processing-result-v2",
+                "document-processing-result-v3",
                 root.GetProperty(
                         "schemaVersion")
                     .GetString());
@@ -2085,6 +2085,17 @@ public sealed class PostgresManagerPersistenceTests
                         "elements")
                     .GetArrayLength() >
                 0);
+
+            Assert.Equal(
+                JsonValueKind.Array,
+                root.GetProperty(
+                        "notes")
+                    .ValueKind);
+
+            Assert.False(
+                root.TryGetProperty(
+                    "footnotes",
+                    out _));
 
             var replay =
                 await executor.ExecuteAsync(
@@ -2647,7 +2658,7 @@ public sealed class PostgresManagerPersistenceTests
                 byteLength:
                     256),
             "application/vnd.document-processing-result+json",
-            "document-processing-result-v2",
+            "document-processing-result-v3",
             producedAtUtc ??
             DateTimeOffset.UnixEpoch);
 

@@ -232,6 +232,14 @@ V3 retains those notes exactly once, with cross-format and multi-corpus evidence
 in
 [`docs/evaluation/habermas-pdf-epub-text-comparison-v1.md`](docs/evaluation/habermas-pdf-epub-text-comparison-v1.md).
 
+Native profile V4 concludes unambiguous XHTML note relations from
+`epub:type="noteref"`, annotated payloads and equivalent ARIA roles, including
+cross-resource references. The Engine projects them through the portable
+`DocumentNote`/`Notes` contract and excludes identified note payloads from the
+narrative flow. Explicit or reciprocally identified note payloads remain
+auditable elements outside narrative segments even when their relation is not
+resolved; no portable `DocumentNote` is invented for an unresolved relation.
+
 The first reflowable publication-export increment lives in
 `DocumentProcessing.Epub`. `EpubPublicationExporter` consumes the canonical
 `DocumentProcessingResult`; the caller supplies publication metadata and a

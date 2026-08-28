@@ -118,17 +118,17 @@ public sealed class DocumentProcessingEngineOwnedPathTests
                         "engine-note.pdf",
                         "application/pdf"));
 
-        var footnote =
+        var note =
             Assert.Single(
-                result.Footnotes);
+                result.Notes);
 
         Assert.Equal(
             "1",
-            footnote.Label);
+            note.Label);
 
         Assert.Equal(
             "Beta native paragraph.",
-            footnote.Text);
+            note.Text);
 
         var payloadElement =
             Assert.Single(
@@ -147,12 +147,12 @@ public sealed class DocumentProcessingEngineOwnedPathTests
                     payloadElement.ElementId);
 
         Assert.Equal(
-            DocumentBlockExclusionReason.FootnoteContent,
+            DocumentBlockExclusionReason.NoteContent,
             payloadEvidence.ExclusionReason);
 
         var reference =
             Assert.Single(
-                footnote.References);
+                note.References);
 
         Assert.Contains(
             result.Elements,

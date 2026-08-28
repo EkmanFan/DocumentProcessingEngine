@@ -19,6 +19,15 @@ public sealed record StructuredNativeDocumentEvidence
 
     public IReadOnlyList<StructuredNativeVisual> Visuals { get; }
 
+    /// <summary>
+    /// Gets structured source locations identified as non-narrative note
+    /// payload candidates, independently of relation resolution.
+    /// </summary>
+    public IReadOnlyList<DocumentSourceLocation> NotePayloadCandidateLocations
+    {
+        get;
+    }
+
     public override ProcessingComponentIdentity NativeExtractionIdentity { get; }
 
     #endregion
@@ -45,7 +54,9 @@ public sealed record StructuredNativeDocumentEvidence
         IReadOnlyList<StructuredNativeContentUnit> contentUnits,
         ProcessingComponentIdentity nativeExtractionIdentity,
         IReadOnlyList<StructuredNativeVisual>? visuals,
-        IReadOnlyList<NativeDocumentNote> documentNotes)
+        IReadOnlyList<NativeDocumentNote> documentNotes,
+        IReadOnlyList<DocumentSourceLocation>?
+            notePayloadCandidateLocations = null)
         : base(
             documentNotes)
     {
@@ -115,6 +126,23 @@ public sealed record StructuredNativeDocumentEvidence
 
         Visuals =
             nativeVisuals;
+
+        var candidateLocations =
+            notePayloadCandidateLocations?.ToArray() ??
+            [];
+
+        if (candidateLocations.Any(
+                location =>
+                    location is null))
+        {
+            throw new ArgumentException(
+                "Structured note-payload candidates cannot contain null locations.",
+                nameof(notePayloadCandidateLocations));
+        }
+
+        NotePayloadCandidateLocations =
+            Array.AsReadOnly(
+                candidateLocations);
 
         NativeExtractionIdentity =
             nativeExtractionIdentity ??

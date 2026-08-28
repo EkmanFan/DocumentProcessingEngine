@@ -1,7 +1,9 @@
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Extraction;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Ocr;
+using DocumentProcessing.Core.Normalization;
 using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
@@ -162,6 +164,240 @@ public sealed class StructuredNativeDocumentProcessingTests
 
         Assert.Empty(
             result.ProcessingManifest.Ocr);
+    }
+
+    [Fact]
+    public async Task ProcessDocumentAsync_ConcludedStructuredNoteIsProjectedOutsideNarrativeFlow()
+    {
+        var referenceOwnerLocation =
+            new EpubDocumentSourceLocation(
+                0,
+                "OEBPS/chapter1.xhtml",
+                0,
+                "paragraph-1");
+
+        var payloadLocation =
+            new EpubDocumentSourceLocation(
+                0,
+                "OEBPS/chapter1.xhtml",
+                1,
+                "note-1");
+
+        var evidence =
+            new StructuredNativeDocumentEvidence(
+                new EpubDocumentSourceStructure(
+                    "OEBPS/content.opf",
+                    [
+                        new EpubSpineItemDescriptor(
+                            0,
+                            "chapter-1",
+                            "OEBPS/chapter1.xhtml",
+                            "application/xhtml+xml",
+                            isLinear:
+                                true)
+                    ]),
+                [
+                    new StructuredNativeContentUnit(
+                        "OEBPS/chapter1.xhtml",
+                        [
+                            new StructuredNativeTextBlock(
+                                StructuredNativeTextBlockKind.Text,
+                                referenceOwnerLocation,
+                                "Body text.1"),
+                            new StructuredNativeTextBlock(
+                                StructuredNativeTextBlockKind.Text,
+                                payloadLocation,
+                                "1 Note payload.")
+                        ])
+                ],
+                new ProcessingComponentIdentity(
+                    "test-epub",
+                    "test-epub-native-v1"),
+                visuals:
+                    null,
+                documentNotes:
+                    [
+                        new StructuredNativeDocumentNote(
+                            "1",
+                            "1 Note payload.",
+                            [
+                                new StructuredNativeNoteReference(
+                                    referenceOwnerLocation,
+                                    new EpubDocumentSourceLocation(
+                                        0,
+                                        "OEBPS/chapter1.xhtml",
+                                        0,
+                                        "note-ref-1"))
+                            ],
+                            [payloadLocation])
+                    ]);
+
+        var engine =
+            new DocumentProcessingEngine(
+                [new StubStructuredFormat(evidence)],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity);
+
+        await using var stream =
+            new MemoryStream(
+                "structured source"u8.ToArray());
+
+        var result =
+            await engine.ProcessDocumentAsync(
+                new DocumentSource(
+                    stream,
+                    "book.epub",
+                    "application/epub+zip"));
+
+        var note =
+            Assert.Single(
+                result.Notes);
+
+        Assert.Equal(
+            "1 Note payload.",
+            note.Text);
+
+        var payloadElement =
+            Assert.Single(
+                result.Elements,
+                element =>
+                    Equals(
+                        element.Location,
+                        payloadLocation));
+
+        Assert.Null(
+            payloadElement.SegmentId);
+
+        Assert.Equal(
+            DocumentBlockExclusionReason.NoteContent,
+            Assert.Single(
+                    result.ElementProcessingEvidence,
+                    item =>
+                        item.ElementId ==
+                        payloadElement.ElementId)
+                .ExclusionReason);
+
+        Assert.DoesNotContain(
+            "Note payload",
+            Assert.Single(
+                    result.StructuralSegments)
+                .Text,
+            StringComparison.Ordinal);
+
+        Assert.Equal(
+            result.Elements[0].ElementId,
+            Assert.Single(
+                    note.References)
+                .Provenance.ElementId);
+    }
+
+    [Fact]
+    public async Task ProcessDocumentAsync_UnresolvedNotePayloadCandidateRemainsAuditableButNonNarrative()
+    {
+        var bodyLocation =
+            new EpubDocumentSourceLocation(
+                0,
+                "OEBPS/chapter1.xhtml",
+                0,
+                "body");
+
+        var payloadLocation =
+            new EpubDocumentSourceLocation(
+                0,
+                "OEBPS/chapter1.xhtml",
+                1,
+                "unresolved-note");
+
+        var evidence =
+            new StructuredNativeDocumentEvidence(
+                new EpubDocumentSourceStructure(
+                    "OEBPS/content.opf",
+                    [
+                        new EpubSpineItemDescriptor(
+                            0,
+                            "chapter-1",
+                            "OEBPS/chapter1.xhtml",
+                            "application/xhtml+xml",
+                            isLinear:
+                                true)
+                    ]),
+                [
+                    new StructuredNativeContentUnit(
+                        "OEBPS/chapter1.xhtml",
+                        [
+                            new StructuredNativeTextBlock(
+                                StructuredNativeTextBlockKind.Text,
+                                bodyLocation,
+                                "Narrative body."),
+                            new StructuredNativeTextBlock(
+                                StructuredNativeTextBlockKind.Text,
+                                payloadLocation,
+                                "Unresolved note payload.")
+                        ])
+                ],
+                new ProcessingComponentIdentity(
+                    "test-epub",
+                    "test-epub-native-v1"),
+                visuals:
+                    null,
+                documentNotes:
+                    [],
+                notePayloadCandidateLocations:
+                    [payloadLocation]);
+
+        var engine =
+            new DocumentProcessingEngine(
+                [new StubStructuredFormat(evidence)],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity);
+
+        await using var stream =
+            new MemoryStream(
+                "structured source"u8.ToArray());
+
+        var result =
+            await engine.ProcessDocumentAsync(
+                new DocumentSource(
+                    stream,
+                    "book.epub",
+                    "application/epub+zip"));
+
+        Assert.Empty(
+            result.Notes);
+
+        var payloadElement =
+            Assert.Single(
+                result.Elements,
+                element =>
+                    Equals(
+                        element.Location,
+                        payloadLocation));
+
+        Assert.Null(
+            payloadElement.SegmentId);
+
+        Assert.Equal(
+            "Unresolved note payload.",
+            payloadElement.Text);
+
+        Assert.Equal(
+            DocumentBlockExclusionReason.NoteContent,
+            Assert.Single(
+                    result.ElementProcessingEvidence,
+                    item =>
+                        item.ElementId ==
+                        payloadElement.ElementId)
+                .ExclusionReason);
+
+        Assert.Equal(
+            "Narrative body.",
+            Assert.Single(
+                    result.StructuralSegments)
+                .Text);
     }
 
     [Fact]
