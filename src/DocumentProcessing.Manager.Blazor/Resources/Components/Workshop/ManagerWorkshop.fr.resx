@@ -19,6 +19,8 @@
   <data name="Pause" xml:space="preserve"><value>Pause</value></data>
   <data name="Stop" xml:space="preserve"><value>Arrêter</value></data>
   <data name="ManagerUnavailableTitle" xml:space="preserve"><value>Manager indisponible</value></data>
+  <data name="QueueUpdateFailedTitle" xml:space="preserve"><value>Modification de la file impossible</value></data>
+  <data name="QueueUpdateFailedDetail" xml:space="preserve"><value>La file a changé ou la commande a été refusée. Actualise puis réessaie.</value></data>
   <data name="Retry" xml:space="preserve"><value>Réessayer</value></data>
   <data name="PendingKicker" xml:space="preserve"><value>Prochainement</value></data>
   <data name="PendingTitle" xml:space="preserve"><value>À traiter</value></data>
@@ -26,6 +28,12 @@
   <data name="QueueEmptyTitle" xml:space="preserve"><value>La file est vide</value></data>
   <data name="QueueEmptyDetail" xml:space="preserve"><value>Aucun document n’attend son tour.</value></data>
   <data name="AttemptLabel" xml:space="preserve"><value>Essai {0}</value></data>
+  <data name="ShelvedStatus" xml:space="preserve"><value>Rangé</value></data>
+  <data name="ReadyStatus" xml:space="preserve"><value>Prêt</value></data>
+  <data name="RunQueuedItem" xml:space="preserve"><value>Lancer</value></data>
+  <data name="RunQueuedItemLabel" xml:space="preserve"><value>Rendre {0} éligible au traitement</value></data>
+  <data name="MoveEarlierLabel" xml:space="preserve"><value>Déplacer {0} plus tôt dans la file</value></data>
+  <data name="MoveLaterLabel" xml:space="preserve"><value>Déplacer {0} plus tard dans la file</value></data>
   <data name="GlobalQueue" xml:space="preserve"><value>File globale</value></data>
   <data name="ActiveKicker" xml:space="preserve"><value>Sur le bureau</value></data>
   <data name="ActiveTitle" xml:space="preserve"><value>En cours</value></data>
@@ -49,6 +57,7 @@
   <data name="IdlePaused" xml:space="preserve"><value>La file est en pause.</value></data>
   <data name="IdleStopped" xml:space="preserve"><value>Le Manager est arrêté.</value></data>
   <data name="IdlePending" xml:space="preserve"><value>Le prochain document va être pris en charge.</value></data>
+  <data name="IdleShelved" xml:space="preserve"><value>Les documents de la file restent rangés jusqu’à leur lancement.</value></data>
   <data name="IdleEmpty" xml:space="preserve"><value>Le bibliothécaire attend un nouveau document.</value></data>
   <data name="Synchronizing" xml:space="preserve"><value>Synchronisation…</value></data>
   <data name="RefreshedAt" xml:space="preserve"><value>Actualisé à {0}</value></data>

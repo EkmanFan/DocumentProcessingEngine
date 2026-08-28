@@ -10,4 +10,14 @@ internal interface IManagerHostClient
     ValueTask ExecuteControlAsync(
         ManagerControlAction action,
         CancellationToken cancellationToken = default);
+
+    ValueTask ReorderQueueAsync(
+        long expectedVersion,
+        IReadOnlyList<Guid> orderedPendingUnitIds,
+        CancellationToken cancellationToken = default);
+
+    ValueTask ReleaseProcessingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default);
 }

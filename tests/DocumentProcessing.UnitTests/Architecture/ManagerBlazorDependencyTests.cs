@@ -41,6 +41,9 @@ public sealed class ManagerBlazorDependencyTests
         var documentDropZoneType =
             typeof(global::DocumentProcessing.Manager.Blazor.Components.Workshop.ManagerDocumentDropZone);
 
+        var submissionBehaviorType =
+            typeof(global::DocumentProcessing.Manager.Blazor.Components.Workshop.ManagerDocumentSubmissionBehavior);
+
         Assert.True(
             workshopType.IsPublic);
 
@@ -49,6 +52,9 @@ public sealed class ManagerBlazorDependencyTests
 
         Assert.True(
             documentDropZoneType.IsPublic);
+
+        Assert.True(
+            submissionBehaviorType.IsPublic);
 
         Assert.True(
             typeof(global::DocumentProcessing.Manager.Blazor.DependencyInjection.ManagerWorkshopServiceCollectionExtensions)

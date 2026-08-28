@@ -68,7 +68,7 @@
     {
         <div class="connection-alert" role="alert">
             <div>
-                <strong>@Localizer["ManagerUnavailableTitle"]</strong>
+                <strong>@ErrorTitle</strong>
                 <span>@ErrorMessage</span>
             </div>
             <button type="button" @onclick="RefreshFromUserAsync">@Localizer["Retry"]</button>
@@ -106,18 +106,54 @@
             else
             {
                 <ol class="work-list queue-list">
-                    @foreach (var item in _snapshot.PendingItems)
+                    @for (var index = 0; index < _snapshot.PendingItems.Count; index++)
                     {
+                        var item = _snapshot.PendingItems[index];
+
                         <li class="work-item pending-item">
                             <span class="queue-position">@item.QueuePosition</span>
                             <div class="work-copy">
                                 <strong title="@item.OriginalFileName">@item.DocumentTitle</strong>
                                 <span>@FormatScope(item.Scope)</span>
                             </div>
-                            @if (item.AttemptNumber > 1)
-                            {
-                                <span class="attempt-badge">@Localizer["AttemptLabel", item.AttemptNumber]</span>
-                            }
+                            <div class="queue-actions">
+                                <div class="queue-metadata">
+                                    <span class="dispatch-badge @(item.DispatchState == ManagerQueueItemDispatchState.Shelved ? "dispatch-shelved" : "dispatch-ready")">
+                                        @(item.DispatchState == ManagerQueueItemDispatchState.Shelved
+                                            ? Localizer["ShelvedStatus"]
+                                            : Localizer["ReadyStatus"])
+                                    </span>
+                                    @if (item.AttemptNumber > 1)
+                                    {
+                                        <span class="attempt-badge">@Localizer["AttemptLabel", item.AttemptNumber]</span>
+                                    }
+                                </div>
+                                <div class="queue-command-group">
+                                    @if (item.DispatchState == ManagerQueueItemDispatchState.Shelved)
+                                    {
+                                        <button class="queue-run-button"
+                                                type="button"
+                                                disabled="@_commandRunning"
+                                                title="@(Localizer["RunQueuedItemLabel", item.DocumentTitle])"
+                                                aria-label="@(Localizer["RunQueuedItemLabel", item.DocumentTitle])"
+                                                @onclick="() => ReleaseProcessingUnitAsync(item.UnitId)">
+                                            @Localizer["RunQueuedItem"]
+                                        </button>
+                                    }
+                                    <div class="queue-order-controls">
+                                        <button type="button"
+                                                disabled="@(_commandRunning || index == 0)"
+                                                title="@(Localizer["MoveEarlierLabel", item.DocumentTitle])"
+                                                aria-label="@(Localizer["MoveEarlierLabel", item.DocumentTitle])"
+                                                @onclick="() => MoveQueueItemAsync(item.UnitId, -1)">↑</button>
+                                        <button type="button"
+                                                disabled="@(_commandRunning || index == _snapshot.PendingItems.Count - 1)"
+                                                title="@(Localizer["MoveLaterLabel", item.DocumentTitle])"
+                                                aria-label="@(Localizer["MoveLaterLabel", item.DocumentTitle])"
+                                                @onclick="() => MoveQueueItemAsync(item.UnitId, 1)">↓</button>
+                                    </div>
+                                </div>
+                            </div>
                         </li>
                     }
                 </ol>
@@ -284,6 +320,13 @@
         _snapshot?.PendingItems.Count ??
         0;
 
+    private int ReadyPendingCount =>
+        _snapshot?.PendingItems.Count(
+            item =>
+                item.DispatchState ==
+                ManagerQueueItemDispatchState.Ready) ??
+        0;
+
     private int CompletedCount =>
         _snapshot?.CompletedItems.Count ??
         0;
@@ -328,6 +371,15 @@
                 Localizer["StateConnecting"]
         };
 
+    private string ErrorTitle =>
+        _error switch
+        {
+            ManagerWorkshopError.Queue =>
+                Localizer["QueueUpdateFailedTitle"],
+            _ =>
+                Localizer["ManagerUnavailableTitle"]
+        };
+
     private string IdleMessage =>
         _snapshot?.State switch
         {
@@ -335,8 +387,10 @@
                 Localizer["IdlePaused"],
             ManagerHostState.Stopped =>
                 Localizer["IdleStopped"],
-            _ when PendingCount > 0 =>
+            _ when ReadyPendingCount > 0 =>
                 Localizer["IdlePending"],
+            _ when PendingCount > 0 =>
+                Localizer["IdleShelved"],
             _ =>
                 Localizer["IdleEmpty"]
         };
@@ -359,6 +413,8 @@
                 Localizer["ControlFailedDetail"],
             ManagerWorkshopError.Connection =>
                 Localizer["HostUnavailableDetail"],
+            ManagerWorkshopError.Queue =>
+                Localizer["QueueUpdateFailedDetail"],
             _ =>
                 string.Empty
         };
@@ -485,6 +541,125 @@
 
             _error =
                 ManagerWorkshopError.Control;
+        }
+        finally
+        {
+            _commandRunning =
+                false;
+        }
+    }
+
+    private async Task MoveQueueItemAsync(
+        Guid unitId,
+        int offset)
+    {
+        if (_commandRunning ||
+            _snapshot is null ||
+            offset is not (-1 or 1))
+        {
+            return;
+        }
+
+        var orderedUnitIds =
+            _snapshot.PendingItems
+                .Select(
+                    item =>
+                        item.UnitId)
+                .ToList();
+
+        var currentIndex =
+            orderedUnitIds.IndexOf(
+                unitId);
+
+        var requestedIndex =
+            currentIndex +
+            offset;
+
+        if (currentIndex <
+                0 ||
+            requestedIndex <
+                0 ||
+            requestedIndex >=
+                orderedUnitIds.Count)
+        {
+            return;
+        }
+
+        (orderedUnitIds[currentIndex], orderedUnitIds[requestedIndex]) =
+            (orderedUnitIds[requestedIndex], orderedUnitIds[currentIndex]);
+
+        var expectedVersion =
+            _snapshot.QueueVersion;
+
+        await ExecuteQueueMutationAsync(
+            cancellationToken =>
+                ManagerClient.ReorderQueueAsync(
+                    expectedVersion,
+                    orderedUnitIds,
+                    cancellationToken),
+            "reorder");
+    }
+
+    private Task ReleaseProcessingUnitAsync(
+        Guid unitId)
+    {
+        if (_snapshot is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var expectedVersion =
+            _snapshot.QueueVersion;
+
+        return ExecuteQueueMutationAsync(
+            cancellationToken =>
+                ManagerClient.ReleaseProcessingUnitAsync(
+                    unitId,
+                    expectedVersion,
+                    cancellationToken),
+            "release");
+    }
+
+    private async Task ExecuteQueueMutationAsync(
+        Func<CancellationToken, ValueTask> mutation,
+        string operation)
+    {
+        if (_commandRunning)
+        {
+            return;
+        }
+
+        _commandRunning =
+            true;
+
+        _error =
+            null;
+
+        try
+        {
+            await mutation(
+                _lifetime.Token);
+
+            await RefreshAsync(
+                notifyRenderer:
+                    false,
+                waitForTurn:
+                    true,
+                _lifetime.Token);
+        }
+        catch (OperationCanceledException)
+            when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                exception,
+                "Manager queue {ManagerQueueOperation} failed.",
+                operation);
+
+            _error =
+                ManagerWorkshopError.Queue;
         }
         finally
         {
@@ -649,7 +824,8 @@
     private enum ManagerWorkshopError
     {
         Control,
-        Connection
+        Connection,
+        Queue
     }
 
     #endregion

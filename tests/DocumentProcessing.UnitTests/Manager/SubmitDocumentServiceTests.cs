@@ -10,7 +10,7 @@ public sealed class SubmitDocumentServiceTests
     #region Tests
 
     [Fact]
-    public async Task SubmitAsync_PreservesExactContentAndEnqueuesWholeDocument()
+    public async Task SubmitAsync_PreservesExactContentAndShelvesWholeDocumentByDefault()
     {
         var content =
             new byte[]
@@ -101,7 +101,14 @@ public sealed class SubmitDocumentServiceTests
 
         var workItem =
             Assert.Single(
-                submissionWriter.ProcessingUnits);
+                    submissionWriter.ProcessingUnits)
+                .WorkItem;
+
+        Assert.Equal(
+            ProcessingUnitDispatchState.Shelved,
+            Assert.Single(
+                    submissionWriter.ProcessingUnits)
+                .DispatchState);
 
         Assert.Equal(
             submissionId,
@@ -121,6 +128,44 @@ public sealed class SubmitDocumentServiceTests
             workItem.UnitId,
             Assert.Single(
                 result.ProcessingUnitIds));
+    }
+
+    [Fact]
+    public async Task SubmitAsync_PreservesExplicitReadyDispatchIntent()
+    {
+        var artifact =
+            new SourceArtifact(
+                new Sha256Digest(
+                    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
+                byteLength:
+                    1);
+
+        var submissionWriter =
+            new RecordingSubmissionWriter();
+
+        await using var content =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        await new SubmitDocumentService(
+                new RecordingArtifactWriter(
+                    artifact),
+                submissionWriter)
+            .SubmitAsync(
+                new SubmitDocumentCommand(
+                    DocumentSubmissionId.New(),
+                    content,
+                    "book.pdf",
+                    initialDispatchState:
+                        ProcessingUnitDispatchState.Ready));
+
+        Assert.Equal(
+            ProcessingUnitDispatchState.Ready,
+            Assert.Single(
+                    submissionWriter.ProcessingUnits)
+                .DispatchState);
     }
 
     [Fact]
@@ -198,7 +243,7 @@ public sealed class SubmitDocumentServiceTests
             private set;
         }
 
-        public IReadOnlyList<ProcessingWorkItem> ProcessingUnits
+        public IReadOnlyList<ProcessingUnitIntake> ProcessingUnits
         {
             get;
             private set;
@@ -206,9 +251,9 @@ public sealed class SubmitDocumentServiceTests
             [];
 
         public ValueTask<DocumentSubmissionRegistration>
-            RegisterAndEnqueueAsync(
+            RegisterAsync(
             DocumentSubmission submission,
-            IReadOnlyCollection<ProcessingWorkItem> processingUnits,
+            IReadOnlyCollection<ProcessingUnitIntake> processingUnits,
             CancellationToken cancellationToken = default)
         {
             Submission =
@@ -222,7 +267,7 @@ public sealed class SubmitDocumentServiceTests
                     submission,
                     ProcessingUnits.Select(
                         unit =>
-                            unit.UnitId),
+                            unit.WorkItem.UnitId),
                     created:
                         true));
         }

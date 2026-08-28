@@ -65,10 +65,55 @@
 }
 
 .drop-hint,
-.drop-feedback {
+.drop-feedback,
+.submission-behavior {
     position: absolute;
     z-index: 9;
     pointer-events: none;
+}
+
+.submission-behavior {
+    z-index: 12;
+    top: 14px;
+    left: 50%;
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid rgba(29, 51, 66, 0.13);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 6px 18px rgba(35, 47, 44, 0.1);
+    backdrop-filter: blur(7px);
+    pointer-events: auto;
+    transform: translateX(-50%);
+}
+
+.submission-behavior button {
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 999px;
+    color: rgba(29, 51, 66, 0.68);
+    font: inherit;
+    font-size: 0.67rem;
+    font-weight: 760;
+    background: transparent;
+    cursor: pointer;
+    transition: color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.submission-behavior button.selected {
+    color: #fff;
+    background: var(--teal);
+    box-shadow: 0 3px 9px rgba(40, 116, 107, 0.24);
+}
+
+.submission-behavior button:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+}
+
+.submission-behavior button:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
 }
 
 .drop-hint {
@@ -210,6 +255,14 @@
 @media (max-width: 760px) {
     .animation-stage {
         min-height: 330px;
+    }
+
+    .submission-behavior {
+        top: 12px;
+    }
+
+    .submission-behavior button {
+        padding-inline: 9px;
     }
 }
 

@@ -25,8 +25,7 @@ dotnet run --project src/DocumentProcessing.Manager.Blazor
 The API key remains in the server process and is never sent to the browser.
 The workshop provides Manager controls, pending, active and completed views,
 and a reusable sprite-animated librarian whose deterministic states follow
-Manager observations. Queue reordering and result download remain later
-increments.
+Manager observations. Result download remains a later increment.
 
 The complete animation stage is a permanent PDF/EPUB file input: clicking it or
 dropping one file on the librarian streams the exact source to the authenticated
@@ -37,7 +36,16 @@ submission adapter sends the standard filename metadata and, for ASCII names,
 the legacy header required by earlier Manager Hosts during a rolling restart.
 A successful custody registration briefly shows the librarian's
 reception reaction and refreshes the queue. The Host remains solely responsible
-for content hashing, immutable custody and atomic initial enqueueing.
+for content hashing, immutable custody and atomic processing registration.
+
+The reception toggle defaults to `Shelve`: the source enters the durable global
+order but cannot be claimed until the user selects `Run` on that queue item.
+Selecting `Run` before reception makes the new unit immediately eligible while
+still respecting the Manager's global Start/Pause/Stop state and strictly
+sequential dispatcher. Queue items can be moved earlier or later across
+documents and future chapter units. The public drop-zone component exposes
+`DefaultSubmissionBehavior` so an embedding application can choose its initial
+toggle state without replacing the user's in-session choice.
 
 The librarian waits when the queue has no active work, reads while a unit is
 active, holds its page while paused, rests while stopped and reports a lost Host

@@ -19,6 +19,8 @@
   <data name="Pause" xml:space="preserve"><value>Pause</value></data>
   <data name="Stop" xml:space="preserve"><value>Stop</value></data>
   <data name="ManagerUnavailableTitle" xml:space="preserve"><value>Manager unavailable</value></data>
+  <data name="QueueUpdateFailedTitle" xml:space="preserve"><value>Queue update failed</value></data>
+  <data name="QueueUpdateFailedDetail" xml:space="preserve"><value>The queue changed or the command was rejected. Refresh and try again.</value></data>
   <data name="Retry" xml:space="preserve"><value>Retry</value></data>
   <data name="PendingKicker" xml:space="preserve"><value>Up next</value></data>
   <data name="PendingTitle" xml:space="preserve"><value>To process</value></data>
@@ -26,6 +28,12 @@
   <data name="QueueEmptyTitle" xml:space="preserve"><value>The queue is empty</value></data>
   <data name="QueueEmptyDetail" xml:space="preserve"><value>No document is waiting.</value></data>
   <data name="AttemptLabel" xml:space="preserve"><value>Attempt {0}</value></data>
+  <data name="ShelvedStatus" xml:space="preserve"><value>Shelved</value></data>
+  <data name="ReadyStatus" xml:space="preserve"><value>Ready</value></data>
+  <data name="RunQueuedItem" xml:space="preserve"><value>Run</value></data>
+  <data name="RunQueuedItemLabel" xml:space="preserve"><value>Make {0} eligible for processing</value></data>
+  <data name="MoveEarlierLabel" xml:space="preserve"><value>Move {0} earlier in the queue</value></data>
+  <data name="MoveLaterLabel" xml:space="preserve"><value>Move {0} later in the queue</value></data>
   <data name="GlobalQueue" xml:space="preserve"><value>Global queue</value></data>
   <data name="ActiveKicker" xml:space="preserve"><value>On the desk</value></data>
   <data name="ActiveTitle" xml:space="preserve"><value>In progress</value></data>
@@ -49,6 +57,7 @@
   <data name="IdlePaused" xml:space="preserve"><value>The queue is paused.</value></data>
   <data name="IdleStopped" xml:space="preserve"><value>The Manager is stopped.</value></data>
   <data name="IdlePending" xml:space="preserve"><value>The next document will be picked up shortly.</value></data>
+  <data name="IdleShelved" xml:space="preserve"><value>The queued documents are shelved until you run one.</value></data>
   <data name="IdleEmpty" xml:space="preserve"><value>The librarian is waiting for a new document.</value></data>
   <data name="Synchronizing" xml:space="preserve"><value>Synchronizing…</value></data>
   <data name="RefreshedAt" xml:space="preserve"><value>Updated at {0}</value></data>

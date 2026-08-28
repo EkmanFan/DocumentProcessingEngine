@@ -11,6 +11,28 @@
      @ondrop="HandleDrop">
     @ChildContent
 
+    <div class="submission-behavior"
+         role="group"
+         aria-label="@(Localizer["SubmissionBehaviorLabel"])"
+         title="@SubmissionBehaviorDescription">
+        <button type="button"
+                class="@SubmissionBehaviorButtonClass(ManagerDocumentSubmissionBehavior.Shelve)"
+                aria-pressed="@FormatPressedState(ManagerDocumentSubmissionBehavior.Shelve)"
+                disabled="@_uploading"
+                @onclick="() => SelectSubmissionBehavior(ManagerDocumentSubmissionBehavior.Shelve)"
+                @onclick:stopPropagation="true">
+            @Localizer["ShelveBehavior"]
+        </button>
+        <button type="button"
+                class="@SubmissionBehaviorButtonClass(ManagerDocumentSubmissionBehavior.Run)"
+                aria-pressed="@FormatPressedState(ManagerDocumentSubmissionBehavior.Run)"
+                disabled="@_uploading"
+                @onclick="() => SelectSubmissionBehavior(ManagerDocumentSubmissionBehavior.Run)"
+                @onclick:stopPropagation="true">
+            @Localizer["RunBehavior"]
+        </button>
+    </div>
+
     <InputFile @key="_fileInputSequence"
                class="document-drop-input"
                aria-label="@(Localizer["DropInputLabel"])"
@@ -47,6 +69,12 @@
     private bool
         _uploading;
 
+    private bool
+        _submissionBehaviorInitialized;
+
+    private ManagerDocumentSubmissionBehavior
+        _submissionBehavior;
+
     private ManagerDocumentDropState
         _uploadState;
 
@@ -72,6 +100,10 @@
 
     [Parameter]
     public EventCallback<string> DocumentSubmitted { get; set; }
+
+    [Parameter]
+    public ManagerDocumentSubmissionBehavior DefaultSubmissionBehavior { get; set; } =
+        ManagerDocumentSubmissionBehavior.Shelve;
 
     #endregion
 
@@ -159,9 +191,41 @@
                     string.Empty
             };
 
+    private string SubmissionBehaviorDescription =>
+        _submissionBehavior switch
+        {
+            ManagerDocumentSubmissionBehavior.Shelve =>
+                Localizer["ShelveBehaviorDetail"],
+            ManagerDocumentSubmissionBehavior.Run =>
+                Localizer["RunBehaviorDetail"],
+            _ =>
+                string.Empty
+        };
+
     #endregion
 
     #region Methods Lifecycle
+
+    protected override void OnParametersSet()
+    {
+        if (!Enum.IsDefined(
+                DefaultSubmissionBehavior))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(DefaultSubmissionBehavior),
+                DefaultSubmissionBehavior,
+                "Unknown default document submission behavior.");
+        }
+
+        if (!_submissionBehaviorInitialized)
+        {
+            _submissionBehavior =
+                DefaultSubmissionBehavior;
+
+            _submissionBehaviorInitialized =
+                true;
+        }
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -174,6 +238,32 @@
     #endregion
 
     #region Methods Interaction
+
+    private void SelectSubmissionBehavior(
+        ManagerDocumentSubmissionBehavior submissionBehavior)
+    {
+        if (_uploading)
+        {
+            return;
+        }
+
+        _submissionBehavior =
+            submissionBehavior;
+    }
+
+    private string SubmissionBehaviorButtonClass(
+        ManagerDocumentSubmissionBehavior submissionBehavior) =>
+        _submissionBehavior ==
+        submissionBehavior
+            ? "selected"
+            : string.Empty;
+
+    private string FormatPressedState(
+        ManagerDocumentSubmissionBehavior submissionBehavior) =>
+        (_submissionBehavior ==
+         submissionBehavior)
+        .ToString()
+        .ToLowerInvariant();
 
     private void HandleDragEnter()
     {
@@ -246,6 +336,7 @@
                 await UploadService
                     .SubmitAsync(
                         file,
+                        _submissionBehavior,
                         _lifetime.Token);
         }
         catch (OperationCanceledException)

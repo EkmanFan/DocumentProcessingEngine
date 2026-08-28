@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using DocumentProcessing.Manager.Blazor.Components.Workshop;
 
 namespace DocumentProcessing.Manager.Blazor.ManagerApi;
 
@@ -50,7 +51,7 @@ internal sealed class ManagerSubmissionClient(
         using var message =
             new HttpRequestMessage(
                 HttpMethod.Put,
-                $"api/manager/submissions/{request.SubmissionId:D}")
+                $"api/manager/submissions/{request.SubmissionId:D}?dispatch={ToDispatchQueryValue(request.SubmissionBehavior)}")
             {
                 Content =
                     content
@@ -140,7 +141,31 @@ internal sealed class ManagerSubmissionClient(
                 "Submission media type cannot be empty.",
                 nameof(request));
         }
+
+        if (!Enum.IsDefined(
+                request.SubmissionBehavior))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(request),
+                request.SubmissionBehavior,
+                "Unknown document submission behavior.");
+        }
     }
+
+    private static string ToDispatchQueryValue(
+        ManagerDocumentSubmissionBehavior submissionBehavior) =>
+        submissionBehavior switch
+        {
+            ManagerDocumentSubmissionBehavior.Shelve =>
+                "shelve",
+            ManagerDocumentSubmissionBehavior.Run =>
+                "run",
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(submissionBehavior),
+                    submissionBehavior,
+                    "Unknown document submission behavior.")
+        };
 
     private static void AddLegacyFileNameHeader(
         HttpRequestMessage message,

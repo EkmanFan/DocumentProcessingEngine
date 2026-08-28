@@ -1,4 +1,5 @@
 using DocumentProcessing.Manager.Blazor.Configuration;
+using DocumentProcessing.Manager.Blazor.Components.Workshop;
 using DocumentProcessing.Manager.Blazor.ManagerApi;
 using Microsoft.AspNetCore.Components.Forms;
 
@@ -51,10 +52,20 @@ internal sealed class ManagerWorkshopUploadService
 
     public async ValueTask<ManagerDocumentSubmissionResult> SubmitAsync(
         IBrowserFile file,
+        ManagerDocumentSubmissionBehavior submissionBehavior,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
             file);
+
+        if (!Enum.IsDefined(
+                submissionBehavior))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(submissionBehavior),
+                submissionBehavior,
+                "Unknown document submission behavior.");
+        }
 
         if (file.Size <=
             0)
@@ -87,7 +98,8 @@ internal sealed class ManagerWorkshopUploadService
                     file.Size,
                     file.Name,
                     mediaType,
-                    SourceOrigin),
+                    SourceOrigin,
+                    submissionBehavior),
                 cancellationToken)
             .ConfigureAwait(false);
     }

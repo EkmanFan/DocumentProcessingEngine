@@ -56,7 +56,7 @@ public sealed class SubmitDocumentService
     #region Methods
 
     /// <summary>
-    /// Preserves a source and idempotently enqueues one whole-document unit.
+    /// Preserves a source and idempotently registers one whole-document unit.
     /// </summary>
     public async ValueTask<DocumentSubmissionRegistration> SubmitAsync(
         SubmitDocumentCommand command,
@@ -90,9 +90,13 @@ public sealed class SubmitDocumentService
                     1);
 
         return await _submissionWriter
-            .RegisterAndEnqueueAsync(
+            .RegisterAsync(
                 submission,
-                [workItem],
+                [
+                    new ProcessingUnitIntake(
+                        workItem,
+                        command.InitialDispatchState)
+                ],
                 cancellationToken)
             .ConfigureAwait(false);
     }

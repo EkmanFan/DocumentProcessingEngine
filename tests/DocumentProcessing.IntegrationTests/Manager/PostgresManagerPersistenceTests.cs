@@ -76,7 +76,7 @@ public sealed class PostgresManagerPersistenceTests
                 "SELECT MAX(version) FROM document_processing_manager.schema_versions;");
 
         Assert.Equal(
-            3,
+            4,
             Convert.ToInt32(
                 await versionCommand.ExecuteScalarAsync()));
     }
@@ -369,6 +369,96 @@ public sealed class PostgresManagerPersistenceTests
                         1),
                 await ReadSubmissionCountsAsync(
                     context.DataSource));
+
+            var shelvedQueue =
+                await context.QueueReader
+                    .GetSnapshotAsync();
+
+            var shelvedItem =
+                Assert.Single(
+                    shelvedQueue.Items);
+
+            Assert.Equal(
+                ProcessingUnitDispatchState.Shelved,
+                shelvedItem.DispatchState);
+
+            var now =
+                DateTimeOffset.UtcNow;
+
+            var runtimeLease =
+                await context.RuntimeLeaseStore
+                    .TryAcquireAsync(
+                        "shelved-submission-test",
+                        now,
+                        now.AddMinutes(
+                            1));
+
+            Assert.NotNull(
+                runtimeLease);
+
+            Assert.Null(
+                await context.QueueStore
+                    .ClaimNextAsync(
+                        runtimeLease,
+                        runtimeLease.WorkerId,
+                        now,
+                        now.AddMinutes(
+                            1)));
+
+            await context.QueueStore
+                .ReleasePendingAsync(
+                    new ReleaseProcessingUnitCommand(
+                        shelvedItem.WorkItem.UnitId,
+                        shelvedQueue.Version));
+
+            var releasedQueue =
+                await context.QueueReader
+                    .GetSnapshotAsync();
+
+            Assert.Equal(
+                ProcessingUnitDispatchState.Ready,
+                Assert.Single(
+                        releasedQueue.Items)
+                    .DispatchState);
+
+            await using (var reverseRelease =
+                         context.DataSource.CreateCommand(
+                             """
+                             UPDATE document_processing_manager.processing_units
+                             SET released_at_utc = NULL
+                             WHERE unit_id = @unit_id;
+                             """))
+            {
+                reverseRelease.Parameters.AddWithValue(
+                    "unit_id",
+                    NpgsqlDbType.Uuid,
+                    shelvedItem.WorkItem.UnitId.Value);
+
+                var reversal =
+                    await Assert.ThrowsAsync<PostgresException>(
+                        () =>
+                            reverseRelease.ExecuteNonQueryAsync());
+
+                Assert.Equal(
+                    PostgresErrorCodes.RaiseException,
+                    reversal.SqlState);
+            }
+
+            var claimed =
+                await context.QueueStore
+                    .ClaimNextAsync(
+                        runtimeLease,
+                        runtimeLease.WorkerId,
+                        DateTimeOffset.UtcNow,
+                        DateTimeOffset.UtcNow.AddMinutes(
+                            1));
+
+            Assert.NotNull(
+                claimed);
+
+            Assert.Equal(
+                shelvedItem.WorkItem.UnitId,
+                claimed.WorkItem.UnitId);
         }
         finally
         {
@@ -396,7 +486,7 @@ public sealed class PostgresManagerPersistenceTests
                 .Select(
                     _ =>
                         context.SubmissionStore
-                            .RegisterAndEnqueueAsync(
+                            .RegisterReadyAsync(
                                 submission,
                                 [
                                     new ProcessingWorkItem(
@@ -493,7 +583,7 @@ public sealed class PostgresManagerPersistenceTests
                 .ToArray();
 
         var created =
-            await context.SubmissionStore.RegisterAndEnqueueAsync(
+            await context.SubmissionStore.RegisterReadyAsync(
                 submission,
                 initialUnits);
 
@@ -520,7 +610,7 @@ public sealed class PostgresManagerPersistenceTests
                 .ToArray();
 
         var replay =
-            await context.SubmissionStore.RegisterAndEnqueueAsync(
+            await context.SubmissionStore.RegisterReadyAsync(
                 submission,
                 replayUnits);
 
@@ -553,7 +643,7 @@ public sealed class PostgresManagerPersistenceTests
         await Assert.ThrowsAsync<DocumentSubmissionConflictException>(
             () =>
                 context.SubmissionStore
-                    .RegisterAndEnqueueAsync(
+                    .RegisterReadyAsync(
                         submission,
                         conflictingPlan)
                     .AsTask());
@@ -597,7 +687,7 @@ public sealed class PostgresManagerPersistenceTests
                 attemptNumber:
                     1);
 
-        await context.SubmissionStore.RegisterAndEnqueueAsync(
+        await context.SubmissionStore.RegisterReadyAsync(
             original,
             [unit]);
 
@@ -611,7 +701,7 @@ public sealed class PostgresManagerPersistenceTests
             await Assert.ThrowsAsync<DocumentSubmissionConflictException>(
                 () =>
                     context.SubmissionStore
-                        .RegisterAndEnqueueAsync(
+                        .RegisterReadyAsync(
                             conflicting,
                             [
                                 new ProcessingWorkItem(
@@ -658,7 +748,7 @@ public sealed class PostgresManagerPersistenceTests
         var sharedUnitId =
             ProcessingUnitId.New();
 
-        await context.SubmissionStore.RegisterAndEnqueueAsync(
+        await context.SubmissionStore.RegisterReadyAsync(
             first,
             [
                 new ProcessingWorkItem(
@@ -679,7 +769,7 @@ public sealed class PostgresManagerPersistenceTests
             await Assert.ThrowsAsync<PostgresException>(
                 () =>
                     context.SubmissionStore
-                        .RegisterAndEnqueueAsync(
+                        .RegisterReadyAsync(
                             second,
                             [
                                 new ProcessingWorkItem(
@@ -727,7 +817,7 @@ public sealed class PostgresManagerPersistenceTests
                 digestCharacter:
                     'f');
 
-        await context.SubmissionStore.RegisterAndEnqueueAsync(
+        await context.SubmissionStore.RegisterReadyAsync(
             submission,
             [
                 new ProcessingWorkItem(
@@ -800,7 +890,7 @@ public sealed class PostgresManagerPersistenceTests
                 digestCharacter:
                     '9');
 
-        await context.SubmissionStore.RegisterAndEnqueueAsync(
+        await context.SubmissionStore.RegisterReadyAsync(
             submission,
             [
                 new ProcessingWorkItem(
@@ -1256,7 +1346,7 @@ public sealed class PostgresManagerPersistenceTests
                 attemptNumber:
                     1);
 
-        await context.SubmissionStore.RegisterAndEnqueueAsync(
+        await context.SubmissionStore.RegisterReadyAsync(
             submission,
             [first, second]);
 
@@ -1313,6 +1403,108 @@ public sealed class PostgresManagerPersistenceTests
         Assert.Equal(
             "Chapter two",
             pageRange.Title);
+    }
+
+    [PostgresFact]
+    public async Task QueueStore_ReordersShelvedAndReadyUnitsWithoutDispatchingShelvedWork()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var submission =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    '6');
+
+        var ready =
+            CreateWorkItem(
+                new ProcessingUnitScope.PageRange(
+                    startPhysicalPageNumber:
+                        1,
+                    endPhysicalPageNumber:
+                        20,
+                    title:
+                        "Ready chapter"),
+                submissionId:
+                    submission.SubmissionId);
+
+        var shelved =
+            CreateWorkItem(
+                new ProcessingUnitScope.PageRange(
+                    startPhysicalPageNumber:
+                        21,
+                    endPhysicalPageNumber:
+                        30,
+                    title:
+                        "Shelved chapter"),
+                submission.SubmissionId);
+
+        await context.SubmissionStore
+            .RegisterAsync(
+                submission,
+                [
+                    new ProcessingUnitIntake(
+                        ready,
+                        ProcessingUnitDispatchState.Ready),
+                    new ProcessingUnitIntake(
+                        shelved,
+                        ProcessingUnitDispatchState.Shelved)
+                ]);
+
+        var initial =
+            await context.QueueReader
+                .GetSnapshotAsync();
+
+        await context.QueueStore
+            .ReorderPendingAsync(
+                new ReorderProcessingQueueCommand(
+                    [shelved.UnitId, ready.UnitId],
+                    initial.Version));
+
+        var reordered =
+            await context.QueueReader
+                .GetSnapshotAsync();
+
+        Assert.Equal(
+            [shelved.UnitId, ready.UnitId],
+            reordered.Items.Select(
+                item =>
+                    item.WorkItem.UnitId));
+
+        Assert.Equal(
+            ProcessingUnitDispatchState.Shelved,
+            reordered.Items[0].DispatchState);
+
+        var now =
+            DateTimeOffset.UtcNow;
+
+        var runtimeLease =
+            await context.RuntimeLeaseStore
+                .TryAcquireAsync(
+                    "mixed-dispatch-test",
+                    now,
+                    now.AddMinutes(
+                        1));
+
+        Assert.NotNull(
+            runtimeLease);
+
+        var claimed =
+            await context.QueueStore
+                .ClaimNextAsync(
+                    runtimeLease,
+                    runtimeLease.WorkerId,
+                    now,
+                    now.AddMinutes(
+                        1));
+
+        Assert.NotNull(
+            claimed);
+
+        Assert.Equal(
+            ready.UnitId,
+            claimed.WorkItem.UnitId);
     }
 
     [PostgresFact]
@@ -1571,7 +1763,8 @@ public sealed class PostgresManagerPersistenceTests
                         source,
                         whitelistedFileName,
                         "application/pdf",
-                        "qualified local single-page fixture"));
+                        "qualified local single-page fixture",
+                        ProcessingUnitDispatchState.Ready));
 
             var unitId =
                 Assert.Single(
@@ -1742,9 +1935,11 @@ public sealed class PostgresManagerPersistenceTests
     }
 
     private static ProcessingWorkItem CreateWorkItem(
-        ProcessingUnitScope? scope = null) =>
+        ProcessingUnitScope? scope = null,
+        DocumentSubmissionId? submissionId = null) =>
         new(
             ProcessingUnitId.New(),
+            submissionId ??
             DocumentSubmissionId.New(),
             scope ??
             new ProcessingUnitScope.WholeDocument(),
@@ -2256,6 +2451,37 @@ public sealed class PostgresManagerPersistenceTests
         long Events,
         long Units,
         long QueueVersion);
+
+    #endregion
+}
+
+internal static class PostgresDocumentSubmissionStoreTestExtensions
+{
+    #region Methods
+
+    public static ValueTask<DocumentSubmissionRegistration> RegisterReadyAsync(
+        this PostgresDocumentSubmissionStore store,
+        DocumentSubmission submission,
+        IReadOnlyCollection<ProcessingWorkItem> processingUnits,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            store);
+
+        ArgumentNullException.ThrowIfNull(
+            processingUnits);
+
+        return store.RegisterAsync(
+            submission,
+            processingUnits
+                .Select(
+                    unit =>
+                        new ProcessingUnitIntake(
+                            unit,
+                            ProcessingUnitDispatchState.Ready))
+                .ToArray(),
+            cancellationToken);
+    }
 
     #endregion
 }

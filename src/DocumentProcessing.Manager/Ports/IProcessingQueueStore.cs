@@ -85,4 +85,11 @@ public interface IProcessingQueueStore
     ValueTask ReorderPendingAsync(
         ReorderProcessingQueueCommand command,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Atomically makes one shelved pending unit eligible for dispatch.
+    /// </summary>
+    ValueTask ReleasePendingAsync(
+        ReleaseProcessingUnitCommand command,
+        CancellationToken cancellationToken = default);
 }

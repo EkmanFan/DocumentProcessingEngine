@@ -17,6 +17,8 @@ public sealed class ManagerWorkshopSnapshotTests
             CreateItem(
                 "allison.pdf",
                 ManagerQueueItemStatus.Pending,
+                dispatchState:
+                    ManagerQueueItemDispatchState.Shelved,
                 queuePosition:
                     20,
                 updatedAtUtc:
@@ -86,6 +88,10 @@ public sealed class ManagerWorkshopSnapshotTests
                 .Select(
                     item =>
                         item.DocumentTitle));
+
+        Assert.Equal(
+            ManagerQueueItemDispatchState.Shelved,
+            workshop.PendingItems[1].DispatchState);
 
         Assert.Equal(
             "bauckham",
@@ -199,6 +205,8 @@ public sealed class ManagerWorkshopSnapshotTests
     private static ManagerQueueItemContract CreateItem(
         string originalFileName,
         ManagerQueueItemStatus status,
+        ManagerQueueItemDispatchState dispatchState =
+            ManagerQueueItemDispatchState.Ready,
         long? queuePosition = null,
         string? resultReference = null,
         string? failureMessage = null,
@@ -218,6 +226,7 @@ public sealed class ManagerWorkshopSnapshotTests
             AttemptNumber:
                 1,
             status,
+            dispatchState,
             queuePosition,
             resultReference,
             LastFailureCode:

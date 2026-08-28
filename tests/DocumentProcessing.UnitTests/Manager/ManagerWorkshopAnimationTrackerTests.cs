@@ -119,6 +119,8 @@ public sealed class ManagerWorkshopAnimationTrackerTests
             AttemptNumber:
                 1,
             status,
+            DispatchState:
+                ManagerQueueItemDispatchState.Ready,
             QueuePosition:
                 null,
             ResultReference:

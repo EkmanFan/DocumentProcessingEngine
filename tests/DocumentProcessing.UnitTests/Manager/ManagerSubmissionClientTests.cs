@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using DocumentProcessing.Manager.Blazor.Components.Workshop;
 using DocumentProcessing.Manager.Blazor.ManagerApi;
 
 namespace DocumentProcessing.UnitTests.Manager;
@@ -11,13 +12,19 @@ public sealed class ManagerSubmissionClientTests
     [Theory]
     [InlineData(
         "document.pdf",
-        "document.pdf")]
+        "document.pdf",
+        (int)ManagerDocumentSubmissionBehavior.Shelve,
+        "shelve")]
     [InlineData(
         "théologie.pdf",
-        null)]
+        null,
+        (int)ManagerDocumentSubmissionBehavior.Run,
+        "run")]
     public async Task SubmitDocumentAsync_StreamsExactContentWithCompatibleFileNameHeaders(
         string fileName,
-        string? expectedLegacyFileName)
+        string? expectedLegacyFileName,
+        int submissionBehaviorValue,
+        string expectedDispatchValue)
     {
         var source =
             new byte[]
@@ -70,14 +77,15 @@ public sealed class ManagerSubmissionClientTests
                         source.LongLength,
                         fileName,
                         "application/pdf",
-                        "manager-blazor"));
+                        "manager-blazor",
+                        (ManagerDocumentSubmissionBehavior)submissionBehaviorValue));
 
         Assert.Equal(
             HttpMethod.Put,
             handler.Method);
 
         Assert.Equal(
-            $"http://manager.local/api/manager/submissions/{submissionId:D}",
+            $"http://manager.local/api/manager/submissions/{submissionId:D}?dispatch={expectedDispatchValue}",
             handler.RequestUri?.AbsoluteUri);
 
         Assert.Equal(
@@ -150,7 +158,8 @@ public sealed class ManagerSubmissionClientTests
                                 content.Length,
                                 "document.pdf",
                                 "application/pdf",
-                                "manager-blazor")));
+                                "manager-blazor",
+                                ManagerDocumentSubmissionBehavior.Shelve)));
 
         Assert.Equal(
             HttpStatusCode.BadRequest,

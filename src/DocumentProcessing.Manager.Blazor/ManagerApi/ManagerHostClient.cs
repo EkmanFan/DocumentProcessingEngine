@@ -104,6 +104,88 @@ internal sealed class ManagerHostClient(
 
     #endregion
 
+    #region Methods Queue
+
+    public async ValueTask ReorderQueueAsync(
+        long expectedVersion,
+        IReadOnlyList<Guid> orderedPendingUnitIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (expectedVersion <
+            0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(expectedVersion),
+                expectedVersion,
+                "Queue version cannot be negative.");
+        }
+
+        ArgumentNullException.ThrowIfNull(
+            orderedPendingUnitIds);
+
+        if (orderedPendingUnitIds.Any(
+                unitId =>
+                    unitId ==
+                    Guid.Empty) ||
+            orderedPendingUnitIds.Distinct().Count() !=
+            orderedPendingUnitIds.Count)
+        {
+            throw new ArgumentException(
+                "Queue order must contain distinct non-empty processing-unit identifiers.",
+                nameof(orderedPendingUnitIds));
+        }
+
+        using var response =
+            await _httpClient
+                .PutAsJsonAsync(
+                    "api/manager/queue/order",
+                    new ManagerQueueReorderRequest(
+                        expectedVersion,
+                        orderedPendingUnitIds),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        EnsureSuccess(
+            response);
+    }
+
+    public async ValueTask ReleaseProcessingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default)
+    {
+        if (unitId ==
+            Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Processing-unit identifier cannot be empty.",
+                nameof(unitId));
+        }
+
+        if (expectedVersion <
+            0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(expectedVersion),
+                expectedVersion,
+                "Queue version cannot be negative.");
+        }
+
+        using var response =
+            await _httpClient
+                .PostAsJsonAsync(
+                    $"api/manager/queue/{unitId:D}/release",
+                    new ManagerQueueReleaseRequest(
+                        expectedVersion),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        EnsureSuccess(
+            response);
+    }
+
+    #endregion
+
     #region Methods Validation
 
     private static void EnsureSuccess(

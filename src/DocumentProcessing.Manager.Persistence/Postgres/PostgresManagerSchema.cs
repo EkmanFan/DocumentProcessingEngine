@@ -337,6 +337,62 @@ public sealed class PostgresManagerSchema
                     (result_sha256_digest);
             """;
 
+    private const string
+        MigrationFourSql =
+            """
+            ALTER TABLE document_processing_manager.processing_units
+                ADD COLUMN released_at_utc timestamp with time zone NULL
+                    DEFAULT clock_timestamp();
+
+            UPDATE document_processing_manager.processing_units
+            SET released_at_utc = created_at_utc;
+
+            ALTER TABLE document_processing_manager.processing_units
+                ADD CONSTRAINT ck_processing_units_release_chronology
+                CHECK
+                (
+                    released_at_utc IS NULL
+                    OR released_at_utc >= created_at_utc
+                );
+
+            ALTER TABLE document_processing_manager.processing_units
+                ADD CONSTRAINT ck_processing_units_dispatch_lifecycle
+                CHECK
+                (
+                    status = 0
+                    OR released_at_utc IS NOT NULL
+                );
+
+            CREATE OR REPLACE FUNCTION
+                document_processing_manager.reject_processing_unit_release_reversal()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $$
+            BEGIN
+                IF OLD.released_at_utc IS NOT NULL
+                    AND NEW.released_at_utc IS DISTINCT FROM OLD.released_at_utc
+                THEN
+                    RAISE EXCEPTION 'A processing-unit release is irreversible.';
+                END IF;
+
+                RETURN NEW;
+            END;
+            $$;
+
+            CREATE TRIGGER processing_unit_release_is_irreversible
+            BEFORE UPDATE
+            ON document_processing_manager.processing_units
+            FOR EACH ROW
+            EXECUTE FUNCTION
+                document_processing_manager.reject_processing_unit_release_reversal();
+
+            CREATE INDEX ix_processing_units_ready_order
+                ON document_processing_manager.processing_units
+                    (queue_position, unit_id)
+                WHERE status = 0
+                    AND released_at_utc IS NOT NULL;
+            """;
+
     private static readonly Migration[]
         Migrations =
         [
@@ -351,7 +407,11 @@ public sealed class PostgresManagerSchema
             new(
                 Version:
                     3,
-                MigrationThreeSql)
+                MigrationThreeSql),
+            new(
+                Version:
+                    4,
+                MigrationFourSql)
         ];
 
     private readonly NpgsqlDataSource

@@ -110,6 +110,10 @@ internal static class ManagerApi
             "/queue/order",
             ReorderQueueAsync);
 
+        group.MapPost(
+            "/queue/{unitId:guid}/release",
+            ReleaseQueueUnitAsync);
+
         group.MapGet(
             "/results/{resultReference}",
             GetResultAsync);
@@ -229,6 +233,16 @@ internal static class ManagerApi
                     StatusCodes.Status413PayloadTooLarge);
         }
 
+        if (!TryReadInitialDispatchState(
+                request,
+                out var initialDispatchState))
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.dispatch_invalid",
+                    "Query parameter 'dispatch' must be either 'shelve' or 'run'."));
+        }
+
         try
         {
             var registration =
@@ -242,7 +256,8 @@ internal static class ManagerApi
                             request.ContentType,
                             ReadOptionalHeader(
                                 request,
-                                SourceOriginHeader)),
+                                SourceOriginHeader),
+                            initialDispatchState),
                         cancellationToken)
                     .ConfigureAwait(false);
 
@@ -379,6 +394,65 @@ internal static class ManagerApi
         }
     }
 
+    private static async Task<IResult> ReleaseQueueUnitAsync(
+        Guid unitId,
+        QueueReleaseRequest request,
+        IProcessingQueueStore queueStore,
+        IProcessingQueueReader queueReader,
+        DocumentProcessingManagerRuntime runtime,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        try
+        {
+            await queueStore
+                .ReleasePendingAsync(
+                    new ReleaseProcessingUnitCommand(
+                        new ProcessingUnitId(
+                            unitId),
+                        request.ExpectedVersion),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            runtime.NotifyQueueChanged();
+
+            var snapshot =
+                await queueReader
+                    .GetSnapshotAsync(
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            return HttpResults.Ok(
+                ToResponse(
+                    snapshot));
+        }
+        catch (ProcessingQueueConcurrencyException exception)
+        {
+            return HttpResults.Conflict(
+                new QueueVersionConflictResponse(
+                    "manager.queue_version_conflict",
+                    exception.Message,
+                    exception.ExpectedVersion,
+                    exception.ActualVersion));
+        }
+        catch (ArgumentException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.invalid_processing_unit",
+                    exception.Message));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return HttpResults.Conflict(
+                new ApiConflictResponse(
+                    "manager.processing_unit_not_shelved",
+                    exception.Message));
+        }
+    }
+
     #endregion
 
     #region Methods Results
@@ -460,6 +534,7 @@ internal static class ManagerApi
                                 item.WorkItem.Scope),
                             item.WorkItem.AttemptNumber,
                             item.Status,
+                            item.DispatchState,
                             item.QueuePosition,
                             item.ResultReference,
                             item.LastFailure?.Code,
@@ -506,6 +581,45 @@ internal static class ManagerApi
             value)
             ? null
             : value;
+    }
+
+    private static bool TryReadInitialDispatchState(
+        HttpRequest request,
+        out ProcessingUnitDispatchState dispatchState)
+    {
+        var value =
+            request.Query[
+                    "dispatch"]
+                .ToString();
+
+        if (string.IsNullOrWhiteSpace(
+                value) ||
+            string.Equals(
+                value,
+                "shelve",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            dispatchState =
+                ProcessingUnitDispatchState.Shelved;
+
+            return true;
+        }
+
+        if (string.Equals(
+                value,
+                "run",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            dispatchState =
+                ProcessingUnitDispatchState.Ready;
+
+            return true;
+        }
+
+        dispatchState =
+            default;
+
+        return false;
     }
 
     private static string ReadDocumentFileName(
@@ -577,6 +691,9 @@ internal static class ManagerApi
         long ExpectedVersion,
         IReadOnlyList<Guid> OrderedPendingUnitIds);
 
+    internal sealed record QueueReleaseRequest(
+        long ExpectedVersion);
+
     internal sealed record ProcessingQueueResponse(
         long Version,
         IReadOnlyList<ProcessingQueueItemResponse> Items);
@@ -588,6 +705,7 @@ internal static class ManagerApi
         ProcessingScopeResponse Scope,
         int AttemptNumber,
         ProcessingUnitStatus Status,
+        ProcessingUnitDispatchState DispatchState,
         long? QueuePosition,
         string? ResultReference,
         string? LastFailureCode,

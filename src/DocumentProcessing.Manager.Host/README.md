@@ -28,6 +28,10 @@ curl --request PUT \
   http://127.0.0.1:5080/api/manager/submissions/00000000-0000-0000-0000-000000000001
 ```
 
+Submission defaults to `?dispatch=shelve`, which retains the ordered unit but
+keeps it ineligible for dispatch. Use `?dispatch=run` to create an immediately
+eligible unit. This eligibility is independent of the global Manager state.
+
 HTTP clients may send the original filename through the standard
 `Content-Disposition: attachment; filename*=UTF-8''...` content header. The
 legacy `X-Document-File-Name` request header remains supported for command-line
@@ -43,6 +47,7 @@ POST /api/manager/control/resume
 POST /api/manager/control/stop
 GET  /api/manager/queue
 PUT  /api/manager/queue/order
+POST /api/manager/queue/{unitId}/release
 GET  /api/manager/results/{resultReference}
 GET  /health/live
 GET  /health/ready

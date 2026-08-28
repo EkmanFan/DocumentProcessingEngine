@@ -93,6 +93,7 @@ public sealed class PostgresProcessingQueueStore
                     SELECT processing_unit.unit_id
                     FROM document_processing_manager.processing_units AS processing_unit
                     WHERE processing_unit.status = 0
+                        AND processing_unit.released_at_utc IS NOT NULL
                         AND EXISTS
                         (
                             SELECT 1
@@ -687,6 +688,86 @@ public sealed class PostgresProcessingQueueStore
         {
             throw new InvalidOperationException(
                 "The durable pending queue changed during its locked reorder transaction.");
+        }
+
+        await IncrementQueueVersionAsync(
+                connection,
+                transaction,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        await transaction
+            .CommitAsync(
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    #endregion
+
+    #region Methods Release
+
+    /// <inheritdoc />
+    public async ValueTask ReleasePendingAsync(
+        ReleaseProcessingUnitCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            command);
+
+        await using var connection =
+            await _dataSource
+                .OpenConnectionAsync(
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        await using var transaction =
+            await connection
+                .BeginTransactionAsync(
+                    IsolationLevel.ReadCommitted,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        var actualVersion =
+            await LockQueueAsync(
+                    connection,
+                    transaction,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        if (actualVersion !=
+            command.ExpectedQueueVersion)
+        {
+            throw new ProcessingQueueConcurrencyException(
+                command.ExpectedQueueVersion,
+                actualVersion);
+        }
+
+        await using var release =
+            new NpgsqlCommand(
+                """
+                UPDATE document_processing_manager.processing_units
+                SET released_at_utc = clock_timestamp(),
+                    updated_at_utc = clock_timestamp()
+                WHERE unit_id = @unit_id
+                    AND status = 0
+                    AND released_at_utc IS NULL;
+                """,
+                connection,
+                transaction);
+
+        release.Parameters.AddWithValue(
+            "unit_id",
+            NpgsqlDbType.Uuid,
+            command.UnitId.Value);
+
+        if (await release
+                .ExecuteNonQueryAsync(
+                    cancellationToken)
+                .ConfigureAwait(false) !=
+            1)
+        {
+            throw new InvalidOperationException(
+                "Only a currently shelved pending processing unit can be released.");
         }
 
         await IncrementQueueVersionAsync(

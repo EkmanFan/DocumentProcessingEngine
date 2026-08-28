@@ -26,6 +26,11 @@ public sealed record ProcessingQueueItemSnapshot
     public ProcessingUnitStatus Status { get; }
 
     /// <summary>
+    /// Gets whether this unit is shelved or eligible for dispatch.
+    /// </summary>
+    public ProcessingUnitDispatchState DispatchState { get; }
+
+    /// <summary>
     /// Gets the global position when the unit is pending.
     /// </summary>
     public long? QueuePosition { get; }
@@ -66,6 +71,7 @@ public sealed record ProcessingQueueItemSnapshot
         ProcessingWorkItem workItem,
         string originalFileName,
         ProcessingUnitStatus status,
+        ProcessingUnitDispatchState dispatchState,
         long? queuePosition,
         string? resultReference,
         ProcessingFailure? lastFailure,
@@ -89,6 +95,25 @@ public sealed record ProcessingQueueItemSnapshot
                 nameof(status),
                 status,
                 "Unknown processing-unit status.");
+        }
+
+        if (!Enum.IsDefined(
+                dispatchState))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(dispatchState),
+                dispatchState,
+                "Unknown processing-unit dispatch state.");
+        }
+
+        if (status !=
+                ProcessingUnitStatus.Pending &&
+            dispatchState !=
+                ProcessingUnitDispatchState.Ready)
+        {
+            throw new ArgumentException(
+                "Only pending processing units may remain shelved.",
+                nameof(dispatchState));
         }
 
         if ((status ==
@@ -136,6 +161,9 @@ public sealed record ProcessingQueueItemSnapshot
 
         Status =
             status;
+
+        DispatchState =
+            dispatchState;
 
         QueuePosition =
             queuePosition;

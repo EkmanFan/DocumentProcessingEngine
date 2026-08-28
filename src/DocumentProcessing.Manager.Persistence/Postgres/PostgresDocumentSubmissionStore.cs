@@ -9,7 +9,7 @@ using NpgsqlTypes;
 namespace DocumentProcessing.Manager.Persistence.Postgres;
 
 /// <summary>
-/// PostgreSQL adapter for immutable submissions and atomic initial enqueueing.
+/// PostgreSQL adapter for immutable submissions and atomic processing intake.
 /// </summary>
 public sealed class PostgresDocumentSubmissionStore
     : IDocumentSubmissionWriter,
@@ -42,9 +42,9 @@ public sealed class PostgresDocumentSubmissionStore
 
     /// <inheritdoc />
     public async ValueTask<DocumentSubmissionRegistration>
-        RegisterAndEnqueueAsync(
+        RegisterAsync(
         DocumentSubmission submission,
-        IReadOnlyCollection<ProcessingWorkItem> processingUnits,
+        IReadOnlyCollection<ProcessingUnitIntake> processingUnits,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
@@ -118,7 +118,10 @@ public sealed class PostgresDocumentSubmissionStore
 
             if (!EquivalentInitialPlan(
                     existingUnits,
-                    units))
+                    units.Select(
+                            unit =>
+                                unit.WorkItem)
+                        .ToArray()))
             {
                 throw new DocumentSubmissionConflictException(
                     submission.SubmissionId);
@@ -190,7 +193,7 @@ public sealed class PostgresDocumentSubmissionStore
             submission,
             units.Select(
                 unit =>
-                    unit.UnitId),
+                    unit.WorkItem.UnitId),
             created:
                 true);
     }
@@ -466,11 +469,14 @@ public sealed class PostgresDocumentSubmissionStore
     private static async ValueTask InsertProcessingUnitAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
-        ProcessingWorkItem processingUnit,
+        ProcessingUnitIntake intake,
         int submissionUnitOrdinal,
         long queuePosition,
         CancellationToken cancellationToken)
     {
+        var processingUnit =
+            intake.WorkItem;
+
         var pageRange =
             processingUnit.Scope as ProcessingUnitScope.PageRange;
 
@@ -488,7 +494,8 @@ public sealed class PostgresDocumentSubmissionStore
                     attempt_number,
                     submission_unit_ordinal,
                     status,
-                    queue_position
+                    queue_position,
+                    released_at_utc
                 )
                 VALUES
                 (
@@ -501,7 +508,11 @@ public sealed class PostgresDocumentSubmissionStore
                     @attempt_number,
                     @submission_unit_ordinal,
                     0,
-                    @queue_position
+                    @queue_position,
+                    CASE
+                        WHEN @is_ready THEN clock_timestamp()
+                        ELSE NULL
+                    END
                 );
                 """,
                 connection,
@@ -559,6 +570,12 @@ public sealed class PostgresDocumentSubmissionStore
             "queue_position",
             NpgsqlDbType.Bigint,
             queuePosition);
+
+        command.Parameters.AddWithValue(
+            "is_ready",
+            NpgsqlDbType.Boolean,
+            intake.DispatchState ==
+            ProcessingUnitDispatchState.Ready);
 
         await command
             .ExecuteNonQueryAsync(
@@ -759,27 +776,32 @@ public sealed class PostgresDocumentSubmissionStore
 
     private static void ValidateUnits(
         DocumentSubmission submission,
-        IReadOnlyCollection<ProcessingWorkItem> units)
+        IReadOnlyCollection<ProcessingUnitIntake> units)
     {
         if (units.Count ==
                 0 ||
             units.Any(
                 unit =>
                     unit is null ||
-                    unit.UnitId.Value ==
+                    unit.WorkItem.UnitId.Value ==
                     Guid.Empty ||
-                    unit.AttemptNumber !=
+                    unit.WorkItem.AttemptNumber !=
                     1 ||
-                    unit.SubmissionId !=
-                    submission.SubmissionId) ||
+                    unit.WorkItem.SubmissionId !=
+                    submission.SubmissionId ||
+                    !Enum.IsDefined(
+                        unit.DispatchState)) ||
             units.Select(
                     unit =>
-                        unit.UnitId)
+                        unit.WorkItem.UnitId)
                 .Distinct()
                 .Count() !=
             units.Count ||
             !HasValidInitialScopeShape(
-                units))
+                units.Select(
+                        unit =>
+                            unit.WorkItem)
+                    .ToArray()))
         {
             throw new ArgumentException(
                 "Initial processing units must be distinct attempt-one units for one coherent whole-document or page-range plan.",

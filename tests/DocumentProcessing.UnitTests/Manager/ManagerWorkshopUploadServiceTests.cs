@@ -1,4 +1,5 @@
 using DocumentProcessing.Manager.Blazor.Configuration;
+using DocumentProcessing.Manager.Blazor.Components.Workshop;
 using DocumentProcessing.Manager.Blazor.ManagerApi;
 using DocumentProcessing.Manager.Blazor.Workshop;
 using Microsoft.AspNetCore.Components.Forms;
@@ -13,13 +14,16 @@ public sealed class ManagerWorkshopUploadServiceTests
     [Theory]
     [InlineData(
         "document.PDF",
-        "application/pdf")]
+        "application/pdf",
+        (int)ManagerDocumentSubmissionBehavior.Shelve)]
     [InlineData(
         "document.epub",
-        "application/epub+zip")]
+        "application/epub+zip",
+        (int)ManagerDocumentSubmissionBehavior.Run)]
     public async Task SubmitAsync_ValidatesAndStreamsSupportedDocument(
         string fileName,
-        string expectedMediaType)
+        string expectedMediaType,
+        int submissionBehaviorValue)
     {
         var source =
             "exact source"u8.ToArray();
@@ -39,7 +43,8 @@ public sealed class ManagerWorkshopUploadServiceTests
                         maximumUploadBytes:
                             1024))
                 .SubmitAsync(
-                    file);
+                    file,
+                    (ManagerDocumentSubmissionBehavior)submissionBehaviorValue);
 
         Assert.True(
             file.Opened);
@@ -59,6 +64,10 @@ public sealed class ManagerWorkshopUploadServiceTests
         Assert.Equal(
             "manager-blazor",
             managerClient.Request?.SourceOrigin);
+
+        Assert.Equal(
+            (ManagerDocumentSubmissionBehavior)submissionBehaviorValue,
+            managerClient.Request?.SubmissionBehavior);
 
         Assert.Equal(
             fileName,
@@ -103,7 +112,8 @@ public sealed class ManagerWorkshopUploadServiceTests
                             CreateOptions(
                                 maximumUploadBytes))
                         .SubmitAsync(
-                            file));
+                            file,
+                            ManagerDocumentSubmissionBehavior.Shelve));
 
         Assert.Equal(
             (ManagerWorkshopUploadValidationFailure)expectedFailureValue,

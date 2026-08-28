@@ -90,6 +90,7 @@ public sealed class PostgresProcessingQueueReader
                     processing_unit.interruption_reason,
                     processing_unit.created_at_utc,
                     processing_unit.updated_at_utc,
+                    processing_unit.released_at_utc,
                     submission.original_file_name
                 FROM document_processing_manager.processing_units AS processing_unit
                 INNER JOIN document_processing_manager.document_submissions AS submission
@@ -166,9 +167,13 @@ public sealed class PostgresProcessingQueueReader
                 reader.GetInt32(
                     6)),
             reader.GetString(
-                15),
+                16),
             (ProcessingUnitStatus)reader.GetInt16(
                 7),
+            reader.IsDBNull(
+                15)
+                ? ProcessingUnitDispatchState.Shelved
+                : ProcessingUnitDispatchState.Ready,
             reader.IsDBNull(
                 8)
                 ? null

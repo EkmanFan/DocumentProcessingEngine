@@ -3,7 +3,7 @@ using DocumentProcessing.Manager.Queue;
 namespace DocumentProcessing.Manager.Submissions;
 
 /// <summary>
-/// Requests immutable custody and initial whole-document enqueueing.
+/// Requests immutable custody and initial whole-document processing intake.
 /// </summary>
 public sealed class SubmitDocumentCommand
 {
@@ -34,6 +34,11 @@ public sealed class SubmitDocumentCommand
     /// </summary>
     public string? SourceOrigin { get; }
 
+    /// <summary>
+    /// Gets the initial dispatch state of the generated processing unit.
+    /// </summary>
+    public ProcessingUnitDispatchState InitialDispatchState { get; }
+
     #endregion
 
     #region ctor
@@ -46,7 +51,9 @@ public sealed class SubmitDocumentCommand
         Stream content,
         string originalFileName,
         string? declaredMediaType = null,
-        string? sourceOrigin = null)
+        string? sourceOrigin = null,
+        ProcessingUnitDispatchState initialDispatchState =
+            ProcessingUnitDispatchState.Shelved)
     {
         if (submissionId.Value ==
             Guid.Empty)
@@ -85,6 +92,18 @@ public sealed class SubmitDocumentCommand
             DocumentSubmission.NormalizeOptionalValue(
                 sourceOrigin,
                 nameof(sourceOrigin));
+
+        if (!Enum.IsDefined(
+                initialDispatchState))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(initialDispatchState),
+                initialDispatchState,
+                "Unknown initial processing-unit dispatch state.");
+        }
+
+        InitialDispatchState =
+            initialDispatchState;
     }
 
     #endregion

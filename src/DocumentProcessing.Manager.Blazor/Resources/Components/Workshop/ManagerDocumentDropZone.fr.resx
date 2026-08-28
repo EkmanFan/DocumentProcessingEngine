@@ -5,6 +5,11 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="DropInputLabel" xml:space="preserve"><value>Déposer ou choisir un document PDF ou EPUB</value></data>
+  <data name="SubmissionBehaviorLabel" xml:space="preserve"><value>Comportement après réception du document</value></data>
+  <data name="ShelveBehavior" xml:space="preserve"><value>Ranger</value></data>
+  <data name="ShelveBehaviorDetail" xml:space="preserve"><value>Conserver le document dans la file ordonnée jusqu’à son lancement explicite.</value></data>
+  <data name="RunBehavior" xml:space="preserve"><value>Lancer</value></data>
+  <data name="RunBehaviorDetail" xml:space="preserve"><value>Rendre immédiatement le document éligible au traitement séquentiel.</value></data>
   <data name="DropHint" xml:space="preserve"><value>Dépose ou choisis un PDF / EPUB</value></data>
   <data name="DropReadyTitle" xml:space="preserve"><value>Dépose le document ici</value></data>
   <data name="DropReadyDetail" xml:space="preserve"><value>Le bibliothécaire est prêt à le recevoir.</value></data>

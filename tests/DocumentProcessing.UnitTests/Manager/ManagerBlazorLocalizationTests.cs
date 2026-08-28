@@ -100,6 +100,17 @@ public sealed class ManagerBlazorLocalizationTests
                 culture));
     }
 
+    [Fact]
+    public void DocumentDropZone_DefaultsToShelvedSubmission()
+    {
+        var component =
+            new ManagerDocumentDropZone();
+
+        Assert.Equal(
+            ManagerDocumentSubmissionBehavior.Shelve,
+            component.DefaultSubmissionBehavior);
+    }
+
     [Theory]
     [InlineData(
         "en-US",

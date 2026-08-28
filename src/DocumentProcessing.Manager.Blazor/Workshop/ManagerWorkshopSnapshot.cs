@@ -124,6 +124,7 @@ internal sealed record ManagerWorkItemView(
     ManagerWorkItemScopeView Scope,
     int AttemptNumber,
     ManagerQueueItemStatus Status,
+    ManagerQueueItemDispatchState DispatchState,
     long? QueuePosition,
     string? ResultReference,
     string? FailureMessage,
@@ -147,6 +148,12 @@ internal sealed record ManagerWorkItemView(
                 0 ||
             !Enum.IsDefined(
                 item.Status) ||
+            !Enum.IsDefined(
+                item.DispatchState) ||
+            (item.Status !=
+                ManagerQueueItemStatus.Pending &&
+             item.DispatchState !=
+                ManagerQueueItemDispatchState.Ready) ||
             (item.Status ==
                 ManagerQueueItemStatus.Pending) !=
             item.QueuePosition.HasValue ||
@@ -197,6 +204,7 @@ internal sealed record ManagerWorkItemView(
                 item.Scope),
             item.AttemptNumber,
             item.Status,
+            item.DispatchState,
             item.QueuePosition,
             item.ResultReference,
             item.LastFailureMessage,

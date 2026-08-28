@@ -729,6 +729,15 @@ public sealed class SequentialProcessingDispatcherTests
 
             return ValueTask.CompletedTask;
         }
+
+        public ValueTask ReleasePendingAsync(
+            ReleaseProcessingUnitCommand command,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            return ValueTask.CompletedTask;
+        }
     }
 
     #endregion

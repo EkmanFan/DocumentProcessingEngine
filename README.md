@@ -40,6 +40,8 @@ policy.
   application's ambient .NET culture, with English as the standalone default.
   Its persistent animation stage also accepts streamed PDF/EPUB submissions;
   immutable custody and queue registration remain owned by the Manager Host.
+  New documents are shelved by default, can be released explicitly or marked
+  ready at reception, and pending units can be reordered across documents.
 
 The processing library deliberately excludes RAG, embeddings, retrieval
 chunking, vector storage, LLM/VLM processing, application-specific concepts

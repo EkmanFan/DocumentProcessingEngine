@@ -21,6 +21,14 @@ internal enum ManagerQueueItemStatus
     Failed
 }
 
+[JsonConverter(
+    typeof(JsonStringEnumConverter<ManagerQueueItemDispatchState>))]
+internal enum ManagerQueueItemDispatchState
+{
+    Shelved,
+    Ready
+}
+
 internal enum ManagerControlAction
 {
     Start,
@@ -44,6 +52,7 @@ internal sealed record ManagerQueueItemContract(
     ManagerScopeContract Scope,
     int AttemptNumber,
     ManagerQueueItemStatus Status,
+    ManagerQueueItemDispatchState DispatchState,
     long? QueuePosition,
     string? ResultReference,
     string? LastFailureCode,
@@ -62,7 +71,15 @@ internal sealed record ManagerDocumentSubmissionRequest(
     long ContentLength,
     string OriginalFileName,
     string MediaType,
-    string? SourceOrigin);
+    string? SourceOrigin,
+    Components.Workshop.ManagerDocumentSubmissionBehavior SubmissionBehavior);
+
+internal sealed record ManagerQueueReorderRequest(
+    long ExpectedVersion,
+    IReadOnlyList<Guid> OrderedPendingUnitIds);
+
+internal sealed record ManagerQueueReleaseRequest(
+    long ExpectedVersion);
 
 internal sealed record ManagerDocumentSubmissionResult(
     Guid SubmissionId,
