@@ -153,6 +153,7 @@ public sealed class DocumentProcessingEngine
             await formatSelector
                 .SelectAsync(
                     prepared,
+                    options.PhysicalPageRange,
                     cancellationToken)
                 .ConfigureAwait(false);
 

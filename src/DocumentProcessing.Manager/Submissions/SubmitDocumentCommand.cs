@@ -3,7 +3,7 @@ using DocumentProcessing.Manager.Queue;
 namespace DocumentProcessing.Manager.Submissions;
 
 /// <summary>
-/// Requests immutable custody and initial whole-document processing intake.
+/// Requests immutable custody and initial processing-unit intake.
 /// </summary>
 public sealed class SubmitDocumentCommand
 {
@@ -39,6 +39,9 @@ public sealed class SubmitDocumentCommand
     /// </summary>
     public ProcessingUnitDispatchState InitialDispatchState { get; }
 
+    /// <summary>Gets the requested processing-unit scopes in queue order.</summary>
+    public IReadOnlyList<ProcessingUnitScope> Scopes { get; }
+
     #endregion
 
     #region ctor
@@ -53,7 +56,8 @@ public sealed class SubmitDocumentCommand
         string? declaredMediaType = null,
         string? sourceOrigin = null,
         ProcessingUnitDispatchState initialDispatchState =
-            ProcessingUnitDispatchState.Shelved)
+            ProcessingUnitDispatchState.Shelved,
+        IReadOnlyList<ProcessingUnitScope>? scopes = null)
     {
         if (submissionId.Value ==
             Guid.Empty)
@@ -104,6 +108,64 @@ public sealed class SubmitDocumentCommand
 
         InitialDispatchState =
             initialDispatchState;
+
+        Scopes =
+            ValidateScopes(
+                scopes ??
+                [new ProcessingUnitScope.WholeDocument()]);
+    }
+
+    #endregion
+
+    #region Methods Validation
+
+    private static IReadOnlyList<ProcessingUnitScope> ValidateScopes(
+        IReadOnlyList<ProcessingUnitScope> scopes)
+    {
+        ArgumentNullException.ThrowIfNull(
+            scopes);
+
+        if (scopes.Count == 0)
+        {
+            throw new ArgumentException(
+                "At least one processing-unit scope is required.",
+                nameof(scopes));
+        }
+
+        if (scopes.Any(scope => scope is null))
+        {
+            throw new ArgumentException(
+                "Processing-unit scopes cannot contain null entries.",
+                nameof(scopes));
+        }
+
+        if (scopes.Any(scope => scope is ProcessingUnitScope.WholeDocument) &&
+            scopes.Count != 1)
+        {
+            throw new ArgumentException(
+                "A whole-document scope cannot be combined with page ranges.",
+                nameof(scopes));
+        }
+
+        var orderedRanges =
+            scopes
+                .OfType<ProcessingUnitScope.PageRange>()
+                .OrderBy(range => range.StartPhysicalPageNumber)
+                .ThenBy(range => range.EndPhysicalPageNumber)
+                .ToArray();
+
+        for (var index = 1; index < orderedRanges.Length; index++)
+        {
+            if (orderedRanges[index].StartPhysicalPageNumber <=
+                orderedRanges[index - 1].EndPhysicalPageNumber)
+            {
+                throw new ArgumentException(
+                    "Processing-unit page ranges cannot overlap.",
+                    nameof(scopes));
+            }
+        }
+
+        return scopes.ToArray();
     }
 
     #endregion

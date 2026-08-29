@@ -159,7 +159,8 @@ public sealed class PdfPigDocumentExtractor
             DocumentSource source,
             DocumentFormatId format,
             IVisualRasterObservationSource rasterObservationSource,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            PhysicalPageRange? physicalPageRange = null)
     {
         ArgumentNullException.ThrowIfNull(
             source);
@@ -223,13 +224,36 @@ public sealed class PdfPigDocumentExtractor
                 PdfDocument.Open(
                     input);
 
+            if (physicalPageRange is not null &&
+                physicalPageRange.EndPhysicalPageNumber >
+                document.NumberOfPages)
+            {
+                throw new InvalidDataException(
+                    $"Requested physical-page range {physicalPageRange.StartPhysicalPageNumber}-" +
+                    $"{physicalPageRange.EndPhysicalPageNumber} exceeds the document's " +
+                    $"{document.NumberOfPages} physical pages.");
+            }
+
+            var firstPhysicalPageNumber =
+                physicalPageRange?.StartPhysicalPageNumber ??
+                1;
+
+            var lastPhysicalPageNumber =
+                physicalPageRange?.EndPhysicalPageNumber ??
+                document.NumberOfPages;
+
+            var requestedPageCount =
+                lastPhysicalPageNumber -
+                firstPhysicalPageNumber +
+                1;
+
             var pages =
                 new List<DocumentExtractionPage>(
-                    document.NumberOfPages);
+                    requestedPageCount);
 
             var rasterObservations =
                 new List<PageVisualRasterObservations>(
-                    document.NumberOfPages);
+                    requestedPageCount);
 
             var nativeNumericLinks =
                 new List<PdfNativeNumericLinkObservation>();
@@ -238,15 +262,15 @@ public sealed class PdfPigDocumentExtractor
                 rasterObservationFailure =
                     null;
 
-            var physicalPageNumber =
-                0;
-
-            foreach (var page in
-                     document.GetPages())
+            for (var physicalPageNumber = firstPhysicalPageNumber;
+                 physicalPageNumber <= lastPhysicalPageNumber;
+                 physicalPageNumber++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                physicalPageNumber++;
+                var page =
+                    document.GetPage(
+                        physicalPageNumber);
 
                 var extractionPage =
                     ExtractPage(

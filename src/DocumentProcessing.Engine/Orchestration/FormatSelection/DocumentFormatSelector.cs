@@ -77,6 +77,7 @@ internal sealed class DocumentFormatSelector
 
     public async ValueTask<DocumentFormatSelectionResult> SelectAsync(
         PreparedDocumentSource preparedSource,
+        PhysicalPageRange? physicalPageRange = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
@@ -101,11 +102,19 @@ internal sealed class DocumentFormatSelector
                 preparedSource.ResetForRead();
 
                 var outcome =
-                    await format
-                        .TryExtractNativeEvidenceAsync(
-                            preparedSource.Source,
-                            cancellationToken)
-                        .ConfigureAwait(false);
+                    physicalPageRange is not null &&
+                    format is IPhysicalPageRangeDocumentFormat rangedFormat
+                        ? await rangedFormat
+                            .TryExtractNativeEvidenceAsync(
+                                preparedSource.Source,
+                                physicalPageRange,
+                                cancellationToken)
+                            .ConfigureAwait(false)
+                        : await format
+                            .TryExtractNativeEvidenceAsync(
+                                preparedSource.Source,
+                                cancellationToken)
+                            .ConfigureAwait(false);
 
                 if (outcome is null)
                 {
@@ -174,6 +183,14 @@ internal sealed class DocumentFormatSelector
                 new DocumentFormatSelectionResult.Unavailable(
                     selected.Format,
                     unavailable.Reason),
+
+            NativeEvidenceExtractionResult.Success
+                when physicalPageRange is not null &&
+                     selected.Format is not IPhysicalPageRangeDocumentFormat =>
+                new DocumentFormatSelectionResult.Invalid(
+                    selected.Format,
+                    $"Document format '{selected.Format.Format}' does not support physical-page ranges.",
+                    true),
 
             NativeEvidenceExtractionResult.Success success =>
                 new DocumentFormatSelectionResult.Success(

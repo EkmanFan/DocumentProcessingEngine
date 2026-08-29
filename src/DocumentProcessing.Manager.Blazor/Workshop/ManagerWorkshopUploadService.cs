@@ -53,7 +53,8 @@ internal sealed class ManagerWorkshopUploadService
     public async ValueTask<ManagerDocumentSubmissionResult> SubmitAsync(
         IBrowserFile file,
         ManagerDocumentSubmissionBehavior submissionBehavior,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyList<ManagerPageRangeRequest>? pageRanges = null)
     {
         ArgumentNullException.ThrowIfNull(
             file);
@@ -85,6 +86,16 @@ internal sealed class ManagerWorkshopUploadService
             ResolveMediaType(
                 file.Name);
 
+        if (pageRanges is { Count: > 0 } &&
+            !string.Equals(
+                mediaType,
+                PdfMediaType,
+                StringComparison.Ordinal))
+        {
+            throw new ManagerWorkshopUploadValidationException(
+                ManagerWorkshopUploadValidationFailure.PageRangesRequirePdf);
+        }
+
         await using var content =
             file.OpenReadStream(
                 _options.MaximumUploadBytes,
@@ -99,7 +110,8 @@ internal sealed class ManagerWorkshopUploadService
                     file.Name,
                     mediaType,
                     SourceOrigin,
-                    submissionBehavior),
+                    submissionBehavior,
+                    pageRanges),
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -135,5 +147,6 @@ internal enum ManagerWorkshopUploadValidationFailure
 {
     NoReadableContent,
     TooLarge,
-    UnsupportedFormat
+    UnsupportedFormat,
+    PageRangesRequirePdf
 }

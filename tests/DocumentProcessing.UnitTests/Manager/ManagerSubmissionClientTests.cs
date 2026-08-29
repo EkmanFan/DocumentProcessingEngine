@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using DocumentProcessing.Manager.Blazor.Components.Workshop;
 using DocumentProcessing.Manager.Blazor.ManagerApi;
 
@@ -174,6 +176,72 @@ public sealed class ManagerSubmissionClientTests
             exception.Message);
     }
 
+    [Fact]
+    public async Task SubmitDocumentAsync_SendsRequestedPhysicalPageRanges()
+    {
+        var submissionId =
+            Guid.NewGuid();
+
+        var handler =
+            new RecordingSubmissionHandler(
+                new ManagerDocumentSubmissionResult(
+                    submissionId,
+                    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                    1,
+                    "document.pdf",
+                    [Guid.NewGuid(), Guid.NewGuid()],
+                    Created:
+                        true));
+
+        using var httpClient =
+            new HttpClient(
+                handler)
+            {
+                BaseAddress =
+                    new Uri(
+                        "http://manager.local/")
+            };
+
+        await using var content =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        await new ManagerSubmissionClient(
+                httpClient)
+            .SubmitDocumentAsync(
+                new ManagerDocumentSubmissionRequest(
+                    submissionId,
+                    content,
+                    1,
+                    "document.pdf",
+                    "application/pdf",
+                    "manager-blazor",
+                    ManagerDocumentSubmissionBehavior.Shelve,
+                    [
+                        new ManagerPageRangeRequest(1, 10, "Chapter one"),
+                        new ManagerPageRangeRequest(11, 20, "Deuxième chapitre")
+                    ]));
+
+        var ranges =
+            JsonSerializer.Deserialize<ManagerPageRangeRequest[]>(
+                Assert.IsType<string>(
+                    handler.PageRanges));
+
+        Assert.Collection(
+            Assert.IsType<ManagerPageRangeRequest[]>(
+                ranges),
+            range =>
+                Assert.Equal(
+                    1,
+                    range.StartPhysicalPageNumber),
+            range =>
+                Assert.Equal(
+                    "Deuxième chapitre",
+                    range.Title));
+    }
+
     #endregion
 
     #region Test Doubles
@@ -200,6 +268,8 @@ public sealed class ManagerSubmissionClientTests
         public bool? ExpectContinue { get; private set; }
 
         public string? SourceOrigin { get; private set; }
+
+        public string? PageRanges { get; private set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
@@ -242,6 +312,16 @@ public sealed class ManagerSubmissionClientTests
                     out var values)
                     ? Assert.Single(
                         values)
+                    : null;
+
+            PageRanges =
+                request.Headers.TryGetValues(
+                    "X-Processing-Page-Ranges",
+                    out var pageRanges)
+                    ? Encoding.UTF8.GetString(
+                        Convert.FromBase64String(
+                            Assert.Single(
+                                pageRanges)))
                     : null;
 
             return new HttpResponseMessage(

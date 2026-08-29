@@ -9,6 +9,8 @@ using DocumentProcessing.Manager.Settings;
 using DocumentProcessing.Manager.Submissions;
 using DocumentProcessing.Manager.Host.Security;
 using Microsoft.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
 
 namespace DocumentProcessing.Manager.Host.Api;
@@ -24,6 +26,10 @@ internal static class ManagerApi
     private const string
         SourceOriginHeader =
             "X-Source-Origin";
+
+    private const string
+        PageRangesHeader =
+            "X-Processing-Page-Ranges";
 
     private const string
         ConsumerIdHeader =
@@ -469,6 +475,30 @@ internal static class ManagerApi
                     "Query parameter 'dispatch' must be either 'shelve' or 'run'."));
         }
 
+        IReadOnlyList<ProcessingUnitScope> scopes;
+
+        try
+        {
+            scopes =
+                ReadProcessingScopes(
+                    request);
+        }
+        catch (Exception exception)
+            when (exception is JsonException or FormatException)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.page_ranges_invalid",
+                    exception.Message));
+        }
+        catch (ArgumentException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.page_ranges_invalid",
+                    exception.Message));
+        }
+
         try
         {
             var registration =
@@ -483,7 +513,8 @@ internal static class ManagerApi
                             ReadOptionalHeader(
                                 request,
                                 SourceOriginHeader),
-                            initialDispatchState),
+                            initialDispatchState,
+                            scopes),
                         cancellationToken)
                     .ConfigureAwait(false);
 
@@ -1187,6 +1218,43 @@ internal static class ManagerApi
             delivery.ClaimToken,
             delivery.ClaimExpiresAtUtc);
 
+    private static IReadOnlyList<ProcessingUnitScope> ReadProcessingScopes(
+        HttpRequest request)
+    {
+        var serializedRanges =
+            ReadOptionalHeader(
+                request,
+                PageRangesHeader);
+
+        if (serializedRanges is null)
+        {
+            return [new ProcessingUnitScope.WholeDocument()];
+        }
+
+        var ranges =
+            JsonSerializer.Deserialize<PageRangeRequest[]>(
+                Encoding.UTF8.GetString(
+                    Convert.FromBase64String(
+                        serializedRanges))) ??
+            throw new JsonException(
+                "The page-range request cannot be null.");
+
+        if (ranges.Length == 0)
+        {
+            throw new ArgumentException(
+                "At least one page range is required when the page-range header is supplied.");
+        }
+
+        return ranges
+            .Select(
+                range =>
+                    (ProcessingUnitScope)new ProcessingUnitScope.PageRange(
+                        range.StartPhysicalPageNumber,
+                        range.EndPhysicalPageNumber,
+                        range.Title))
+            .ToArray();
+    }
+
     private static string? ReadOptionalHeader(
         HttpRequest request,
         string headerName)
@@ -1352,6 +1420,11 @@ internal static class ManagerApi
         string OriginalFileName,
         IReadOnlyList<Guid> ProcessingUnitIds,
         bool Created);
+
+    internal sealed record PageRangeRequest(
+        int StartPhysicalPageNumber,
+        int EndPhysicalPageNumber,
+        string Title);
 
     internal sealed record QueueReorderRequest(
         long ExpectedVersion,

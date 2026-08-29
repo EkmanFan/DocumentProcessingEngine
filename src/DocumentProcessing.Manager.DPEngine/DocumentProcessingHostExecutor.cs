@@ -138,13 +138,6 @@ public sealed class DocumentProcessingHostExecutor
         ArgumentNullException.ThrowIfNull(
             workItem);
 
-        if (workItem.Scope is not ProcessingUnitScope.WholeDocument)
-        {
-            return new ProcessingExecutionOutcome.Failure(
-                "manager.page_range_not_supported",
-                "Managed execution V1 supports only whole-document units.");
-        }
-
         var existing =
             await _resultRegistryReader
                 .GetByUnitAsync(
@@ -234,7 +227,10 @@ public sealed class DocumentProcessingHostExecutor
                         submission.DeclaredMediaType),
                     new DocumentProcessingRequestOptions(
                         userVisualAssetWriter:
-                            visualWriter),
+                            visualWriter,
+                        physicalPageRange:
+                            ToPhysicalPageRange(
+                                workItem.Scope)),
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -328,6 +324,23 @@ public sealed class DocumentProcessingHostExecutor
                 "DPEngine result source custody does not match the submitted source artifact.");
         }
     }
+
+    private static PhysicalPageRange? ToPhysicalPageRange(
+        ProcessingUnitScope scope) =>
+        scope switch
+        {
+            ProcessingUnitScope.WholeDocument =>
+                null,
+            ProcessingUnitScope.PageRange range =>
+                new PhysicalPageRange(
+                    range.StartPhysicalPageNumber,
+                    range.EndPhysicalPageNumber),
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(scope),
+                    scope,
+                    "Unknown processing-unit scope.")
+        };
 
     private static ValueTask<Stream> MissingVisualDestinationAsync(
         DocumentSource source,

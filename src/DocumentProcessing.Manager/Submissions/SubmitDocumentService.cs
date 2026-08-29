@@ -29,7 +29,7 @@ public sealed class SubmitDocumentService
     #region ctor
 
     /// <summary>
-    /// Creates the whole-document submission use case.
+    /// Creates the document-submission use case.
     /// </summary>
     public SubmitDocumentService(
         ISourceArtifactWriter artifactWriter,
@@ -56,7 +56,7 @@ public sealed class SubmitDocumentService
     #region Methods
 
     /// <summary>
-    /// Preserves a source and idempotently registers one whole-document unit.
+    /// Preserves a source and idempotently registers its requested processing units.
     /// </summary>
     public async ValueTask<DocumentSubmissionRegistration> SubmitAsync(
         SubmitDocumentCommand command,
@@ -81,22 +81,24 @@ public sealed class SubmitDocumentService
                 command.SourceOrigin,
                 _timeProvider.GetUtcNow());
 
-        var workItem =
-            new ProcessingWorkItem(
-                ProcessingUnitId.New(),
-                submission.SubmissionId,
-                new ProcessingUnitScope.WholeDocument(),
-                attemptNumber:
-                    1);
+        var intakes =
+            command.Scopes
+                .Select(
+                    scope =>
+                        new ProcessingUnitIntake(
+                            new ProcessingWorkItem(
+                                ProcessingUnitId.New(),
+                                submission.SubmissionId,
+                                scope,
+                                attemptNumber:
+                                    1),
+                            command.InitialDispatchState))
+                .ToArray();
 
         return await _submissionWriter
             .RegisterAsync(
                 submission,
-                [
-                    new ProcessingUnitIntake(
-                        workItem,
-                        command.InitialDispatchState)
-                ],
+                intakes,
                 cancellationToken)
             .ConfigureAwait(false);
     }

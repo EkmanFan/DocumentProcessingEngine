@@ -169,6 +169,91 @@ public sealed class SubmitDocumentServiceTests
     }
 
     [Fact]
+    public async Task SubmitAsync_RegistersOrderedPageRangesAgainstOneSubmission()
+    {
+        var artifact =
+            new SourceArtifact(
+                new Sha256Digest(
+                    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
+                byteLength:
+                    1);
+
+        var submissionWriter =
+            new RecordingSubmissionWriter();
+
+        await using var content =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        await new SubmitDocumentService(
+                new RecordingArtifactWriter(
+                    artifact),
+                submissionWriter)
+            .SubmitAsync(
+                new SubmitDocumentCommand(
+                    DocumentSubmissionId.New(),
+                    content,
+                    "book.pdf",
+                    scopes:
+                    [
+                        new ProcessingUnitScope.PageRange(1, 10, "Chapter one"),
+                        new ProcessingUnitScope.PageRange(11, 20, "Chapter two")
+                    ]));
+
+        Assert.Collection(
+            submissionWriter.ProcessingUnits,
+            intake =>
+            {
+                var range =
+                    Assert.IsType<ProcessingUnitScope.PageRange>(
+                        intake.WorkItem.Scope);
+
+                Assert.Equal(
+                    "Chapter one",
+                    range.Title);
+            },
+            intake =>
+            {
+                var range =
+                    Assert.IsType<ProcessingUnitScope.PageRange>(
+                        intake.WorkItem.Scope);
+
+                Assert.Equal(
+                    "Chapter two",
+                    range.Title);
+            });
+
+        Assert.Single(
+            submissionWriter.ProcessingUnits
+                .Select(intake => intake.WorkItem.SubmissionId)
+                .Distinct());
+    }
+
+    [Fact]
+    public void Command_RejectsOverlappingPageRanges()
+    {
+        using var content =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        Assert.Throws<ArgumentException>(
+            () =>
+                new SubmitDocumentCommand(
+                    DocumentSubmissionId.New(),
+                    content,
+                    "book.pdf",
+                    scopes:
+                    [
+                        new ProcessingUnitScope.PageRange(1, 10, "First"),
+                        new ProcessingUnitScope.PageRange(10, 20, "Second")
+                    ]));
+    }
+
+    [Fact]
     public void Contracts_RejectInvalidCustodyMetadata()
     {
         Assert.Throws<ArgumentException>(

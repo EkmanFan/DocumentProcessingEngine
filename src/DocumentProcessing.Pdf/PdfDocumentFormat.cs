@@ -19,7 +19,7 @@ namespace DocumentProcessing.Pdf;
 /// route is authoritative.
 /// </remarks>
 public sealed class PdfDocumentFormat
-    : IDocumentFormat,
+    : IPhysicalPageRangeDocumentFormat,
       IDocumentRasterizer,
       IVisualRasterObservationSource
 {
@@ -73,7 +73,31 @@ public sealed class PdfDocumentFormat
     public async ValueTask<NativeEvidenceExtractionResult>
         TryExtractNativeEvidenceAsync(
             DocumentSource source,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default) =>
+        await AcquireNativeEvidenceAsync(
+                source,
+                physicalPageRange:
+                    null,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async ValueTask<NativeEvidenceExtractionResult>
+        TryExtractNativeEvidenceAsync(
+            DocumentSource source,
+            PhysicalPageRange physicalPageRange,
+            CancellationToken cancellationToken = default) =>
+        await AcquireNativeEvidenceAsync(
+                source,
+                physicalPageRange,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+    private async ValueTask<NativeEvidenceExtractionResult>
+        AcquireNativeEvidenceAsync(
+            DocumentSource source,
+            PhysicalPageRange? physicalPageRange,
+            CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(
             source);
@@ -101,7 +125,8 @@ public sealed class PdfDocumentFormat
                         source,
                         DocumentFormatId.Pdf,
                         _visualRasterObservationSource,
-                        cancellationToken)
+                        cancellationToken,
+                        physicalPageRange)
                     .ConfigureAwait(false);
 
             var currentEvidence =

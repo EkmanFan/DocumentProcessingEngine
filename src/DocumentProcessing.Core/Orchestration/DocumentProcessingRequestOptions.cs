@@ -1,3 +1,4 @@
+using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Visual;
 
 namespace DocumentProcessing.Core.Orchestration;
@@ -25,6 +26,9 @@ public sealed record DocumentProcessingRequestOptions
     /// </summary>
     public UserVisualAssetWriter? UserVisualAssetWriter { get; }
 
+    /// <summary>Gets the optional inclusive range of original physical pages to process.</summary>
+    public PhysicalPageRange? PhysicalPageRange { get; }
+
     #endregion
 
     #region ctor
@@ -32,13 +36,17 @@ public sealed record DocumentProcessingRequestOptions
     /// <summary>Creates options for one document-processing request.</summary>
     public DocumentProcessingRequestOptions(
         bool qualifyUnresolvedVisuals = false,
-        UserVisualAssetWriter? userVisualAssetWriter = null)
+        UserVisualAssetWriter? userVisualAssetWriter = null,
+        PhysicalPageRange? physicalPageRange = null)
     {
         QualifyUnresolvedVisuals =
             qualifyUnresolvedVisuals;
 
         UserVisualAssetWriter =
             userVisualAssetWriter;
+
+        PhysicalPageRange =
+            physicalPageRange;
     }
 
     #endregion

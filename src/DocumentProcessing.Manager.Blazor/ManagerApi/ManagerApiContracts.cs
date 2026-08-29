@@ -90,7 +90,13 @@ internal sealed record ManagerDocumentSubmissionRequest(
     string OriginalFileName,
     string MediaType,
     string? SourceOrigin,
-    Components.Workshop.ManagerDocumentSubmissionBehavior SubmissionBehavior);
+    Components.Workshop.ManagerDocumentSubmissionBehavior SubmissionBehavior,
+    IReadOnlyList<ManagerPageRangeRequest>? PageRanges = null);
+
+internal sealed record ManagerPageRangeRequest(
+    int StartPhysicalPageNumber,
+    int EndPhysicalPageNumber,
+    string Title);
 
 internal sealed record ManagerQueueReorderRequest(
     long ExpectedVersion,

@@ -33,6 +33,49 @@
         </button>
     </div>
 
+    <div class="page-range-editor"
+         @onclick:stopPropagation="true">
+        <label class="page-range-toggle">
+            <input type="checkbox"
+                   disabled="@_uploading"
+                   @bind="_usePageRanges" />
+            <span>@Localizer["PageRangeMode"]</span>
+        </label>
+        @if (_usePageRanges)
+        {
+            @foreach (var range in _pageRanges)
+            {
+                <div class="page-range-row" @key="range.Id">
+                    <input type="text"
+                           aria-label="@(Localizer["PageRangeTitle"])"
+                           placeholder="@(Localizer["PageRangeTitle"])"
+                           disabled="@_uploading"
+                           @bind="range.Title" />
+                    <input type="number"
+                           min="1"
+                           aria-label="@(Localizer["PageRangeStart"])"
+                           placeholder="@(Localizer["PageRangeStart"])"
+                           disabled="@_uploading"
+                           @bind="range.StartPhysicalPageNumber" />
+                    <input type="number"
+                           min="1"
+                           aria-label="@(Localizer["PageRangeEnd"])"
+                           placeholder="@(Localizer["PageRangeEnd"])"
+                           disabled="@_uploading"
+                           @bind="range.EndPhysicalPageNumber" />
+                    <button type="button"
+                            title="@(Localizer["RemovePageRange"])"
+                            disabled="@(_uploading || _pageRanges.Count == 1)"
+                            @onclick="() => RemovePageRange(range)">−</button>
+                </div>
+            }
+            <button type="button"
+                    class="add-page-range"
+                    disabled="@_uploading"
+                    @onclick="AddPageRange">@Localizer["AddPageRange"]</button>
+        }
+    </div>
+
     <InputFile @key="_fileInputSequence"
                class="document-drop-input"
                aria-label="@(Localizer["DropInputLabel"])"
@@ -83,6 +126,13 @@
 
     private long
         _fileInputSequence;
+
+    private bool
+        _usePageRanges;
+
+    private readonly List<EditablePageRange>
+        _pageRanges =
+        [new EditablePageRange()];
 
     #endregion
 
@@ -183,6 +233,8 @@
                             Options.MaximumUploadBytes)],
                 ManagerDocumentDropError.UnsupportedFormat =>
                     Localizer["UploadUnsupportedFormatError"],
+                ManagerDocumentDropError.PageRangesRequirePdf =>
+                    Localizer["UploadPageRangesRequirePdfError"],
                 ManagerDocumentDropError.Rejected =>
                     Localizer["UploadRejectedError"],
                 ManagerDocumentDropError.Connection =>
@@ -307,6 +359,19 @@
         var file =
             eventArgs.File;
 
+        if (!TryBuildPageRanges(
+                out var pageRanges,
+                out var pageRangeError))
+        {
+            _uploadErrorDetail =
+                pageRangeError;
+
+            _uploadState =
+                ManagerDocumentDropState.Failed;
+
+            return;
+        }
+
         _uploading =
             true;
 
@@ -331,7 +396,10 @@
                     .SubmitAsync(
                         file,
                         SubmissionBehavior,
-                        _lifetime.Token);
+                        cancellationToken:
+                            _lifetime.Token,
+                        pageRanges:
+                            pageRanges);
         }
         catch (OperationCanceledException)
             when (_lifetime.IsCancellationRequested)
@@ -349,6 +417,8 @@
                         ManagerDocumentDropError.TooLarge,
                     ManagerWorkshopUploadValidationFailure.UnsupportedFormat =>
                         ManagerDocumentDropError.UnsupportedFormat,
+                    ManagerWorkshopUploadValidationFailure.PageRangesRequirePdf =>
+                        ManagerDocumentDropError.PageRangesRequirePdf,
                     _ =>
                         throw new ArgumentOutOfRangeException(
                             nameof(exception),
@@ -434,6 +504,79 @@
                 result.OriginalFileName);
     }
 
+    private void AddPageRange() =>
+        _pageRanges.Add(
+            new EditablePageRange());
+
+    private void RemovePageRange(
+        EditablePageRange range)
+    {
+        if (_pageRanges.Count > 1)
+        {
+            _pageRanges.Remove(
+                range);
+        }
+    }
+
+    private bool TryBuildPageRanges(
+        out IReadOnlyList<ManagerPageRangeRequest>? pageRanges,
+        out string? error)
+    {
+        pageRanges =
+            null;
+
+        error =
+            null;
+
+        if (!_usePageRanges)
+        {
+            return true;
+        }
+
+        if (_pageRanges.Any(
+                range =>
+                    string.IsNullOrWhiteSpace(range.Title) ||
+                    range.StartPhysicalPageNumber <= 0 ||
+                    range.EndPhysicalPageNumber < range.StartPhysicalPageNumber))
+        {
+            error =
+                Localizer["PageRangeInvalid"];
+
+            return false;
+        }
+
+        var ordered =
+            _pageRanges
+                .OrderBy(range => range.StartPhysicalPageNumber)
+                .ToArray();
+
+        if (ordered
+            .Skip(1)
+            .Zip(
+                ordered,
+                (current, previous) =>
+                    current.StartPhysicalPageNumber <= previous.EndPhysicalPageNumber)
+            .Any(overlaps => overlaps))
+        {
+            error =
+                Localizer["PageRangeOverlap"];
+
+            return false;
+        }
+
+        pageRanges =
+            _pageRanges
+                .Select(
+                    range =>
+                        new ManagerPageRangeRequest(
+                            range.StartPhysicalPageNumber,
+                            range.EndPhysicalPageNumber,
+                            range.Title.Trim()))
+                .ToArray();
+
+        return true;
+    }
+
     #endregion
 
     #region Methods Formatting
@@ -472,8 +615,20 @@
         NoReadableContent,
         TooLarge,
         UnsupportedFormat,
+        PageRangesRequirePdf,
         Rejected,
         Connection
+    }
+
+    private sealed class EditablePageRange
+    {
+        public Guid Id { get; } = Guid.NewGuid();
+
+        public string Title { get; set; } = string.Empty;
+
+        public int StartPhysicalPageNumber { get; set; } = 1;
+
+        public int EndPhysicalPageNumber { get; set; } = 1;
     }
 
     #endregion

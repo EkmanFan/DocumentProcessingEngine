@@ -19,6 +19,15 @@
   <data name="UploadNoReadableContentError" xml:space="preserve"><value>Le navigateur n’a fourni aucun contenu lisible pour ce fichier. S’il n’est pas vide, sélectionne-le en cliquant sur la zone.</value></data>
   <data name="UploadTooLargeError" xml:space="preserve"><value>Le fichier dépasse la limite configurée de {0}.</value></data>
   <data name="UploadUnsupportedFormatError" xml:space="preserve"><value>Seuls les documents PDF et EPUB sont acceptés.</value></data>
+  <data name="UploadPageRangesRequirePdfError" xml:space="preserve"><value>Les plages de pages physiques sont réservées aux documents PDF.</value></data>
   <data name="UploadRejectedError" xml:space="preserve"><value>Le Manager a refusé le document. Vérifie les journaux du Host.</value></data>
   <data name="UploadConnectionError" xml:space="preserve"><value>La connexion a été interrompue avant confirmation de la custody.</value></data>
+  <data name="PageRangeMode" xml:space="preserve"><value>Découper ce PDF en plages de pages physiques</value></data>
+  <data name="PageRangeTitle" xml:space="preserve"><value>Titre</value></data>
+  <data name="PageRangeStart" xml:space="preserve"><value>Première page</value></data>
+  <data name="PageRangeEnd" xml:space="preserve"><value>Dernière page</value></data>
+  <data name="AddPageRange" xml:space="preserve"><value>+ Ajouter une plage</value></data>
+  <data name="RemovePageRange" xml:space="preserve"><value>Retirer la plage</value></data>
+  <data name="PageRangeInvalid" xml:space="preserve"><value>Chaque plage exige un titre, une première page positive et une dernière page supérieure ou égale.</value></data>
+  <data name="PageRangeOverlap" xml:space="preserve"><value>Les plages de pages physiques ne peuvent pas se chevaucher.</value></data>
 </root>
