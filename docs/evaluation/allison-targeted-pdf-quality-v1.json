@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "document-processing-allison-targeted-pdf-quality-v1",
+  "status": "PASS",
+  "baselineCommit": "6405461df23e7d0c85ff5fd29c4afeca3e8bf355",
+  "classification": "HybridSimple",
+  "sources": {
+    "pdfSha256": "c1e7abb683540db65dd9a4d494fdd8afbe234737eef1aaf251441caa1987a5e7",
+    "epubSha256": "7de262376d385a569ca77209553c86ae8483ea7497102d165c6e79b3e7cebd37",
+    "pdfPhysicalPageCount": 689
+  },
+  "selectionPolicy": {
+    "fullBookRun": false,
+    "fullCorpusRun": false,
+    "qualifiedPhysicalPages": [24, 333, 380, 524],
+    "semiBlindPhysicalPage": 380
+  },
+  "windows": [
+    {
+      "physicalPage": 24,
+      "risk": "chapter-boundary-heading-hierarchy",
+      "fixtureSha256": "6d11fad99d2c851092452a22e4b5457dbecec2543e5002a7ca8be19f4442c10f",
+      "nativeWordCount": 418,
+      "nativeBlockCount": 8,
+      "ppLabels": ["paragraph_title", "text", "paragraph_title", "text", "paragraph_title", "text", "text"],
+      "epubResource": "OEBPS/c7S.xhtml",
+      "disposition": "PASS"
+    },
+    {
+      "physicalPage": 333,
+      "risk": "large-mid-book-diagram",
+      "fixtureSha256": "8e750474871d97143578fb87ee72a12ac0b67659d7aac8d393a0195fe739b977",
+      "nativeWordCount": 387,
+      "nativeBlockCount": 8,
+      "ppLabels": ["text", "text", "paragraph_title", "text", "table", "text"],
+      "epubResource": "OEBPS/c3PA.xhtml",
+      "epubImageResource": "OEBPS/image_rsrcGJ6.jpg",
+      "imageDimensions": "411x296",
+      "decodedRmseRatio": 0.0104794,
+      "disposition": "PASS"
+    },
+    {
+      "physicalPage": 380,
+      "risk": "semi-blind-image-bearing-narrative-page",
+      "fixtureSha256": "11c2b1ce3f8b96211cdb17345b02e1591f767251b2456b1c6a4662567c8ec69f",
+      "nativeWordCount": 581,
+      "nativeBlockCount": 9,
+      "ppLabels": ["text", "text", "text", "text", "text"],
+      "epubResource": "OEBPS/c4AF.xhtml",
+      "epubImageResource": "OEBPS/image_rsrcGJ7.jpg",
+      "imageDimensions": "452x99",
+      "decodedRmseRatio": 0.014439,
+      "disposition": "PASS_WITHOUT_PORTABLE_TABLE_STRUCTURE_CLAIM"
+    },
+    {
+      "physicalPage": 524,
+      "risk": "chapter-boundary-inline-glyphs-small-hierarchy",
+      "fixtureSha256": "f27863a7efc4815b5c9205fe41e0d09c322a009f685158733d28ca4f2886af1a",
+      "nativeWordCount": 291,
+      "nativeBlockCount": 10,
+      "ppLabels": ["paragraph_title", "text", "paragraph_title", "text", "paragraph_title", "text", "text", "table", "text"],
+      "epubResource": "OEBPS/c5X7.xhtml",
+      "epubImageResources": ["OEBPS/image_rsrcGJB.jpg", "OEBPS/image_rsrcGJC.jpg"],
+      "decodedRmseRatios": [0.0113541, 0.0211253],
+      "disposition": "PASS"
+    }
+  ],
+  "aggregateNativeEvidence": {
+    "selectedPageTextLayerCoveragePercent": 100.0,
+    "multiColumnCandidatePages": 0,
+    "interleavedColumnPages": 0,
+    "verticalReadingOrderReversalPages": 0
+  },
+  "humanSignOff": {
+    "completed": true,
+    "completedOn": "2026-08-29",
+    "verdict": "PASS",
+    "reviewedPhysicalPages": [24, 333, 380, 524],
+    "reportedDefects": []
+  }
+}
