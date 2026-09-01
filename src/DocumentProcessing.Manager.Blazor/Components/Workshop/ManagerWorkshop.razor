@@ -965,9 +965,7 @@
     protected override async Task OnAfterRenderAsync(
         bool firstRender)
     {
-        if (_lifetime.IsCancellationRequested ||
-            (_snapshot?.PendingItems.Count is not > 0 &&
-             _snapshot?.CompletedItems.Count is not > 0))
+        if (_lifetime.IsCancellationRequested)
         {
             return;
         }
@@ -976,6 +974,11 @@
         {
             var module =
                 await GetWorkshopModuleAsync(
+                    _lifetime.Token);
+
+            await module
+                .InvokeVoidAsync(
+                    "initializeActionMenus",
                     _lifetime.Token);
 
             if (_snapshot?.PendingItems.Count is > 0)
@@ -1039,6 +1042,10 @@
         {
             try
             {
+                await _workshopModule
+                    .InvokeVoidAsync(
+                        "disposeActionMenus");
+
                 await _workshopModule
                     .DisposeAsync();
             }

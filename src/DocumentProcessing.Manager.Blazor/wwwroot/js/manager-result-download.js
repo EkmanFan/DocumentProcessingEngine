@@ -19,6 +19,91 @@ export async function downloadFile(fileName, mediaType, contentStreamReference) 
 
 const queueControllers = new WeakMap();
 const overflowControllers = new WeakMap();
+let actionMenuController = null;
+
+export function initializeActionMenus() {
+    if (actionMenuController) {
+        return;
+    }
+
+    const closeMenus = exceptMenu => {
+        for (const menu of document.querySelectorAll("details.action-menu[open]")) {
+            if (menu !== exceptMenu) {
+                menu.removeAttribute("open");
+            }
+        }
+    };
+
+    const handlePointerDown = event => {
+        const targetMenu = event.target.closest?.("details.action-menu");
+
+        closeMenus(targetMenu);
+    };
+
+    const handleClick = event => {
+        const targetMenu = event.target.closest?.("details.action-menu");
+
+        if (event.target.closest?.(".action-menu-panel button")) {
+            targetMenu?.removeAttribute("open");
+            return;
+        }
+
+        if (event.target.closest?.("details.action-menu > summary")) {
+            closeMenus(targetMenu);
+        }
+    };
+
+    const handleFocusOut = event => {
+        const sourceMenu = event.target.closest?.("details.action-menu");
+        const nextTarget = event.relatedTarget;
+
+        if (sourceMenu &&
+            (!(nextTarget instanceof Node) || !sourceMenu.contains(nextTarget))) {
+            sourceMenu.removeAttribute("open");
+        }
+    };
+
+    const handleKeyDown = event => {
+        if (event.key !== "Escape") {
+            return;
+        }
+
+        const openMenu = event.target.closest?.("details.action-menu[open]");
+
+        if (!openMenu) {
+            return;
+        }
+
+        openMenu.removeAttribute("open");
+        openMenu.querySelector("summary")?.focus();
+        event.preventDefault();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("click", handleClick);
+    document.addEventListener("focusout", handleFocusOut);
+    document.addEventListener("keydown", handleKeyDown);
+
+    actionMenuController = {
+        handleClick,
+        handleFocusOut,
+        handleKeyDown,
+        handlePointerDown
+    };
+}
+
+export function disposeActionMenus() {
+    if (!actionMenuController) {
+        return;
+    }
+
+    document.removeEventListener("pointerdown", actionMenuController.handlePointerDown);
+    document.removeEventListener("click", actionMenuController.handleClick);
+    document.removeEventListener("focusout", actionMenuController.handleFocusOut);
+    document.removeEventListener("keydown", actionMenuController.handleKeyDown);
+
+    actionMenuController = null;
+}
 
 export function initializeOverflowIndicator(regionElement) {
     const currentController = overflowControllers.get(regionElement);
