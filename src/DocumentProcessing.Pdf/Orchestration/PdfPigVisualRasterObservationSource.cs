@@ -136,31 +136,28 @@ public sealed class PdfPigVisualRasterObservationSource
                     input);
 
             if (document.NumberOfPages !=
-                extraction.Pages.Count)
+                extraction.SourcePhysicalPageCount)
             {
                 throw new InvalidDataException(
                     $"PDF contains {document.NumberOfPages} page(s), but extraction " +
-                    $"contains {extraction.Pages.Count} page(s).");
+                    $"reports {extraction.SourcePhysicalPageCount} source page(s).");
             }
 
             var pages =
                 new List<PageVisualRasterObservations>(
-                    document.NumberOfPages);
+                    extraction.Pages.Count);
 
-            var physicalPageNumber =
-                0;
-
-            foreach (var page in
-                     document.GetPages())
+            foreach (var extractionPage in
+                     extraction.Pages)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                physicalPageNumber++;
+                var physicalPageNumber =
+                    extractionPage.PhysicalPageNumber;
 
-                var extractionPage =
-                    extraction.Pages[
-                        physicalPageNumber -
-                        1];
+                var page =
+                    document.GetPage(
+                        physicalPageNumber);
 
                 var coordinateSpace =
                     PdfPageCoordinateSpace.Create(

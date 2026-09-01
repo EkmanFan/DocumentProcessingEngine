@@ -30,7 +30,8 @@ The root [README](../README.md) is the current operational entry point.
 | `evaluation/habermas-epub-reference-v1.md` | Frozen evidence | Exact EPUB identity, official conformance result and p18/p28 structural controls. |
 | `evaluation/habermas-epub-native-reference-v1.md` | Frozen evidence | Production Host native EPUB result, non-paged custody and text fingerprint. |
 | `evaluation/habermas-pdf-epub-text-comparison-v1.md` | Frozen evidence | Cross-format text comparison, EPUB footnote correction and aggregate parity measurements. |
-| `evaluation/epub-notes-v1.md` | Current design and evidence | Portable Note/Notes v3 contract, EPUB V4 correlation rules and targeted Habermas/Allison controls. |
+| `evaluation/epub-notes-v1.md` | Current design and evidence | Portable Note/Notes v4 contract, EPUB V4 correlation rules and targeted Habermas/Allison controls. |
+| `evaluation/pdf-page-range-processing-v1.md` | Current validation | End-to-end PDF page-range semantics, source-relative page custody and regression coverage. |
 | `evaluation/allison-targeted-pdf-quality-v1.md` | Current validation | Four-window Allison PDF/EPUB qualification, semi-blind control, and human sign-off oracle. |
 | `evaluation/habermas-p28-figure-title-review-v1.md` | Current validation | Result-impact review of the known p28 provider `figure_title` misclassification. |
 | `integration/result-publication-v1.md` | Current contract | Durable ResultAvailable claim/ack protocol, readable export and Apologia integration rules. |

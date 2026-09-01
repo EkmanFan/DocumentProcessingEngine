@@ -72,7 +72,7 @@ public sealed class DocumentProcessingResultTests
                     JsonSerializerDefaults.Web));
 
         Assert.Equal(
-            "document-processing-result-v3",
+            "document-processing-result-v4",
             json.GetProperty(
                     "schemaVersion")
                 .GetString());

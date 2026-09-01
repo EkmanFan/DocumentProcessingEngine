@@ -15,7 +15,7 @@ using DocumentProcessing.Core.Results.Serialization;
 
 namespace DocumentProcessing.UnitTests.Results;
 
-public sealed class DocumentIngestionResultJsonTests
+public sealed class PagedDocumentProcessingModelJsonTests
 {
     private const string SourceSha =
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -30,17 +30,17 @@ public sealed class DocumentIngestionResultJsonTests
             CreateRepresentativeResult();
 
         var firstBytes =
-            DocumentIngestionResultJson
+            PagedDocumentProcessingModelJson
                 .SerializeToUtf8Bytes(
                     original);
 
         var roundTripped =
-            DocumentIngestionResultJson
+            PagedDocumentProcessingModelJson
                 .Deserialize(
                     firstBytes);
 
         var secondBytes =
-            DocumentIngestionResultJson
+            PagedDocumentProcessingModelJson
                 .SerializeToUtf8Bytes(
                     roundTripped);
 
@@ -49,7 +49,7 @@ public sealed class DocumentIngestionResultJsonTests
             secondBytes);
 
         Assert.Equal(
-            DocumentIngestionResult.SchemaVersionId,
+            PagedDocumentProcessingModel.SchemaVersionId,
             roundTripped.SchemaVersion);
 
         Assert.Equal(
@@ -140,7 +140,7 @@ public sealed class DocumentIngestionResultJsonTests
     public void Serialize_UsesExplicitV1ShapeAndOmitsDerivedDuplicateProperties()
     {
         var bytes =
-            DocumentIngestionResultJson
+            PagedDocumentProcessingModelJson
                 .SerializeToUtf8Bytes(
                     CreateRepresentativeResult());
 
@@ -152,7 +152,7 @@ public sealed class DocumentIngestionResultJsonTests
             document.RootElement;
 
         Assert.Equal(
-            "document-ingestion-result-v1",
+            "paged-document-processing-model-v1",
             root.GetProperty(
                     "schemaVersion")
                 .GetString());
@@ -302,7 +302,7 @@ public sealed class DocumentIngestionResultJsonTests
     public void Serialize_WritesRequiredEmptyCollectionsAsArrays()
     {
         var bytes =
-            DocumentIngestionResultJson
+            PagedDocumentProcessingModelJson
                 .SerializeToUtf8Bytes(
                     CreateNativeOnlyResult());
 
@@ -400,17 +400,17 @@ public sealed class DocumentIngestionResultJsonTests
                 CreateRepresentativeResult());
 
         root["schemaVersion"] =
-            "document-ingestion-result-v2";
+            "paged-document-processing-model-v2";
 
         var error =
             Assert.Throws<
-                UnsupportedDocumentIngestionResultSchemaException>(
+                UnsupportedPagedDocumentProcessingModelSchemaException>(
                 () =>
                     Deserialize(
                         root));
 
         Assert.Equal(
-            "document-ingestion-result-v2",
+            "paged-document-processing-model-v2",
             error.SchemaVersion);
     }
 
@@ -514,7 +514,7 @@ public sealed class DocumentIngestionResultJsonTests
     public void Deserialize_RejectsDuplicateJsonProperties()
     {
         var bytes =
-            DocumentIngestionResultJson
+            PagedDocumentProcessingModelJson
                 .SerializeToUtf8Bytes(
                     CreateRepresentativeResult());
 
@@ -523,7 +523,7 @@ public sealed class DocumentIngestionResultJsonTests
                 bytes);
 
         const string marker =
-            "\"schemaVersion\":\"document-ingestion-result-v1\",";
+            "\"schemaVersion\":\"paged-document-processing-model-v1\",";
 
         var duplicated =
             json.Replace(
@@ -538,7 +538,7 @@ public sealed class DocumentIngestionResultJsonTests
 
         Assert.Throws<JsonException>(
             () =>
-                DocumentIngestionResultJson
+                PagedDocumentProcessingModelJson
                     .Deserialize(
                         Encoding.UTF8.GetBytes(
                             duplicated)));
@@ -614,10 +614,10 @@ public sealed class DocumentIngestionResultJsonTests
     }
 
     private static JsonObject ParseMutable(
-        DocumentIngestionResult result)
+        PagedDocumentProcessingModel result)
     {
         var bytes =
-            DocumentIngestionResultJson
+            PagedDocumentProcessingModelJson
                 .SerializeToUtf8Bytes(
                     result);
 
@@ -626,9 +626,9 @@ public sealed class DocumentIngestionResultJsonTests
             .AsObject();
     }
 
-    private static DocumentIngestionResult Deserialize(
+    private static PagedDocumentProcessingModel Deserialize(
         JsonObject root) =>
-        DocumentIngestionResultJson
+        PagedDocumentProcessingModelJson
             .Deserialize(
                 Encoding.UTF8.GetBytes(
                     root.ToJsonString()));
@@ -655,7 +655,7 @@ public sealed class DocumentIngestionResultJsonTests
             $"Element '{elementId}' was not found in JSON.");
     }
 
-    private static DocumentIngestionResult CreateRepresentativeResult()
+    private static PagedDocumentProcessingModel CreateRepresentativeResult()
     {
         var nativeText =
             "Native body.";
@@ -988,7 +988,7 @@ public sealed class DocumentIngestionResultJsonTests
                     "segmentation-v1");
 
         var page =
-            new DocumentIngestionPage(
+            new PagedDocumentProcessingPage(
                 physicalPageNumber:
                     1,
                 new NormalizedRectangle(
@@ -1004,7 +1004,7 @@ public sealed class DocumentIngestionResultJsonTests
                 ]);
 
         var quality =
-            new DocumentIngestionQualityObservations(
+            new PagedDocumentProcessingQualityObservations(
                 [
                     new DocumentElementOcrQualityObservation(
                         ocr.ElementId,
@@ -1019,7 +1019,7 @@ public sealed class DocumentIngestionResultJsonTests
                                 0.94))
                 ]);
 
-        return new DocumentIngestionResult(
+        return new PagedDocumentProcessingModel(
             source,
             manifest,
             [page],
@@ -1033,7 +1033,7 @@ public sealed class DocumentIngestionResultJsonTests
             quality);
     }
 
-    private static DocumentIngestionResult CreateNativeOnlyResult()
+    private static PagedDocumentProcessingModel CreateNativeOnlyResult()
     {
         var text =
             "Native only.";
@@ -1110,7 +1110,7 @@ public sealed class DocumentIngestionResultJsonTests
                 hasUnresolvedEvidence:
                     false);
 
-        return new DocumentIngestionResult(
+        return new PagedDocumentProcessingModel(
             new DocumentSourceIdentity(
                 DocumentFormatId.Pdf,
                 SourceSha,
@@ -1144,7 +1144,7 @@ public sealed class DocumentIngestionResultJsonTests
                 segmentationProfileId:
                     "segmentation-v1"),
             [
-                new DocumentIngestionPage(
+                new PagedDocumentProcessingPage(
                     1,
                     new NormalizedRectangle(
                         0d,
@@ -1155,6 +1155,6 @@ public sealed class DocumentIngestionResultJsonTests
             ],
             [element],
             [segment],
-            DocumentIngestionQualityObservations.Empty);
+            PagedDocumentProcessingQualityObservations.Empty);
     }
 }

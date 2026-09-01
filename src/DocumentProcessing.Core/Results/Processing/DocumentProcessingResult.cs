@@ -13,7 +13,7 @@ namespace DocumentProcessing.Core.Results;
 ///
 /// The Engine returns this type through the consumer-facing Host. The current
 /// paged/hybrid Engine strategy may still use
-/// <see cref="DocumentIngestionResult"/> internally during migration, but
+/// <see cref="PagedDocumentProcessingModel"/> internally during migration, but
 /// portable projection occurs inside the Engine.
 /// </remarks>
 public sealed record DocumentProcessingResult
@@ -25,7 +25,7 @@ public sealed record DocumentProcessingResult
     /// contract.
     /// </summary>
     public const string SchemaVersionId =
-        "document-processing-result-v3";
+        "document-processing-result-v4";
 
     #endregion
 
@@ -367,6 +367,13 @@ public sealed record DocumentProcessingResult
             return;
         }
 
+        var processedPhysicalPageNumbers =
+            paged.Pages
+                .Select(
+                    page =>
+                        page.PhysicalPageNumber)
+                .ToHashSet();
+
         foreach (var element in
                  elements)
         {
@@ -379,10 +386,18 @@ public sealed record DocumentProcessingResult
             }
 
             if (pagedLocation.PhysicalPageNumber >
-                paged.PhysicalPageCount)
+                paged.SourcePhysicalPageCount)
             {
                 throw new ArgumentException(
                     $"Element '{element.ElementId}' references physical page {pagedLocation.PhysicalPageNumber}, outside the retained paged source structure.",
+                    nameof(elements));
+            }
+
+            if (!processedPhysicalPageNumbers.Contains(
+                    pagedLocation.PhysicalPageNumber))
+            {
+                throw new ArgumentException(
+                    $"Element '{element.ElementId}' references physical page {pagedLocation.PhysicalPageNumber}, outside the processed page selection.",
                     nameof(elements));
             }
         }

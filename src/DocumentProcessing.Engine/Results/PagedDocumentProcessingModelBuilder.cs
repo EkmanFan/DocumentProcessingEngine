@@ -13,7 +13,7 @@ namespace DocumentProcessing.Engine.Results;
 
 /// <summary>
 /// Deterministically projects a completed normalized/segmented hybrid document
-/// into the canonical portable <see cref="DocumentIngestionResult"/>.
+/// into the engine-facing <see cref="PagedDocumentProcessingModel"/>.
 ///
 /// The builder deliberately has one narrow input boundary:
 ///
@@ -26,19 +26,19 @@ namespace DocumentProcessing.Engine.Results;
 /// This component performs no extraction, rasterization, layout analysis, OCR,
 /// reconciliation, normalization, segmentation, persistence or serialization.
 /// </summary>
-public static class DocumentIngestionResultBuilder
+public static class PagedDocumentProcessingModelBuilder
 {
     #region Variables and Constants
 
     public const string ProjectionProfileId =
-        "document-ingestion-result-projection-v1";
+        "paged-document-processing-model-projection-v1";
 
     #endregion
 
 
     #region Methods
 
-    public static DocumentIngestionResult Build(
+    public static PagedDocumentProcessingModel Build(
         HybridDocumentSegmentationResult segmentation,
         DocumentProcessingProvenanceContext provenanceContext)
     {
@@ -70,7 +70,7 @@ public static class DocumentIngestionResultBuilder
                 provenance,
                 quality);
 
-        return new DocumentIngestionResult(
+        return new PagedDocumentProcessingModel(
             provenance.Source,
             provenance.ProcessingManifest,
             pages,
@@ -80,11 +80,11 @@ public static class DocumentIngestionResultBuilder
     }
 
     internal static IReadOnlyList<DocumentNote> BuildNotes(
-        DocumentIngestionResult ingestionResult,
+        PagedDocumentProcessingModel pagedModel,
         IReadOnlyList<NativeDocumentNote> notes)
     {
         ArgumentNullException.ThrowIfNull(
-            ingestionResult);
+            pagedModel);
 
         ArgumentNullException.ThrowIfNull(
             notes);
@@ -99,7 +99,7 @@ public static class DocumentIngestionResultBuilder
                 .ToArray();
 
         var elementsByNativeBlock =
-            ingestionResult.Elements
+            pagedModel.Elements
                 .Where(
                     element =>
                         element.NativeBlockSourceSequence.HasValue)
@@ -197,7 +197,7 @@ public static class DocumentIngestionResultBuilder
             projectedNotes.ToArray());
     }
 
-    private static IReadOnlyList<DocumentIngestionPage>
+    private static IReadOnlyList<PagedDocumentProcessingPage>
         ProjectPages(
         HybridDocumentSegmentationResult segmentation,
         DocumentProcessingProvenance provenance)
@@ -211,7 +211,7 @@ public static class DocumentIngestionResultBuilder
                     ));
 
         var projectedPages =
-            new List<DocumentIngestionPage>(
+            new List<PagedDocumentProcessingPage>(
                 segmentation.SourceNormalization
                     .Pages.Count);
 
@@ -249,7 +249,7 @@ public static class DocumentIngestionResultBuilder
             }
 
             projectedPages.Add(
-                new DocumentIngestionPage(
+                new PagedDocumentProcessingPage(
                     page.PhysicalPageNumber,
                     page.SourcePage.ContentViewport,
                     orderedElementIds));
@@ -258,7 +258,7 @@ public static class DocumentIngestionResultBuilder
         return projectedPages;
     }
 
-    private static DocumentIngestionQualityObservations
+    private static PagedDocumentProcessingQualityObservations
         ProjectFinalQuality(
         DocumentProcessingProvenance provenance,
         DocumentQualityObservations quality)
@@ -316,7 +316,7 @@ public static class DocumentIngestionResultBuilder
             provenance,
             quality);
 
-        return new DocumentIngestionQualityObservations(
+        return new PagedDocumentProcessingQualityObservations(
             confidenceObservations);
     }
 

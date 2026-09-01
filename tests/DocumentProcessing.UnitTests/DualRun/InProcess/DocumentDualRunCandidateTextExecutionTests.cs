@@ -592,7 +592,7 @@ public sealed class DocumentDualRunCandidateTextExecutionTests
             SourceSha);
     }
 
-    private static async Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
+    private static async Task<DocumentProcessing.Core.Results.PagedDocumentProcessingModel>
         ProcessNativeAsync(
             DocumentExtractionResult extraction,
             DocumentDualRunPlanningDependencies? dualRun,

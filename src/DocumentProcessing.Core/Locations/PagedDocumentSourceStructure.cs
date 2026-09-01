@@ -1,12 +1,12 @@
 namespace DocumentProcessing.Core.Locations;
 
 /// <summary>
-/// Optional complete physical-page structure for a paginated source document.
+/// Optional processed physical-page structure for a paginated source document.
 /// </summary>
 /// <remarks>
-/// The page collection is exact and contiguous from physical page 1. Keeping
-/// this structure optional preserves PDF page-count and empty-page custody
-/// without imposing pagination on EPUB, DOCX, or other non-paginated formats.
+/// The page collection is exact and contiguous for the processed selection.
+/// <see cref="SourcePhysicalPageCount"/> preserves the complete source size so
+/// a partial processing result never masquerades as a shorter source document.
 /// </remarks>
 public sealed record PagedDocumentSourceStructure
     : DocumentSourceStructure
@@ -21,8 +21,17 @@ public sealed record PagedDocumentSourceStructure
     /// <summary>
     /// Gets the exact number of physical pages in the source.
     /// </summary>
-    public int PhysicalPageCount =>
+    public int SourcePhysicalPageCount { get; }
+
+    /// <summary>Gets the number of physical pages retained in this result.</summary>
+    public int ProcessedPhysicalPageCount =>
         Pages.Count;
+
+    /// <summary>
+    /// Backward-compatible alias for the complete source physical-page count.
+    /// </summary>
+    public int PhysicalPageCount =>
+        SourcePhysicalPageCount;
 
     #endregion
 
@@ -33,9 +42,31 @@ public sealed record PagedDocumentSourceStructure
     /// </summary>
     public PagedDocumentSourceStructure(
         IReadOnlyList<PagedDocumentPageDescriptor> pages)
+        : this(
+            ResolveSourcePhysicalPageCount(
+                pages),
+            pages)
+    {
+    }
+
+    /// <summary>
+    /// Creates an authoritative processed-page structure while retaining the
+    /// complete physical-page count of the source document.
+    /// </summary>
+    public PagedDocumentSourceStructure(
+        int sourcePhysicalPageCount,
+        IReadOnlyList<PagedDocumentPageDescriptor> pages)
     {
         ArgumentNullException.ThrowIfNull(
             pages);
+
+        if (sourcePhysicalPageCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(sourcePhysicalPageCount),
+                sourcePhysicalPageCount,
+                "Source physical-page count must be positive.");
+        }
 
         var pageArray =
             pages.ToArray();
@@ -56,25 +87,53 @@ public sealed record PagedDocumentSourceStructure
                 nameof(pages));
         }
 
+        var firstPhysicalPageNumber =
+            pageArray[0]
+                .PhysicalPageNumber;
+
         for (var index = 0;
              index < pageArray.Length;
              index++)
         {
             var expectedPhysicalPageNumber =
-                index +
-                1;
+                firstPhysicalPageNumber +
+                index;
 
             if (pageArray[index].PhysicalPageNumber !=
                 expectedPhysicalPageNumber)
             {
                 throw new ArgumentException(
-                    "Paged source structure must contain exact physical-page order starting at page 1.",
+                    "Paged source structure must contain a contiguous processed physical-page selection.",
                     nameof(pages));
             }
         }
 
+        if (pageArray[^1].PhysicalPageNumber >
+            sourcePhysicalPageCount)
+        {
+            throw new ArgumentException(
+                "Processed physical pages cannot exceed the source physical-page count.",
+                nameof(pages));
+        }
+
         Pages =
             pageArray;
+
+        SourcePhysicalPageCount =
+            sourcePhysicalPageCount;
+    }
+
+    private static int ResolveSourcePhysicalPageCount(
+        IReadOnlyList<PagedDocumentPageDescriptor>? pages)
+    {
+        ArgumentNullException.ThrowIfNull(
+            pages);
+
+        return pages.Count == 0
+            ? 1
+            : pages.Max(
+                page =>
+                    page.PhysicalPageNumber);
     }
 
     #endregion

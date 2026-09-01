@@ -989,6 +989,94 @@ public sealed class PostgresProcessingQueueStore
 
     #endregion
 
+    #region Methods Retry
+
+    /// <inheritdoc />
+    public async ValueTask RetryFailedAsync(
+        RetryFailedProcessingUnitCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            command);
+
+        await using var connection =
+            await _dataSource
+                .OpenConnectionAsync(
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        await using var transaction =
+            await connection
+                .BeginTransactionAsync(
+                    IsolationLevel.ReadCommitted,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        var actualVersion =
+            await LockQueueAsync(
+                    connection,
+                    transaction,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        if (actualVersion !=
+            command.ExpectedQueueVersion)
+        {
+            throw new ProcessingQueueConcurrencyException(
+                command.ExpectedQueueVersion,
+                actualVersion);
+        }
+
+        await using var retry =
+            new NpgsqlCommand(
+                """
+                UPDATE document_processing_manager.processing_units
+                SET status = 0,
+                    queue_position =
+                    (
+                        SELECT COALESCE(MAX(pending.queue_position), 0) + 1
+                        FROM document_processing_manager.processing_units AS pending
+                        WHERE pending.status = 0
+                    ),
+                    attempt_number = attempt_number + 1,
+                    result_reference = NULL,
+                    interruption_reason = NULL,
+                    updated_at_utc = clock_timestamp()
+                WHERE unit_id = @unit_id
+                    AND status = 3;
+                """,
+                connection,
+                transaction);
+
+        retry.Parameters.AddWithValue(
+            "unit_id",
+            NpgsqlDbType.Uuid,
+            command.UnitId.Value);
+
+        if (await retry
+                .ExecuteNonQueryAsync(
+                    cancellationToken)
+                .ConfigureAwait(false) !=
+            1)
+        {
+            throw new InvalidOperationException(
+                "Only a terminally failed processing unit can be retried.");
+        }
+
+        await IncrementQueueVersionAsync(
+                connection,
+                transaction,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        await transaction
+            .CommitAsync(
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    #endregion
+
     #region Methods SQL
 
     private const string

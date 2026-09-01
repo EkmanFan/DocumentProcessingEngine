@@ -3,16 +3,16 @@ using DocumentProcessing.Core.Extraction;
 namespace DocumentProcessing.Core.Results;
 
 /// <summary>
-/// Portable page structure in a completed document-ingestion result.
+/// Engine-internal page structure in a completed paged processing model.
 ///
 /// V1 page coordinates use the existing normalized top-left page coordinate
 /// space. OrderedElementIds is the authoritative page-to-element membership
 /// sequence; element content/provenance remains authoritative in the root
 /// Elements collection.
 /// </summary>
-public sealed record DocumentIngestionPage
+public sealed record PagedDocumentProcessingPage
 {
-    public DocumentIngestionPage(
+    public PagedDocumentProcessingPage(
         int physicalPageNumber,
         NormalizedRectangle contentViewport,
         IReadOnlyList<string> orderedElementIds)

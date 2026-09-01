@@ -642,6 +642,28 @@ a:focus-visible {
     opacity: 0.58;
 }
 
+.result-retry-button {
+    min-height: 28px;
+    border: 1px solid rgba(187, 64, 64, 0.22);
+    border-radius: 8px;
+    padding: 0 9px;
+    color: var(--red);
+    font-size: 0.69rem;
+    font-weight: 800;
+    background: var(--red-soft);
+    cursor: pointer;
+}
+
+.result-retry-button:not(:disabled):hover {
+    border-color: var(--red);
+    transform: translateY(-1px);
+}
+
+.result-retry-button:disabled {
+    cursor: wait;
+    opacity: 0.58;
+}
+
 .result-download-error {
     max-width: 120px;
     color: var(--red);

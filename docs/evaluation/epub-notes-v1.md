@@ -6,7 +6,7 @@
 
 EPUB Notes V1 introduces native extraction profile
 `epub-xhtml-native-v4+epubcheck-5.3.0` and portable processing-result schema
-`document-processing-result-v3`.
+`document-processing-result-v4`.
 
 ## Responsibility boundary
 

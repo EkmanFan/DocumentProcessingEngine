@@ -327,7 +327,9 @@ public sealed class PdfPigDocumentExtractor
             var extraction =
                 new DocumentExtractionResult(
                     DocumentFormatId.Pdf,
-                    pages);
+                    pages,
+                    sourcePhysicalPageCount:
+                        document.NumberOfPages);
 
             return new PdfNativeExtractionWithLinksResult(
                 new DocumentExtractionWithRasterObservationsResult(

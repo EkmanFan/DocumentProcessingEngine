@@ -105,6 +105,46 @@ public sealed class ManagerHostClientTests
     }
 
     [Fact]
+    public async Task RetryFailedProcessingUnitAsync_SendsVersionedUnitCommand()
+    {
+        var unitId =
+            Guid.NewGuid();
+
+        var handler =
+            new RecordingHandler();
+
+        using var client =
+            CreateClient(
+                handler);
+
+        await new ManagerHostClient(
+                client)
+            .RetryFailedProcessingUnitAsync(
+                unitId,
+                expectedVersion:
+                    9);
+
+        Assert.Equal(
+            HttpMethod.Post,
+            handler.Method);
+
+        Assert.Equal(
+            $"http://manager.local/api/manager/queue/{unitId:D}/retry",
+            handler.RequestUri?.AbsoluteUri);
+
+        using var document =
+            JsonDocument.Parse(
+                handler.Content);
+
+        Assert.Equal(
+            9,
+            document.RootElement
+                .GetProperty(
+                    "expectedVersion")
+                .GetInt64());
+    }
+
+    [Fact]
     public async Task GetSettingsAsync_MapsDurableManagerSettings()
     {
         var handler =

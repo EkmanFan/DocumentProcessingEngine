@@ -47,6 +47,10 @@
   <data name="NoResultsTitle" xml:space="preserve"><value>No results</value></data>
   <data name="NoResultsDetail" xml:space="preserve"><value>Processed documents will appear here.</value></data>
   <data name="FailedStatus" xml:space="preserve"><value>Failed</value></data>
+  <data name="RetryBatch" xml:space="preserve"><value>Retry batch</value></data>
+  <data name="RetryBatchLabel" xml:space="preserve"><value>Retry failed batch {0}</value></data>
+  <data name="RetryDocument" xml:space="preserve"><value>Retry document</value></data>
+  <data name="RetryDocumentLabel" xml:space="preserve"><value>Retry failed document {0}</value></data>
   <data name="CompletedStatus" xml:space="preserve"><value>Completed</value></data>
   <data name="ProcessingFailureLabel" xml:space="preserve"><value>Processing failure: {0}</value></data>
   <data name="DownloadResult" xml:space="preserve"><value>Download</value></data>

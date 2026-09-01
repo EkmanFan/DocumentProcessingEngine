@@ -147,6 +147,10 @@ internal static class ManagerApi
             ReleaseQueueUnitAsync);
 
         group.MapPost(
+            "/queue/{unitId:guid}/retry",
+            RetryFailedQueueUnitAsync);
+
+        group.MapPost(
             "/queue/{unitId:guid}/prepare-split",
             PrepareQueueUnitSplitAsync);
 
@@ -764,6 +768,69 @@ internal static class ManagerApi
             return HttpResults.Conflict(
                 new ApiConflictResponse(
                     "manager.processing_unit_not_shelved",
+                    exception.Message));
+        }
+    }
+
+    private static async Task<IResult> RetryFailedQueueUnitAsync(
+        Guid unitId,
+        QueueRetryRequest request,
+        IProcessingQueueStore queueStore,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
+        DocumentProcessingManagerRuntime runtime,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        try
+        {
+            await queueStore
+                .RetryFailedAsync(
+                    new RetryFailedProcessingUnitCommand(
+                        new ProcessingUnitId(
+                            unitId),
+                        request.ExpectedVersion),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            runtime.NotifyQueueChanged();
+
+            var snapshot =
+                await GetRecentSnapshotAsync(
+                        historyReader,
+                        settingsStore,
+                        timeProvider,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            return HttpResults.Ok(
+                ToResponse(
+                    snapshot));
+        }
+        catch (ProcessingQueueConcurrencyException exception)
+        {
+            return HttpResults.Conflict(
+                new QueueVersionConflictResponse(
+                    "manager.queue_version_conflict",
+                    exception.Message,
+                    exception.ExpectedVersion,
+                    exception.ActualVersion));
+        }
+        catch (ArgumentException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.invalid_processing_unit",
+                    exception.Message));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return HttpResults.Conflict(
+                new ApiConflictResponse(
+                    "manager.processing_unit_not_failed",
                     exception.Message));
         }
     }
@@ -1544,6 +1611,9 @@ internal static class ManagerApi
         IReadOnlyList<Guid> OrderedPendingUnitIds);
 
     internal sealed record QueueReleaseRequest(
+        long ExpectedVersion);
+
+    internal sealed record QueueRetryRequest(
         long ExpectedVersion);
 
     internal sealed record SplitPreviewResponse(

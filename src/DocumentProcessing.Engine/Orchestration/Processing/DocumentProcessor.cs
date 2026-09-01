@@ -40,7 +40,7 @@ namespace DocumentProcessing.Engine.Orchestration;
 ///   -> normalization
 ///   -> segmentation
 ///   -> provenance / quality projection
-///   -> DocumentIngestionResult
+///   -> PagedDocumentProcessingModel
 ///
 /// The processor orchestrates existing components. It does not reproduce
 /// layout, OCR, pairing, reconciliation, normalization, or segmentation logic.
@@ -255,7 +255,7 @@ public sealed class DocumentProcessor
 
     #region Methods Public Processing
 
-    public Task<DocumentIngestionResult> ProcessAsync(
+    public Task<PagedDocumentProcessingModel> ProcessAsync(
         DocumentSource source,
         CancellationToken cancellationToken = default) =>
         ProcessCoreAsync(
@@ -271,7 +271,7 @@ public sealed class DocumentProcessor
     /// The engine writes preserved visual bytes to the returned stream but does
     /// not choose or own the caller's storage system.
     /// </summary>
-    public Task<DocumentIngestionResult> ProcessAsync(
+    public Task<PagedDocumentProcessingModel> ProcessAsync(
         DocumentSource source,
         Func<LayoutObservation, CancellationToken, ValueTask<Stream>>
             openVisualDestinationAsync,
@@ -286,7 +286,7 @@ public sealed class DocumentProcessor
             cancellationToken);
     }
 
-    private async Task<DocumentIngestionResult> ProcessCoreAsync(
+    private async Task<PagedDocumentProcessingModel> ProcessCoreAsync(
         DocumentSource source,
         Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
             openVisualDestinationAsync,
@@ -384,10 +384,10 @@ public sealed class DocumentProcessor
                     cancellationToken)
                 .ConfigureAwait(false);
 
-        return model.IngestionResult;
+        return model.PagedModel;
     }
 
-    internal async Task<DocumentIngestionResult> ProcessPreparedEvidenceAsync(
+    internal async Task<PagedDocumentProcessingModel> ProcessPreparedEvidenceAsync(
         PreparedDocumentSource prepared,
         DocumentFormatId selectedFormat,
         PagedNativeDocumentEvidence evidence,
@@ -404,7 +404,7 @@ public sealed class DocumentProcessor
                     cancellationToken)
                 .ConfigureAwait(false);
 
-        return model.IngestionResult;
+        return model.PagedModel;
     }
 
     private Task<DocumentProcessingModel> ProcessPreparedEvidenceModelAsync(
@@ -462,7 +462,7 @@ public sealed class DocumentProcessor
 
         return DocumentProcessingResultProjector
             .Project(
-                model.IngestionResult,
+                model.PagedModel,
                 model.Notes);
     }
 
@@ -799,7 +799,7 @@ public sealed class DocumentProcessor
                     format,
                     prepared.Sha256,
                     prepared.ByteLength,
-                    extraction.Pages.Count,
+                    extraction.SourcePhysicalPageCount,
                     prepared.Source.FileName,
                     prepared.Source.DeclaredMediaType),
                 _engineVersion,
@@ -820,13 +820,13 @@ public sealed class DocumentProcessor
                         : null);
 
         var authoritativeResult =
-            DocumentIngestionResultBuilder
+            PagedDocumentProcessingModelBuilder
                 .Build(
                     segmentation,
                     provenanceContext);
 
         var projectedNotes =
-            DocumentIngestionResultBuilder
+            PagedDocumentProcessingModelBuilder
                 .BuildNotes(
                     authoritativeResult,
                     documentNotes);
@@ -1354,14 +1354,18 @@ public sealed class DocumentProcessor
                 "Native extraction returned no physical pages.");
         }
 
+        var firstPhysicalPageNumber =
+            extraction.Pages[0]
+                .PhysicalPageNumber;
+
         for (var index = 0;
              index <
              extraction.Pages.Count;
              index++)
         {
             var expectedPhysicalPageNumber =
-                index +
-                1;
+                firstPhysicalPageNumber +
+                index;
 
             var actualPhysicalPageNumber =
                 extraction.Pages[index]
@@ -1371,9 +1375,17 @@ public sealed class DocumentProcessor
                 expectedPhysicalPageNumber)
             {
                 throw new InvalidDataException(
-                    $"Native extraction page sequence must be contiguous and one-based. " +
+                    $"Native extraction page sequence must be contiguous. " +
                     $"Expected physical page {expectedPhysicalPageNumber}, observed {actualPhysicalPageNumber}.");
             }
+        }
+
+        if (extraction.SourcePhysicalPageCount <
+            extraction.Pages[^1].PhysicalPageNumber)
+        {
+            throw new InvalidDataException(
+                $"Native extraction retains physical page {extraction.Pages[^1].PhysicalPageNumber}, " +
+                $"outside the declared source page count {extraction.SourcePhysicalPageCount}.");
         }
     }
 

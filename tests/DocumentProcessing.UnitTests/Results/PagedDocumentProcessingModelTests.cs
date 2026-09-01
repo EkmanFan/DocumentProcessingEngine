@@ -11,7 +11,7 @@ using DocumentProcessing.Engine.Results;
 
 namespace DocumentProcessing.UnitTests.Results;
 
-public sealed class DocumentIngestionResultTests
+public sealed class PagedDocumentProcessingModelTests
 {
     private const string SourceSha =
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -23,7 +23,7 @@ public sealed class DocumentIngestionResultTests
             CreateFixture();
 
         var result =
-            new DocumentIngestionResult(
+            new PagedDocumentProcessingModel(
                 fixture.Source,
                 fixture.Manifest,
                 fixture.Pages,
@@ -32,11 +32,11 @@ public sealed class DocumentIngestionResultTests
                 fixture.Quality);
 
         Assert.Equal(
-            DocumentIngestionResult.SchemaVersionId,
+            PagedDocumentProcessingModel.SchemaVersionId,
             result.SchemaVersion);
 
         Assert.Equal(
-            "document-ingestion-result-v1",
+            "paged-document-processing-model-v1",
             result.SchemaVersion);
 
         Assert.Equal(
@@ -92,7 +92,7 @@ public sealed class DocumentIngestionResultTests
             fixture.Segments.ToList();
 
         var result =
-            new DocumentIngestionResult(
+            new PagedDocumentProcessingModel(
                 fixture.Source,
                 fixture.Manifest,
                 pages,
@@ -129,7 +129,7 @@ public sealed class DocumentIngestionResultTests
                     5);
 
         var ingestion =
-            new DocumentIngestionResult(
+            new PagedDocumentProcessingModel(
                 fixture.Source,
                 fixture.Manifest,
                 fixture.Pages,
@@ -163,7 +163,7 @@ public sealed class DocumentIngestionResultTests
     }
 
     [Fact]
-    public void Constructor_RejectsMissingPhysicalPage()
+    public void Constructor_RejectsElementOutsideProcessedPageSelection()
     {
         var fixture =
             CreateFixture();
@@ -171,7 +171,7 @@ public sealed class DocumentIngestionResultTests
         var error =
             Assert.Throws<ArgumentException>(
                 () =>
-                    new DocumentIngestionResult(
+                    new PagedDocumentProcessingModel(
                         fixture.Source,
                         fixture.Manifest,
                         [fixture.Pages[0]],
@@ -180,7 +180,7 @@ public sealed class DocumentIngestionResultTests
                         fixture.Quality));
 
         Assert.Contains(
-            "exactly one entry",
+            "outside the processed page selection",
             error.Message,
             StringComparison.OrdinalIgnoreCase);
     }
@@ -194,7 +194,7 @@ public sealed class DocumentIngestionResultTests
         var brokenPages =
             new[]
             {
-                new DocumentIngestionPage(
+                new PagedDocumentProcessingPage(
                     1,
                     FullViewport(),
                     []),
@@ -204,7 +204,7 @@ public sealed class DocumentIngestionResultTests
         var error =
             Assert.Throws<ArgumentException>(
                 () =>
-                    new DocumentIngestionResult(
+                    new PagedDocumentProcessingModel(
                         fixture.Source,
                         fixture.Manifest,
                         brokenPages,
@@ -246,7 +246,7 @@ public sealed class DocumentIngestionResultTests
         var error =
             Assert.Throws<ArgumentException>(
                 () =>
-                    new DocumentIngestionResult(
+                    new PagedDocumentProcessingModel(
                         fixture.Source,
                         fixture.Manifest,
                         fixture.Pages,
@@ -267,7 +267,7 @@ public sealed class DocumentIngestionResultTests
             CreateFixture();
 
         var quality =
-            new DocumentIngestionQualityObservations(
+            new PagedDocumentProcessingQualityObservations(
                 [
                     new DocumentElementOcrQualityObservation(
                         "missing-element",
@@ -277,7 +277,7 @@ public sealed class DocumentIngestionResultTests
         var error =
             Assert.Throws<ArgumentException>(
                 () =>
-                    new DocumentIngestionResult(
+                    new PagedDocumentProcessingModel(
                         fixture.Source,
                         fixture.Manifest,
                         fixture.Pages,
@@ -298,7 +298,7 @@ public sealed class DocumentIngestionResultTests
             CreateFixture();
 
         var quality =
-            new DocumentIngestionQualityObservations(
+            new PagedDocumentProcessingQualityObservations(
                 [
                     new DocumentElementOcrQualityObservation(
                         fixture.Elements[0].ElementId,
@@ -308,7 +308,7 @@ public sealed class DocumentIngestionResultTests
         var error =
             Assert.Throws<ArgumentException>(
                 () =>
-                    new DocumentIngestionResult(
+                    new PagedDocumentProcessingModel(
                         fixture.Source,
                         fixture.Manifest,
                         fixture.Pages,
@@ -365,7 +365,7 @@ public sealed class DocumentIngestionResultTests
         var error =
             Assert.Throws<ArgumentException>(
                 () =>
-                    new DocumentIngestionResult(
+                    new PagedDocumentProcessingModel(
                         fixture.Source,
                         fixture.Manifest,
                         fixture.Pages,
@@ -404,7 +404,7 @@ public sealed class DocumentIngestionResultTests
         var error =
             Assert.Throws<ArgumentException>(
                 () =>
-                    new DocumentIngestionResult(
+                    new PagedDocumentProcessingModel(
                         fixture.Source,
                         manifestWithoutOcr,
                         fixture.Pages,
@@ -428,7 +428,7 @@ public sealed class DocumentIngestionResultTests
 
         Assert.Throws<ArgumentException>(
             () =>
-                new DocumentIngestionQualityObservations(
+                new PagedDocumentProcessingQualityObservations(
                     [
                         observation,
                         observation
@@ -439,7 +439,7 @@ public sealed class DocumentIngestionResultTests
     public void PublicResultSurface_AvoidsDuplicateAggregateTruth()
     {
         var properties =
-            typeof(DocumentIngestionResult)
+            typeof(PagedDocumentProcessingModel)
                 .GetProperties(
                     BindingFlags.Instance |
                     BindingFlags.Public)
@@ -470,16 +470,16 @@ public sealed class DocumentIngestionResultTests
 
         Assert.Equal(
             typeof(IReadOnlyList<DocumentElementProvenance>),
-            typeof(DocumentIngestionResult)
+            typeof(PagedDocumentProcessingModel)
                 .GetProperty(
-                    nameof(DocumentIngestionResult.Elements))!
+                    nameof(PagedDocumentProcessingModel.Elements))!
                 .PropertyType);
 
         Assert.Equal(
             typeof(IReadOnlyList<DocumentSegmentProvenance>),
-            typeof(DocumentIngestionResult)
+            typeof(PagedDocumentProcessingModel)
                 .GetProperty(
-                    nameof(DocumentIngestionResult.StructuralSegments))!
+                    nameof(PagedDocumentProcessingModel.StructuralSegments))!
                 .PropertyType);
     }
 
@@ -489,9 +489,9 @@ public sealed class DocumentIngestionResultTests
         var resultTypes =
             new[]
             {
-                typeof(DocumentIngestionResult),
-                typeof(DocumentIngestionPage),
-                typeof(DocumentIngestionQualityObservations),
+                typeof(PagedDocumentProcessingModel),
+                typeof(PagedDocumentProcessingPage),
+                typeof(PagedDocumentProcessingQualityObservations),
                 typeof(DocumentElementOcrQualityObservation)
             };
 
@@ -696,18 +696,18 @@ public sealed class DocumentIngestionResultTests
         var pages =
             new[]
             {
-                new DocumentIngestionPage(
+                new PagedDocumentProcessingPage(
                     1,
                     FullViewport(),
                     [native.ElementId]),
-                new DocumentIngestionPage(
+                new PagedDocumentProcessingPage(
                     2,
                     FullViewport(),
                     [ocr.ElementId])
             };
 
         var quality =
-            new DocumentIngestionQualityObservations(
+            new PagedDocumentProcessingQualityObservations(
                 [
                     new DocumentElementOcrQualityObservation(
                         ocr.ElementId,
@@ -847,8 +847,8 @@ public sealed class DocumentIngestionResultTests
     private sealed record Fixture(
         DocumentSourceIdentity Source,
         DocumentProcessingManifest Manifest,
-        IReadOnlyList<DocumentIngestionPage> Pages,
+        IReadOnlyList<PagedDocumentProcessingPage> Pages,
         IReadOnlyList<DocumentElementProvenance> Elements,
         IReadOnlyList<DocumentSegmentProvenance> Segments,
-        DocumentIngestionQualityObservations Quality);
+        PagedDocumentProcessingQualityObservations Quality);
 }

@@ -348,6 +348,41 @@ internal sealed class ManagerHostClient(
             response);
     }
 
+    public async ValueTask RetryFailedProcessingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default)
+    {
+        if (unitId ==
+            Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Processing-unit identifier cannot be empty.",
+                nameof(unitId));
+        }
+
+        if (expectedVersion <
+            0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(expectedVersion),
+                expectedVersion,
+                "Queue version cannot be negative.");
+        }
+
+        using var response =
+            await _httpClient
+                .PostAsJsonAsync(
+                    $"api/manager/queue/{unitId:D}/retry",
+                    new ManagerQueueRetryRequest(
+                        expectedVersion),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        EnsureSuccess(
+            response);
+    }
+
     public ValueTask<ManagerSplitPreviewContract> GetSplitPreviewAsync(
         Guid unitId,
         CancellationToken cancellationToken = default) =>

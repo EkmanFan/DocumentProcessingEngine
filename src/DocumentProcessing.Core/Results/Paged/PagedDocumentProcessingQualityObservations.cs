@@ -1,7 +1,7 @@
 namespace DocumentProcessing.Core.Results;
 
 /// <summary>
-/// Non-duplicating quality payload for DocumentIngestionResult.
+/// Non-duplicating quality payload for PagedDocumentProcessingModel.
 ///
 /// Phase 19B intentionally exposed a rich analytical view. The final result
 /// keeps only quality evidence that is not already represented authoritatively
@@ -13,13 +13,13 @@ namespace DocumentProcessing.Core.Results;
 /// authoritative on the element/segment graph and can be derived without
 /// duplicating serialized truth.
 /// </summary>
-public sealed record DocumentIngestionQualityObservations
+public sealed record PagedDocumentProcessingQualityObservations
 {
-    public static DocumentIngestionQualityObservations Empty { get; } =
+    public static PagedDocumentProcessingQualityObservations Empty { get; } =
         new(
             Array.Empty<DocumentElementOcrQualityObservation>());
 
-    public DocumentIngestionQualityObservations(
+    public PagedDocumentProcessingQualityObservations(
         IReadOnlyList<DocumentElementOcrQualityObservation>
             ocrConfidenceObservations)
     {

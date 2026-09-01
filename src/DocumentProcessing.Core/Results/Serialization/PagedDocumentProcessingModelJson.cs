@@ -5,13 +5,13 @@ using DocumentProcessing.Core.Results;
 namespace DocumentProcessing.Core.Results.Serialization;
 
 /// <summary>
-/// Official UTF-8 JSON V1 boundary for <see cref="DocumentIngestionResult"/>.
+/// Official UTF-8 JSON V1 boundary for <see cref="PagedDocumentProcessingModel"/>.
 ///
 /// The domain model is not serialized directly. An internal explicit transport
 /// contract fixes JSON names, omits derived duplicate properties and maps all
 /// untrusted input back through the validated public result constructors.
 /// </summary>
-public static class DocumentIngestionResultJson
+public static class PagedDocumentProcessingModelJson
 {
     #region Variables and Constants
 
@@ -24,13 +24,13 @@ public static class DocumentIngestionResultJson
     #region Methods
 
     public static byte[] SerializeToUtf8Bytes(
-        DocumentIngestionResult result)
+        PagedDocumentProcessingModel result)
     {
         ArgumentNullException.ThrowIfNull(
             result);
 
         var contract =
-            DocumentIngestionResultJsonContract
+            PagedDocumentProcessingModelJsonContract
                 .FromModel(
                     result);
 
@@ -39,29 +39,29 @@ public static class DocumentIngestionResultJson
             Options);
     }
 
-    public static DocumentIngestionResult Deserialize(
+    public static PagedDocumentProcessingModel Deserialize(
         ReadOnlySpan<byte> utf8Json)
     {
         if (utf8Json.IsEmpty)
         {
             throw new JsonException(
-                "Document ingestion result JSON cannot be empty.");
+                "Paged document processing model JSON cannot be empty.");
         }
 
         var contract =
             JsonSerializer.Deserialize<
-                DocumentIngestionResultJsonContract>(
+                PagedDocumentProcessingModelJsonContract>(
                 utf8Json,
                 Options) ??
             throw new JsonException(
-                "Document ingestion result JSON must contain an object.");
+                "Paged document processing model JSON must contain an object.");
 
         if (!string.Equals(
                 contract.SchemaVersion,
-                DocumentIngestionResult.SchemaVersionId,
+                PagedDocumentProcessingModel.SchemaVersionId,
                 StringComparison.Ordinal))
         {
-            throw new UnsupportedDocumentIngestionResultSchemaException(
+            throw new UnsupportedPagedDocumentProcessingModelSchemaException(
                 contract.SchemaVersion);
         }
 
@@ -69,7 +69,7 @@ public static class DocumentIngestionResultJson
         {
             return contract.ToModel();
         }
-        catch (UnsupportedDocumentIngestionResultSchemaException)
+        catch (UnsupportedPagedDocumentProcessingModelSchemaException)
         {
             throw;
         }
@@ -83,7 +83,7 @@ public static class DocumentIngestionResultJson
                   KeyNotFoundException)
         {
             throw new JsonException(
-                "Document ingestion result JSON violates the portable result invariants.",
+                "Paged document processing model JSON violates the model invariants.",
                 exception);
         }
     }

@@ -906,7 +906,7 @@ public sealed class DocumentDualRunCandidateOcrTextExecutionTests
             candidateRecognizer.ObservedKinds);
     }
 
-    private static async Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
+    private static async Task<DocumentProcessing.Core.Results.PagedDocumentProcessingModel>
         ProcessAsync(
             DocumentExtractionResult extraction,
             DocumentDualRunCandidateTextExecutionDependencies? controlled)

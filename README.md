@@ -28,11 +28,12 @@ policy.
   append-only custody events.
 - Source custody: exact bytes are retained through a content-addressed SHA-256
   filesystem adapter and verified before reading.
-- Managed execution V1: `WholeDocument` results run through the Host, are
+- Managed execution V1: `WholeDocument` and PDF `PageRange` results run through the Host, are
   retained as verified content-addressed JSON and are registered idempotently
   in PostgreSQL. Caller-owned visual bytes are staged, checked against the
   Engine result and atomically published in one subdirectory per processing
-  unit. Page-range execution remains a future increment.
+  unit. A page-range result preserves the complete source physical-page count
+  and the exact source-relative processed selection without renumbering pages.
 - Manager Host: a key-protected ASP.NET Core process composes schema migration,
   source/result custody, sequential background execution, lifecycle commands,
   submission, queue observation/reordering and result retrieval.
@@ -46,7 +47,9 @@ policy.
   immutable custody and queue registration remain owned by the Manager Host.
   New documents are shelved by default, can be released explicitly or marked
   ready at reception, and pending units can be reordered across documents by
-  buttons or drag and drop. Successful retained JSON results can be downloaded
+  buttons or drag and drop. A shared visual splitter creates validated,
+  non-overlapping PDF page-range units from an existing pending item, an upload
+  suggestion or an explicit global split action. Successful retained JSON results can be downloaded
   through the authenticated server-side workshop circuit. A settings dialog
   persists the reception default and validates the filesystem destination used
   for completed visual assets. The three workshop columns remain viewport-bound;

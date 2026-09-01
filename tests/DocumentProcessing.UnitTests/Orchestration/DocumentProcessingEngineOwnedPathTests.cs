@@ -165,6 +165,86 @@ public sealed class DocumentProcessingEngineOwnedPathTests
                     reference.Provenance.ElementId);
     }
 
+    [Theory]
+    [InlineData(1, 2)]
+    [InlineData(2, 3)]
+    public async Task ProcessDocumentAsync_PageRangeRetainsSourceRelativeCoverage(
+        int startPhysicalPageNumber,
+        int endPhysicalPageNumber)
+    {
+        const int sourcePhysicalPageCount =
+            3;
+
+        var format =
+            new StubDocumentFormat(
+                new NativeEvidenceExtractionResult.Success(
+                    CreateNativeEvidence(
+                        startPhysicalPageNumber,
+                        endPhysicalPageNumber,
+                        sourcePhysicalPageCount)));
+
+        var engine =
+            new DocumentProcessingEngine(
+                [format],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity);
+
+        await using var stream =
+            new MemoryStream(
+                "%PDF-engine-page-range"u8.ToArray(),
+                writable:
+                    false);
+
+        var result =
+            await engine
+                .ProcessDocumentAsync(
+                    new DocumentSource(
+                        stream,
+                        "engine-range.pdf",
+                        "application/pdf"),
+                    new DocumentProcessingRequestOptions(
+                        physicalPageRange:
+                            new PhysicalPageRange(
+                                startPhysicalPageNumber,
+                                endPhysicalPageNumber)));
+
+        var sourceStructure =
+            Assert.IsType<PagedDocumentSourceStructure>(
+                result.SourceStructure);
+
+        Assert.Equal(
+            sourcePhysicalPageCount,
+            sourceStructure.SourcePhysicalPageCount);
+
+        Assert.Equal(
+            Enumerable.Range(
+                startPhysicalPageNumber,
+                endPhysicalPageNumber -
+                startPhysicalPageNumber +
+                1),
+            sourceStructure.Pages.Select(
+                page =>
+                    page.PhysicalPageNumber));
+
+        Assert.All(
+            result.Elements,
+            element =>
+                Assert.InRange(
+                    Assert.IsType<PagedDocumentSourceLocation>(
+                            element.Location)
+                        .PhysicalPageNumber,
+                    startPhysicalPageNumber,
+                    endPhysicalPageNumber));
+
+        Assert.Equal(
+            new PhysicalPageRange(
+                startPhysicalPageNumber,
+                endPhysicalPageNumber),
+            format.RequestedPhysicalPageRange);
+    }
+
     [Fact]
     public async Task ProcessDocumentAsync_NoFormatRecognition_FailsClosed()
     {
@@ -295,18 +375,45 @@ public sealed class DocumentProcessingEngineOwnedPathTests
 
     private static PagedNativeDocumentEvidence CreateNativeEvidence(
         IReadOnlyList<NativeDocumentNote>? documentNotes = null)
+        =>
+            CreateNativeEvidence(
+                firstPhysicalPageNumber:
+                    1,
+                lastPhysicalPageNumber:
+                    2,
+                sourcePhysicalPageCount:
+                    2,
+                documentNotes);
+
+    private static PagedNativeDocumentEvidence CreateNativeEvidence(
+        int firstPhysicalPageNumber,
+        int lastPhysicalPageNumber,
+        int sourcePhysicalPageCount,
+        IReadOnlyList<NativeDocumentNote>? documentNotes = null)
     {
         var extraction =
             new DocumentExtractionResult(
                 DocumentFormatId.Pdf,
-                [
-                    CreatePage(
-                        1,
-                        "Alpha native paragraph."),
-                    CreatePage(
-                        2,
-                        "Beta native paragraph.")
-                ]);
+                Enumerable.Range(
+                        firstPhysicalPageNumber,
+                        lastPhysicalPageNumber -
+                        firstPhysicalPageNumber +
+                        1)
+                    .Select(
+                        physicalPageNumber =>
+                            CreatePage(
+                                physicalPageNumber,
+                                physicalPageNumber switch
+                                {
+                                    1 =>
+                                        "Alpha native paragraph.",
+                                    2 =>
+                                        "Beta native paragraph.",
+                                    _ =>
+                                        $"Native paragraph on page {physicalPageNumber}."
+                                }))
+                    .ToArray(),
+                sourcePhysicalPageCount);
 
         var coordinated =
             new DocumentExtractionWithRasterObservationsResult(
@@ -447,12 +554,15 @@ public sealed class DocumentProcessingEngineOwnedPathTests
 
     private sealed class StubDocumentFormat(
         NativeEvidenceExtractionResult outcome)
-        : IDocumentFormat
+        : IDocumentFormat,
+          IPhysicalPageRangeDocumentFormat
     {
         public DocumentFormatId Format =>
             DocumentFormatId.Pdf;
 
         public int AcquisitionCallCount { get; private set; }
+
+        public PhysicalPageRange? RequestedPhysicalPageRange { get; private set; }
 
         public ValueTask<NativeEvidenceExtractionResult>
             TryExtractNativeEvidenceAsync(
@@ -468,6 +578,20 @@ public sealed class DocumentProcessingEngineOwnedPathTests
 
             return ValueTask.FromResult(
                 outcome);
+        }
+
+        public ValueTask<NativeEvidenceExtractionResult>
+            TryExtractNativeEvidenceAsync(
+                DocumentSource source,
+                PhysicalPageRange physicalPageRange,
+                CancellationToken cancellationToken = default)
+        {
+            RequestedPhysicalPageRange =
+                physicalPageRange;
+
+            return TryExtractNativeEvidenceAsync(
+                source,
+                cancellationToken);
         }
     }
 

@@ -94,6 +94,16 @@ public interface IProcessingQueueStore
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Atomically requeues one terminally failed unit for another attempt.
+    /// </summary>
+    ValueTask RetryFailedAsync(
+        RetryFailedProcessingUnitCommand command,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromException(
+            new NotSupportedException(
+                "This processing-queue store does not support failed-unit retries."));
+
+    /// <summary>
     /// Atomically removes one ready pending unit from dispatch eligibility.
     /// </summary>
     ValueTask ShelvePendingAsync(

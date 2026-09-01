@@ -8,7 +8,7 @@ using DocumentProcessing.Core.Results;
 namespace DocumentProcessing.Engine.Results;
 
 /// <summary>
-/// Projects the current canonical ingestion result into the format-neutral
+/// Projects the engine-facing paged model into the format-neutral
 /// consumer-facing <see cref="DocumentProcessingResult"/> contract.
 /// </summary>
 /// <remarks>
@@ -25,11 +25,11 @@ internal static class DocumentProcessingResultProjector
     #region Methods Projection
 
     public static DocumentProcessingResult Project(
-        DocumentIngestionResult ingestionResult,
+        PagedDocumentProcessingModel pagedModel,
         IReadOnlyList<DocumentNote> notes)
     {
         ArgumentNullException.ThrowIfNull(
-            ingestionResult);
+            pagedModel);
 
         ArgumentNullException.ThrowIfNull(
             notes);
@@ -47,13 +47,13 @@ internal static class DocumentProcessingResultProjector
         }
 
         var elementsById =
-            ingestionResult.Elements.ToDictionary(
+            pagedModel.Elements.ToDictionary(
                 element =>
                     element.ElementId,
                 StringComparer.Ordinal);
 
         var orderedElements =
-            ingestionResult.Pages
+            pagedModel.Pages
                 .SelectMany(
                     page =>
                         page.OrderedElementIds)
@@ -63,14 +63,14 @@ internal static class DocumentProcessingResultProjector
                 .ToArray();
 
         if (orderedElements.Length !=
-            ingestionResult.Elements.Count)
+            pagedModel.Elements.Count)
         {
             throw new InvalidOperationException(
                 "Ingestion page membership does not cover the complete element collection exactly once.");
         }
 
         var orderedSegments =
-            ingestionResult.StructuralSegments
+            pagedModel.StructuralSegments
                 .OrderBy(
                     segment =>
                         segment.Ordinal)
@@ -117,15 +117,16 @@ internal static class DocumentProcessingResultProjector
 
         var source =
             new DocumentSourceDescriptor(
-                ingestionResult.Source.Format,
-                ingestionResult.Source.Sha256,
-                ingestionResult.Source.ByteLength,
-                ingestionResult.Source.FileName,
-                ingestionResult.Source.DeclaredMediaType);
+                pagedModel.Source.Format,
+                pagedModel.Source.Sha256,
+                pagedModel.Source.ByteLength,
+                pagedModel.Source.FileName,
+                pagedModel.Source.DeclaredMediaType);
 
         var sourceStructure =
             new PagedDocumentSourceStructure(
-                ingestionResult.Pages
+                pagedModel.Source.PhysicalPageCount,
+                pagedModel.Pages
                     .Select(
                         page =>
                             new PagedDocumentPageDescriptor(
@@ -135,12 +136,12 @@ internal static class DocumentProcessingResultProjector
 
         var quality =
             new DocumentProcessingQualityObservations(
-                ingestionResult.QualityObservations
+                pagedModel.QualityObservations
                     .OcrConfidenceObservations);
 
         return new DocumentProcessingResult(
             source,
-            ingestionResult.ProcessingManifest,
+            pagedModel.ProcessingManifest,
             elements,
             elementEvidence,
             structuralSegments,

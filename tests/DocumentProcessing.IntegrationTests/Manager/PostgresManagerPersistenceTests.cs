@@ -1653,6 +1653,63 @@ public sealed class PostgresManagerPersistenceTests
                     "Terminal failure."),
                 DateTimeOffset.UtcNow));
 
+        var failedQueue =
+            await context.QueueReader.GetSnapshotAsync();
+
+        var failedItem =
+            Assert.Single(
+                failedQueue.Items,
+                item =>
+                    item.WorkItem.UnitId == first.UnitId);
+
+        Assert.Equal(
+            ProcessingUnitStatus.Failed,
+            failedItem.Status);
+
+        await context.QueueStore.RetryFailedAsync(
+            new RetryFailedProcessingUnitCommand(
+                first.UnitId,
+                failedQueue.Version));
+
+        var manuallyRetriedQueue =
+            await context.QueueReader.GetSnapshotAsync();
+
+        var manuallyRetriedItem =
+            Assert.Single(
+                manuallyRetriedQueue.Items,
+                item =>
+                    item.WorkItem.UnitId == first.UnitId);
+
+        Assert.Equal(
+            ProcessingUnitStatus.Pending,
+            manuallyRetriedItem.Status);
+
+        Assert.Equal(
+            ProcessingUnitDispatchState.Ready,
+            manuallyRetriedItem.DispatchState);
+
+        Assert.Equal(
+            2,
+            manuallyRetriedItem.WorkItem.AttemptNumber);
+
+        Assert.Equal(
+            "terminal",
+            manuallyRetriedItem.LastFailure?.Code);
+
+        Assert.Equal(
+            [second.UnitId, first.UnitId],
+            await ReadPendingOrderAsync(
+                context.DataSource));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () =>
+                context.QueueStore
+                    .RetryFailedAsync(
+                        new RetryFailedProcessingUnitCommand(
+                            first.UnitId,
+                            manuallyRetriedQueue.Version))
+                    .AsTask());
+
         var retried =
             await context.QueueStore.ClaimNextAsync(
                 runtime,
@@ -1671,6 +1728,25 @@ public sealed class PostgresManagerPersistenceTests
         Assert.Equal(
             2,
             retried.WorkItem.AttemptNumber);
+
+        var manuallyRetried =
+            await context.QueueStore.ClaimNextAsync(
+                runtime,
+                runtime.WorkerId,
+                DateTimeOffset.UtcNow,
+                DateTimeOffset.UtcNow.AddMinutes(
+                    1));
+
+        Assert.NotNull(
+            manuallyRetried);
+
+        Assert.Equal(
+            first.UnitId,
+            manuallyRetried.WorkItem.UnitId);
+
+        Assert.Equal(
+            2,
+            manuallyRetried.WorkItem.AttemptNumber);
     }
 
     [PostgresFact]
@@ -2248,7 +2324,7 @@ public sealed class PostgresManagerPersistenceTests
                 json.RootElement;
 
             Assert.Equal(
-                "document-processing-result-v3",
+                "document-processing-result-v4",
                 root.GetProperty(
                         "schemaVersion")
                     .GetString());
@@ -2268,6 +2344,14 @@ public sealed class PostgresManagerPersistenceTests
                     .GetProperty(
                         "kind")
                     .GetString());
+
+            Assert.Equal(
+                1,
+                root.GetProperty(
+                        "sourceStructure")
+                    .GetProperty(
+                        "sourcePhysicalPageCount")
+                    .GetInt32());
 
             Assert.True(
                 root.GetProperty(

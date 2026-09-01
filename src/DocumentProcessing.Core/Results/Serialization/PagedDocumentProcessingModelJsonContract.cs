@@ -20,7 +20,7 @@ namespace DocumentProcessing.Core.Results.Serialization;
 /// property name is fixed explicitly here so CLR names and convenience
 /// properties cannot accidentally become the wire contract.
 /// </summary>
-internal sealed class DocumentIngestionResultJsonContract
+internal sealed class PagedDocumentProcessingModelJsonContract
 {
     #region Properties
 
@@ -37,7 +37,7 @@ internal sealed class DocumentIngestionResultJsonContract
         null!;
 
     [JsonPropertyName("pages"), JsonRequired]
-    public DocumentIngestionPageJsonContract[] Pages { get; init; } =
+    public PagedDocumentProcessingPageJsonContract[] Pages { get; init; } =
         [];
 
     [JsonPropertyName("elements"), JsonRequired]
@@ -49,7 +49,7 @@ internal sealed class DocumentIngestionResultJsonContract
         [];
 
     [JsonPropertyName("qualityObservations"), JsonRequired]
-    public DocumentIngestionQualityJsonContract QualityObservations { get; init; } =
+    public PagedDocumentProcessingQualityJsonContract QualityObservations { get; init; } =
         null!;
 
     #endregion
@@ -57,12 +57,12 @@ internal sealed class DocumentIngestionResultJsonContract
 
     #region Methods
 
-    public static DocumentIngestionResultJsonContract FromModel(
-        DocumentIngestionResult result) =>
+    public static PagedDocumentProcessingModelJsonContract FromModel(
+        PagedDocumentProcessingModel result) =>
         new()
         {
             SchemaVersion =
-                DocumentIngestionResult.SchemaVersionId,
+                PagedDocumentProcessingModel.SchemaVersionId,
             Source =
                 DocumentSourceIdentityJsonContract
                     .FromModel(
@@ -74,7 +74,7 @@ internal sealed class DocumentIngestionResultJsonContract
             Pages =
                 result.Pages
                     .Select(
-                        DocumentIngestionPageJsonContract
+                        PagedDocumentProcessingPageJsonContract
                             .FromModel)
                     .ToArray(),
             Elements =
@@ -90,12 +90,12 @@ internal sealed class DocumentIngestionResultJsonContract
                             .FromModel)
                     .ToArray(),
             QualityObservations =
-                DocumentIngestionQualityJsonContract
+                PagedDocumentProcessingQualityJsonContract
                     .FromModel(
                         result.QualityObservations)
         };
 
-    public DocumentIngestionResult ToModel() =>
+    public PagedDocumentProcessingModel ToModel() =>
         new(
             JsonContractMapping
                 .Require(
@@ -366,7 +366,7 @@ internal sealed class ProcessingComponentIdentityJsonContract
                     "processing component profileId"));
 }
 
-internal sealed class DocumentIngestionPageJsonContract
+internal sealed class PagedDocumentProcessingPageJsonContract
 {
     [JsonPropertyName("physicalPageNumber"), JsonRequired]
     public int PhysicalPageNumber { get; init; }
@@ -379,8 +379,8 @@ internal sealed class DocumentIngestionPageJsonContract
     public string[] OrderedElementIds { get; init; } =
         [];
 
-    public static DocumentIngestionPageJsonContract FromModel(
-        DocumentIngestionPage page) =>
+    public static PagedDocumentProcessingPageJsonContract FromModel(
+        PagedDocumentProcessingPage page) =>
         new()
         {
             PhysicalPageNumber =
@@ -394,7 +394,7 @@ internal sealed class DocumentIngestionPageJsonContract
                     .ToArray()
         };
 
-    public DocumentIngestionPage ToModel() =>
+    public PagedDocumentProcessingPage ToModel() =>
         new(
             PhysicalPageNumber,
             JsonContractMapping
@@ -777,14 +777,14 @@ internal sealed class DocumentSegmentProvenanceJsonContract
     #endregion
 }
 
-internal sealed class DocumentIngestionQualityJsonContract
+internal sealed class PagedDocumentProcessingQualityJsonContract
 {
     [JsonPropertyName("ocrConfidenceObservations"), JsonRequired]
     public DocumentElementOcrQualityJsonContract[] OcrConfidenceObservations { get; init; } =
         [];
 
-    public static DocumentIngestionQualityJsonContract FromModel(
-        DocumentIngestionQualityObservations quality) =>
+    public static PagedDocumentProcessingQualityJsonContract FromModel(
+        PagedDocumentProcessingQualityObservations quality) =>
         new()
         {
             OcrConfidenceObservations =
@@ -795,7 +795,7 @@ internal sealed class DocumentIngestionQualityJsonContract
                     .ToArray()
         };
 
-    public DocumentIngestionQualityObservations ToModel() =>
+    public PagedDocumentProcessingQualityObservations ToModel() =>
         new(
             JsonContractMapping
                 .MapRequired(

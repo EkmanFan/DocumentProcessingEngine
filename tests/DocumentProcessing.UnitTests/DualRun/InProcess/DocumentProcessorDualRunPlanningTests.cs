@@ -714,7 +714,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
             source,
             observer);
 
-    private static Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
+    private static Task<DocumentProcessing.Core.Results.PagedDocumentProcessingModel>
         ProcessNativeAsync(
             DocumentExtractionResult extraction,
             DocumentDualRunPlanningDependencies? dualRun,
@@ -725,7 +725,7 @@ public sealed class DocumentProcessorDualRunPlanningTests
             dualRun,
             cancellationToken);
 
-    private static async Task<DocumentProcessing.Core.Results.DocumentIngestionResult>
+    private static async Task<DocumentProcessing.Core.Results.PagedDocumentProcessingModel>
         ProcessNativeAsync(
             IDocumentExtractor extractor,
             DocumentDualRunPlanningDependencies? dualRun,
@@ -755,8 +755,8 @@ public sealed class DocumentProcessorDualRunPlanningTests
     }
 
     private static void AssertEquivalentNativeResult(
-        DocumentProcessing.Core.Results.DocumentIngestionResult expected,
-        DocumentProcessing.Core.Results.DocumentIngestionResult actual)
+        DocumentProcessing.Core.Results.PagedDocumentProcessingModel expected,
+        DocumentProcessing.Core.Results.PagedDocumentProcessingModel actual)
     {
         Assert.Equal(
             expected.Source,

@@ -4,14 +4,14 @@ using DocumentProcessing.Core.Results;
 namespace DocumentProcessing.Engine.Results;
 
 /// <summary>
-/// Engine-internal carrier that keeps the legacy ingestion result and newly
-/// projected semantic notes together until the portable-result boundary.
+/// Engine-internal carrier that keeps the paged processing model and projected
+/// semantic notes together until the portable-result boundary.
 /// </summary>
 internal sealed record DocumentProcessingModel
 {
     #region Properties
 
-    public DocumentIngestionResult IngestionResult { get; }
+    public PagedDocumentProcessingModel PagedModel { get; }
 
     public IReadOnlyList<DocumentNote> Notes { get; }
 
@@ -20,13 +20,13 @@ internal sealed record DocumentProcessingModel
     #region ctor
 
     public DocumentProcessingModel(
-        DocumentIngestionResult ingestionResult,
+        PagedDocumentProcessingModel pagedModel,
         IReadOnlyList<DocumentNote> notes)
     {
-        IngestionResult =
-            ingestionResult ??
+        PagedModel =
+            pagedModel ??
             throw new ArgumentNullException(
-                nameof(ingestionResult));
+                nameof(pagedModel));
 
         ArgumentNullException.ThrowIfNull(
             notes);

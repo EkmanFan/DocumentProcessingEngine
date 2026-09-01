@@ -329,6 +329,17 @@
                                             </span>
                                         }
                                     }
+                                    else
+                                    {
+                                        <button class="result-retry-button"
+                                                type="button"
+                                                disabled="@_commandRunning"
+                                                title="@(Localizer[GetRetryLabelKey(item.Scope), item.DocumentTitle])"
+                                                aria-label="@(Localizer[GetRetryLabelKey(item.Scope), item.DocumentTitle])"
+                                                @onclick="() => RetryFailedProcessingUnitAsync(item.UnitId)">
+                                            @Localizer[GetRetryTextKey(item.Scope)]
+                                        </button>
+                                    }
                                 </div>
                             </li>
                         }
@@ -1850,6 +1861,26 @@
             "release");
     }
 
+    private Task RetryFailedProcessingUnitAsync(
+        Guid unitId)
+    {
+        if (_snapshot is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var expectedVersion =
+            _snapshot.QueueVersion;
+
+        return ExecuteQueueMutationAsync(
+            cancellationToken =>
+                ManagerClient.RetryFailedProcessingUnitAsync(
+                    unitId,
+                    expectedVersion,
+                    cancellationToken),
+            "retry-failed");
+    }
+
     private async Task ExecuteQueueMutationAsync(
         Func<CancellationToken, ValueTask> mutation,
         string operation)
@@ -2044,7 +2075,19 @@
                     nameof(scope),
                     scope.Kind,
                     "Unknown Manager work-item scope kind.")
-        };
+            };
+
+    private static string GetRetryTextKey(
+        ManagerWorkItemScopeView scope) =>
+        scope.Kind == ManagerWorkItemScopeKind.PageRange
+            ? "RetryBatch"
+            : "RetryDocument";
+
+    private static string GetRetryLabelKey(
+        ManagerWorkItemScopeView scope) =>
+        scope.Kind == ManagerWorkItemScopeKind.PageRange
+            ? "RetryBatchLabel"
+            : "RetryDocumentLabel";
 
     private string FormatCompletedAt(
         DateTimeOffset value)

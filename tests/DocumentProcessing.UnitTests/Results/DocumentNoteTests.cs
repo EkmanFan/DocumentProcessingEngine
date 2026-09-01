@@ -110,7 +110,7 @@ public sealed class DocumentNoteTests
     }
 
     [Fact]
-    public void PortableNoteTypes_DoNotDependOnIngestionResult()
+    public void PortableNoteTypes_DoNotDependOnPagedModel()
     {
         var modelTypes =
             new[]
@@ -127,7 +127,7 @@ public sealed class DocumentNoteTests
                     .Any(
                         property =>
                             property.PropertyType.Name ==
-                            "DocumentIngestionResult"));
+                            "PagedDocumentProcessingModel"));
     }
 
     [Fact]

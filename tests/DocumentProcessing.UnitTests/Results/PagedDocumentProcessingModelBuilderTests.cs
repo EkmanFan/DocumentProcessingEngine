@@ -15,7 +15,7 @@ using DocumentProcessing.Engine.Reconciliation;
 
 namespace DocumentProcessing.UnitTests.Results;
 
-public sealed class DocumentIngestionResultBuilderTests
+public sealed class PagedDocumentProcessingModelBuilderTests
 {
     private const string SourceSha =
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -39,14 +39,14 @@ public sealed class DocumentIngestionResultBuilderTests
                 SourceSha);
 
         var result =
-            DocumentIngestionResultBuilder
+            PagedDocumentProcessingModelBuilder
                 .Build(
                     segmentation,
                     CompleteContext(
                         SourceSha));
 
         Assert.Equal(
-            DocumentIngestionResult.SchemaVersionId,
+            PagedDocumentProcessingModel.SchemaVersionId,
             result.SchemaVersion);
 
         Assert.Equal(
@@ -169,13 +169,13 @@ public sealed class DocumentIngestionResultBuilderTests
                 SourceSha);
 
         var first =
-            DocumentIngestionResultBuilder
+            PagedDocumentProcessingModelBuilder
                 .Build(
                     segmentation,
                     context);
 
         var second =
-            DocumentIngestionResultBuilder
+            PagedDocumentProcessingModelBuilder
                 .Build(
                     segmentation,
                     context);
@@ -275,7 +275,7 @@ public sealed class DocumentIngestionResultBuilderTests
     public void BuildAndPortableProjection_RetainUnqualifiedVisualStatus()
     {
         var ingestion =
-            DocumentIngestionResultBuilder
+            PagedDocumentProcessingModelBuilder
                 .Build(
                     BuildRepresentativeSegmentation(
                         SourceSha,
@@ -328,7 +328,7 @@ public sealed class DocumentIngestionResultBuilderTests
         var error =
             Assert.Throws<InvalidOperationException>(
                 () =>
-                    DocumentIngestionResultBuilder
+                    PagedDocumentProcessingModelBuilder
                         .Build(
                             segmentation,
                             context));
@@ -340,7 +340,7 @@ public sealed class DocumentIngestionResultBuilderTests
     }
 
     [Fact]
-    public void Build_RejectsSourcePageCountThatContradictsCompletedGraph()
+    public void Build_AcceptsProcessedSubsetOfLargerSource()
     {
         var segmentation =
             BuildRepresentativeSegmentation(
@@ -365,25 +365,29 @@ public sealed class DocumentIngestionResultBuilderTests
                 LayoutAnalysis(),
                 Reconciliation());
 
-        var error =
-            Assert.Throws<ArgumentException>(
-                () =>
-                    DocumentIngestionResultBuilder
-                        .Build(
-                            segmentation,
-                            context));
+        var model =
+            PagedDocumentProcessingModelBuilder
+                .Build(
+                    segmentation,
+                    context);
 
-        Assert.Contains(
-            "exactly one entry",
-            error.Message,
-            StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(
+            2,
+            model.Source.PhysicalPageCount);
+
+        Assert.Single(
+            model.Pages);
+
+        Assert.Equal(
+            1,
+            model.Pages[0].PhysicalPageNumber);
     }
 
     [Fact]
     public void PublicBuilder_HasSingleNarrowBuildBoundary()
     {
         var buildMethods =
-            typeof(DocumentIngestionResultBuilder)
+            typeof(PagedDocumentProcessingModelBuilder)
                 .GetMethods()
                 .Where(
                     method =>
@@ -391,7 +395,7 @@ public sealed class DocumentIngestionResultBuilderTests
                         method.IsStatic &&
                         string.Equals(
                             method.Name,
-                            nameof(DocumentIngestionResultBuilder.Build),
+                            nameof(PagedDocumentProcessingModelBuilder.Build),
                             StringComparison.Ordinal))
                 .ToArray();
 
@@ -416,7 +420,7 @@ public sealed class DocumentIngestionResultBuilderTests
             parameters[1].ParameterType);
 
         Assert.Equal(
-            typeof(DocumentIngestionResult),
+            typeof(PagedDocumentProcessingModel),
             build.ReturnType);
     }
 

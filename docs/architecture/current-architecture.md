@@ -113,10 +113,15 @@ models. It does not depend on Engine, PDF or provider implementations. Native
 text provenance is represented by `TextSelectionOrigin.Native`, not by a
 format-specific origin.
 
-The portable `document-processing-result-v3` contract represents every
+The portable `document-processing-result-v4` contract represents every
 concluded note relation through `DocumentNote`, `DocumentNoteReference`,
 `DocumentNoteProvenance` and `DocumentProcessingResult.Notes`. It deliberately
 does not promote physical footnote/endnote placement to portable semantics.
+
+Paged results retain both the complete source physical-page count and the exact
+contiguous page selection processed by the current unit. Physical page numbers
+always remain source-relative; a range such as pages 51–100 is never renumbered
+to 1–50.
 
 ## Current assembly direction
 

@@ -104,6 +104,9 @@ public sealed class PagedDocumentProcessingResultJsonEncoder
             writer.WriteString(
                 "kind",
                 "paged");
+            writer.WriteNumber(
+                "sourcePhysicalPageCount",
+                paged.SourcePhysicalPageCount);
             writer.WritePropertyName(
                 "pages");
             JsonSerializer.Serialize(

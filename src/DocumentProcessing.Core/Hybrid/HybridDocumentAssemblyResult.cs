@@ -4,7 +4,7 @@ namespace DocumentProcessing.Core.Hybrid;
 /// Neutral pre-segmentation result of assembling native, OCR, unresolved, and
 /// preserved visual evidence into one deterministic document stream.
 ///
-/// This is intentionally not yet DocumentIngestionResult. Structural
+/// This is intentionally not yet PagedDocumentProcessingModel. Structural
 /// normalization/segmentation of the unified stream remains Phase 18 work.
 /// </summary>
 public sealed class HybridDocumentAssemblyResult

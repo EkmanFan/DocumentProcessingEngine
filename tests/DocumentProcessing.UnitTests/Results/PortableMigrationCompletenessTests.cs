@@ -46,6 +46,47 @@ public sealed class PortableMigrationCompletenessTests
     }
 
     [Fact]
+    public void PagedSourceStructure_DistinguishesSourceSizeFromProcessedSelection()
+    {
+        var structure =
+            new PagedDocumentSourceStructure(
+                sourcePhysicalPageCount:
+                    170,
+                [
+                    new PagedDocumentPageDescriptor(
+                        physicalPageNumber:
+                            51,
+                        new NormalizedRectangle(
+                            0,
+                            0,
+                            1,
+                            1)),
+                    new PagedDocumentPageDescriptor(
+                        physicalPageNumber:
+                            52,
+                        new NormalizedRectangle(
+                            0,
+                            0,
+                            1,
+                            1))
+                ]);
+
+        Assert.Equal(
+            170,
+            structure.SourcePhysicalPageCount);
+
+        Assert.Equal(
+            2,
+            structure.ProcessedPhysicalPageCount);
+
+        Assert.Equal(
+            [51, 52],
+            structure.Pages.Select(
+                page =>
+                    page.PhysicalPageNumber));
+    }
+
+    [Fact]
     public void ProcessingResult_AcceptsOptionalPagedSourceStructure()
     {
         var result =

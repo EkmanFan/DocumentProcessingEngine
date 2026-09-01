@@ -3,29 +3,28 @@ using DocumentProcessing.Core.Provenance;
 namespace DocumentProcessing.Core.Results;
 
 /// <summary>
-/// Canonical strongly typed portable result returned by the document-processing
-/// engine.
+/// Engine-facing paged processing model used to project the canonical
+/// <see cref="DocumentProcessingResult"/>.
 ///
-/// This is a deliberate public boundary over the already-proven Phase 19
-/// information model. It does not expose the hybrid runtime graph, backend wire
-/// payloads, retrieval chunks, embeddings or consumer-specific semantics.
+/// This model preserves the mature paged provenance graph without making it a
+/// second consumer result. The Host returns <see cref="DocumentProcessingResult"/>.
 ///
 /// V1 reuses the Phase 19 portable element/segment provenance records as the
 /// authoritative documentary element/segment representation rather than
 /// creating a second copy of the same facts.
 /// </summary>
-public sealed record DocumentIngestionResult
+public sealed record PagedDocumentProcessingModel
 {
     public const string SchemaVersionId =
-        "document-ingestion-result-v1";
+        "paged-document-processing-model-v1";
 
-    public DocumentIngestionResult(
+    public PagedDocumentProcessingModel(
         DocumentSourceIdentity source,
         DocumentProcessingManifest processingManifest,
-        IReadOnlyList<DocumentIngestionPage> pages,
+        IReadOnlyList<PagedDocumentProcessingPage> pages,
         IReadOnlyList<DocumentElementProvenance> elements,
         IReadOnlyList<DocumentSegmentProvenance> structuralSegments,
-        DocumentIngestionQualityObservations qualityObservations)
+        PagedDocumentProcessingQualityObservations qualityObservations)
     {
         Source =
             source ??
@@ -132,8 +131,8 @@ public sealed record DocumentIngestionResult
     }
 
     /// <summary>
-    /// Portable contract schema identifier, distinct from EngineVersion in the
-    /// processing manifest.
+    /// Paged-model schema identifier, distinct from EngineVersion in the
+    /// processing manifest and from the consumer result schema.
     /// </summary>
     public string SchemaVersion =>
         SchemaVersionId;
@@ -142,7 +141,7 @@ public sealed record DocumentIngestionResult
 
     public DocumentProcessingManifest ProcessingManifest { get; }
 
-    public IReadOnlyList<DocumentIngestionPage> Pages { get; }
+    public IReadOnlyList<PagedDocumentProcessingPage> Pages { get; }
 
     /// <summary>
     /// Authoritative final element content + custody representation.
@@ -158,20 +157,24 @@ public sealed record DocumentIngestionResult
     /// Quality evidence not already represented authoritatively by the element
     /// and segment graph.
     /// </summary>
-    public DocumentIngestionQualityObservations QualityObservations { get; }
+    public PagedDocumentProcessingQualityObservations QualityObservations { get; }
 
     private static void ValidatePages(
         DocumentSourceIdentity source,
-        IReadOnlyList<DocumentIngestionPage> pages,
+        IReadOnlyList<PagedDocumentProcessingPage> pages,
         IReadOnlyList<DocumentElementProvenance> elements)
     {
-        if (pages.Count !=
-            source.PhysicalPageCount)
+        if (pages.Count ==
+            0)
         {
             throw new ArgumentException(
-                "Result pages must contain exactly one entry for every physical source page.",
+                "Paged processing model must retain at least one processed physical page.",
                 nameof(pages));
         }
+
+        var firstPhysicalPageNumber =
+            pages[0]
+                .PhysicalPageNumber;
 
         for (var index = 0;
              index <
@@ -179,25 +182,40 @@ public sealed record DocumentIngestionResult
              index++)
         {
             var expectedPhysicalPageNumber =
-                index +
-                1;
+                firstPhysicalPageNumber +
+                index;
 
             if (pages[index].PhysicalPageNumber !=
                 expectedPhysicalPageNumber)
             {
                 throw new ArgumentException(
-                    "Result pages must be in exact physical-page order starting at page 1.",
+                    "Paged processing model pages must be contiguous and in physical-page order.",
                     nameof(pages));
             }
         }
 
-        if (elements.Any(
-                element =>
-                    element.PhysicalPageNumber >
-                    source.PhysicalPageCount))
+        if (pages[^1].PhysicalPageNumber >
+            source.PhysicalPageCount)
         {
             throw new ArgumentException(
-                "An element references a physical page outside the source document.",
+                "A processed page lies outside the source document.",
+                nameof(pages));
+        }
+
+        var retainedPhysicalPageNumbers =
+            pages
+                .Select(
+                    page =>
+                        page.PhysicalPageNumber)
+                .ToHashSet();
+
+        if (elements.Any(
+                element =>
+                    !retainedPhysicalPageNumbers.Contains(
+                        element.PhysicalPageNumber)))
+        {
+            throw new ArgumentException(
+                "An element references a physical page outside the processed page selection.",
                 nameof(elements));
         }
 
@@ -367,7 +385,7 @@ public sealed record DocumentIngestionResult
     }
 
     private static void ValidateQualityObservations(
-        DocumentIngestionQualityObservations quality,
+        PagedDocumentProcessingQualityObservations quality,
         IReadOnlyDictionary<string, DocumentElementProvenance> elementsById)
     {
         foreach (var observation in

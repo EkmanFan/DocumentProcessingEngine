@@ -233,11 +233,11 @@ public sealed class PdfPigSourceVisualAssetMaterializer
                     input);
 
             if (document.NumberOfPages !=
-                extraction.Pages.Count)
+                extraction.SourcePhysicalPageCount)
             {
                 throw new InvalidDataException(
                     $"PDF contains {document.NumberOfPages} page(s), but extraction " +
-                    $"contains {extraction.Pages.Count} page(s).");
+                    $"reports {extraction.SourcePhysicalPageCount} source page(s).");
             }
 
             if (physicalPageNumber >
@@ -250,17 +250,16 @@ public sealed class PdfPigSourceVisualAssetMaterializer
             }
 
             var extractionPage =
-                extraction.Pages[
-                    physicalPageNumber -
-                    1];
+                extraction.Pages
+                    .SingleOrDefault(
+                        page =>
+                            page.PhysicalPageNumber ==
+                            physicalPageNumber);
 
-            if (extractionPage.PhysicalPageNumber !=
-                physicalPageNumber)
+            if (extractionPage is null)
             {
                 throw new InvalidDataException(
-                    $"Extraction page reports physical page " +
-                    $"{extractionPage.PhysicalPageNumber}; expected " +
-                    $"{physicalPageNumber}.");
+                    $"Extraction does not retain physical page {physicalPageNumber}.");
             }
 
             cancellationToken.ThrowIfCancellationRequested();

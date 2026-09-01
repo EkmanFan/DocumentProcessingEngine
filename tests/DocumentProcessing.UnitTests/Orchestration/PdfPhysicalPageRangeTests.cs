@@ -70,6 +70,56 @@ public sealed class PdfPhysicalPageRangeTests
     }
 
     [Fact]
+    public async Task RasterObservationSource_ObservesOnlyRetainedRangeAgainstFullSource()
+    {
+        await using var stream =
+            new MemoryStream(
+                BuildThreePagePdf(),
+                writable:
+                    false);
+
+        var source =
+            new DocumentSource(
+                stream,
+                "three-pages.pdf",
+                "application/pdf");
+
+        var format =
+            new PdfDocumentFormat();
+
+        var outcome =
+            await format
+                .TryExtractNativeEvidenceAsync(
+                    source,
+                    new PhysicalPageRange(2, 2));
+
+        var evidence =
+            Assert.IsType<PagedNativeDocumentEvidence>(
+                Assert.IsType<NativeEvidenceExtractionResult.Success>(
+                        outcome)
+                    .Evidence);
+
+        var observations =
+            await format
+                .ObserveAsync(
+                    source,
+                    DocumentFormatId.Pdf,
+                    evidence.Extraction);
+
+        var page =
+            Assert.Single(
+                observations);
+
+        Assert.Equal(
+            2,
+            page.PhysicalPageNumber);
+
+        Assert.Equal(
+            3,
+            evidence.Extraction.SourcePhysicalPageCount);
+    }
+
+    [Fact]
     public async Task PreviewInspection_ReturnsPhysicalPageCountWithoutProcessing()
     {
         await using var stream =

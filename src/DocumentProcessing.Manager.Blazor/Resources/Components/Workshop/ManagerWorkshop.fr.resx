@@ -47,6 +47,10 @@
   <data name="NoResultsTitle" xml:space="preserve"><value>Aucun résultat</value></data>
   <data name="NoResultsDetail" xml:space="preserve"><value>Les documents traités apparaîtront ici.</value></data>
   <data name="FailedStatus" xml:space="preserve"><value>Échec</value></data>
+  <data name="RetryBatch" xml:space="preserve"><value>Refaire le batch</value></data>
+  <data name="RetryBatchLabel" xml:space="preserve"><value>Relancer le batch en échec {0}</value></data>
+  <data name="RetryDocument" xml:space="preserve"><value>Refaire l’ouvrage</value></data>
+  <data name="RetryDocumentLabel" xml:space="preserve"><value>Relancer l’ouvrage en échec {0}</value></data>
   <data name="CompletedStatus" xml:space="preserve"><value>Terminé</value></data>
   <data name="ProcessingFailureLabel" xml:space="preserve"><value>Échec du traitement : {0}</value></data>
   <data name="DownloadResult" xml:space="preserve"><value>Télécharger</value></data>
