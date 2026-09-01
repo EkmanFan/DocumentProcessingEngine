@@ -144,6 +144,54 @@ public sealed class ManagerHostClientTests
                 .GetInt64());
     }
 
+    [Theory]
+    [InlineData("remove")]
+    [InlineData("hide")]
+    public async Task AdministrativeUnitCommandAsync_SendsVersionedCommand(
+        string operation)
+    {
+        var unitId = Guid.NewGuid();
+        var handler = new RecordingHandler();
+        using var client = CreateClient(handler);
+        var managerClient = new ManagerHostClient(client);
+
+        if (operation == "remove")
+        {
+            await managerClient.RemovePendingProcessingUnitAsync(unitId, expectedVersion: 14);
+        }
+        else
+        {
+            await managerClient.HideTerminalProcessingUnitAsync(unitId, expectedVersion: 14);
+        }
+
+        Assert.Equal(HttpMethod.Post, handler.Method);
+        Assert.Equal(
+            operation == "remove"
+                ? $"http://manager.local/api/manager/queue/{unitId:D}/remove"
+                : $"http://manager.local/api/manager/history/{unitId:D}/hide",
+            handler.RequestUri?.AbsoluteUri);
+
+        using var document = JsonDocument.Parse(handler.Content);
+        Assert.Equal(14, document.RootElement.GetProperty("expectedVersion").GetInt64());
+    }
+
+    [Fact]
+    public async Task ClearPendingQueueAsync_SendsVersionedCommand()
+    {
+        var handler = new RecordingHandler();
+        using var client = CreateClient(handler);
+
+        await new ManagerHostClient(client).ClearPendingQueueAsync(expectedVersion: 18);
+
+        Assert.Equal(HttpMethod.Post, handler.Method);
+        Assert.Equal(
+            "http://manager.local/api/manager/queue/clear",
+            handler.RequestUri?.AbsoluteUri);
+
+        using var document = JsonDocument.Parse(handler.Content);
+        Assert.Equal(18, document.RootElement.GetProperty("expectedVersion").GetInt64());
+    }
+
     [Fact]
     public async Task GetSettingsAsync_MapsDurableManagerSettings()
     {

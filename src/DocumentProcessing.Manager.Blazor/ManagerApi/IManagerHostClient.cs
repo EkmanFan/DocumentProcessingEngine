@@ -41,6 +41,20 @@ internal interface IManagerHostClient
         long expectedVersion,
         CancellationToken cancellationToken = default);
 
+    ValueTask RemovePendingProcessingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default);
+
+    ValueTask ClearPendingQueueAsync(
+        long expectedVersion,
+        CancellationToken cancellationToken = default);
+
+    ValueTask HideTerminalProcessingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default);
+
     ValueTask PrepareProcessingUnitSplitAsync(
         Guid unitId,
         long expectedVersion,

@@ -14,7 +14,8 @@ namespace DocumentProcessing.Manager.Persistence.Files;
 /// </summary>
 public sealed class FileSystemProcessingVisualAssetStore
     : IProcessingVisualAssetStore,
-      IProcessingVisualAssetReader
+      IProcessingVisualAssetReader,
+      IProcessingVisualAssetPurger
 {
     #region Variables and Constants
 
@@ -36,6 +37,51 @@ public sealed class FileSystemProcessingVisualAssetStore
 
     private readonly long
         _maximumVisualSetBytes;
+
+    #endregion
+
+    #region Methods Delete
+
+    /// <inheritdoc />
+    public ValueTask DeletePublicationAsync(
+        ProcessingUnitId unitId,
+        string publicationDirectory,
+        CancellationToken cancellationToken = default)
+    {
+        if (unitId.Value == Guid.Empty)
+        {
+            throw new ArgumentException("Processing-unit identifier cannot be empty.", nameof(unitId));
+        }
+
+        if (string.IsNullOrWhiteSpace(publicationDirectory) ||
+            !Path.IsPathFullyQualified(publicationDirectory))
+        {
+            throw new ArgumentException("Publication directory must be an absolute path.", nameof(publicationDirectory));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var directory = Path.GetFullPath(publicationDirectory);
+        var expectedSuffix = $"--{unitId.Value:N}";
+        if (!new DirectoryInfo(directory).Name.EndsWith(expectedSuffix, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Publication directory does not belong to the processing unit being purged.");
+        }
+
+        if (!Directory.Exists(directory))
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        var manifestPath = Path.Combine(directory, WriteSession.ManifestFileName);
+        if (!File.Exists(manifestPath))
+        {
+            throw new InvalidOperationException("Publication directory has no Manager visual manifest and cannot be purged safely.");
+        }
+
+        Directory.Delete(directory, recursive: true);
+        return ValueTask.CompletedTask;
+    }
 
     #endregion
 

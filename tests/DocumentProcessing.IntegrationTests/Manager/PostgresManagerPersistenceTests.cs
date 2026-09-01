@@ -79,7 +79,7 @@ public sealed class PostgresManagerPersistenceTests
                 "SELECT MAX(version) FROM document_processing_manager.schema_versions;");
 
         Assert.Equal(
-            7,
+            8,
             Convert.ToInt32(
                 await versionCommand.ExecuteScalarAsync()));
     }
@@ -1750,6 +1750,111 @@ public sealed class PostgresManagerPersistenceTests
     }
 
     [PostgresFact]
+    public async Task QueueAdministration_RemovesPendingClearsOnlyPendingAndHidesTerminal()
+    {
+        await using var context = await CreateContextAsync();
+
+        var firstPending = CreateWorkItem();
+        var secondPending = CreateWorkItem();
+        var active = CreateWorkItem();
+        var failed = CreateWorkItem();
+
+        await InsertPendingAsync(context.DataSource, firstPending, queuePosition: 1);
+        await InsertPendingAsync(context.DataSource, secondPending, queuePosition: 2);
+        await InsertExpiredActiveAsync(context.DataSource, active, DateTimeOffset.UtcNow.AddMinutes(-1));
+        await InsertTerminalAsync(
+            context.DataSource,
+            failed,
+            "failed.pdf",
+            ProcessingUnitStatus.Failed,
+            DateTimeOffset.UtcNow);
+
+        await context.QueueStore.RemovePendingAsync(
+            new RemovePendingProcessingUnitCommand(firstPending.UnitId, expectedQueueVersion: 0));
+
+        var afterRemove = await context.QueueReader.GetSnapshotAsync();
+        Assert.DoesNotContain(afterRemove.Items, item => item.WorkItem.UnitId == firstPending.UnitId);
+        Assert.Equal(1, afterRemove.Version);
+
+        Assert.Equal(
+            1,
+            await context.QueueStore.ClearPendingAsync(
+                new ClearPendingProcessingQueueCommand(afterRemove.Version)));
+
+        var afterClear = await context.QueueReader.GetSnapshotAsync();
+        Assert.DoesNotContain(afterClear.Items, item => item.Status == ProcessingUnitStatus.Pending);
+        Assert.Contains(afterClear.Items, item => item.WorkItem.UnitId == active.UnitId);
+        Assert.Contains(afterClear.Items, item => item.WorkItem.UnitId == failed.UnitId);
+
+        await context.QueueStore.HideTerminalAsync(
+            new HideTerminalProcessingUnitCommand(failed.UnitId, afterClear.Version));
+
+        var afterHide = await context.QueueReader.GetSnapshotAsync();
+        Assert.DoesNotContain(afterHide.Items, item => item.WorkItem.UnitId == failed.UnitId);
+        Assert.Contains(afterHide.Items, item => item.WorkItem.UnitId == active.UnitId);
+
+        var archive = await context.QueueReader.SearchArchiveAsync(
+            new ProcessingArchiveQuery(
+                archivedBeforeUtc: DateTimeOffset.UtcNow.AddDays(1),
+                titleContains: null,
+                completedFromUtc: null,
+                completedBeforeUtc: null,
+                ProcessingArchiveSort.CompletedNewest,
+                offset: 0,
+                limit: 20));
+        Assert.DoesNotContain(archive.Items, item => item.WorkItem.UnitId == failed.UnitId);
+
+        await using var retained = context.DataSource.CreateCommand(
+            "SELECT COUNT(*) FROM document_processing_manager.processing_units WHERE unit_id = @unit_id;");
+        retained.Parameters.AddWithValue("unit_id", NpgsqlDbType.Uuid, failed.UnitId.Value);
+        Assert.Equal(1L, Convert.ToInt64(await retained.ExecuteScalarAsync()));
+    }
+
+    [PostgresFact]
+    public async Task CustodyPurgeStore_DeletesOnlyAuthorizedUnsharedChainAndLeavesDurableCleanupJob()
+    {
+        await using var context = await CreateContextAsync();
+
+        var failed = CreateWorkItem();
+        await InsertTerminalAsync(
+            context.DataSource,
+            failed,
+            "purge.pdf",
+            ProcessingUnitStatus.Failed,
+            DateTimeOffset.UtcNow);
+
+        var purge = await context.PurgeStore.BeginPurgeAsync(
+            new PurgeTerminalProcessingUnitCommand(failed.UnitId, expectedQueueVersion: 0));
+
+        Assert.Equal(failed.UnitId, purge.UnitId);
+        Assert.NotNull(purge.SourceArtifactDigest);
+        Assert.Null(purge.ResultArtifactDigest);
+
+        var pending = Assert.Single(await context.PurgeStore.GetPendingPurgesAsync());
+        Assert.Equal(purge, pending);
+
+        await using (var counts = context.DataSource.CreateCommand(
+                         """
+                         SELECT
+                             (SELECT COUNT(*) FROM document_processing_manager.processing_units),
+                             (SELECT COUNT(*) FROM document_processing_manager.document_submissions),
+                             (SELECT COUNT(*) FROM document_processing_manager.source_artifacts),
+                             (SELECT COUNT(*) FROM document_processing_manager.custody_purge_authorizations);
+                         """))
+        await using (var reader = await counts.ExecuteReaderAsync())
+        {
+            Assert.True(await reader.ReadAsync());
+            Assert.Equal(0L, reader.GetInt64(0));
+            Assert.Equal(0L, reader.GetInt64(1));
+            Assert.Equal(0L, reader.GetInt64(2));
+            Assert.Equal(0L, reader.GetInt64(3));
+        }
+
+        await context.PurgeStore.CompletePurgeAsync(purge.PurgeId);
+        Assert.Empty(await context.PurgeStore.GetPendingPurgesAsync());
+    }
+
+    [PostgresFact]
     public async Task QueueReader_ReturnsConsistentVersionedDisplayOrder()
     {
         await using var context =
@@ -2435,6 +2540,8 @@ public sealed class PostgresManagerPersistenceTests
             dataSource.CreateCommand(
                 """
                 TRUNCATE TABLE
+                    document_processing_manager.custody_purge_authorizations,
+                    document_processing_manager.custody_purge_jobs,
                     document_processing_manager.result_consumer_deliveries,
                     document_processing_manager.result_available_events,
                     document_processing_manager.processing_results,
@@ -3020,6 +3127,13 @@ public sealed class PostgresManagerPersistenceTests
                 dataSource);
 
         public PostgresProcessingQueueReader QueueReader
+        {
+            get;
+        } =
+            new(
+                dataSource);
+
+        public PostgresProcessingUnitCustodyPurgeStore PurgeStore
         {
             get;
         } =

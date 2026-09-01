@@ -107,6 +107,9 @@ internal sealed record ManagerQueueReleaseRequest(
 internal sealed record ManagerQueueRetryRequest(
     long ExpectedVersion);
 
+internal sealed record ManagerQueueVersionRequest(
+    long ExpectedVersion);
+
 public sealed record ManagerSplitPreviewContract(
     Guid UnitId,
     Guid SubmissionId,

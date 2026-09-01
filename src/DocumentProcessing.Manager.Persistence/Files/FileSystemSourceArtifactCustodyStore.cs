@@ -8,7 +8,8 @@ namespace DocumentProcessing.Manager.Persistence.Files;
 /// </summary>
 public sealed class FileSystemSourceArtifactCustodyStore
     : ISourceArtifactWriter,
-      ISourceArtifactReader
+      ISourceArtifactReader,
+      ISourceArtifactPurger
 {
     #region Variables and Constants
 
@@ -107,6 +108,16 @@ public sealed class FileSystemSourceArtifactCustodyStore
                 exception.Message);
         }
     }
+
+    #endregion
+
+    #region Methods Delete
+
+    /// <inheritdoc />
+    public ValueTask DeleteAsync(
+        Sha256Digest digest,
+        CancellationToken cancellationToken = default) =>
+        _store.DeleteAsync(digest, cancellationToken);
 
     #endregion
 }

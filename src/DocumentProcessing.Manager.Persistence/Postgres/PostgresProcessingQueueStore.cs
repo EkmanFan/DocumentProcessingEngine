@@ -3,6 +3,7 @@ using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Processing;
 using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Runtime;
+using DocumentProcessing.Manager.History;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -1073,6 +1074,124 @@ public sealed class PostgresProcessingQueueStore
             .CommitAsync(
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    #endregion
+
+    #region Methods Remove
+
+    /// <inheritdoc />
+    public async ValueTask RemovePendingAsync(
+        RemovePendingProcessingUnitCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transaction = await connection
+            .BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+            .ConfigureAwait(false);
+
+        var actualVersion = await LockQueueAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (actualVersion != command.ExpectedQueueVersion)
+        {
+            throw new ProcessingQueueConcurrencyException(command.ExpectedQueueVersion, actualVersion);
+        }
+
+        await using var remove = new NpgsqlCommand(
+            """
+            DELETE FROM document_processing_manager.processing_units
+            WHERE unit_id = @unit_id
+                AND status = 0;
+            """,
+            connection,
+            transaction);
+        remove.Parameters.AddWithValue("unit_id", NpgsqlDbType.Uuid, command.UnitId.Value);
+
+        if (await remove.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) != 1)
+        {
+            throw new InvalidOperationException("Only a pending processing unit can be removed.");
+        }
+
+        await IncrementQueueVersionAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<int> ClearPendingAsync(
+        ClearPendingProcessingQueueCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transaction = await connection
+            .BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+            .ConfigureAwait(false);
+
+        var actualVersion = await LockQueueAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (actualVersion != command.ExpectedQueueVersion)
+        {
+            throw new ProcessingQueueConcurrencyException(command.ExpectedQueueVersion, actualVersion);
+        }
+
+        await using var clear = new NpgsqlCommand(
+            "DELETE FROM document_processing_manager.processing_units WHERE status = 0;",
+            connection,
+            transaction);
+        var removed = await clear.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+        if (removed > 0)
+        {
+            await IncrementQueueVersionAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+        }
+
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return removed;
+    }
+
+    #endregion
+
+    #region Methods Hide
+
+    /// <inheritdoc />
+    public async ValueTask HideTerminalAsync(
+        HideTerminalProcessingUnitCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transaction = await connection
+            .BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+            .ConfigureAwait(false);
+
+        var actualVersion = await LockQueueAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+        if (actualVersion != command.ExpectedQueueVersion)
+        {
+            throw new ProcessingQueueConcurrencyException(command.ExpectedQueueVersion, actualVersion);
+        }
+
+        await using var hide = new NpgsqlCommand(
+            """
+            UPDATE document_processing_manager.processing_units
+            SET hidden_at_utc = clock_timestamp(),
+                updated_at_utc = clock_timestamp()
+            WHERE unit_id = @unit_id
+                AND status IN (2, 3)
+                AND hidden_at_utc IS NULL;
+            """,
+            connection,
+            transaction);
+        hide.Parameters.AddWithValue("unit_id", NpgsqlDbType.Uuid, command.UnitId.Value);
+
+        if (await hide.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) != 1)
+        {
+            throw new InvalidOperationException("Only a visible terminal processing unit can be hidden.");
+        }
+
+        await IncrementQueueVersionAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     #endregion

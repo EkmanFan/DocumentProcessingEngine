@@ -383,6 +383,70 @@ internal sealed class ManagerHostClient(
             response);
     }
 
+    public ValueTask RemovePendingProcessingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default) =>
+        PostVersionedUnitCommandAsync(
+            unitId,
+            expectedVersion,
+            $"api/manager/queue/{unitId:D}/remove",
+            cancellationToken);
+
+    public async ValueTask ClearPendingQueueAsync(
+        long expectedVersion,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateExpectedVersion(expectedVersion);
+
+        using var response = await _httpClient.PostAsJsonAsync(
+            "api/manager/queue/clear",
+            new ManagerQueueVersionRequest(expectedVersion),
+            cancellationToken).ConfigureAwait(false);
+        EnsureSuccess(response);
+    }
+
+    public ValueTask HideTerminalProcessingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default) =>
+        PostVersionedUnitCommandAsync(
+            unitId,
+            expectedVersion,
+            $"api/manager/history/{unitId:D}/hide",
+            cancellationToken);
+
+    private async ValueTask PostVersionedUnitCommandAsync(
+        Guid unitId,
+        long expectedVersion,
+        string requestUri,
+        CancellationToken cancellationToken)
+    {
+        if (unitId == Guid.Empty)
+        {
+            throw new ArgumentException("Processing-unit identifier cannot be empty.", nameof(unitId));
+        }
+
+        ValidateExpectedVersion(expectedVersion);
+
+        using var response = await _httpClient.PostAsJsonAsync(
+            requestUri,
+            new ManagerQueueVersionRequest(expectedVersion),
+            cancellationToken).ConfigureAwait(false);
+        EnsureSuccess(response);
+    }
+
+    private static void ValidateExpectedVersion(long expectedVersion)
+    {
+        if (expectedVersion < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(expectedVersion),
+                expectedVersion,
+                "Queue version cannot be negative.");
+        }
+    }
+
     public ValueTask<ManagerSplitPreviewContract> GetSplitPreviewAsync(
         Guid unitId,
         CancellationToken cancellationToken = default) =>

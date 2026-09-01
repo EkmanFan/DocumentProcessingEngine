@@ -57,10 +57,11 @@ Selecting `Run` before reception makes the new unit immediately eligible while
 still respecting the Manager's global Start/Pause/Stop state and strictly
 sequential dispatcher. Queue items can be moved earlier or later across
 documents and future chapter units. The same order can be changed by dragging
-the dedicated grip on a pending card; the arrow buttons remain available for
-keyboard access and as a deterministic fallback. The public drop-zone component
-exposes the controlled `SubmissionBehavior`/`SubmissionBehaviorChanged` pair;
-the workshop synchronizes it with the duplicate control in Manager settings.
+the dedicated grip on a pending card; the explicit move commands remain
+available in its actions menu for keyboard access and as a deterministic
+fallback. The public drop-zone component
+applies the default submission behavior configured in the Manager settings;
+the setting remains editable in the Manager settings dialog.
 
 The settings dialog also accepts an absolute visual-destination path. The Host,
 not the browser, verifies that the directory exists and is writable before the

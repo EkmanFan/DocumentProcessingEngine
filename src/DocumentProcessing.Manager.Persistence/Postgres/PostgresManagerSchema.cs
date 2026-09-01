@@ -496,6 +496,134 @@ public sealed class PostgresManagerSchema
             ON CONFLICT (result_reference) DO NOTHING;
             """;
 
+    private const string
+        MigrationEightSql =
+            """
+            ALTER TABLE document_processing_manager.processing_units
+                ADD COLUMN hidden_at_utc timestamp with time zone NULL;
+
+            ALTER TABLE document_processing_manager.processing_units
+                ADD CONSTRAINT ck_processing_units_hidden_terminal
+                CHECK
+                (
+                    hidden_at_utc IS NULL
+                    OR status IN (2, 3)
+                );
+
+            CREATE INDEX ix_processing_units_visible_terminal_updated
+                ON document_processing_manager.processing_units
+                    (updated_at_utc DESC, unit_id)
+                WHERE status IN (2, 3)
+                    AND hidden_at_utc IS NULL;
+
+            CREATE TABLE document_processing_manager.custody_purge_authorizations
+            (
+                purge_id uuid PRIMARY KEY,
+                processing_unit_id uuid NOT NULL,
+                submission_id uuid NOT NULL,
+                source_sha256_digest text NOT NULL,
+                result_reference text NULL,
+                result_sha256_digest text NULL
+            );
+
+            CREATE TABLE document_processing_manager.custody_purge_jobs
+            (
+                purge_id uuid PRIMARY KEY,
+                processing_unit_id uuid NOT NULL,
+                result_sha256_digest text NULL,
+                source_sha256_digest text NULL,
+                publication_directory text NULL,
+                created_at_utc timestamp with time zone NOT NULL
+                    DEFAULT clock_timestamp()
+            );
+
+            CREATE OR REPLACE FUNCTION
+                document_processing_manager.reject_custody_mutation()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $$
+            DECLARE
+                authorized boolean := FALSE;
+            BEGIN
+                IF TG_OP = 'DELETE'
+                THEN
+                    IF TG_TABLE_NAME = 'source_artifacts'
+                    THEN
+                        SELECT EXISTS
+                        (
+                            SELECT 1
+                            FROM document_processing_manager.custody_purge_authorizations
+                            WHERE source_sha256_digest = OLD.sha256_digest
+                                AND NOT EXISTS
+                                (
+                                    SELECT 1
+                                    FROM document_processing_manager.document_submissions
+                                    WHERE source_sha256_digest = OLD.sha256_digest
+                                )
+                        ) INTO authorized;
+                    ELSIF TG_TABLE_NAME = 'document_submissions'
+                    THEN
+                        SELECT EXISTS
+                        (
+                            SELECT 1
+                            FROM document_processing_manager.custody_purge_authorizations
+                            WHERE submission_id = OLD.submission_id
+                                AND source_sha256_digest = OLD.source_sha256_digest
+                        ) INTO authorized;
+                    ELSIF TG_TABLE_NAME = 'custody_events'
+                    THEN
+                        SELECT EXISTS
+                        (
+                            SELECT 1
+                            FROM document_processing_manager.custody_purge_authorizations
+                            WHERE submission_id = OLD.submission_id
+                                AND source_sha256_digest = OLD.source_sha256_digest
+                        ) INTO authorized;
+                    ELSIF TG_TABLE_NAME = 'processing_result_artifacts'
+                    THEN
+                        SELECT EXISTS
+                        (
+                            SELECT 1
+                            FROM document_processing_manager.custody_purge_authorizations
+                            WHERE result_sha256_digest = OLD.sha256_digest
+                                AND NOT EXISTS
+                                (
+                                    SELECT 1
+                                    FROM document_processing_manager.processing_results
+                                    WHERE result_sha256_digest = OLD.sha256_digest
+                                )
+                        ) INTO authorized;
+                    ELSIF TG_TABLE_NAME = 'processing_results'
+                    THEN
+                        SELECT EXISTS
+                        (
+                            SELECT 1
+                            FROM document_processing_manager.custody_purge_authorizations
+                            WHERE processing_unit_id = OLD.processing_unit_id
+                                AND submission_id = OLD.submission_id
+                                AND result_reference = OLD.result_reference
+                        ) INTO authorized;
+                    ELSIF TG_TABLE_NAME = 'result_available_events'
+                    THEN
+                        SELECT EXISTS
+                        (
+                            SELECT 1
+                            FROM document_processing_manager.custody_purge_authorizations
+                            WHERE result_reference = OLD.result_reference
+                        ) INTO authorized;
+                    END IF;
+                END IF;
+
+                IF authorized
+                THEN
+                    RETURN OLD;
+                END IF;
+
+                RAISE EXCEPTION 'Custody records are append-only: %.', TG_TABLE_NAME;
+            END;
+            $$;
+            """;
+
     private static readonly Migration[]
         Migrations =
         [
@@ -526,7 +654,11 @@ public sealed class PostgresManagerSchema
             new(
                 Version:
                     7,
-                MigrationSevenSql)
+                MigrationSevenSql),
+            new(
+                Version:
+                    8,
+                MigrationEightSql)
         ];
 
     private readonly NpgsqlDataSource

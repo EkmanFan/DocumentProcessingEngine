@@ -32,20 +32,23 @@
 
 .scene-status {
     position: absolute;
-    top: 15px;
-    left: 16px;
+    bottom: 16px;
+    left: 50%;
     z-index: 4;
+    max-width: calc(100% - 32px);
     padding: 7px 11px;
     border: 1px solid rgba(29, 51, 66, 0.12);
     border-radius: 999px;
     color: var(--ink-600, #66716f);
     font-size: 0.68rem;
     font-weight: 750;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: 0.01em;
     background: rgba(255, 255, 255, 0.86);
     box-shadow: 0 6px 18px rgba(35, 47, 44, 0.1);
     backdrop-filter: blur(7px);
+    text-align: center;
+    transform: translateX(-50%);
+    white-space: nowrap;
 }
 
 .sprite-window {
@@ -112,12 +115,6 @@
     background: rgba(252, 248, 239, 0.88);
     box-shadow: 0 9px 28px rgba(20, 27, 26, 0.14);
     backdrop-filter: blur(7px);
-}
-
-.scene-caption strong {
-    font-family: Georgia, serif;
-    font-size: 1rem;
-    font-weight: 500;
 }
 
 .scene-caption span {
@@ -307,8 +304,7 @@
     }
 
     .scene-status {
-        top: 10px;
-        left: 10px;
+        bottom: 10px;
     }
 
     .scene-caption {

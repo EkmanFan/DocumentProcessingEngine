@@ -365,6 +365,53 @@ internal sealed class FileSystemContentAddressedStore
 
     #endregion
 
+    #region Methods Delete
+
+    public ValueTask DeleteAsync(
+        Sha256Digest digest,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var artifactPath = GetArtifactPath(digest);
+        if (!File.Exists(artifactPath))
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            File.SetAttributes(artifactPath, FileAttributes.Normal);
+        }
+
+        File.Delete(artifactPath);
+        TryDeleteEmptyDirectory(Path.GetDirectoryName(artifactPath));
+        return ValueTask.CompletedTask;
+    }
+
+    private static void TryDeleteEmptyDirectory(string? directory)
+    {
+        if (directory is null || !Directory.Exists(directory) || Directory.EnumerateFileSystemEntries(directory).Any())
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.Delete(directory);
+        }
+        catch (IOException)
+        {
+            // Empty prefix cleanup is best effort; the artifact itself is gone.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Empty prefix cleanup is best effort; the artifact itself is gone.
+        }
+    }
+
+    #endregion
+
     #region Methods Paths
 
     private string GetArtifactPath(

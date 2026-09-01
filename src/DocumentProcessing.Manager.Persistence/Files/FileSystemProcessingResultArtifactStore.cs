@@ -1,5 +1,6 @@
 using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Results;
+using DocumentProcessing.Manager.Custody;
 
 namespace DocumentProcessing.Manager.Persistence.Files;
 
@@ -8,7 +9,8 @@ namespace DocumentProcessing.Manager.Persistence.Files;
 /// </summary>
 public sealed class FileSystemProcessingResultArtifactStore
     : IProcessingResultArtifactWriter,
-      IProcessingResultArtifactReader
+      IProcessingResultArtifactReader,
+      IProcessingResultArtifactPurger
 {
     #region Variables and Constants
 
@@ -107,6 +109,16 @@ public sealed class FileSystemProcessingResultArtifactStore
                 exception.Message);
         }
     }
+
+    #endregion
+
+    #region Methods Delete
+
+    /// <inheritdoc />
+    public ValueTask DeleteAsync(
+        Sha256Digest digest,
+        CancellationToken cancellationToken = default) =>
+        _store.DeleteAsync(digest, cancellationToken);
 
     #endregion
 }

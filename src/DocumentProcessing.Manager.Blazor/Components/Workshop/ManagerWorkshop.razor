@@ -107,7 +107,18 @@
                     <p class="column-kicker">@Localizer["PendingKicker"]</p>
                     <h2 id="queue-title">@Localizer["PendingTitle"]</h2>
                 </div>
-                <span class="count-badge">@PendingCount</span>
+                <div class="column-heading-actions">
+                    <span class="count-badge">@PendingCount</span>
+                    @if (_snapshot is not null && _snapshot.PendingItems.Count > 0)
+                    {
+                        <button class="clear-queue-button"
+                                type="button"
+                                disabled="@_commandRunning"
+                                @onclick="ClearPendingQueueAsync">
+                            @Localizer["ClearQueue"]
+                        </button>
+                    }
+                </div>
             </div>
 
             <div class="column-rule"></div>
@@ -171,29 +182,40 @@
                                             @Localizer["RunQueuedItem"]
                                         </button>
                                     }
-                                    @if (item.Scope.Kind == ManagerWorkItemScopeKind.WholeDocument)
-                                    {
-                                        <button class="queue-run-button"
-                                                type="button"
-                                                disabled="@_commandRunning"
-                                                title="@(Localizer["SplitQueuedItemLabel", item.DocumentTitle])"
-                                                aria-label="@(Localizer["SplitQueuedItemLabel", item.DocumentTitle])"
-                                                @onclick="() => OpenSplitAsync(item)">
-                                            @Localizer["SplitQueuedItem"]
-                                        </button>
-                                    }
-                                    <div class="queue-order-controls">
-                                        <button type="button"
-                                                disabled="@(_commandRunning || index == 0)"
-                                                title="@(Localizer["MoveEarlierLabel", item.DocumentTitle])"
-                                                aria-label="@(Localizer["MoveEarlierLabel", item.DocumentTitle])"
-                                                @onclick="() => MoveQueueItemAsync(item.UnitId, -1)">↑</button>
-                                        <button type="button"
-                                                disabled="@(_commandRunning || index == _snapshot.PendingItems.Count - 1)"
-                                                title="@(Localizer["MoveLaterLabel", item.DocumentTitle])"
-                                                aria-label="@(Localizer["MoveLaterLabel", item.DocumentTitle])"
-                                                @onclick="() => MoveQueueItemAsync(item.UnitId, 1)">↓</button>
-                                    </div>
+                                    <details class="action-menu">
+                                        <summary title="@(Localizer["MoreActionsLabel", item.DocumentTitle])"
+                                                 aria-label="@(Localizer["MoreActionsLabel", item.DocumentTitle])">…</summary>
+                                        <div class="action-menu-panel">
+                                            @if (item.Scope.Kind == ManagerWorkItemScopeKind.WholeDocument)
+                                            {
+                                                <button type="button"
+                                                        disabled="@_commandRunning"
+                                                        title="@(Localizer["SplitQueuedItemLabel", item.DocumentTitle])"
+                                                        @onclick="() => OpenSplitAsync(item)">
+                                                    @Localizer["SplitQueuedItem"]
+                                                </button>
+                                            }
+                                            <button type="button"
+                                                    disabled="@(_commandRunning || index == 0)"
+                                                    title="@(Localizer["MoveEarlierLabel", item.DocumentTitle])"
+                                                    @onclick="() => MoveQueueItemAsync(item.UnitId, -1)">
+                                                @Localizer["MoveEarlier"]
+                                            </button>
+                                            <button type="button"
+                                                    disabled="@(_commandRunning || index == _snapshot.PendingItems.Count - 1)"
+                                                    title="@(Localizer["MoveLaterLabel", item.DocumentTitle])"
+                                                    @onclick="() => MoveQueueItemAsync(item.UnitId, 1)">
+                                                @Localizer["MoveLater"]
+                                            </button>
+                                            <button class="destructive-action"
+                                                    type="button"
+                                                    disabled="@_commandRunning"
+                                                    title="@(Localizer["RemovePendingLabel", item.DocumentTitle])"
+                                                    @onclick="() => RemovePendingProcessingUnitAsync(item)">
+                                                @Localizer["RemovePending"]
+                                            </button>
+                                        </div>
+                                    </details>
                                 </div>
                             </div>
                         </li>
@@ -239,9 +261,7 @@
             </div>
 
             <ManagerDocumentDropZone DocumentSubmitted="HandleDocumentSubmittedAsync"
-                                     SubmissionBehavior="@CurrentSubmissionBehavior"
-                                     SubmissionBehaviorChanged="ChangeSubmissionBehaviorAsync"
-                                     SubmissionBehaviorDisabled="@(_settings is null || _settingsSaving)">
+                                     SubmissionBehavior="@CurrentSubmissionBehavior">
                 <LibrarianAnimation Mode="@LibrarianMode"
                                     DocumentTitle="@_snapshot?.ActiveItem?.DocumentTitle"
                                     CelebrationSequence="@_animationTracker.CelebrationSequence"
@@ -310,35 +330,49 @@
                                             ? Localizer["FailedStatus"]
                                             : Localizer["CompletedStatus"])
                                     </span>
-                                    @if (item.Status == ManagerQueueItemStatus.Succeeded)
+                                    <details class="action-menu">
+                                        <summary title="@(Localizer["MoreActionsLabel", item.DocumentTitle])"
+                                                 aria-label="@(Localizer["MoreActionsLabel", item.DocumentTitle])">…</summary>
+                                        <div class="action-menu-panel">
+                                            @if (item.Status == ManagerQueueItemStatus.Succeeded)
+                                            {
+                                                <button type="button"
+                                                        disabled="@(_downloadingResultUnitId is not null)"
+                                                        title="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
+                                                        @onclick="() => DownloadResultAsync(item)">
+                                                    @(_downloadingResultUnitId == item.UnitId
+                                                        ? Localizer["DownloadingResult"]
+                                                        : Localizer["DownloadResult"])
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button"
+                                                        disabled="@_commandRunning"
+                                                        title="@(Localizer[GetRetryLabelKey(item.Scope), item.DocumentTitle])"
+                                                        @onclick="() => RetryFailedProcessingUnitAsync(item.UnitId)">
+                                                    @Localizer[GetRetryTextKey(item.Scope)]
+                                                </button>
+                                            }
+                                            <button type="button"
+                                                    disabled="@_commandRunning"
+                                                    title="@(Localizer["HideProcessedLabel", item.DocumentTitle])"
+                                                    @onclick="() => HideTerminalProcessingUnitAsync(item)">
+                                                @Localizer["HideProcessed"]
+                                            </button>
+                                            <button class="destructive-action"
+                                                    type="button"
+                                                    disabled
+                                                    title="@(Localizer["PurgeAdminUnavailableLabel"])">
+                                                @Localizer["PurgeProcessed"]
+                                            </button>
+                                        </div>
+                                    </details>
+                                    @if (_resultDownloadFailureUnitId == item.UnitId)
                                     {
-                                        <button class="result-download-button"
-                                                type="button"
-                                                disabled="@(_downloadingResultUnitId is not null)"
-                                                title="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
-                                                aria-label="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
-                                                @onclick="() => DownloadResultAsync(item)">
-                                            @(_downloadingResultUnitId == item.UnitId
-                                                ? Localizer["DownloadingResult"]
-                                                : Localizer["DownloadResult"])
-                                        </button>
-                                        @if (_resultDownloadFailureUnitId == item.UnitId)
-                                        {
-                                            <span class="result-download-error" role="alert">
-                                                @_resultDownloadFailureMessage
-                                            </span>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <button class="result-retry-button"
-                                                type="button"
-                                                disabled="@_commandRunning"
-                                                title="@(Localizer[GetRetryLabelKey(item.Scope), item.DocumentTitle])"
-                                                aria-label="@(Localizer[GetRetryLabelKey(item.Scope), item.DocumentTitle])"
-                                                @onclick="() => RetryFailedProcessingUnitAsync(item.UnitId)">
-                                            @Localizer[GetRetryTextKey(item.Scope)]
-                                        </button>
+                                        <span class="result-download-error" role="alert">
+                                            @_resultDownloadFailureMessage
+                                        </span>
                                     }
                                 </div>
                             </li>
@@ -566,15 +600,33 @@
                                 </div>
                                 <div class="result-actions">
                                     <span class="result-status">@(item.Status == ManagerQueueItemStatus.Failed ? Localizer["FailedStatus"] : Localizer["CompletedStatus"])</span>
-                                    @if (item.Status == ManagerQueueItemStatus.Succeeded)
-                                    {
-                                        <button class="result-download-button"
-                                                type="button"
-                                                disabled="@(_downloadingResultUnitId is not null)"
-                                                @onclick="() => DownloadResultAsync(item)">
-                                            @(_downloadingResultUnitId == item.UnitId ? Localizer["DownloadingResult"] : Localizer["DownloadResult"])
-                                        </button>
-                                    }
+                                    <details class="action-menu">
+                                        <summary title="@(Localizer["MoreActionsLabel", item.DocumentTitle])"
+                                                 aria-label="@(Localizer["MoreActionsLabel", item.DocumentTitle])">…</summary>
+                                        <div class="action-menu-panel">
+                                            @if (item.Status == ManagerQueueItemStatus.Succeeded)
+                                            {
+                                                <button type="button"
+                                                        disabled="@(_downloadingResultUnitId is not null)"
+                                                        title="@(Localizer["DownloadResultLabel", item.DocumentTitle])"
+                                                        @onclick="() => DownloadResultAsync(item)">
+                                                    @(_downloadingResultUnitId == item.UnitId ? Localizer["DownloadingResult"] : Localizer["DownloadResult"])
+                                                </button>
+                                            }
+                                            <button type="button"
+                                                    disabled="@_commandRunning"
+                                                    title="@(Localizer["HideProcessedLabel", item.DocumentTitle])"
+                                                    @onclick="() => HideTerminalProcessingUnitAsync(item)">
+                                                @Localizer["HideProcessed"]
+                                            </button>
+                                            <button class="destructive-action"
+                                                    type="button"
+                                                    disabled
+                                                    title="@(Localizer["PurgeAdminUnavailableLabel"])">
+                                                @Localizer["PurgeProcessed"]
+                                            </button>
+                                        </div>
+                                    </details>
                                 </div>
                             </li>
                         }
@@ -1218,53 +1270,6 @@
         .ToString()
         .ToLowerInvariant();
 
-    private async Task ChangeSubmissionBehaviorAsync(
-        ManagerDocumentSubmissionBehavior submissionBehavior)
-    {
-        if (_settings is null ||
-            _settingsSaving ||
-            submissionBehavior ==
-                _settings.DefaultSubmissionBehavior)
-        {
-            return;
-        }
-
-        _settingsSaving =
-            true;
-
-        _error =
-            null;
-
-        try
-        {
-            _settings =
-                await ManagerClient.UpdateSettingsAsync(
-                    _settings.Version,
-                    submissionBehavior,
-                    _settings.VisualDestinationRoot,
-                    _settings.CompletedRetentionDays,
-                    _lifetime.Token);
-        }
-        catch (OperationCanceledException)
-            when (_lifetime.IsCancellationRequested)
-        {
-        }
-        catch (Exception exception)
-        {
-            Logger.LogWarning(
-                exception,
-                "Manager default submission behavior update failed.");
-
-            _error =
-                ManagerWorkshopError.Settings;
-        }
-        finally
-        {
-            _settingsSaving =
-                false;
-        }
-    }
-
     private async Task BrowseVisualDestinationAsync()
     {
         if (_pickerRunning ||
@@ -1880,6 +1885,75 @@
                     cancellationToken),
             "retry-failed");
     }
+
+    private async Task RemovePendingProcessingUnitAsync(
+        ManagerWorkItemView item)
+    {
+        if (_snapshot is null ||
+            !await ConfirmAsync("RemovePendingConfirmation", item.DocumentTitle))
+        {
+            return;
+        }
+
+        var expectedVersion = _snapshot.QueueVersion;
+        await ExecuteQueueMutationAsync(
+            cancellationToken =>
+                ManagerClient.RemovePendingProcessingUnitAsync(
+                    item.UnitId,
+                    expectedVersion,
+                    cancellationToken),
+            "remove-pending");
+    }
+
+    private async Task ClearPendingQueueAsync()
+    {
+        if (_snapshot is null ||
+            _snapshot.PendingItems.Count == 0 ||
+            !await ConfirmAsync("ClearQueueConfirmation", _snapshot.PendingItems.Count))
+        {
+            return;
+        }
+
+        var expectedVersion = _snapshot.QueueVersion;
+        await ExecuteQueueMutationAsync(
+            cancellationToken =>
+                ManagerClient.ClearPendingQueueAsync(
+                    expectedVersion,
+                    cancellationToken),
+            "clear-pending");
+    }
+
+    private async Task HideTerminalProcessingUnitAsync(
+        ManagerWorkItemView item)
+    {
+        if (_snapshot is null ||
+            !await ConfirmAsync("HideProcessedConfirmation", item.DocumentTitle))
+        {
+            return;
+        }
+
+        var expectedVersion = _snapshot.QueueVersion;
+        await ExecuteQueueMutationAsync(
+            cancellationToken =>
+                ManagerClient.HideTerminalProcessingUnitAsync(
+                    item.UnitId,
+                    expectedVersion,
+                    cancellationToken),
+            "hide-terminal");
+
+        if (_archiveOpen && _error is null)
+        {
+            await LoadArchivePageAsync(_archivePage?.Offset ?? 0);
+        }
+    }
+
+    private async ValueTask<bool> ConfirmAsync(
+        string resourceKey,
+        object argument) =>
+        await JavaScript.InvokeAsync<bool>(
+            "confirm",
+            _lifetime.Token,
+            Localizer[resourceKey, argument].Value);
 
     private async Task ExecuteQueueMutationAsync(
         Func<CancellationToken, ValueTask> mutation,

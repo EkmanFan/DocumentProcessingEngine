@@ -227,8 +227,8 @@ public sealed class PostgresProcessingQueueReader
                 $"""
                 {SelectItemsSql}
                 {(completedSinceUtc.HasValue
-                    ? "WHERE processing_unit.status < 2 OR processing_unit.updated_at_utc >= @completed_since_utc"
-                    : string.Empty)}
+                    ? "WHERE processing_unit.status < 2 OR (processing_unit.hidden_at_utc IS NULL AND processing_unit.updated_at_utc >= @completed_since_utc)"
+                    : "WHERE processing_unit.status < 2 OR processing_unit.hidden_at_utc IS NULL")}
                 ORDER BY
                     CASE processing_unit.status
                         WHEN 0 THEN 0
@@ -299,6 +299,7 @@ public sealed class PostgresProcessingQueueReader
             new List<string>
             {
                 "processing_unit.status IN (2, 3)",
+                "processing_unit.hidden_at_utc IS NULL",
                 "processing_unit.updated_at_utc < @archived_before_utc"
             };
 

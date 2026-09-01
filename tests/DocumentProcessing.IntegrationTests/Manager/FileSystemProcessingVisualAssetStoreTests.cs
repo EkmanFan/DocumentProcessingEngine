@@ -187,6 +187,45 @@ public sealed class FileSystemProcessingVisualAssetStoreTests
     }
 
     [Fact]
+    public async Task DeletePublicationAsync_RequiresOwningUnitAndRemovesPublicationIdempotently()
+    {
+        var root = CreateTemporaryRoot();
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var store = new FileSystemProcessingVisualAssetStore();
+            var unitId = ProcessingUnitId.New();
+            var first = new byte[] { 1, 2 };
+            var second = new byte[] { 3, 4 };
+            var descriptors = new[]
+            {
+                CreateDescriptor("page:1", "image/png", first),
+                CreateDescriptor("page:2", "image/png", second)
+            };
+            var directory = await WriteAndCompleteAsync(
+                store,
+                root,
+                unitId,
+                descriptors,
+                first,
+                second);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => store.DeletePublicationAsync(ProcessingUnitId.New(), directory).AsTask());
+
+            await store.DeletePublicationAsync(unitId, directory);
+            await store.DeletePublicationAsync(unitId, directory);
+
+            Assert.False(Directory.Exists(directory));
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    [Fact]
     public async Task CompleteAsync_RejectsConflictingCompletedBytes()
     {
         var root =

@@ -9,21 +9,19 @@
      data-reception-sequence="@ReceptionSequence"
      data-celebrating="@IsCelebrating.ToString().ToLowerInvariant()"
      data-receiving="@IsReceiving.ToString().ToLowerInvariant()">
-    <span class="scene-status">@StatusLabel</span>
-
     <div class="sprite-window" aria-hidden="true">
         <img class="librarian-sprite"
              src="@ImageSource"
              alt=""
              draggable="false" />
 
+        <span class="scene-status">@CaptionTitle</span>
         <span class="state-emblem pause-emblem">Ⅱ</span>
         <span class="state-emblem sleep-emblem">Zzz</span>
         <span class="state-emblem unavailable-emblem">!</span>
     </div>
 
     <div class="scene-caption" aria-hidden="true">
-        <strong>@CaptionTitle</strong>
         <span>@CaptionDetail</span>
     </div>
 </div>
@@ -123,33 +121,6 @@
                     "Unknown librarian animation mode.")
         };
 
-    private string StatusLabel =>
-        _activeMoment switch
-        {
-            LibrarianMoment.Completion =>
-                Localizer["StatusCompleted"],
-            LibrarianMoment.Reception =>
-                Localizer["StatusReceived"],
-            _ =>
-                Mode switch
-                {
-                    LibrarianAnimationMode.Connecting =>
-                        Localizer["StatusConnecting"],
-                    LibrarianAnimationMode.Waiting =>
-                        Localizer["StatusWaiting"],
-                    LibrarianAnimationMode.Reading =>
-                        Localizer["StatusReading"],
-                    LibrarianAnimationMode.Paused =>
-                        Localizer["StatusPaused"],
-                    LibrarianAnimationMode.Stopped =>
-                        Localizer["StatusStopped"],
-                    LibrarianAnimationMode.Unavailable =>
-                        Localizer["StatusUnavailable"],
-                    _ =>
-                        string.Empty
-                }
-        };
-
     private string CaptionTitle =>
         _activeMoment switch
         {
@@ -206,7 +177,6 @@
     private string AccessibleLabel =>
         Localizer[
             "AccessibleLabel",
-            StatusLabel,
             CaptionTitle,
             CaptionDetail];
 

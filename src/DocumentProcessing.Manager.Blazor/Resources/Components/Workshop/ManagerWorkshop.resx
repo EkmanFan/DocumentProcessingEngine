@@ -27,6 +27,11 @@
   <data name="QueueLoadingLabel" xml:space="preserve"><value>Loading queue</value></data>
   <data name="QueueEmptyTitle" xml:space="preserve"><value>The queue is empty</value></data>
   <data name="QueueEmptyDetail" xml:space="preserve"><value>No document is waiting.</value></data>
+  <data name="ClearQueue" xml:space="preserve"><value>Clear queue</value></data>
+  <data name="ClearQueueConfirmation" xml:space="preserve"><value>Remove all {0} waiting items? The active item and source custody will be preserved.</value></data>
+  <data name="RemovePending" xml:space="preserve"><value>Remove</value></data>
+  <data name="RemovePendingLabel" xml:space="preserve"><value>Remove {0} from the processing queue</value></data>
+  <data name="RemovePendingConfirmation" xml:space="preserve"><value>Remove {0} from the processing queue? Its source custody will be preserved.</value></data>
   <data name="AttemptLabel" xml:space="preserve"><value>Attempt {0}</value></data>
   <data name="ShelvedStatus" xml:space="preserve"><value>Shelved</value></data>
   <data name="ReadyStatus" xml:space="preserve"><value>Ready</value></data>
@@ -34,6 +39,9 @@
   <data name="RunQueuedItemLabel" xml:space="preserve"><value>Make {0} eligible for processing</value></data>
   <data name="MoveEarlierLabel" xml:space="preserve"><value>Move {0} earlier in the queue</value></data>
   <data name="MoveLaterLabel" xml:space="preserve"><value>Move {0} later in the queue</value></data>
+  <data name="MoveEarlier" xml:space="preserve"><value>Move earlier</value></data>
+  <data name="MoveLater" xml:space="preserve"><value>Move later</value></data>
+  <data name="MoreActionsLabel" xml:space="preserve"><value>More actions for {0}</value></data>
   <data name="DragQueueItemLabel" xml:space="preserve"><value>Drag {0} to reorder the queue</value></data>
   <data name="GlobalQueue" xml:space="preserve"><value>Global queue</value></data>
   <data name="ActiveKicker" xml:space="preserve"><value>On the desk</value></data>
@@ -47,6 +55,11 @@
   <data name="NoResultsTitle" xml:space="preserve"><value>No results</value></data>
   <data name="NoResultsDetail" xml:space="preserve"><value>Processed documents will appear here.</value></data>
   <data name="FailedStatus" xml:space="preserve"><value>Failed</value></data>
+  <data name="HideProcessed" xml:space="preserve"><value>Hide</value></data>
+  <data name="HideProcessedLabel" xml:space="preserve"><value>Hide {0} from visible processing history</value></data>
+  <data name="HideProcessedConfirmation" xml:space="preserve"><value>Hide {0} from the interface and archives? Its custody and audit trail will be preserved.</value></data>
+  <data name="PurgeProcessed" xml:space="preserve"><value>Delete permanently</value></data>
+  <data name="PurgeAdminUnavailableLabel" xml:space="preserve"><value>Permanent custody deletion is reserved for administrators and will be enabled with role-based login.</value></data>
   <data name="RetryBatch" xml:space="preserve"><value>Retry batch</value></data>
   <data name="RetryBatchLabel" xml:space="preserve"><value>Retry failed batch {0}</value></data>
   <data name="RetryDocument" xml:space="preserve"><value>Retry document</value></data>

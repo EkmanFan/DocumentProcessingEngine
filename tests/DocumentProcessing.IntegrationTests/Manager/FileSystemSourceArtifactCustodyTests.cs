@@ -157,6 +157,27 @@ public sealed class FileSystemSourceArtifactCustodyTests
     }
 
     [Fact]
+    public async Task DeleteAsync_RemovesOnlyTheAddressedSourceArtifactIdempotently()
+    {
+        var root = CreateTemporaryRoot();
+        try
+        {
+            var store = CreateStore(root);
+            await using var source = new MemoryStream("purge-source"u8.ToArray(), writable: false);
+            var artifact = await store.StoreAsync(source);
+
+            await store.DeleteAsync(artifact.Digest);
+            await store.DeleteAsync(artifact.Digest);
+
+            Assert.False(await store.VerifyAsync(artifact));
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    [Fact]
     public async Task StoreAsync_RejectsEmptyAndOversizedSourcesWithoutRetainedArtifact()
     {
         var root =

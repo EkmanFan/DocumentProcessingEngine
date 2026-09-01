@@ -26,6 +26,6 @@
   <data name="DetailStopped" xml:space="preserve"><value>Start the Manager to reopen the workshop.</value></data>
   <data name="DetailUnavailable" xml:space="preserve"><value>Reconnection is attempted automatically.</value></data>
   <data name="DetailConnecting" xml:space="preserve"><value>Synchronizing with the Host.</value></data>
-  <data name="AccessibleLabel" xml:space="preserve"><value>{0}. {1} {2}</value></data>
+  <data name="AccessibleLabel" xml:space="preserve"><value>{0} {1}</value></data>
   <data name="DefaultDocumentTitle" xml:space="preserve"><value>Document in progress</value></data>
 </root>

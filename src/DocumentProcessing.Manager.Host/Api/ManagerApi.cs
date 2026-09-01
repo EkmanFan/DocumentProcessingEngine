@@ -151,6 +151,18 @@ internal static class ManagerApi
             RetryFailedQueueUnitAsync);
 
         group.MapPost(
+            "/queue/{unitId:guid}/remove",
+            RemovePendingQueueUnitAsync);
+
+        group.MapPost(
+            "/queue/clear",
+            ClearPendingQueueAsync);
+
+        group.MapPost(
+            "/history/{unitId:guid}/hide",
+            HideTerminalQueueUnitAsync);
+
+        group.MapPost(
             "/queue/{unitId:guid}/prepare-split",
             PrepareQueueUnitSplitAsync);
 
@@ -832,6 +844,109 @@ internal static class ManagerApi
                 new ApiConflictResponse(
                     "manager.processing_unit_not_failed",
                     exception.Message));
+        }
+    }
+
+    private static async Task<IResult> RemovePendingQueueUnitAsync(
+        Guid unitId,
+        QueueVersionRequest request,
+        IProcessingQueueStore queueStore,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
+        DocumentProcessingManagerRuntime runtime,
+        CancellationToken cancellationToken) =>
+        await ExecuteAdministrativeQueueMutationAsync(
+            async () => await queueStore.RemovePendingAsync(
+                new RemovePendingProcessingUnitCommand(new ProcessingUnitId(unitId), request.ExpectedVersion),
+                cancellationToken).ConfigureAwait(false),
+            "manager.processing_unit_not_pending",
+            historyReader,
+            settingsStore,
+            timeProvider,
+            runtime,
+            cancellationToken).ConfigureAwait(false);
+
+    private static async Task<IResult> ClearPendingQueueAsync(
+        QueueVersionRequest request,
+        IProcessingQueueStore queueStore,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
+        DocumentProcessingManagerRuntime runtime,
+        CancellationToken cancellationToken) =>
+        await ExecuteAdministrativeQueueMutationAsync(
+            async () =>
+            {
+                await queueStore.ClearPendingAsync(
+                    new ClearPendingProcessingQueueCommand(request.ExpectedVersion),
+                    cancellationToken).ConfigureAwait(false);
+            },
+            "manager.queue_clear_rejected",
+            historyReader,
+            settingsStore,
+            timeProvider,
+            runtime,
+            cancellationToken).ConfigureAwait(false);
+
+    private static async Task<IResult> HideTerminalQueueUnitAsync(
+        Guid unitId,
+        QueueVersionRequest request,
+        IProcessingQueueStore queueStore,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
+        DocumentProcessingManagerRuntime runtime,
+        CancellationToken cancellationToken) =>
+        await ExecuteAdministrativeQueueMutationAsync(
+            async () => await queueStore.HideTerminalAsync(
+                new HideTerminalProcessingUnitCommand(new ProcessingUnitId(unitId), request.ExpectedVersion),
+                cancellationToken).ConfigureAwait(false),
+            "manager.processing_unit_not_terminal",
+            historyReader,
+            settingsStore,
+            timeProvider,
+            runtime,
+            cancellationToken).ConfigureAwait(false);
+
+    private static async Task<IResult> ExecuteAdministrativeQueueMutationAsync(
+        Func<Task> mutation,
+        string invalidStateCode,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
+        DocumentProcessingManagerRuntime runtime,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await mutation().ConfigureAwait(false);
+            runtime.NotifyQueueChanged();
+
+            var snapshot = await GetRecentSnapshotAsync(
+                historyReader,
+                settingsStore,
+                timeProvider,
+                cancellationToken).ConfigureAwait(false);
+            return HttpResults.Ok(ToResponse(snapshot));
+        }
+        catch (ProcessingQueueConcurrencyException exception)
+        {
+            return HttpResults.Conflict(new QueueVersionConflictResponse(
+                "manager.queue_version_conflict",
+                exception.Message,
+                exception.ExpectedVersion,
+                exception.ActualVersion));
+        }
+        catch (ArgumentException exception)
+        {
+            return HttpResults.BadRequest(new ApiConflictResponse(
+                "manager.invalid_processing_unit",
+                exception.Message));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return HttpResults.Conflict(new ApiConflictResponse(invalidStateCode, exception.Message));
         }
     }
 
@@ -1614,6 +1729,9 @@ internal static class ManagerApi
         long ExpectedVersion);
 
     internal sealed record QueueRetryRequest(
+        long ExpectedVersion);
+
+    internal sealed record QueueVersionRequest(
         long ExpectedVersion);
 
     internal sealed record SplitPreviewResponse(

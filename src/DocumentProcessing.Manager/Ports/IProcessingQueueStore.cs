@@ -103,6 +103,30 @@ public interface IProcessingQueueStore
             new NotSupportedException(
                 "This processing-queue store does not support failed-unit retries."));
 
+    /// <summary>Atomically removes one pending unit from the queue.</summary>
+    ValueTask RemovePendingAsync(
+        RemovePendingProcessingUnitCommand command,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromException(
+            new NotSupportedException(
+                "This processing-queue store does not support pending-unit removal."));
+
+    /// <summary>Atomically removes every pending unit from the queue.</summary>
+    ValueTask<int> ClearPendingAsync(
+        ClearPendingProcessingQueueCommand command,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromException<int>(
+            new NotSupportedException(
+                "This processing-queue store does not support clearing pending units."));
+
+    /// <summary>Hides one terminal unit while preserving its custody chain.</summary>
+    ValueTask HideTerminalAsync(
+        History.HideTerminalProcessingUnitCommand command,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromException(
+            new NotSupportedException(
+                "This processing-queue store does not support terminal-unit hiding."));
+
     /// <summary>
     /// Atomically removes one ready pending unit from dispatch eligibility.
     /// </summary>

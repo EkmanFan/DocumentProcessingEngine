@@ -11,28 +11,6 @@
      @ondrop="HandleDrop">
     @ChildContent
 
-    <div class="submission-behavior"
-         role="group"
-         aria-label="@(Localizer["SubmissionBehaviorLabel"])"
-         title="@SubmissionBehaviorDescription">
-        <button type="button"
-                class="@SubmissionBehaviorButtonClass(ManagerDocumentSubmissionBehavior.Shelve)"
-                aria-pressed="@FormatPressedState(ManagerDocumentSubmissionBehavior.Shelve)"
-                disabled="@(_uploading || SubmissionBehaviorDisabled)"
-                @onclick="() => SelectSubmissionBehaviorAsync(ManagerDocumentSubmissionBehavior.Shelve)"
-                @onclick:stopPropagation="true">
-            @Localizer["ShelveBehavior"]
-        </button>
-        <button type="button"
-                class="@SubmissionBehaviorButtonClass(ManagerDocumentSubmissionBehavior.Run)"
-                aria-pressed="@FormatPressedState(ManagerDocumentSubmissionBehavior.Run)"
-                disabled="@(_uploading || SubmissionBehaviorDisabled)"
-                @onclick="() => SelectSubmissionBehaviorAsync(ManagerDocumentSubmissionBehavior.Run)"
-                @onclick:stopPropagation="true">
-            @Localizer["RunBehavior"]
-        </button>
-    </div>
-
     <InputFile @key="_fileInputSequence"
                class="document-drop-input"
                aria-label="@(Localizer["DropInputLabel"])"
@@ -98,12 +76,6 @@
     [Parameter]
     public ManagerDocumentSubmissionBehavior SubmissionBehavior { get; set; } =
         ManagerDocumentSubmissionBehavior.Shelve;
-
-    [Parameter]
-    public EventCallback<ManagerDocumentSubmissionBehavior> SubmissionBehaviorChanged { get; set; }
-
-    [Parameter]
-    public bool SubmissionBehaviorDisabled { get; set; }
 
     #endregion
 
@@ -191,17 +163,6 @@
                     string.Empty
             };
 
-    private string SubmissionBehaviorDescription =>
-        SubmissionBehavior switch
-        {
-            ManagerDocumentSubmissionBehavior.Shelve =>
-                Localizer["ShelveBehaviorDetail"],
-            ManagerDocumentSubmissionBehavior.Run =>
-                Localizer["RunBehaviorDetail"],
-            _ =>
-                string.Empty
-        };
-
     #endregion
 
     #region Methods Lifecycle
@@ -229,35 +190,6 @@
     #endregion
 
     #region Methods Interaction
-
-    private async Task SelectSubmissionBehaviorAsync(
-        ManagerDocumentSubmissionBehavior submissionBehavior)
-    {
-        if (_uploading ||
-            SubmissionBehaviorDisabled ||
-            submissionBehavior ==
-                SubmissionBehavior)
-        {
-            return;
-        }
-
-        await SubmissionBehaviorChanged.InvokeAsync(
-            submissionBehavior);
-    }
-
-    private string SubmissionBehaviorButtonClass(
-        ManagerDocumentSubmissionBehavior submissionBehavior) =>
-        SubmissionBehavior ==
-        submissionBehavior
-            ? "selected"
-            : string.Empty;
-
-    private string FormatPressedState(
-        ManagerDocumentSubmissionBehavior submissionBehavior) =>
-        (SubmissionBehavior ==
-         submissionBehavior)
-        .ToString()
-        .ToLowerInvariant();
 
     private void HandleDragEnter()
     {
@@ -330,7 +262,7 @@
                 await UploadService
                     .SubmitAsync(
                         file,
-                        ManagerDocumentSubmissionBehavior.Shelve,
+                        SubmissionBehavior,
                         cancellationToken:
                             _lifetime.Token);
         }

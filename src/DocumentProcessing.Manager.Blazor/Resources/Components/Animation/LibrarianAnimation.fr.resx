@@ -26,6 +26,6 @@
   <data name="DetailStopped" xml:space="preserve"><value>Démarre le Manager pour rouvrir le bureau.</value></data>
   <data name="DetailUnavailable" xml:space="preserve"><value>La reconnexion est tentée automatiquement.</value></data>
   <data name="DetailConnecting" xml:space="preserve"><value>Synchronisation avec le Host.</value></data>
-  <data name="AccessibleLabel" xml:space="preserve"><value>{0}. {1} {2}</value></data>
+  <data name="AccessibleLabel" xml:space="preserve"><value>{0} {1}</value></data>
   <data name="DefaultDocumentTitle" xml:space="preserve"><value>Document en cours</value></data>
 </root>

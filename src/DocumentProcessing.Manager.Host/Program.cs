@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
 using DocumentProcessing.Manager.DPEngine;
+using DocumentProcessing.Manager.Custody;
 using DocumentProcessing.Manager.Host.Api;
 using DocumentProcessing.Manager.Host.Configuration;
 using DocumentProcessing.Manager.Host.Hosting;
@@ -119,6 +120,11 @@ public static class Program
             provider =>
                 provider.GetRequiredService<PostgresProcessingQueueStore>());
 
+        services.AddSingleton<PostgresProcessingUnitCustodyPurgeStore>();
+        services.AddSingleton<IProcessingUnitCustodyPurgeStore>(
+            provider =>
+                provider.GetRequiredService<PostgresProcessingUnitCustodyPurgeStore>());
+
         services.AddSingleton<PostgresProcessingQueueReader>();
         services.AddSingleton<IProcessingQueueReader>(
             provider =>
@@ -160,6 +166,9 @@ public static class Program
         services.AddSingleton<ISourceArtifactWriter>(
             provider =>
                 provider.GetRequiredService<FileSystemSourceArtifactCustodyStore>());
+        services.AddSingleton<ISourceArtifactPurger>(
+            provider =>
+                provider.GetRequiredService<FileSystemSourceArtifactCustodyStore>());
 
         services.AddSingleton(
             _ =>
@@ -173,8 +182,11 @@ public static class Program
         services.AddSingleton<IProcessingResultArtifactWriter>(
             provider =>
                 provider.GetRequiredService<FileSystemProcessingResultArtifactStore>());
+        services.AddSingleton<IProcessingResultArtifactPurger>(
+            provider =>
+                provider.GetRequiredService<FileSystemProcessingResultArtifactStore>());
 
-        services.AddSingleton<IProcessingVisualAssetStore>(
+        services.AddSingleton(
             _ =>
                 new FileSystemProcessingVisualAssetStore(
                     maximumVisualBytes:
@@ -183,10 +195,17 @@ public static class Program
                             configuration.MaximumResultBytes),
                     maximumVisualSetBytes:
                         configuration.MaximumResultBytes));
+        services.AddSingleton<IProcessingVisualAssetStore>(
+            provider =>
+                provider.GetRequiredService<FileSystemProcessingVisualAssetStore>());
         services.AddSingleton<IProcessingVisualAssetReader>(
             provider =>
-                (IProcessingVisualAssetReader)provider
-                    .GetRequiredService<IProcessingVisualAssetStore>());
+                provider.GetRequiredService<FileSystemProcessingVisualAssetStore>());
+        services.AddSingleton<IProcessingVisualAssetPurger>(
+            provider =>
+                provider.GetRequiredService<FileSystemProcessingVisualAssetStore>());
+
+        services.AddSingleton<PurgeTerminalProcessingUnitService>();
 
         services.AddSingleton(
             provider =>

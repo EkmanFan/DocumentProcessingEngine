@@ -124,6 +124,34 @@ a:focus-visible {
     line-height: 1;
 }
 
+.column-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.clear-queue-button {
+    min-height: 28px;
+    border: 1px solid rgba(187, 64, 64, 0.22);
+    border-radius: 8px;
+    padding: 0 9px;
+    color: var(--red);
+    font-size: 0.69rem;
+    font-weight: 800;
+    background: var(--red-soft);
+    cursor: pointer;
+}
+
+.clear-queue-button:not(:disabled):hover {
+    border-color: var(--red);
+    transform: translateY(-1px);
+}
+
+.clear-queue-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.52;
+}
+
 .brand-block h1 {
     font-size: clamp(1.55rem, 2.4vw, 2.15rem);
 }
@@ -519,8 +547,7 @@ a:focus-visible {
 }
 
 .queue-metadata,
-.queue-command-group,
-.queue-order-controls {
+.queue-command-group {
     display: flex;
     align-items: center;
     gap: 5px;
@@ -537,8 +564,7 @@ a:focus-visible {
     background: var(--navy-soft);
 }
 
-.queue-run-button,
-.queue-order-controls button {
+.queue-run-button {
     min-height: 28px;
     border: 1px solid rgba(29, 51, 66, 0.12);
     border-radius: 8px;
@@ -556,19 +582,12 @@ a:focus-visible {
     background: var(--teal);
 }
 
-.queue-order-controls button {
-    width: 28px;
-    padding: 0;
-}
-
-.queue-run-button:not(:disabled):hover,
-.queue-order-controls button:not(:disabled):hover {
+.queue-run-button:not(:disabled):hover {
     border-color: var(--teal);
     transform: translateY(-1px);
 }
 
-.queue-run-button:disabled,
-.queue-order-controls button:disabled {
+.queue-run-button:disabled {
     cursor: not-allowed;
     opacity: 0.38;
 }
@@ -670,6 +689,96 @@ a:focus-visible {
     font-size: 0.64rem;
     line-height: 1.35;
     text-align: right;
+}
+
+.action-menu {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    justify-items: end;
+}
+
+.work-item:has(.action-menu[open]) {
+    z-index: 10;
+}
+
+.action-menu summary {
+    display: grid;
+    width: 30px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid rgba(29, 51, 66, 0.13);
+    border-radius: 8px;
+    color: var(--navy);
+    font-size: 1rem;
+    font-weight: 850;
+    line-height: 1;
+    list-style: none;
+    background: rgba(255, 255, 255, 0.86);
+    cursor: pointer;
+    user-select: none;
+}
+
+.action-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.action-menu summary:hover,
+.action-menu[open] summary {
+    border-color: var(--teal);
+    color: var(--teal);
+    background: var(--teal-soft);
+}
+
+.action-menu summary:focus-visible {
+    outline: 3px solid rgba(40, 116, 107, 0.28);
+    outline-offset: 2px;
+}
+
+.action-menu-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 20;
+    display: grid;
+    width: max-content;
+    min-width: 150px;
+    gap: 3px;
+    padding: 5px;
+    border: 1px solid rgba(29, 51, 66, 0.13);
+    border-radius: 10px;
+    background: var(--surface-solid);
+    box-shadow: 0 10px 24px rgba(35, 47, 44, 0.14);
+}
+
+.action-menu-panel button {
+    min-height: 31px;
+    padding: 0 9px;
+    border: 0;
+    border-radius: 7px;
+    color: var(--navy);
+    font-size: 0.69rem;
+    font-weight: 760;
+    text-align: left;
+    background: transparent;
+    cursor: pointer;
+}
+
+.action-menu-panel button:not(:disabled):hover {
+    background: var(--navy-soft);
+}
+
+.action-menu-panel button.destructive-action {
+    color: var(--red);
+}
+
+.action-menu-panel button.destructive-action:not(:disabled):hover {
+    background: var(--red-soft);
+}
+
+.action-menu-panel button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
 }
 
 .empty-state {
