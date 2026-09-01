@@ -9,6 +9,7 @@ using DocumentProcessing.Manager.Persistence.Files;
 using DocumentProcessing.Manager.Persistence.Postgres;
 using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Processing;
+using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Runtime;
 using DocumentProcessing.Manager.Submissions;
 using DocumentProcessing.Ocr.Adapters.PaddleOCR;
@@ -209,6 +210,17 @@ public static class Program
         services.AddSingleton<IDocumentProcessingExecutor>(
             provider =>
                 provider.GetRequiredService<DocumentProcessingHostExecutor>());
+
+        services.AddSingleton<IDocumentSplitPreviewProvider>(
+            provider =>
+                new DocumentProcessingSplitPreviewProvider(
+                    provider.GetRequiredService<DocumentProcessingHost>(),
+                    provider.GetRequiredService<IProcessingQueueReader>(),
+                    provider.GetRequiredService<IDocumentSubmissionReader>(),
+                    provider.GetRequiredService<ISourceArtifactReader>(),
+                    configuration.ComplexDocumentPageThreshold));
+
+        services.AddSingleton<SplitPendingProcessingUnitService>();
 
         services.AddSingleton<SubmitDocumentService>();
 

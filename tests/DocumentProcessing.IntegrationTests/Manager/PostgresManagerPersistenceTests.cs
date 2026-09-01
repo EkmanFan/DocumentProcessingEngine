@@ -711,6 +711,73 @@ public sealed class PostgresManagerPersistenceTests
     }
 
     [PostgresFact]
+    public async Task QueueStore_SplitPendingAtomicallyReplacesWholeUnitInPlace()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var firstSubmission =
+            CreateSubmission(DocumentSubmissionId.New(), digestCharacter: '6');
+
+        var secondSubmission =
+            CreateSubmission(DocumentSubmissionId.New(), digestCharacter: '7');
+
+        var whole =
+            new ProcessingWorkItem(
+                ProcessingUnitId.New(),
+                firstSubmission.SubmissionId,
+                new ProcessingUnitScope.WholeDocument(),
+                attemptNumber: 1);
+
+        var following =
+            new ProcessingWorkItem(
+                ProcessingUnitId.New(),
+                secondSubmission.SubmissionId,
+                new ProcessingUnitScope.WholeDocument(),
+                attemptNumber: 1);
+
+        await context.SubmissionStore.RegisterReadyAsync(firstSubmission, [whole]);
+        await context.SubmissionStore.RegisterReadyAsync(secondSubmission, [following]);
+
+        var replacements =
+            new[]
+            {
+                new ProcessingUnitIntake(
+                    new ProcessingWorkItem(
+                        ProcessingUnitId.New(),
+                        firstSubmission.SubmissionId,
+                        new ProcessingUnitScope.PageRange(1, 10, "Part one"),
+                        attemptNumber: 1),
+                    ProcessingUnitDispatchState.Ready),
+                new ProcessingUnitIntake(
+                    new ProcessingWorkItem(
+                        ProcessingUnitId.New(),
+                        firstSubmission.SubmissionId,
+                        new ProcessingUnitScope.PageRange(11, 20, "Part two"),
+                        attemptNumber: 1),
+                    ProcessingUnitDispatchState.Ready)
+            };
+
+        await context.QueueStore.SplitPendingAsync(
+            new SplitPendingProcessingUnitCommand(
+                expectedQueueVersion: 2,
+                whole.UnitId,
+                replacements));
+
+        var snapshot = await context.QueueReader.GetSnapshotAsync();
+
+        Assert.Equal(3, snapshot.Version);
+        Assert.Equal(
+            [replacements[0].WorkItem.UnitId, replacements[1].WorkItem.UnitId, following.UnitId],
+            snapshot.Items.Select(item => item.WorkItem.UnitId));
+
+        Assert.DoesNotContain(snapshot.Items, item => item.WorkItem.UnitId == whole.UnitId);
+        Assert.All(
+            snapshot.Items.Take(2),
+            item => Assert.IsType<ProcessingUnitScope.PageRange>(item.WorkItem.Scope));
+    }
+
+    [PostgresFact]
     public async Task SubmissionStore_IdempotentReplayPreservesInitialBatchOrder()
     {
         await using var context =

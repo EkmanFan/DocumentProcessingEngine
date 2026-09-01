@@ -19,15 +19,6 @@
   <data name="UploadNoReadableContentError" xml:space="preserve"><value>The browser reported no readable content for this file. If it is not empty, choose it by clicking the drop zone.</value></data>
   <data name="UploadTooLargeError" xml:space="preserve"><value>The file exceeds the configured limit of {0}.</value></data>
   <data name="UploadUnsupportedFormatError" xml:space="preserve"><value>Only PDF and EPUB documents are accepted.</value></data>
-  <data name="UploadPageRangesRequirePdfError" xml:space="preserve"><value>Physical-page ranges can only be used with a PDF document.</value></data>
   <data name="UploadRejectedError" xml:space="preserve"><value>The Manager rejected the document. Check the Host logs.</value></data>
   <data name="UploadConnectionError" xml:space="preserve"><value>The connection was interrupted before custody was confirmed.</value></data>
-  <data name="PageRangeMode" xml:space="preserve"><value>Split this PDF into physical-page ranges</value></data>
-  <data name="PageRangeTitle" xml:space="preserve"><value>Title</value></data>
-  <data name="PageRangeStart" xml:space="preserve"><value>First page</value></data>
-  <data name="PageRangeEnd" xml:space="preserve"><value>Last page</value></data>
-  <data name="AddPageRange" xml:space="preserve"><value>+ Add range</value></data>
-  <data name="RemovePageRange" xml:space="preserve"><value>Remove range</value></data>
-  <data name="PageRangeInvalid" xml:space="preserve"><value>Each range needs a title, a positive first page, and a last page at or after it.</value></data>
-  <data name="PageRangeOverlap" xml:space="preserve"><value>Physical-page ranges cannot overlap.</value></data>
 </root>

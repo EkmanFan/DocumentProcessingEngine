@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Découper le document</value></data>
+  <data name="PageCount" xml:space="preserve"><value>{0} pages physiques</value></data>
+  <data name="Suggestion" xml:space="preserve"><value>Ce document est long. Son découpage en unités indépendantes est recommandé.</value></data>
+  <data name="PreviewPages" xml:space="preserve"><value>Aperçus des pages physiques</value></data>
+  <data name="SelectPage" xml:space="preserve"><value>Sélectionner la page physique {0}</value></data>
+  <data name="PagePreviewAlt" xml:space="preserve"><value>Aperçu de la page physique {0}</value></data>
+  <data name="LoadMore" xml:space="preserve"><value>Charger davantage de pages</value></data>
+  <data name="HelpTitle" xml:space="preserve"><value>Sélection visuelle d’une plage</value></data>
+  <data name="ChooseStart" xml:space="preserve"><value>Choisis la première page, puis la dernière.</value></data>
+  <data name="ChooseEnd" xml:space="preserve"><value>Première page : {0}. Choisis maintenant la dernière.</value></data>
+  <data name="RangeTitle" xml:space="preserve"><value>Titre de la plage</value></data>
+  <data name="Start" xml:space="preserve"><value>Début</value></data>
+  <data name="End" xml:space="preserve"><value>Fin</value></data>
+  <data name="DefaultRangeTitle" xml:space="preserve"><value>Partie {0}</value></data>
+  <data name="InvalidRange" xml:space="preserve"><value>Chaque plage exige un titre et des bornes valides dans le document.</value></data>
+  <data name="Overlap" xml:space="preserve"><value>Les plages ne peuvent pas se chevaucher.</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Apply" xml:space="preserve"><value>Appliquer le découpage</value></data>
+</root>

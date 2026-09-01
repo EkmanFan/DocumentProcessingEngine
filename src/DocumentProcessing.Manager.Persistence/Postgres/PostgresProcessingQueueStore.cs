@@ -21,6 +21,196 @@ public sealed class PostgresProcessingQueueStore
 
     #endregion
 
+    #region Methods Shelve
+
+    /// <inheritdoc />
+    public async ValueTask ShelvePendingAsync(
+        ShelveProcessingUnitCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        await using var connection =
+            await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var transaction =
+            await connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+                .ConfigureAwait(false);
+
+        var actualVersion =
+            await LockQueueAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+
+        if (actualVersion != command.ExpectedQueueVersion)
+        {
+            throw new ProcessingQueueConcurrencyException(
+                command.ExpectedQueueVersion,
+                actualVersion);
+        }
+
+        await using var shelve = new NpgsqlCommand(
+            """
+            UPDATE document_processing_manager.processing_units
+            SET released_at_utc = NULL,
+                updated_at_utc = clock_timestamp()
+            WHERE unit_id = @unit_id
+                AND status = 0
+                AND released_at_utc IS NOT NULL;
+            """,
+            connection,
+            transaction);
+
+        shelve.Parameters.AddWithValue("unit_id", NpgsqlDbType.Uuid, command.UnitId.Value);
+
+        if (await shelve.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) != 1)
+        {
+            throw new InvalidOperationException(
+                "Only a ready pending processing unit can be shelved.");
+        }
+
+        await IncrementQueueVersionAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    #endregion
+
+    #region Methods Split
+
+    /// <inheritdoc />
+    public async ValueTask SplitPendingAsync(
+        SplitPendingProcessingUnitCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            command);
+
+        await using var connection =
+            await _dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+        await using var transaction =
+            await connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+                .ConfigureAwait(false);
+
+        var actualVersion =
+            await LockQueueAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+
+        if (actualVersion != command.ExpectedQueueVersion)
+        {
+            throw new ProcessingQueueConcurrencyException(
+                command.ExpectedQueueVersion,
+                actualVersion);
+        }
+
+        Guid submissionId;
+        long queuePosition;
+
+        await using (var read = new NpgsqlCommand(
+                         """
+                         SELECT submission_id, queue_position
+                         FROM document_processing_manager.processing_units
+                         WHERE unit_id = @unit_id
+                             AND status = 0
+                             AND scope_kind = 0
+                         FOR UPDATE;
+                         """,
+                         connection,
+                         transaction))
+        {
+            read.Parameters.AddWithValue("unit_id", NpgsqlDbType.Uuid, command.UnitId.Value);
+
+            await using var reader =
+                await read.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+            if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                throw new InvalidOperationException(
+                    "Only a pending whole-document unit can be split.");
+            }
+
+            submissionId = reader.GetGuid(0);
+            queuePosition = reader.GetInt64(1);
+        }
+
+        if (command.ReplacementUnits.Any(
+                intake => intake.WorkItem.SubmissionId.Value != submissionId))
+        {
+            throw new ArgumentException(
+                "Every replacement unit must belong to the original submission.",
+                nameof(command));
+        }
+
+        await using (var delete = new NpgsqlCommand(
+                         "DELETE FROM document_processing_manager.processing_units WHERE unit_id = @unit_id;",
+                         connection,
+                         transaction))
+        {
+            delete.Parameters.AddWithValue("unit_id", NpgsqlDbType.Uuid, command.UnitId.Value);
+            await delete.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var offset = command.ReplacementUnits.Count - 1;
+
+        if (offset > 0)
+        {
+            await using var shift = new NpgsqlCommand(
+                """
+                UPDATE document_processing_manager.processing_units
+                SET queue_position = queue_position + @offset,
+                    updated_at_utc = clock_timestamp()
+                WHERE status = 0
+                    AND queue_position > @queue_position;
+                """,
+                connection,
+                transaction);
+
+            shift.Parameters.AddWithValue("offset", NpgsqlDbType.Bigint, (long)offset);
+            shift.Parameters.AddWithValue("queue_position", NpgsqlDbType.Bigint, queuePosition);
+            await shift.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        for (var index = 0; index < command.ReplacementUnits.Count; index++)
+        {
+            var intake = command.ReplacementUnits[index];
+            var range = (ProcessingUnitScope.PageRange)intake.WorkItem.Scope;
+
+            await using var insert = new NpgsqlCommand(
+                """
+                INSERT INTO document_processing_manager.processing_units
+                (
+                    unit_id, submission_id, scope_kind,
+                    start_physical_page_number, end_physical_page_number, scope_title,
+                    attempt_number, submission_unit_ordinal, status, queue_position, released_at_utc
+                )
+                VALUES
+                (
+                    @unit_id, @submission_id, 1,
+                    @start_page, @end_page, @title,
+                    1, @ordinal, 0, @queue_position,
+                    CASE WHEN @is_ready THEN clock_timestamp() ELSE NULL END
+                );
+                """,
+                connection,
+                transaction);
+
+            insert.Parameters.AddWithValue("unit_id", NpgsqlDbType.Uuid, intake.WorkItem.UnitId.Value);
+            insert.Parameters.AddWithValue("submission_id", NpgsqlDbType.Uuid, submissionId);
+            insert.Parameters.AddWithValue("start_page", NpgsqlDbType.Integer, range.StartPhysicalPageNumber);
+            insert.Parameters.AddWithValue("end_page", NpgsqlDbType.Integer, range.EndPhysicalPageNumber);
+            insert.Parameters.AddWithValue("title", NpgsqlDbType.Text, range.Title);
+            insert.Parameters.AddWithValue("ordinal", NpgsqlDbType.Integer, index + 1);
+            insert.Parameters.AddWithValue("queue_position", NpgsqlDbType.Bigint, queuePosition + index);
+            insert.Parameters.AddWithValue(
+                "is_ready",
+                NpgsqlDbType.Boolean,
+                intake.DispatchState == ProcessingUnitDispatchState.Ready);
+
+            await insert.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await IncrementQueueVersionAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    #endregion
+
     #region ctor
 
     /// <summary>

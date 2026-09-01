@@ -32,6 +32,8 @@ public sealed class DocumentProcessingHost
 
     private readonly DocumentProcessingEngine _engine;
 
+    private readonly PhysicalPagePreviewEngine _physicalPagePreviewEngine;
+
     private bool _disposed;
 
     #endregion
@@ -53,19 +55,24 @@ public sealed class DocumentProcessingHost
 
         try
         {
+            var formats =
+                new IDocumentFormat[]
+                {
+                    new PdfDocumentFormat(),
+                    new EpubDocumentFormat(options.Epub, options.LoggerFactory)
+                };
+
             _engine =
                 new DocumentProcessingEngine(
-                    [
-                        new PdfDocumentFormat(),
-                        new EpubDocumentFormat(
-                            options.Epub,
-                            options.LoggerFactory)
-                    ],
+                    formats,
                     _sharedProcessingCapabilities.LayoutAnalyzer,
                     _sharedProcessingCapabilities.TextRecognizer,
                     options.EngineVersion,
                     _sharedProcessingCapabilities.LayoutAnalysisIdentity,
                     options.UserVisualAssetWriter);
+
+            _physicalPagePreviewEngine =
+                new PhysicalPagePreviewEngine(formats);
         }
         catch
         {
@@ -73,6 +80,34 @@ public sealed class DocumentProcessingHost
 
             throw;
         }
+    }
+
+    #endregion
+
+    #region Methods Preview
+
+    /// <summary>Inspects a source without running document processing.</summary>
+    public ValueTask<PhysicalPagePreviewInspection> InspectPhysicalPagesAsync(
+        DocumentSource source,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        return _physicalPagePreviewEngine.InspectAsync(source, cancellationToken);
+    }
+
+    /// <summary>Renders one physical source page as a PNG preview.</summary>
+    public ValueTask RenderPhysicalPagePreviewAsync(
+        DocumentSource source,
+        int physicalPageNumber,
+        Stream destination,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        return _physicalPagePreviewEngine.RenderAsync(
+            source,
+            physicalPageNumber,
+            destination,
+            cancellationToken);
     }
 
     #endregion

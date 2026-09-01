@@ -348,6 +348,62 @@ internal sealed class ManagerHostClient(
             response);
     }
 
+    public ValueTask<ManagerSplitPreviewContract> GetSplitPreviewAsync(
+        Guid unitId,
+        CancellationToken cancellationToken = default) =>
+        GetRequiredAsync<ManagerSplitPreviewContract>(
+            $"api/manager/queue/{unitId:D}/split-preview",
+            cancellationToken);
+
+    public async ValueTask PrepareProcessingUnitSplitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default)
+    {
+        using var response =
+            await _httpClient.PostAsJsonAsync(
+                $"api/manager/queue/{unitId:D}/prepare-split",
+                new ManagerQueueReleaseRequest(expectedVersion),
+                cancellationToken).ConfigureAwait(false);
+
+        EnsureSuccess(response);
+    }
+
+    public async ValueTask<byte[]> GetSplitPreviewPageAsync(
+        Guid unitId,
+        int physicalPageNumber,
+        CancellationToken cancellationToken = default)
+    {
+        using var response =
+            await _httpClient.GetAsync(
+                $"api/manager/queue/{unitId:D}/split-preview/pages/{physicalPageNumber}",
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken).ConfigureAwait(false);
+
+        EnsureSuccess(response);
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async ValueTask<ManagerSplitPendingUnitResult> SplitPendingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        IReadOnlyList<ManagerPageRangeRequest> ranges,
+        bool releaseAfterSplit,
+        CancellationToken cancellationToken = default)
+    {
+        using var response =
+            await _httpClient.PostAsJsonAsync(
+                $"api/manager/queue/{unitId:D}/split",
+                new ManagerSplitPendingUnitRequest(expectedVersion, ranges, releaseAfterSplit),
+                cancellationToken).ConfigureAwait(false);
+
+        EnsureSuccess(response);
+
+        return await response.Content.ReadFromJsonAsync<ManagerSplitPendingUnitResult>(cancellationToken)
+                   .ConfigureAwait(false) ??
+               throw new InvalidDataException("The Manager returned an empty split result.");
+    }
+
     #endregion
 
     #region Methods Validation

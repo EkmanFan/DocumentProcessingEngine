@@ -90,8 +90,7 @@ internal sealed record ManagerDocumentSubmissionRequest(
     string OriginalFileName,
     string MediaType,
     string? SourceOrigin,
-    Components.Workshop.ManagerDocumentSubmissionBehavior SubmissionBehavior,
-    IReadOnlyList<ManagerPageRangeRequest>? PageRanges = null);
+    Components.Workshop.ManagerDocumentSubmissionBehavior SubmissionBehavior);
 
 internal sealed record ManagerPageRangeRequest(
     int StartPhysicalPageNumber,
@@ -104,6 +103,21 @@ internal sealed record ManagerQueueReorderRequest(
 
 internal sealed record ManagerQueueReleaseRequest(
     long ExpectedVersion);
+
+public sealed record ManagerSplitPreviewContract(
+    Guid UnitId,
+    Guid SubmissionId,
+    string OriginalFileName,
+    int PhysicalPageCount,
+    bool SplitSuggested);
+
+internal sealed record ManagerSplitPendingUnitRequest(
+    long ExpectedVersion,
+    IReadOnlyList<ManagerPageRangeRequest> Ranges,
+    bool ReleaseAfterSplit);
+
+internal sealed record ManagerSplitPendingUnitResult(
+    IReadOnlyList<Guid> ProcessingUnitIds);
 
 internal sealed record ManagerDocumentSubmissionResult(
     Guid SubmissionId,

@@ -92,4 +92,24 @@ public interface IProcessingQueueStore
     ValueTask ReleasePendingAsync(
         ReleaseProcessingUnitCommand command,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Atomically removes one ready pending unit from dispatch eligibility.
+    /// </summary>
+    ValueTask ShelvePendingAsync(
+        ShelveProcessingUnitCommand command,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromException(
+            new NotSupportedException(
+                "This processing-queue store does not support pending-unit shelving."));
+
+    /// <summary>
+    /// Atomically replaces one pending whole-document unit by ordered page ranges.
+    /// </summary>
+    ValueTask SplitPendingAsync(
+        SplitPendingProcessingUnitCommand command,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromException(
+            new NotSupportedException(
+                "This processing-queue store does not support pending-unit splits."));
 }

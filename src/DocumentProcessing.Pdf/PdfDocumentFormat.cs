@@ -20,6 +20,7 @@ namespace DocumentProcessing.Pdf;
 /// </remarks>
 public sealed class PdfDocumentFormat
     : IPhysicalPageRangeDocumentFormat,
+      IPhysicalPagePreviewDocumentFormat,
       IDocumentRasterizer,
       IVisualRasterObservationSource
 {
@@ -37,6 +38,62 @@ public sealed class PdfDocumentFormat
         _visualRasterObservationSource;
     private readonly PdftoppmDocumentRasterizer
         _documentRasterizer;
+
+    #endregion
+
+    #region Methods Preview
+
+    /// <inheritdoc />
+    public async ValueTask<int?> TryGetPhysicalPageCountAsync(
+        DocumentSource source,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        if (!await _validator.ValidateAsync(source, cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        long? originalPosition = source.Content.CanSeek ? source.Content.Position : null;
+
+        try
+        {
+            if (source.Content.CanSeek)
+            {
+                source.Content.Position = 0;
+            }
+
+            using var document = UglyToad.PdfPig.PdfDocument.Open(source.Content);
+            return document.NumberOfPages;
+        }
+        finally
+        {
+            if (originalPosition.HasValue)
+            {
+                source.Content.Position = originalPosition.Value;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async ValueTask RenderPhysicalPagePreviewAsync(
+        DocumentSource source,
+        int physicalPageNumber,
+        Stream destination,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(destination);
+
+        await using var session =
+            await new PdftoppmDocumentRasterizer(dpi: 96)
+                .OpenAsync(source, DocumentFormatId.Pdf, cancellationToken)
+                .ConfigureAwait(false);
+
+        await session.RenderPageAsync(physicalPageNumber, destination, cancellationToken)
+            .ConfigureAwait(false);
+    }
 
     #endregion
 

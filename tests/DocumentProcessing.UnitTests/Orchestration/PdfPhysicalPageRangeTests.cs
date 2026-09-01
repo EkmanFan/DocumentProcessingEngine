@@ -69,6 +69,25 @@ public sealed class PdfPhysicalPageRangeTests
             StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task PreviewInspection_ReturnsPhysicalPageCountWithoutProcessing()
+    {
+        await using var stream =
+            new MemoryStream(
+                BuildThreePagePdf(),
+                writable: false);
+
+        var pageCount =
+            await new PdfDocumentFormat()
+                .TryGetPhysicalPageCountAsync(
+                    new DocumentSource(
+                        stream,
+                        "three-pages.pdf",
+                        "application/pdf"));
+
+        Assert.Equal(3, pageCount);
+    }
+
     #endregion
 
     #region Test Fixtures

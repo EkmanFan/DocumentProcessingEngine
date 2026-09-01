@@ -1,4 +1,5 @@
 using DocumentProcessing.ProviderLifecycle;
+using DocumentProcessing.Manager.DPEngine;
 
 namespace DocumentProcessing.Manager.Host.Configuration;
 
@@ -57,6 +58,8 @@ internal sealed class ManagerHostConfiguration
 
     public int MaximumAttempts { get; }
 
+    public int ComplexDocumentPageThreshold { get; }
+
     #endregion
 
     #region ctor
@@ -81,7 +84,8 @@ internal sealed class ManagerHostConfiguration
         TimeSpan runtimeLeaseDuration,
         TimeSpan runtimeLeaseRenewalInterval,
         TimeSpan idlePollingInterval,
-        int maximumAttempts)
+        int maximumAttempts,
+        int complexDocumentPageThreshold)
     {
         ConnectionString =
             connectionString;
@@ -142,6 +146,9 @@ internal sealed class ManagerHostConfiguration
 
         MaximumAttempts =
             maximumAttempts;
+
+        ComplexDocumentPageThreshold =
+            complexDocumentPageThreshold;
     }
 
     #endregion
@@ -297,7 +304,12 @@ internal sealed class ManagerHostConfiguration
                 configuration,
                 "ManagerHost:MaximumAttempts",
                 defaultValue:
-                    3));
+                    3),
+            ReadPositiveInt(
+                configuration,
+                "ManagerHost:ComplexDocumentPageThreshold",
+                defaultValue:
+                    DocumentProcessingSplitPreviewProvider.DefaultComplexDocumentPageThreshold));
     }
 
     #endregion

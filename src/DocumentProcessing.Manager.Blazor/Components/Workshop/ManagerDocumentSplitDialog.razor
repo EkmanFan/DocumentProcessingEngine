@@ -1,0 +1,202 @@
+@inject IManagerHostClient ManagerClient
+@inject IStringLocalizer<ManagerDocumentSplitDialog> Localizer
+
+<div class="split-overlay" role="presentation">
+    <section class="split-dialog" role="dialog" aria-modal="true" aria-labelledby="split-dialog-title">
+        <header class="split-header">
+            <div>
+                <p>DPEngine Manager</p>
+                <h2 id="split-dialog-title">@Localizer["Title"]</h2>
+                <span>@Preview.OriginalFileName · @Localizer["PageCount", Preview.PhysicalPageCount]</span>
+            </div>
+            <button type="button" disabled="@Busy" @onclick="Cancel">×</button>
+        </header>
+
+        <div class="split-content">
+            @if (Preview.SplitSuggested)
+            {
+                <div class="split-suggestion">@Localizer["Suggestion"]</div>
+            }
+
+            <div class="split-body">
+            <section class="split-pages" aria-label="@(Localizer["PreviewPages"])" aria-busy="@_loadingPages">
+                <div class="page-grid">
+                    @foreach (var page in _pages)
+                    {
+                        <button type="button"
+                                class="page-card @PageSelectionClass(page.PageNumber)"
+                                disabled="@Busy"
+                                title="@(Localizer["SelectPage", page.PageNumber])"
+                                @onclick="() => SelectPage(page.PageNumber)">
+                            @if (page.DataUrl is null)
+                            {
+                                <span class="page-placeholder">…</span>
+                            }
+                            else
+                            {
+                                <img src="@(page.DataUrl)" alt="@(Localizer["PagePreviewAlt", page.PageNumber])" />
+                            }
+                            <strong>@(page.PageNumber)</strong>
+                        </button>
+                    }
+                </div>
+                @if (_pages.Count < Preview.PhysicalPageCount)
+                {
+                    <button class="load-pages" type="button" disabled="@(_loadingPages || Busy)" @onclick="LoadMoreAsync">
+                        @Localizer["LoadMore"]
+                    </button>
+                }
+            </section>
+
+            <aside class="split-plan">
+                <div class="split-help">
+                    <strong>@Localizer["HelpTitle"]</strong>
+                    <span>@(_selectionStart.HasValue
+                        ? Localizer["ChooseEnd", _selectionStart.Value]
+                        : Localizer["ChooseStart"])</span>
+                </div>
+
+                <ol>
+                    @foreach (var range in _ranges)
+                    {
+                        <li @key="range.Id">
+                            <input type="text" aria-label="@(Localizer["RangeTitle"])" @bind="range.Title" />
+                            <label>
+                                <span>@Localizer["Start"]</span>
+                                <input type="number" min="1" max="@Preview.PhysicalPageCount" @bind="range.Start" />
+                            </label>
+                            <label>
+                                <span>@Localizer["End"]</span>
+                                <input type="number" min="1" max="@Preview.PhysicalPageCount" @bind="range.End" />
+                            </label>
+                            <button type="button" disabled="@Busy" @onclick="() => Remove(range)">×</button>
+                        </li>
+                    }
+                </ol>
+
+                @if (_error is not null)
+                {
+                    <p class="split-error" role="alert">@_error</p>
+                }
+
+                <footer>
+                    <button type="button" disabled="@Busy" @onclick="Cancel">@Localizer["Cancel"]</button>
+                    <button class="split-apply" type="button" disabled="@(Busy || _ranges.Count == 0)" @onclick="ApplyAsync">
+                        @Localizer["Apply"]
+                    </button>
+                </footer>
+            </aside>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private const int PageBatchSize = 12;
+
+    private readonly List<PagePreview> _pages = [];
+    private readonly List<RangeDraft> _ranges = [];
+    private int? _selectionStart;
+    private bool _loadingPages;
+    private string? _error;
+
+    [Parameter, EditorRequired]
+    public ManagerSplitPreviewContract Preview { get; set; } = default!;
+
+    [Parameter]
+    public bool Busy { get; set; }
+
+    [Parameter]
+    public EventCallback Cancel { get; set; }
+
+    [Parameter]
+    public EventCallback<IReadOnlyList<ManagerSplitRangeDraft>> Apply { get; set; }
+
+    protected override async Task OnInitializedAsync() =>
+        await LoadMoreAsync();
+
+    private async Task LoadMoreAsync()
+    {
+        if (_loadingPages)
+        {
+            return;
+        }
+
+        _loadingPages = true;
+
+        try
+        {
+            var last = Math.Min(_pages.Count + PageBatchSize, Preview.PhysicalPageCount);
+
+            for (var pageNumber = _pages.Count + 1; pageNumber <= last; pageNumber++)
+            {
+                var bytes = await ManagerClient.GetSplitPreviewPageAsync(Preview.UnitId, pageNumber);
+                _pages.Add(new PagePreview(pageNumber, $"data:image/png;base64,{Convert.ToBase64String(bytes)}"));
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        finally
+        {
+            _loadingPages = false;
+        }
+    }
+
+    private void SelectPage(int pageNumber)
+    {
+        if (!_selectionStart.HasValue)
+        {
+            _selectionStart = pageNumber;
+            return;
+        }
+
+        var start = Math.Min(_selectionStart.Value, pageNumber);
+        var end = Math.Max(_selectionStart.Value, pageNumber);
+        _ranges.Add(new RangeDraft(start, end, Localizer["DefaultRangeTitle", _ranges.Count + 1]));
+        _selectionStart = null;
+        _error = null;
+    }
+
+    private string? PageSelectionClass(int pageNumber)
+    {
+        if (_selectionStart == pageNumber)
+        {
+            return "selection-start";
+        }
+
+        var index = _ranges.FindIndex(range => pageNumber >= range.Start && pageNumber <= range.End);
+        return index >= 0 ? $"range-{index % 5}" : null;
+    }
+
+    private void Remove(RangeDraft range) => _ranges.Remove(range);
+
+    private async Task ApplyAsync()
+    {
+        var ordered = _ranges.OrderBy(range => range.Start).ToArray();
+
+        if (ordered.Any(range => string.IsNullOrWhiteSpace(range.Title) || range.Start <= 0 ||
+                                 range.End < range.Start || range.End > Preview.PhysicalPageCount))
+        {
+            _error = Localizer["InvalidRange"];
+            return;
+        }
+
+        if (ordered.Skip(1).Zip(ordered, (current, previous) => current.Start <= previous.End).Any(value => value))
+        {
+            _error = Localizer["Overlap"];
+            return;
+        }
+
+        await Apply.InvokeAsync(
+            _ranges.Select(range => new ManagerSplitRangeDraft(range.Start, range.End, range.Title.Trim())).ToArray());
+    }
+
+    private sealed record PagePreview(int PageNumber, string? DataUrl);
+
+    private sealed class RangeDraft(int start, int end, string title)
+    {
+        public Guid Id { get; } = Guid.NewGuid();
+        public int Start { get; set; } = start;
+        public int End { get; set; } = end;
+        public string Title { get; set; } = title;
+    }
+}

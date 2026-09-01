@@ -35,4 +35,25 @@ internal interface IManagerHostClient
         Guid unitId,
         long expectedVersion,
         CancellationToken cancellationToken = default);
+
+    ValueTask PrepareProcessingUnitSplitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default);
+
+    ValueTask<ManagerSplitPreviewContract> GetSplitPreviewAsync(
+        Guid unitId,
+        CancellationToken cancellationToken = default);
+
+    ValueTask<byte[]> GetSplitPreviewPageAsync(
+        Guid unitId,
+        int physicalPageNumber,
+        CancellationToken cancellationToken = default);
+
+    ValueTask<ManagerSplitPendingUnitResult> SplitPendingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        IReadOnlyList<ManagerPageRangeRequest> ranges,
+        bool releaseAfterSplit,
+        CancellationToken cancellationToken = default);
 }

@@ -7,6 +7,7 @@
 @inject IStringLocalizer<ManagerWorkshop> Localizer
 @inject IJSRuntime JavaScript
 @inject IManagerVisualDestinationPicker VisualDestinationPicker
+@inject ManagerWorkshopUploadService UploadService
 
 <main class="workshop-shell">
     <header class="workshop-header">
@@ -64,6 +65,17 @@
                     @Localizer["Stop"]
                 </button>
             </div>
+
+            <label class="settings-button split-upload-button"
+                   title="@(Localizer["OpenSplit"])"
+                   aria-label="@(Localizer["OpenSplit"])">
+                <span aria-hidden="true">✂</span>
+                @Localizer["SplitDocument"]
+                <InputFile class="split-file-input"
+                           disabled="@_commandRunning"
+                           accept=".pdf,application/pdf"
+                           OnChange="PrepareUploadedSplitAsync" />
+            </label>
 
             <button class="settings-button"
                     type="button"
@@ -157,6 +169,17 @@
                                                 aria-label="@(Localizer["RunQueuedItemLabel", item.DocumentTitle])"
                                                 @onclick="() => ReleaseProcessingUnitAsync(item.UnitId)">
                                             @Localizer["RunQueuedItem"]
+                                        </button>
+                                    }
+                                    @if (item.Scope.Kind == ManagerWorkItemScopeKind.WholeDocument)
+                                    {
+                                        <button class="queue-run-button"
+                                                type="button"
+                                                disabled="@_commandRunning"
+                                                title="@(Localizer["SplitQueuedItemLabel", item.DocumentTitle])"
+                                                aria-label="@(Localizer["SplitQueuedItemLabel", item.DocumentTitle])"
+                                                @onclick="() => OpenSplitAsync(item)">
+                                            @Localizer["SplitQueuedItem"]
                                         </button>
                                     }
                                     <div class="queue-order-controls">
@@ -324,6 +347,14 @@
         </section>
     </section>
 </main>
+
+@if (_splitPreview is not null)
+{
+    <ManagerDocumentSplitDialog Preview="_splitPreview"
+                                Busy="_splitBusy"
+                                Cancel="CloseSplit"
+                                Apply="ApplySplitAsync" />
+}
 
 @if (_settingsOpen)
 {
@@ -590,6 +621,15 @@
 
     private bool
         _settingsOpen;
+
+    private ManagerSplitPreviewContract?
+        _splitPreview;
+
+    private bool
+        _splitBusy;
+
+    private bool
+        _splitRunAfterApply;
 
     private bool
         _settingsSaving;
@@ -955,10 +995,10 @@
     #region Methods Interaction
 
     private async Task HandleDocumentSubmittedAsync(
-        string originalFileName)
+        ManagerDocumentSubmissionNotice notice)
     {
         _receivedDocumentTitle =
-            originalFileName;
+            notice.OriginalFileName;
 
         _receptionSequence++;
 
@@ -968,6 +1008,142 @@
             waitForTurn:
                 true,
             _lifetime.Token);
+
+        try
+        {
+            var preview =
+                await ManagerClient.GetSplitPreviewAsync(
+                    notice.ProcessingUnitId,
+                    _lifetime.Token);
+
+            if (preview.SplitSuggested)
+            {
+                _splitPreview = preview;
+                _splitRunAfterApply =
+                    notice.RequestedBehavior == ManagerDocumentSubmissionBehavior.Run;
+                return;
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogDebug(exception, "Automatic split suggestion was unavailable.");
+        }
+
+        if (notice.RequestedBehavior == ManagerDocumentSubmissionBehavior.Run &&
+            _snapshot is not null)
+        {
+            await ManagerClient.ReleaseProcessingUnitAsync(
+                notice.ProcessingUnitId,
+                _snapshot.QueueVersion,
+                _lifetime.Token);
+
+            await RefreshAsync(false, true, _lifetime.Token);
+        }
+    }
+
+    private async Task OpenSplitAsync(ManagerWorkItemView item)
+    {
+        _commandRunning = true;
+
+        try
+        {
+            _splitRunAfterApply =
+                item.DispatchState == ManagerQueueItemDispatchState.Ready;
+
+            if (_splitRunAfterApply)
+            {
+                if (_snapshot is null)
+                {
+                    return;
+                }
+
+                await ManagerClient.PrepareProcessingUnitSplitAsync(
+                    item.UnitId,
+                    _snapshot.QueueVersion,
+                    _lifetime.Token);
+
+                await RefreshAsync(false, true, _lifetime.Token);
+            }
+
+            _splitPreview =
+                await ManagerClient.GetSplitPreviewAsync(item.UnitId, _lifetime.Token);
+        }
+        finally
+        {
+            _commandRunning = false;
+        }
+    }
+
+    private async Task PrepareUploadedSplitAsync(InputFileChangeEventArgs eventArgs)
+    {
+        _commandRunning = true;
+
+        try
+        {
+            var result =
+                await UploadService.SubmitAsync(
+                    eventArgs.File,
+                    ManagerDocumentSubmissionBehavior.Shelve,
+                    _lifetime.Token);
+
+            var unitId = result.ProcessingUnitIds.Single();
+            await RefreshAsync(false, true, _lifetime.Token);
+            _splitRunAfterApply = false;
+            _splitPreview = await ManagerClient.GetSplitPreviewAsync(unitId, _lifetime.Token);
+        }
+        finally
+        {
+            _commandRunning = false;
+        }
+    }
+
+    private async Task CloseSplit()
+    {
+        var preview = _splitPreview;
+        var release = _splitRunAfterApply;
+
+        _splitPreview = null;
+        _splitRunAfterApply = false;
+
+        if (release && preview is not null && _snapshot is not null)
+        {
+            await ManagerClient.ReleaseProcessingUnitAsync(
+                preview.UnitId,
+                _snapshot.QueueVersion,
+                _lifetime.Token);
+
+            await RefreshAsync(false, true, _lifetime.Token);
+        }
+    }
+
+    private async Task ApplySplitAsync(IReadOnlyList<ManagerSplitRangeDraft> ranges)
+    {
+        if (_splitPreview is null || _snapshot is null)
+        {
+            return;
+        }
+
+        _splitBusy = true;
+
+        try
+        {
+            await ManagerClient.SplitPendingUnitAsync(
+                _splitPreview.UnitId,
+                _snapshot.QueueVersion,
+                ranges.Select(range => new ManagerPageRangeRequest(
+                    range.StartPhysicalPageNumber,
+                    range.EndPhysicalPageNumber,
+                    range.Title)).ToArray(),
+                _splitRunAfterApply,
+                _lifetime.Token);
+
+            _splitPreview = null;
+            await RefreshAsync(false, true, _lifetime.Token);
+        }
+        finally
+        {
+            _splitBusy = false;
+        }
     }
 
     private void OpenSettings()

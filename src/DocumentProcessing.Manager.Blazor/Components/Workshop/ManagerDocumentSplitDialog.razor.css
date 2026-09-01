@@ -1,0 +1,30 @@
+.split-overlay { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(15, 31, 43, .72); backdrop-filter: blur(5px); }
+.split-dialog { display: grid; width: min(1180px, 96vw); height: min(820px, 92vh); grid-template-rows: auto minmax(0, 1fr); overflow: hidden; border-radius: 20px; background: #f8f5ed; box-shadow: 0 30px 90px rgba(0,0,0,.35); }
+.split-content { display: grid; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
+.split-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; color: #fff; background: #18384b; }
+.split-header p { margin: 0 0 3px; opacity: .7; font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; }
+.split-header h2 { margin: 0; font-family: Georgia, serif; font-weight: 500; }
+.split-header span { display: block; margin-top: 4px; opacity: .78; font-size: .75rem; }
+.split-header button { border: 0; color: #fff; font-size: 1.6rem; background: transparent; cursor: pointer; }
+.split-suggestion { padding: 9px 22px; color: #74501b; font-size: .78rem; background: #fff0ce; }
+.split-body { display: grid; min-height: 0; grid-template-columns: minmax(0, 1fr) 340px; }
+.split-pages { min-height: 0; overflow: auto; padding: 20px; background: #dfe5e3; }
+.page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 15px; }
+.page-card { position: relative; display: grid; gap: 6px; padding: 7px; border: 3px solid transparent; border-radius: 8px; background: #fff; box-shadow: 0 5px 13px rgba(29,51,66,.14); cursor: pointer; }
+.page-card img, .page-placeholder { width: 100%; aspect-ratio: .707; object-fit: contain; background: #fff; }
+.page-card strong { font-size: .7rem; color: #29495a; }
+.page-card.selection-start { border-color: #d39031; }
+.page-card.range-0 { border-color: #28746b; } .page-card.range-1 { border-color: #9166a8; } .page-card.range-2 { border-color: #c8734c; } .page-card.range-3 { border-color: #4f78b7; } .page-card.range-4 { border-color: #8a9843; }
+.load-pages { display: block; margin: 18px auto 0; padding: 8px 14px; border: 1px solid #28746b; border-radius: 9px; color: #28746b; background: #fff; cursor: pointer; }
+.split-plan { display: grid; min-height: 0; grid-template-rows: auto 1fr auto auto; gap: 12px; padding: 18px; border-left: 1px solid rgba(29,51,66,.12); background: #fff; }
+.split-help { display: grid; gap: 4px; padding: 10px; border-radius: 10px; color: #245e57; font-size: .75rem; background: #edf7f4; }
+.split-plan ol { min-height: 0; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.split-plan li { display: grid; grid-template-columns: 1fr 66px 66px 28px; gap: 6px; margin-bottom: 8px; }
+.split-plan input { min-width: 0; padding: 6px; border: 1px solid #ccd5d4; border-radius: 6px; }
+.split-plan label { display: grid; gap: 2px; font-size: .6rem; }
+.split-plan li button { border: 0; color: #984c45; background: transparent; cursor: pointer; }
+.split-error { margin: 0; color: #984c45; font-size: .72rem; }
+.split-plan footer { display: flex; justify-content: flex-end; gap: 8px; }
+.split-plan footer button { padding: 8px 13px; border: 1px solid #ccd5d4; border-radius: 8px; background: #fff; cursor: pointer; }
+.split-plan footer .split-apply { border-color: #28746b; color: #fff; background: #28746b; }
+@media (max-width: 760px) { .split-body { grid-template-columns: 1fr; } .split-plan { border-top: 1px solid #ccd5d4; border-left: 0; } }

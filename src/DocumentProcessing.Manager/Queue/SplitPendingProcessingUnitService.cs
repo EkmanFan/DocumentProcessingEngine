@@ -1,0 +1,106 @@
+using DocumentProcessing.Manager.Ports;
+
+namespace DocumentProcessing.Manager.Queue;
+
+/// <summary>
+/// Replaces one pending whole-document unit by an ordered, validated page plan.
+/// </summary>
+public sealed class SplitPendingProcessingUnitService
+{
+    #region Variables and Constants
+
+    private readonly IProcessingQueueReader _queueReader;
+    private readonly IProcessingQueueStore _queueStore;
+
+    #endregion
+
+    #region ctor
+
+    /// <summary>Creates the pending-unit split use case.</summary>
+    public SplitPendingProcessingUnitService(
+        IProcessingQueueReader queueReader,
+        IProcessingQueueStore queueStore)
+    {
+        _queueReader = queueReader ?? throw new ArgumentNullException(nameof(queueReader));
+        _queueStore = queueStore ?? throw new ArgumentNullException(nameof(queueStore));
+    }
+
+    #endregion
+
+    #region Methods
+
+    /// <summary>Applies a split plan against one expected queue version.</summary>
+    public async ValueTask<IReadOnlyList<ProcessingUnitId>> SplitAsync(
+        ProcessingUnitId unitId,
+        long expectedQueueVersion,
+        IReadOnlyList<ProcessingUnitScope.PageRange> ranges,
+        ProcessingUnitDispatchState? replacementDispatchState = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(ranges);
+
+        ValidateRanges(ranges);
+
+        var snapshot =
+            await _queueReader.GetSnapshotAsync(cancellationToken).ConfigureAwait(false);
+
+        if (snapshot.Version != expectedQueueVersion)
+        {
+            throw new ProcessingQueueConcurrencyException(expectedQueueVersion, snapshot.Version);
+        }
+
+        var sourceUnit =
+            snapshot.Items.SingleOrDefault(item => item.WorkItem.UnitId == unitId) ??
+            throw new InvalidOperationException("The processing unit no longer exists.");
+
+        if (sourceUnit.Status != ProcessingUnitStatus.Pending ||
+            sourceUnit.WorkItem.Scope is not ProcessingUnitScope.WholeDocument)
+        {
+            throw new InvalidOperationException(
+                "Only a pending whole-document unit can be split.");
+        }
+
+        var replacements =
+            ranges.Select(
+                    range =>
+                        new ProcessingUnitIntake(
+                            new ProcessingWorkItem(
+                                ProcessingUnitId.New(),
+                                sourceUnit.WorkItem.SubmissionId,
+                                range,
+                                attemptNumber: 1),
+                            replacementDispatchState ?? sourceUnit.DispatchState))
+                .ToArray();
+
+        await _queueStore.SplitPendingAsync(
+                new SplitPendingProcessingUnitCommand(
+                    expectedQueueVersion,
+                    unitId,
+                    replacements),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return replacements.Select(intake => intake.WorkItem.UnitId).ToArray();
+    }
+
+    private static void ValidateRanges(
+        IReadOnlyList<ProcessingUnitScope.PageRange> ranges)
+    {
+        if (ranges.Count == 0)
+        {
+            throw new ArgumentException("At least one page range is required.", nameof(ranges));
+        }
+
+        var ordered = ranges.OrderBy(range => range.StartPhysicalPageNumber).ToArray();
+
+        for (var index = 1; index < ordered.Length; index++)
+        {
+            if (ordered[index].StartPhysicalPageNumber <= ordered[index - 1].EndPhysicalPageNumber)
+            {
+                throw new ArgumentException("Page ranges cannot overlap.", nameof(ranges));
+            }
+        }
+    }
+
+    #endregion
+}

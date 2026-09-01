@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using DocumentProcessing.Manager.Blazor.Components.Workshop;
 
@@ -20,9 +19,6 @@ internal sealed class ManagerSubmissionClient(
                 nameof(httpClient));
 
     #endregion
-
-    private const string PageRangesHeader =
-        "X-Processing-Page-Ranges";
 
     #region Methods
 
@@ -69,16 +65,6 @@ internal sealed class ManagerSubmissionClient(
             message.Headers.Add(
                 "X-Source-Origin",
                 request.SourceOrigin);
-        }
-
-        if (request.PageRanges is { Count: > 0 })
-        {
-            message.Headers.Add(
-                PageRangesHeader,
-                Convert.ToBase64String(
-                    Encoding.UTF8.GetBytes(
-                        JsonSerializer.Serialize(
-                            request.PageRanges))));
         }
 
         AddLegacyFileNameHeader(

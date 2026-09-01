@@ -115,4 +115,8 @@
   <data name="NextPage" xml:space="preserve"><value>Suivant</value></data>
   <data name="ArchiveDateRangeInvalid" xml:space="preserve"><value>Saisis une plage de dates valide.</value></data>
   <data name="ArchiveLoadFailed" xml:space="preserve"><value>Les archives n’ont pas pu être chargées.</value></data>
+  <data name="OpenSplit" xml:space="preserve"><value>Choisir un PDF à découper</value></data>
+  <data name="SplitDocument" xml:space="preserve"><value>Découper</value></data>
+  <data name="SplitQueuedItem" xml:space="preserve"><value>Découper</value></data>
+  <data name="SplitQueuedItemLabel" xml:space="preserve"><value>Découper {0} avant traitement</value></data>
 </root>

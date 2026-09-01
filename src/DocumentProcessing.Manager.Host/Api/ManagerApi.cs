@@ -9,7 +9,6 @@ using DocumentProcessing.Manager.Settings;
 using DocumentProcessing.Manager.Submissions;
 using DocumentProcessing.Manager.Host.Security;
 using Microsoft.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
 
@@ -26,10 +25,6 @@ internal static class ManagerApi
     private const string
         SourceOriginHeader =
             "X-Source-Origin";
-
-    private const string
-        PageRangesHeader =
-            "X-Processing-Page-Ranges";
 
     private const string
         ConsumerIdHeader =
@@ -150,6 +145,22 @@ internal static class ManagerApi
         group.MapPost(
             "/queue/{unitId:guid}/release",
             ReleaseQueueUnitAsync);
+
+        group.MapPost(
+            "/queue/{unitId:guid}/prepare-split",
+            PrepareQueueUnitSplitAsync);
+
+        group.MapGet(
+            "/queue/{unitId:guid}/split-preview",
+            GetSplitPreviewAsync);
+
+        group.MapGet(
+            "/queue/{unitId:guid}/split-preview/pages/{physicalPageNumber:int}",
+            GetSplitPreviewPageAsync);
+
+        group.MapPost(
+            "/queue/{unitId:guid}/split",
+            SplitPendingUnitAsync);
 
         group.MapGet(
             "/results/{resultReference}",
@@ -475,30 +486,6 @@ internal static class ManagerApi
                     "Query parameter 'dispatch' must be either 'shelve' or 'run'."));
         }
 
-        IReadOnlyList<ProcessingUnitScope> scopes;
-
-        try
-        {
-            scopes =
-                ReadProcessingScopes(
-                    request);
-        }
-        catch (Exception exception)
-            when (exception is JsonException or FormatException)
-        {
-            return HttpResults.BadRequest(
-                new ApiConflictResponse(
-                    "manager.page_ranges_invalid",
-                    exception.Message));
-        }
-        catch (ArgumentException exception)
-        {
-            return HttpResults.BadRequest(
-                new ApiConflictResponse(
-                    "manager.page_ranges_invalid",
-                    exception.Message));
-        }
-
         try
         {
             var registration =
@@ -513,8 +500,7 @@ internal static class ManagerApi
                             ReadOptionalHeader(
                                 request,
                                 SourceOriginHeader),
-                            initialDispatchState,
-                            scopes),
+                            initialDispatchState),
                         cancellationToken)
                     .ConfigureAwait(false);
 
@@ -778,6 +764,170 @@ internal static class ManagerApi
             return HttpResults.Conflict(
                 new ApiConflictResponse(
                     "manager.processing_unit_not_shelved",
+                    exception.Message));
+        }
+    }
+
+    private static async Task<IResult> GetSplitPreviewAsync(
+        Guid unitId,
+        IDocumentSplitPreviewProvider previewProvider,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var preview =
+                await previewProvider.InspectAsync(
+                    new ProcessingUnitId(unitId),
+                    cancellationToken).ConfigureAwait(false);
+
+            return HttpResults.Ok(
+                new SplitPreviewResponse(
+                    preview.UnitId.Value,
+                    preview.SubmissionId.Value,
+                    preview.OriginalFileName,
+                    preview.PhysicalPageCount,
+                    preview.SplitSuggested));
+        }
+        catch (NotSupportedException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse("manager.split_not_supported", exception.Message));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return HttpResults.Conflict(
+                new ApiConflictResponse("manager.split_unit_unavailable", exception.Message));
+        }
+    }
+
+    private static async Task<IResult> GetSplitPreviewPageAsync(
+        Guid unitId,
+        int physicalPageNumber,
+        IDocumentSplitPreviewProvider previewProvider,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var bytes =
+                await previewProvider.RenderPageAsync(
+                    new ProcessingUnitId(unitId),
+                    physicalPageNumber,
+                    cancellationToken).ConfigureAwait(false);
+
+            return HttpResults.File(bytes, "image/png");
+        }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse("manager.split_page_invalid", exception.Message));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return HttpResults.Conflict(
+                new ApiConflictResponse("manager.split_unit_unavailable", exception.Message));
+        }
+    }
+
+    private static async Task<IResult> SplitPendingUnitAsync(
+        Guid unitId,
+        SplitPendingUnitRequest request,
+        SplitPendingProcessingUnitService splitService,
+        DocumentProcessingManagerRuntime runtime,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        try
+        {
+            if (request.Ranges is null)
+            {
+                return HttpResults.BadRequest(
+                    new ApiConflictResponse(
+                        "manager.split_plan_invalid",
+                        "A split plan is required."));
+            }
+
+            var ranges =
+                request.Ranges.Select(
+                        range =>
+                            new ProcessingUnitScope.PageRange(
+                                range.StartPhysicalPageNumber,
+                                range.EndPhysicalPageNumber,
+                                range.Title))
+                    .ToArray();
+
+            var replacementIds =
+                await splitService.SplitAsync(
+                    new ProcessingUnitId(unitId),
+                    request.ExpectedVersion,
+                    ranges,
+                    request.ReleaseAfterSplit
+                        ? ProcessingUnitDispatchState.Ready
+                        : null,
+                    cancellationToken).ConfigureAwait(false);
+
+            runtime.NotifyQueueChanged();
+
+            return HttpResults.Ok(
+                new SplitPendingUnitResponse(
+                    replacementIds.Select(id => id.Value).ToArray()));
+        }
+        catch (ProcessingQueueConcurrencyException exception)
+        {
+            return HttpResults.Conflict(
+                new QueueVersionConflictResponse(
+                    "manager.queue_version_conflict",
+                    exception.Message,
+                    exception.ExpectedVersion,
+                    exception.ActualVersion));
+        }
+        catch (ArgumentException exception)
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse("manager.split_plan_invalid", exception.Message));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return HttpResults.Conflict(
+                new ApiConflictResponse("manager.split_unit_unavailable", exception.Message));
+        }
+    }
+
+    private static async Task<IResult> PrepareQueueUnitSplitAsync(
+        Guid unitId,
+        QueueReleaseRequest request,
+        IProcessingQueueStore queueStore,
+        DocumentProcessingManagerRuntime runtime,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        try
+        {
+            await queueStore.ShelvePendingAsync(
+                    new ShelveProcessingUnitCommand(
+                        new ProcessingUnitId(unitId),
+                        request.ExpectedVersion),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            runtime.NotifyQueueChanged();
+            return HttpResults.NoContent();
+        }
+        catch (ProcessingQueueConcurrencyException exception)
+        {
+            return HttpResults.Conflict(
+                new QueueVersionConflictResponse(
+                    "manager.queue_version_conflict",
+                    exception.Message,
+                    exception.ExpectedVersion,
+                    exception.ActualVersion));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return HttpResults.Conflict(
+                new ApiConflictResponse(
+                    "manager.split_unit_unavailable",
                     exception.Message));
         }
     }
@@ -1218,43 +1368,6 @@ internal static class ManagerApi
             delivery.ClaimToken,
             delivery.ClaimExpiresAtUtc);
 
-    private static IReadOnlyList<ProcessingUnitScope> ReadProcessingScopes(
-        HttpRequest request)
-    {
-        var serializedRanges =
-            ReadOptionalHeader(
-                request,
-                PageRangesHeader);
-
-        if (serializedRanges is null)
-        {
-            return [new ProcessingUnitScope.WholeDocument()];
-        }
-
-        var ranges =
-            JsonSerializer.Deserialize<PageRangeRequest[]>(
-                Encoding.UTF8.GetString(
-                    Convert.FromBase64String(
-                        serializedRanges))) ??
-            throw new JsonException(
-                "The page-range request cannot be null.");
-
-        if (ranges.Length == 0)
-        {
-            throw new ArgumentException(
-                "At least one page range is required when the page-range header is supplied.");
-        }
-
-        return ranges
-            .Select(
-                range =>
-                    (ProcessingUnitScope)new ProcessingUnitScope.PageRange(
-                        range.StartPhysicalPageNumber,
-                        range.EndPhysicalPageNumber,
-                        range.Title))
-            .ToArray();
-    }
-
     private static string? ReadOptionalHeader(
         HttpRequest request,
         string headerName)
@@ -1432,6 +1545,21 @@ internal static class ManagerApi
 
     internal sealed record QueueReleaseRequest(
         long ExpectedVersion);
+
+    internal sealed record SplitPreviewResponse(
+        Guid UnitId,
+        Guid SubmissionId,
+        string OriginalFileName,
+        int PhysicalPageCount,
+        bool SplitSuggested);
+
+    internal sealed record SplitPendingUnitRequest(
+        long ExpectedVersion,
+        IReadOnlyList<PageRangeRequest> Ranges,
+        bool ReleaseAfterSplit);
+
+    internal sealed record SplitPendingUnitResponse(
+        IReadOnlyList<Guid> ProcessingUnitIds);
 
     internal sealed record ProcessingQueueResponse(
         long Version,
