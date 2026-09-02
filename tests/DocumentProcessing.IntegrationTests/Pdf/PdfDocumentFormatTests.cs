@@ -5,6 +5,8 @@ using DocumentProcessing.Pdf;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
+using UglyToad.PdfPig.Outline;
+using UglyToad.PdfPig.Outline.Destinations;
 using UglyToad.PdfPig.Writer;
 
 namespace DocumentProcessing.IntegrationTests.Pdf;
@@ -199,6 +201,75 @@ public sealed class PdfDocumentFormatTests
                         cancellation.Token));
     }
 
+    [Fact]
+    public async Task TryInspectNativeNavigationAsync_MapsInternalBookmarksInPublisherOrder()
+    {
+        await using var stream =
+            new MemoryStream(
+                CreatePdfWithBookmarks());
+
+        stream.Position =
+            7;
+
+        var inspection =
+            await new PdfDocumentFormat()
+                .TryInspectNativeNavigationAsync(
+                    new DocumentSource(
+                        stream,
+                        "outlined.pdf",
+                        "application/pdf"));
+
+        Assert.NotNull(
+            inspection);
+
+        Assert.Equal(
+            DocumentFormatId.Pdf,
+            inspection.Format);
+
+        Assert.Equal(
+            4,
+            Assert.IsType<NativeDocumentNavigationAxis.PhysicalPages>(
+                    inspection.Axis)
+                .PhysicalPageCount);
+
+        Assert.Collection(
+            inspection.Entries,
+            entry =>
+                AssertNavigationEntry(
+                    entry,
+                    "Chapter 1",
+                    hierarchyLevel:
+                        0,
+                    sourceOrder:
+                        0,
+                    physicalPageNumber:
+                        1),
+            entry =>
+                AssertNavigationEntry(
+                    entry,
+                    "Section 1.1",
+                    hierarchyLevel:
+                        1,
+                    sourceOrder:
+                        1,
+                    physicalPageNumber:
+                        2),
+            entry =>
+                AssertNavigationEntry(
+                    entry,
+                    "Chapter 2",
+                    hierarchyLevel:
+                        0,
+                    sourceOrder:
+                        2,
+                    physicalPageNumber:
+                        3));
+
+        Assert.Equal(
+            7,
+            stream.Position);
+    }
+
     #endregion
 
     #region Methods Fixtures
@@ -226,6 +297,91 @@ public sealed class PdfDocumentFormatTests
             font);
 
         return builder.Build();
+    }
+
+    private static byte[] CreatePdfWithBookmarks()
+    {
+        var builder =
+            new PdfDocumentBuilder();
+
+        var font =
+            builder.AddStandard14Font(
+                Standard14Font.Helvetica);
+
+        for (var pageNumber = 1;
+             pageNumber <= 4;
+             pageNumber++)
+        {
+            builder
+                .AddPage(
+                    PageSize.A4)
+                .AddText(
+                    $"Page {pageNumber}",
+                    12,
+                    new PdfPoint(
+                        72,
+                        720),
+                    font);
+        }
+
+        builder.Bookmarks =
+            new Bookmarks(
+                [
+                    new DocumentBookmarkNode(
+                        "Chapter 1",
+                        0,
+                        Destination(
+                            1),
+                        [
+                            new DocumentBookmarkNode(
+                                "Section 1.1",
+                                1,
+                                Destination(
+                                    2),
+                                [])
+                        ]),
+                    new DocumentBookmarkNode(
+                        "Chapter 2",
+                        0,
+                        Destination(
+                            3),
+                        [])
+                ]);
+
+        return builder.Build();
+    }
+
+    private static ExplicitDestination Destination(
+        int physicalPageNumber) =>
+        new(
+            physicalPageNumber,
+            ExplicitDestinationType.FitPage,
+            ExplicitDestinationCoordinates.Empty);
+
+    private static void AssertNavigationEntry(
+        NativeDocumentNavigationEntry entry,
+        string expectedTitle,
+        int hierarchyLevel,
+        int sourceOrder,
+        int physicalPageNumber)
+    {
+        Assert.Equal(
+            expectedTitle,
+            entry.Title);
+
+        Assert.Equal(
+            hierarchyLevel,
+            entry.HierarchyLevel);
+
+        Assert.Equal(
+            sourceOrder,
+            entry.SourceOrder);
+
+        Assert.Equal(
+            physicalPageNumber,
+            Assert.IsType<NativeDocumentNavigationPosition.PhysicalPage>(
+                    entry.Position)
+                .PhysicalPageNumber);
     }
 
     private static string Serialize<T>(

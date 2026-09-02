@@ -5,6 +5,7 @@ using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Raster;
 using DocumentProcessing.Pdf.Notes;
 using UglyToad.PdfPig.Core;
+using UglyToad.PdfPig.Outline;
 
 namespace DocumentProcessing.Pdf;
 
@@ -21,6 +22,7 @@ namespace DocumentProcessing.Pdf;
 public sealed class PdfDocumentFormat
     : IPhysicalPageRangeDocumentFormat,
       IPhysicalPagePreviewDocumentFormat,
+      INativeDocumentNavigationFormat,
       IDocumentRasterizer,
       IVisualRasterObservationSource
 {
@@ -93,6 +95,127 @@ public sealed class PdfDocumentFormat
 
         await session.RenderPageAsync(physicalPageNumber, destination, cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    #endregion
+
+    #region Methods Native Navigation
+
+    /// <inheritdoc />
+    public async ValueTask<NativeDocumentNavigationInspection?>
+        TryInspectNativeNavigationAsync(
+            DocumentSource source,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            source);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!await _validator
+                .ValidateAsync(
+                    source,
+                    cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        var originalPosition =
+            source.Content.CanSeek
+                ? source.Content.Position
+                : (long?)null;
+
+        try
+        {
+            if (source.Content.CanSeek)
+            {
+                source.Content.Position =
+                    0;
+            }
+
+            using var document =
+                UglyToad.PdfPig.PdfDocument.Open(
+                    source.Content);
+
+            var entries =
+                new List<NativeDocumentNavigationEntry>();
+
+            if (document.TryGetBookmarks(
+                    out var bookmarks,
+                    allowContainerNode:
+                        true))
+            {
+                var sourceOrder =
+                    0;
+
+                foreach (var root in
+                         bookmarks.Roots)
+                {
+                    AddNavigationEntry(
+                        root,
+                        document.NumberOfPages,
+                        entries,
+                        ref sourceOrder,
+                        cancellationToken);
+                }
+            }
+
+            return new NativeDocumentNavigationInspection(
+                DocumentFormatId.Pdf,
+                new NativeDocumentNavigationAxis.PhysicalPages(
+                    document.NumberOfPages),
+                entries);
+        }
+        finally
+        {
+            if (originalPosition.HasValue)
+            {
+                source.Content.Position =
+                    originalPosition.Value;
+            }
+        }
+    }
+
+    private static void AddNavigationEntry(
+        BookmarkNode node,
+        int physicalPageCount,
+        ICollection<NativeDocumentNavigationEntry> entries,
+        ref int sourceOrder,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var currentSourceOrder =
+            sourceOrder++;
+
+        if (node is DocumentBookmarkNode documentNode &&
+            !string.IsNullOrWhiteSpace(
+                node.Title) &&
+            documentNode.PageNumber >=
+                1 &&
+            documentNode.PageNumber <=
+                physicalPageCount)
+        {
+            entries.Add(
+                new NativeDocumentNavigationEntry(
+                    node.Title,
+                    node.Level,
+                    currentSourceOrder,
+                    new NativeDocumentNavigationPosition.PhysicalPage(
+                        documentNode.PageNumber)));
+        }
+
+        foreach (var child in
+                 node.Children)
+        {
+            AddNavigationEntry(
+                child,
+                physicalPageCount,
+                entries,
+                ref sourceOrder,
+                cancellationToken);
+        }
     }
 
     #endregion

@@ -968,7 +968,15 @@ internal static class ManagerApi
                     preview.SubmissionId.Value,
                     preview.OriginalFileName,
                     preview.PhysicalPageCount,
-                    preview.SplitSuggested));
+                    preview.SplitSuggested,
+                    preview.SuggestedRanges
+                        .Select(
+                            range =>
+                                new SplitSuggestedRangeResponse(
+                                    range.StartPhysicalPageNumber,
+                                    range.EndPhysicalPageNumber,
+                                    range.SuggestedTitle))
+                        .ToArray()));
         }
         catch (NotSupportedException exception)
         {
@@ -1739,7 +1747,13 @@ internal static class ManagerApi
         Guid SubmissionId,
         string OriginalFileName,
         int PhysicalPageCount,
-        bool SplitSuggested);
+        bool SplitSuggested,
+        IReadOnlyList<SplitSuggestedRangeResponse> SuggestedRanges);
+
+    internal sealed record SplitSuggestedRangeResponse(
+        int StartPhysicalPageNumber,
+        int EndPhysicalPageNumber,
+        string? SuggestedTitle);
 
     internal sealed record SplitPendingUnitRequest(
         long ExpectedVersion,

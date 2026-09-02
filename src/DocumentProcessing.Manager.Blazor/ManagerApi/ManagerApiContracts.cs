@@ -115,7 +115,13 @@ public sealed record ManagerSplitPreviewContract(
     Guid SubmissionId,
     string OriginalFileName,
     int PhysicalPageCount,
-    bool SplitSuggested);
+    bool SplitSuggested,
+    IReadOnlyList<ManagerSplitSuggestedRangeContract> SuggestedRanges);
+
+public sealed record ManagerSplitSuggestedRangeContract(
+    int StartPhysicalPageNumber,
+    int EndPhysicalPageNumber,
+    string? SuggestedTitle);
 
 internal sealed record ManagerSplitPendingUnitRequest(
     long ExpectedVersion,

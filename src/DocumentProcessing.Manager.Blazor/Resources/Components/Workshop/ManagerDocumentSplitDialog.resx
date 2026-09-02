@@ -7,6 +7,7 @@
   <data name="Title" xml:space="preserve"><value>Split document</value></data>
   <data name="PageCount" xml:space="preserve"><value>{0} physical pages</value></data>
   <data name="Suggestion" xml:space="preserve"><value>This document is long. Splitting it into independent units is recommended.</value></data>
+  <data name="NativeNavigationSuggestion" xml:space="preserve"><value>A split proposal was prepared from the document's native table of contents. Review it before applying.</value></data>
   <data name="PreviewPages" xml:space="preserve"><value>Physical page previews</value></data>
   <data name="SelectPage" xml:space="preserve"><value>Select physical page {0}</value></data>
   <data name="PagePreviewAlt" xml:space="preserve"><value>Preview of physical page {0}</value></data>

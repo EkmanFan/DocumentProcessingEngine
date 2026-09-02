@@ -193,6 +193,85 @@ public sealed class ManagerHostClientTests
     }
 
     [Fact]
+    public async Task GetSplitPreviewAsync_MapsNativeNavigationSuggestion()
+    {
+        var unitId =
+            Guid.NewGuid();
+
+        var submissionId =
+            Guid.NewGuid();
+
+        var handler =
+            new RecordingHandler(
+                $$"""
+                {
+                  "unitId": "{{unitId:D}}",
+                  "submissionId": "{{submissionId:D}}",
+                  "originalFileName": "outlined.pdf",
+                  "physicalPageCount": 30,
+                  "splitSuggested": false,
+                  "suggestedRanges": [
+                    {
+                      "startPhysicalPageNumber": 1,
+                      "endPhysicalPageNumber": 10,
+                      "suggestedTitle": "Chapter 1"
+                    },
+                    {
+                      "startPhysicalPageNumber": 11,
+                      "endPhysicalPageNumber": 30,
+                      "suggestedTitle": "Chapter 2"
+                    }
+                  ]
+                }
+                """);
+
+        using var client =
+            CreateClient(
+                handler);
+
+        var preview =
+            await new ManagerHostClient(
+                    client)
+                .GetSplitPreviewAsync(
+                    unitId);
+
+        Assert.Equal(
+            30,
+            preview.PhysicalPageCount);
+
+        Assert.Collection(
+            preview.SuggestedRanges,
+            range =>
+            {
+                Assert.Equal(
+                    1,
+                    range.StartPhysicalPageNumber);
+
+                Assert.Equal(
+                    10,
+                    range.EndPhysicalPageNumber);
+
+                Assert.Equal(
+                    "Chapter 1",
+                    range.SuggestedTitle);
+            },
+            range =>
+            {
+                Assert.Equal(
+                    11,
+                    range.StartPhysicalPageNumber);
+
+                Assert.Equal(
+                    30,
+                    range.EndPhysicalPageNumber);
+
+                Assert.Equal(
+                    "Chapter 2",
+                    range.SuggestedTitle);
+            });
+    }
+
+    [Fact]
     public async Task GetSettingsAsync_MapsDurableManagerSettings()
     {
         var handler =

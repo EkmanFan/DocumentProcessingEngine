@@ -1,4 +1,5 @@
 using DocumentProcessing.Core.Documents;
+using DocumentProcessing.Manager.Partitioning;
 using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Queue;
 
@@ -17,6 +18,7 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
     private readonly IDocumentSubmissionReader _submissionReader;
     private readonly ISourceArtifactReader _sourceReader;
     private readonly int _complexDocumentPageThreshold;
+    private readonly IDocumentPartitionStrategy _partitionStrategy;
 
     #endregion
 
@@ -28,7 +30,8 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
         IProcessingQueueReader queueReader,
         IDocumentSubmissionReader submissionReader,
         ISourceArtifactReader sourceReader,
-        int complexDocumentPageThreshold = DefaultComplexDocumentPageThreshold)
+        int complexDocumentPageThreshold = DefaultComplexDocumentPageThreshold,
+        IDocumentPartitionStrategy? partitionStrategy = null)
     {
         _host = host ?? throw new ArgumentNullException(nameof(host));
         _queueReader = queueReader ?? throw new ArgumentNullException(nameof(queueReader));
@@ -41,6 +44,10 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
         }
 
         _complexDocumentPageThreshold = complexDocumentPageThreshold;
+
+        _partitionStrategy =
+            partitionStrategy ??
+            new NativeNavigationPartitionStrategy();
     }
 
     #endregion
@@ -58,21 +65,37 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
             await _sourceReader.OpenReadAsync(context.Submission.SourceArtifact, cancellationToken)
                 .ConfigureAwait(false);
 
+        var documentSource =
+            new DocumentSource(
+                source,
+                context.Submission.OriginalFileName,
+                context.Submission.DeclaredMediaType);
+
         var inspection =
             await _host.InspectPhysicalPagesAsync(
-                    new DocumentSource(
-                        source,
-                        context.Submission.OriginalFileName,
-                        context.Submission.DeclaredMediaType),
+                    documentSource,
                     cancellationToken)
                 .ConfigureAwait(false);
+
+        var navigation =
+            await _host
+                .TryInspectNativeNavigationAsync(
+                    documentSource,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        var suggestedRanges =
+            BuildSuggestedRanges(
+                inspection.PhysicalPageCount,
+                navigation);
 
         return new DocumentSplitPreviewManifest(
             unitId,
             context.Submission.SubmissionId,
             context.Submission.OriginalFileName,
             inspection.PhysicalPageCount,
-            inspection.PhysicalPageCount >= _complexDocumentPageThreshold);
+            inspection.PhysicalPageCount >= _complexDocumentPageThreshold,
+            suggestedRanges);
     }
 
     /// <inheritdoc />
@@ -123,6 +146,62 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
             throw new InvalidOperationException("The processing unit references a missing submission.");
 
         return new PreviewContext(unit, submission);
+    }
+
+    private IReadOnlyList<DocumentSplitSuggestedRange> BuildSuggestedRanges(
+        int physicalPageCount,
+        NativeDocumentNavigationInspection? navigation)
+    {
+        if (navigation?.Axis is not
+            NativeDocumentNavigationAxis.PhysicalPages navigationAxis ||
+            navigationAxis.PhysicalPageCount !=
+            physicalPageCount)
+        {
+            return [];
+        }
+
+        var axis =
+            new DocumentPartitionAxis.PhysicalPages(
+                physicalPageCount);
+
+        var boundaries =
+            navigation.Entries
+                .Select(
+                    entry =>
+                        new DocumentPartitionBoundary(
+                            new DocumentPartitionPosition.PhysicalPage(
+                                ((NativeDocumentNavigationPosition.PhysicalPage)
+                                    entry.Position)
+                                .PhysicalPageNumber),
+                            entry.Title,
+                            entry.HierarchyLevel,
+                            entry.SourceOrder,
+                            DocumentPartitionEvidenceOrigin.NativeNavigation))
+                .ToArray();
+
+        var proposal =
+            _partitionStrategy.TryPropose(
+                new DocumentPartitionEvidence(
+                    axis,
+                    boundaries));
+
+        if (proposal is null)
+        {
+            return [];
+        }
+
+        return proposal.Segments
+            .Select(
+                segment =>
+                    new DocumentSplitSuggestedRange(
+                        ((DocumentPartitionPosition.PhysicalPage)
+                            segment.Extent.Start)
+                        .PhysicalPageNumber,
+                        ((DocumentPartitionPosition.PhysicalPage)
+                            segment.Extent.End)
+                        .PhysicalPageNumber,
+                        segment.SuggestedTitle))
+            .ToArray();
     }
 
     private sealed record PreviewContext(

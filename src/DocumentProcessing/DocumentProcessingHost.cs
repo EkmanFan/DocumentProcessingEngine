@@ -34,6 +34,9 @@ public sealed class DocumentProcessingHost
 
     private readonly PhysicalPagePreviewEngine _physicalPagePreviewEngine;
 
+    private readonly NativeDocumentNavigationEngine
+        _nativeDocumentNavigationEngine;
+
     private bool _disposed;
 
     #endregion
@@ -73,6 +76,10 @@ public sealed class DocumentProcessingHost
 
             _physicalPagePreviewEngine =
                 new PhysicalPagePreviewEngine(formats);
+
+            _nativeDocumentNavigationEngine =
+                new NativeDocumentNavigationEngine(
+                    formats);
         }
         catch
         {
@@ -108,6 +115,23 @@ public sealed class DocumentProcessingHost
             physicalPageNumber,
             destination,
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Inspects publisher-supplied navigation without running document
+    /// processing.
+    /// </summary>
+    public ValueTask<NativeDocumentNavigationInspection?>
+        TryInspectNativeNavigationAsync(
+            DocumentSource source,
+            CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        return _nativeDocumentNavigationEngine
+            .TryInspectAsync(
+                source,
+                cancellationToken);
     }
 
     #endregion

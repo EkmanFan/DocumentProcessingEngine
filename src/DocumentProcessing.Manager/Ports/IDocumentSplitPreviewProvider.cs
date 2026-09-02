@@ -28,4 +28,15 @@ public sealed record DocumentSplitPreviewManifest(
     /// <summary>Gets the source physical page count.</summary>
     int PhysicalPageCount,
     /// <summary>Gets whether the configured complexity threshold recommends splitting.</summary>
-    bool SplitSuggested);
+    bool SplitSuggested,
+    /// <summary>Gets a non-destructive native-navigation proposal when available.</summary>
+    IReadOnlyList<DocumentSplitSuggestedRange> SuggestedRanges);
+
+/// <summary>Describes one suggested inclusive physical-page range.</summary>
+public sealed record DocumentSplitSuggestedRange(
+    /// <summary>Gets the inclusive first physical page.</summary>
+    int StartPhysicalPageNumber,
+    /// <summary>Gets the inclusive last physical page.</summary>
+    int EndPhysicalPageNumber,
+    /// <summary>Gets the optional publisher-supplied title.</summary>
+    string? SuggestedTitle);

@@ -13,7 +13,11 @@
         </header>
 
         <div class="split-content">
-            @if (Preview.SplitSuggested)
+            @if (Preview.SuggestedRanges.Count > 0)
+            {
+                <div class="split-suggestion">@Localizer["NativeNavigationSuggestion"]</div>
+            }
+            else if (Preview.SplitSuggested)
             {
                 <div class="split-suggestion">@Localizer["Suggestion"]</div>
             }
@@ -112,8 +116,21 @@
     [Parameter]
     public EventCallback<IReadOnlyList<ManagerSplitRangeDraft>> Apply { get; set; }
 
-    protected override async Task OnInitializedAsync() =>
+    protected override async Task OnInitializedAsync()
+    {
+        foreach (var suggestedRange in
+                 Preview.SuggestedRanges)
+        {
+            _ranges.Add(
+                new RangeDraft(
+                    suggestedRange.StartPhysicalPageNumber,
+                    suggestedRange.EndPhysicalPageNumber,
+                    suggestedRange.SuggestedTitle ??
+                    Localizer["DefaultRangeTitle", _ranges.Count + 1]));
+        }
+
         await LoadMoreAsync();
+    }
 
     private async Task LoadMoreAsync()
     {

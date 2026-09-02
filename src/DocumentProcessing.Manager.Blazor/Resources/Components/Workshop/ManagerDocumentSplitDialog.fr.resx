@@ -7,6 +7,7 @@
   <data name="Title" xml:space="preserve"><value>Découper le document</value></data>
   <data name="PageCount" xml:space="preserve"><value>{0} pages physiques</value></data>
   <data name="Suggestion" xml:space="preserve"><value>Ce document est long. Son découpage en unités indépendantes est recommandé.</value></data>
+  <data name="NativeNavigationSuggestion" xml:space="preserve"><value>Une proposition a été préparée à partir du sommaire natif du document. Vérifiez-la avant de l’appliquer.</value></data>
   <data name="PreviewPages" xml:space="preserve"><value>Aperçus des pages physiques</value></data>
   <data name="SelectPage" xml:space="preserve"><value>Sélectionner la page physique {0}</value></data>
   <data name="PagePreviewAlt" xml:space="preserve"><value>Aperçu de la page physique {0}</value></data>
