@@ -79,7 +79,7 @@ public sealed class PostgresManagerPersistenceTests
                 "SELECT MAX(version) FROM document_processing_manager.schema_versions;");
 
         Assert.Equal(
-            10,
+            11,
             Convert.ToInt32(
                 await versionCommand.ExecuteScalarAsync()));
     }
@@ -1744,6 +1744,35 @@ public sealed class PostgresManagerPersistenceTests
         Assert.NotEqual(
             independentConsumer.ClaimToken,
             redelivery.ClaimToken);
+
+        var replay = await context.ResultPublicationStore
+            .ReplaySubmissionAsync(
+                "apologia",
+                workItem.SubmissionId,
+                now.AddMinutes(4));
+
+        Assert.NotNull(replay);
+        Assert.Equal(1, replay.ResultCount);
+
+        var replayedDelivery = await context.ResultPublicationStore
+            .ClaimNextAsync(
+                "apologia",
+                now.AddMinutes(4),
+                now.AddMinutes(5));
+
+        Assert.NotNull(replayedDelivery);
+        Assert.NotEqual(firstDelivery.ClaimToken, replayedDelivery.ClaimToken);
+
+        await using var replayCount = context.DataSource.CreateCommand(
+            """
+            SELECT count(*)
+            FROM document_processing_manager.result_delivery_replay_events
+            WHERE replay_id = @replay_id;
+            """);
+        replayCount.Parameters.AddWithValue("replay_id", replay.ReplayId);
+        Assert.Equal(
+            1L,
+            Convert.ToInt64(await replayCount.ExecuteScalarAsync()));
     }
 
     [PostgresFact]
@@ -2819,6 +2848,7 @@ public sealed class PostgresManagerPersistenceTests
                     document_processing_manager.custody_purge_jobs,
                     document_processing_manager.submission_publication_manifest_units,
                     document_processing_manager.submission_publication_manifests,
+                    document_processing_manager.result_delivery_replay_events,
                     document_processing_manager.result_consumer_deliveries,
                     document_processing_manager.result_available_events,
                     document_processing_manager.processing_results,

@@ -416,6 +416,42 @@ internal sealed class ManagerHostClient(
             $"api/manager/history/{unitId:D}/hide",
             cancellationToken);
 
+    public ValueTask PurgeTerminalProcessingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default) =>
+        PostVersionedUnitCommandAsync(
+            unitId,
+            expectedVersion,
+            $"api/manager/history/{unitId:D}/purge",
+            cancellationToken);
+
+    public async ValueTask ReplaySubmissionDeliveryAsync(
+        Guid submissionId,
+        string consumerId,
+        CancellationToken cancellationToken = default)
+    {
+        if (submissionId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Submission identifier cannot be empty.",
+                nameof(submissionId));
+        }
+
+        if (string.IsNullOrWhiteSpace(consumerId))
+        {
+            throw new ArgumentException(
+                "Consumer identifier cannot be empty.",
+                nameof(consumerId));
+        }
+
+        using var response = await _httpClient.PostAsJsonAsync(
+            $"api/manager/submissions/{submissionId:D}/replay-delivery",
+            new ManagerReplaySubmissionDeliveryRequest(consumerId.Trim()),
+            cancellationToken).ConfigureAwait(false);
+        EnsureSuccess(response);
+    }
+
     private async ValueTask PostVersionedUnitCommandAsync(
         Guid unitId,
         long expectedVersion,

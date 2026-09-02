@@ -1,4 +1,5 @@
 using DocumentProcessing.Manager.Control;
+using DocumentProcessing.Manager.Custody;
 using DocumentProcessing.Manager.History;
 using DocumentProcessing.Manager.Partitioning;
 using DocumentProcessing.Manager.Ports;
@@ -8,6 +9,7 @@ using DocumentProcessing.Manager.Queue;
 using DocumentProcessing.Manager.Runtime;
 using DocumentProcessing.Manager.Settings;
 using DocumentProcessing.Manager.Submissions;
+using DocumentProcessing.Manager.Host.Hosting;
 using DocumentProcessing.Manager.Host.Security;
 using Microsoft.Net.Http.Headers;
 using System.Text.Json;
@@ -36,6 +38,10 @@ internal static class ManagerApi
             "X-Manager-Consumer-Key";
 
     private const string
+        DeliveryReplayApiKeyHeader =
+            "X-Manager-Delivery-Replay-Key";
+
+    private const string
         ResultClaimTokenHeader =
             "X-Result-Claim-Token";
 
@@ -47,8 +53,10 @@ internal static class ManagerApi
         WebApplication application,
         string apiKey,
         string consumerApiKey,
+        string? deliveryReplayApiKey,
         TimeSpan consumerClaimDuration,
-        long maximumSourceBytes)
+        long maximumSourceBytes,
+        bool allowPermanentDeletion)
     {
         ArgumentNullException.ThrowIfNull(
             application);
@@ -164,6 +172,32 @@ internal static class ManagerApi
             HideTerminalQueueUnitAsync);
 
         group.MapPost(
+            "/history/{unitId:guid}/purge",
+            (
+                Guid unitId,
+                QueueVersionRequest request,
+                PurgeTerminalProcessingUnitService purgeService,
+                IProcessingHistoryReader historyReader,
+                IManagerSettingsStore settingsStore,
+                TimeProvider timeProvider,
+                DocumentProcessingManagerRuntime runtime,
+                CancellationToken cancellationToken) =>
+                PurgeTerminalQueueUnitAsync(
+                    unitId,
+                    request,
+                    allowPermanentDeletion,
+                    purgeService,
+                    historyReader,
+                    settingsStore,
+                    timeProvider,
+                    runtime,
+                    cancellationToken));
+
+        group.MapPost(
+            "/submissions/{submissionId:guid}/replay-delivery",
+            ReplaySubmissionDeliveryAsync);
+
+        group.MapPost(
             "/queue/{unitId:guid}/prepare-split",
             PrepareQueueUnitSplitAsync);
 
@@ -221,6 +255,19 @@ internal static class ManagerApi
         consumerGroup.MapGet(
             "/results/{resultReference}/visuals/{**assetId}",
             GetResultVisualAsync);
+
+        if (deliveryReplayApiKey is not null)
+        {
+            application
+                .MapGroup("/api/manager-delivery-administration")
+                .AddEndpointFilter(
+                    new ManagerApiKeyEndpointFilter(
+                        deliveryReplayApiKey,
+                        DeliveryReplayApiKeyHeader))
+                .MapPost(
+                    "/submissions/{submissionId:guid}/replay",
+                    ReplaySubmissionDeliveryAsync);
+        }
 
         application.MapGet(
             "/health/live",
@@ -911,6 +958,81 @@ internal static class ManagerApi
             timeProvider,
             runtime,
             cancellationToken).ConfigureAwait(false);
+
+    private static async Task<IResult> PurgeTerminalQueueUnitAsync(
+        Guid unitId,
+        QueueVersionRequest request,
+        bool allowPermanentDeletion,
+        PurgeTerminalProcessingUnitService purgeService,
+        IProcessingHistoryReader historyReader,
+        IManagerSettingsStore settingsStore,
+        TimeProvider timeProvider,
+        DocumentProcessingManagerRuntime runtime,
+        CancellationToken cancellationToken)
+    {
+        if (!allowPermanentDeletion)
+        {
+            return HttpResults.Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: "Permanent deletion is disabled.",
+                detail: "Enable ManagerHost:AllowPermanentDeletion only in an explicitly authorized environment.");
+        }
+
+        return await ExecuteAdministrativeQueueMutationAsync(
+            async () => await purgeService.PurgeAsync(
+                new PurgeTerminalProcessingUnitCommand(
+                    new ProcessingUnitId(unitId),
+                    request.ExpectedVersion),
+                cancellationToken).ConfigureAwait(false),
+            "manager.processing_unit_purge_rejected",
+            historyReader,
+            settingsStore,
+            timeProvider,
+            runtime,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> ReplaySubmissionDeliveryAsync(
+        Guid submissionId,
+        ReplaySubmissionDeliveryRequest request,
+        IResultDeliveryAdministrationStore deliveryAdministrationStore,
+        IResultAvailabilitySignal resultAvailabilitySignal,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (submissionId == Guid.Empty ||
+            string.IsNullOrWhiteSpace(request.ConsumerId))
+        {
+            return HttpResults.BadRequest(
+                new ApiConflictResponse(
+                    "manager.delivery_replay_invalid",
+                    "Submission and consumer identifiers are required."));
+        }
+
+        var replay = await deliveryAdministrationStore.ReplaySubmissionAsync(
+            request.ConsumerId,
+            new DocumentSubmissionId(submissionId),
+            timeProvider.GetUtcNow(),
+            cancellationToken).ConfigureAwait(false);
+
+        if (replay is null)
+        {
+            return HttpResults.NotFound(
+                new ApiConflictResponse(
+                    "manager.delivery_replay_not_found",
+                    "The submission has no published results to replay."));
+        }
+
+        resultAvailabilitySignal.Notify();
+
+        return HttpResults.Ok(
+            new ReplaySubmissionDeliveryResponse(
+                replay.ReplayId,
+                replay.SubmissionId.Value,
+                replay.ConsumerId,
+                replay.ResultCount,
+                replay.RequestedAtUtc));
+    }
 
     private static async Task<IResult> ExecuteAdministrativeQueueMutationAsync(
         Func<Task> mutation,
@@ -2129,6 +2251,16 @@ internal static class ManagerApi
 
     internal sealed record ResultAcknowledgementRequest(
         Guid ClaimToken);
+
+    internal sealed record ReplaySubmissionDeliveryRequest(
+        string ConsumerId);
+
+    internal sealed record ReplaySubmissionDeliveryResponse(
+        Guid ReplayId,
+        Guid SubmissionId,
+        string ConsumerId,
+        int ResultCount,
+        DateTimeOffset RequestedAtUtc);
 
     internal sealed record ResultAvailableResponse(
         string ResultReference,

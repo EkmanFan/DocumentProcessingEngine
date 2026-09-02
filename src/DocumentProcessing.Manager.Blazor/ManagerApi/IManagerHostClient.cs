@@ -55,6 +55,16 @@ internal interface IManagerHostClient
         long expectedVersion,
         CancellationToken cancellationToken = default);
 
+    ValueTask PurgeTerminalProcessingUnitAsync(
+        Guid unitId,
+        long expectedVersion,
+        CancellationToken cancellationToken = default);
+
+    ValueTask ReplaySubmissionDeliveryAsync(
+        Guid submissionId,
+        string consumerId,
+        CancellationToken cancellationToken = default);
+
     ValueTask PrepareProcessingUnitSplitAsync(
         Guid unitId,
         long expectedVersion,

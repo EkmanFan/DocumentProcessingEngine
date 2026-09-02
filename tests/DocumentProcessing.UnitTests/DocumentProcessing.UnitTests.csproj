@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Manager\DocumentProcessing.Manager.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Manager.Blazor\DocumentProcessing.Manager.Blazor.csproj" />
+    <ProjectReference Include="..\..\src\DocumentProcessing.Manager.Host\DocumentProcessing.Manager.Host.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Engine\DocumentProcessing.Engine.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Pdf\DocumentProcessing.Pdf.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing\DocumentProcessing.csproj" />

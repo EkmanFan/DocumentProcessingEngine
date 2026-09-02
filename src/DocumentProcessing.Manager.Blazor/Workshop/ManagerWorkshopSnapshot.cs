@@ -119,6 +119,7 @@ internal sealed record ManagerWorkshopSnapshot(
 
 internal sealed record ManagerWorkItemView(
     Guid UnitId,
+    Guid SubmissionId,
     string DocumentTitle,
     string OriginalFileName,
     ManagerWorkItemScopeView Scope,
@@ -196,6 +197,7 @@ internal sealed record ManagerWorkItemView(
 
         return new ManagerWorkItemView(
             item.UnitId,
+            item.SubmissionId,
             string.IsNullOrWhiteSpace(
                 documentTitle)
                 ? leafFileName

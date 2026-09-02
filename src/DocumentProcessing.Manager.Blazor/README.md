@@ -12,6 +12,10 @@ export ManagerApi__BaseAddress='http://127.0.0.1:5080'
 export ManagerApi__ApiKey='the-same-at-least-32-character-key-as-the-host'
 # Optional; defaults to 2 GiB and should not exceed the Host custody limit.
 export ManagerApi__MaximumUploadBytes='2147483648'
+# Disabled by default. Enable only where permanent custody deletion is authorized.
+export ManagerApi__AllowPermanentDeletion='false'
+# Optional; displays “Send to Apologia again” for completed submissions.
+export ManagerApi__ReplayConsumerId='apologia-studio'
 # Optional; source streaming defaults to one hour independently of short API calls.
 export ManagerApi__SubmissionTimeoutSeconds='3600'
 # Optional; result streaming through the authenticated Blazor circuit also defaults to one hour.
@@ -38,6 +42,19 @@ PostgreSQL remains available for the next run. The launcher also creates and
 prints the development visual directory that can be selected in Settings.
 
 The API key remains in the server process and is never sent to the browser.
+Permanent deletion is disabled by default in both the UI and Host. The local
+`scripts/run-manager-dev.sh` launcher enables it explicitly for test work. The
+action requires confirmation and removes the terminal processing record,
+result, visuals, audit trail and every source artifact that is not shared by
+another submission. It does not remove copies already imported by downstream
+systems. A production deployment must keep the flag disabled until its
+administrator authorization boundary is configured.
+
+When `ManagerApi:ReplayConsumerId` is configured, a completed item also offers
+“Send to Apologia again”. This reopens every result delivery for the complete
+submission and immediately wakes that consumer. It does not rerun processing,
+duplicate result artifacts or modify Manager custody.
+
 The workshop provides Manager controls, pending, active and completed views,
 and a reusable sprite-animated librarian whose deterministic states follow
 Manager observations. Successful retained results can be streamed from the

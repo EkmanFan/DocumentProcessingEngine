@@ -24,6 +24,8 @@ internal sealed class ManagerHostConfiguration
 
     public string ConsumerApiKey { get; }
 
+    public string? DeliveryReplayApiKey { get; }
+
     public TimeSpan ConsumerClaimDuration { get; }
 
     public string SourceRoot { get; }
@@ -60,6 +62,8 @@ internal sealed class ManagerHostConfiguration
 
     public int ComplexDocumentPageThreshold { get; }
 
+    public bool AllowPermanentDeletion { get; }
+
     #endregion
 
     #region ctor
@@ -68,6 +72,7 @@ internal sealed class ManagerHostConfiguration
         string connectionString,
         string apiKey,
         string consumerApiKey,
+        string? deliveryReplayApiKey,
         TimeSpan consumerClaimDuration,
         string sourceRoot,
         string resultRoot,
@@ -85,7 +90,8 @@ internal sealed class ManagerHostConfiguration
         TimeSpan runtimeLeaseRenewalInterval,
         TimeSpan idlePollingInterval,
         int maximumAttempts,
-        int complexDocumentPageThreshold)
+        int complexDocumentPageThreshold,
+        bool allowPermanentDeletion)
     {
         ConnectionString =
             connectionString;
@@ -95,6 +101,9 @@ internal sealed class ManagerHostConfiguration
 
         ConsumerApiKey =
             consumerApiKey;
+
+        DeliveryReplayApiKey =
+            deliveryReplayApiKey;
 
         ConsumerClaimDuration =
             consumerClaimDuration;
@@ -149,6 +158,9 @@ internal sealed class ManagerHostConfiguration
 
         ComplexDocumentPageThreshold =
             complexDocumentPageThreshold;
+
+        AllowPermanentDeletion =
+            allowPermanentDeletion;
     }
 
     #endregion
@@ -194,6 +206,23 @@ internal sealed class ManagerHostConfiguration
         {
             throw new InvalidOperationException(
                 "Manager UI and consumer API keys must be distinct.");
+        }
+
+        var deliveryReplayApiKey = ReadOptional(
+            configuration["ManagerHost:DeliveryReplayApiKey"]);
+        if (deliveryReplayApiKey is not null &&
+            deliveryReplayApiKey.Length < 32)
+        {
+            throw new InvalidOperationException(
+                "ManagerHost:DeliveryReplayApiKey must contain at least 32 characters when configured.");
+        }
+
+        if (deliveryReplayApiKey is not null &&
+            (string.Equals(deliveryReplayApiKey, apiKey, StringComparison.Ordinal) ||
+             string.Equals(deliveryReplayApiKey, consumerApiKey, StringComparison.Ordinal)))
+        {
+            throw new InvalidOperationException(
+                "The delivery replay API key must be distinct from the Manager UI and consumer keys.");
         }
 
         var sourceRoot =
@@ -257,6 +286,7 @@ internal sealed class ManagerHostConfiguration
             connectionString,
             apiKey,
             consumerApiKey,
+            deliveryReplayApiKey,
             ReadPositiveDuration(
                 configuration,
                 "ManagerHost:ConsumerClaimSeconds",
@@ -309,7 +339,9 @@ internal sealed class ManagerHostConfiguration
                 configuration,
                 "ManagerHost:ComplexDocumentPageThreshold",
                 defaultValue:
-                    DocumentProcessingSplitPreviewProvider.DefaultComplexDocumentPageThreshold));
+                    DocumentProcessingSplitPreviewProvider.DefaultComplexDocumentPageThreshold),
+            configuration.GetValue<bool>(
+                "ManagerHost:AllowPermanentDeletion"));
     }
 
     #endregion

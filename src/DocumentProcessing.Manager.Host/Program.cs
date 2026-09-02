@@ -38,6 +38,9 @@ public static class Program
         var configuration =
             ManagerHostConfiguration.Load(
                 builder.Configuration);
+        var notificationOptions =
+            ResultNotificationOptions.Load(
+                builder.Configuration);
 
         builder.WebHost.ConfigureKestrel(
             options =>
@@ -54,7 +57,8 @@ public static class Program
 
         ConfigureServices(
             builder.Services,
-            configuration);
+            configuration,
+            notificationOptions);
 
         var application =
             builder.Build();
@@ -65,8 +69,10 @@ public static class Program
             application,
             configuration.ApiKey,
             configuration.ConsumerApiKey,
+            configuration.DeliveryReplayApiKey,
             configuration.ConsumerClaimDuration,
-            configuration.MaximumSourceBytes);
+            configuration.MaximumSourceBytes,
+            configuration.AllowPermanentDeletion);
 
         await application.Services
             .GetRequiredService<PostgresManagerSchema>()
@@ -85,10 +91,12 @@ public static class Program
 
     private static void ConfigureServices(
         IServiceCollection services,
-        ManagerHostConfiguration configuration)
+        ManagerHostConfiguration configuration,
+        ResultNotificationOptions notificationOptions)
     {
         services.AddSingleton(
             configuration);
+        services.AddSingleton(notificationOptions);
 
         services.AddSingleton(
             TimeProvider.System);
@@ -147,10 +155,21 @@ public static class Program
                 provider.GetRequiredService<PostgresProcessingResultRegistry>());
         services.AddSingleton<IProcessingResultRegistryWriter>(
             provider =>
-                provider.GetRequiredService<PostgresProcessingResultRegistry>());
+                new NotifyingProcessingResultRegistryWriter(
+                    provider.GetRequiredService<PostgresProcessingResultRegistry>(),
+                    provider.GetRequiredService<IResultAvailabilitySignal>()));
+
+        services.AddSingleton<ResultAvailabilitySignal>();
+        services.AddSingleton<IResultAvailabilitySignal>(
+            provider => provider.GetRequiredService<ResultAvailabilitySignal>());
+        services.AddHttpClient("ManagerResultNotifications");
+        services.AddHostedService<ResultAvailabilityNotificationHostedService>();
 
         services.AddSingleton<PostgresResultPublicationStore>();
         services.AddSingleton<IResultPublicationStore>(
+            provider =>
+                provider.GetRequiredService<PostgresResultPublicationStore>());
+        services.AddSingleton<IResultDeliveryAdministrationStore>(
             provider =>
                 provider.GetRequiredService<PostgresResultPublicationStore>());
 

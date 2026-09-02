@@ -132,6 +132,9 @@ internal sealed record ManagerQueueRetryRequest(
 internal sealed record ManagerQueueVersionRequest(
     long ExpectedVersion);
 
+internal sealed record ManagerReplaySubmissionDeliveryRequest(
+    string ConsumerId);
+
 public sealed record ManagerSplitPreviewContract(
     Guid UnitId,
     Guid SubmissionId,

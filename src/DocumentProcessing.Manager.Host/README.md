@@ -10,6 +10,8 @@ Required configuration:
 export ConnectionStrings__ManagerPostgres='Host=127.0.0.1;Port=5432;Database=dpengine_manager;Username=...;Password=...'
 export ManagerHost__ApiKey='replace-with-at-least-32-random-characters'
 export ManagerHost__ConsumerApiKey='replace-with-a-distinct-32-character-service-key'
+# Optional; enables a narrowly authenticated downstream redelivery endpoint.
+export ManagerHost__DeliveryReplayApiKey='replace-with-a-third-distinct-32-character-key'
 export ManagerHost__SourceRoot='/absolute/custody/sources'
 export ManagerHost__ResultRoot='/absolute/custody/results'
 ```
@@ -84,6 +86,24 @@ Content and visual reads require both `X-Consumer-Id` and the active
 `X-Result-Claim-Token`. See
 [`Result Publication V1`](../../docs/integration/result-publication-v1.md) for
 the complete downstream transaction and integrity contract.
+
+The Host can wake configured consumers without replacing this durable
+protocol. Each observer under `ManagerNotifications:Observers` has a stable
+`ConsumerId`, an HTTPS callback URL (loopback HTTP is accepted for development)
+and a distinct shared secret. After durable result registration, the Host sends
+a small HMAC-SHA256-signed “results may be available” callback and retries it on
+failure. Startup and periodic reconciliation callbacks provide a five-minute
+default safety net. No document bytes or result reference are included in the
+notification.
+
+An administrator can reopen every acknowledged delivery for one submission
+without rerunning DPEngine or changing custody. The operation clears only the
+selected consumer's delivery state, appends a replay audit event and wakes the
+consumer. Cross-application callers use
+`POST /api/manager-delivery-administration/submissions/{submissionId}/replay`
+with `X-Manager-Delivery-Replay-Key`; the endpoint exists only when
+`ManagerHost:DeliveryReplayApiKey` is configured. See the publication contract
+for the request body and idempotence requirements.
 
 Manager settings persist the default submission behavior, an absolute
 visual-destination directory and the number of days terminal work remains in

@@ -106,6 +106,7 @@ public sealed class ManagerWorkshopAnimationTrackerTests
         ManagerQueueItemStatus status) =>
         new(
             Guid.NewGuid(),
+            Guid.NewGuid(),
             "document",
             "document.pdf",
             new ManagerWorkItemScopeView(

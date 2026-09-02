@@ -20,6 +20,9 @@ HOST_URL="http://127.0.0.1:${HOST_PORT}"
 UI_URL="http://127.0.0.1:${UI_PORT}"
 API_KEY="${DPE_MANAGER_API_KEY:-dpengine-manager-local-development-key-2026}"
 CONSUMER_API_KEY="${DPE_MANAGER_CONSUMER_API_KEY:-dpengine-consumer-local-development-key-2026}"
+NOTIFICATION_SHARED_SECRET="${DPE_MANAGER_NOTIFICATION_SHARED_SECRET:-dpengine-notification-local-development-key-2026}"
+DELIVERY_REPLAY_API_KEY="${DPE_MANAGER_DELIVERY_REPLAY_API_KEY:-dpengine-delivery-replay-local-development-key-2026}"
+APOLOGIA_NOTIFICATION_URL="${DPE_APOLOGIA_NOTIFICATION_URL:-http://127.0.0.1:5090/internal/document-manager/result-available}"
 CUSTODY_ROOT="${DPE_MANAGER_CUSTODY_ROOT:-${REPO_ROOT}/tests/document_manager_custody}"
 SOURCE_ROOT="${CUSTODY_ROOT}/sources"
 RESULT_ROOT="${CUSTODY_ROOT}/results"
@@ -137,6 +140,9 @@ docker info >/dev/null 2>&1 ||
 [[ -f "$HOST_PROJECT" ]] || fail "Manager Host project not found: $HOST_PROJECT"
 [[ -f "$UI_PROJECT" ]] || fail "Manager Blazor project not found: $UI_PROJECT"
 [[ "${#API_KEY}" -ge 32 ]] || fail "DPE_MANAGER_API_KEY must contain at least 32 characters."
+[[ "${#CONSUMER_API_KEY}" -ge 32 ]] || fail "DPE_MANAGER_CONSUMER_API_KEY must contain at least 32 characters."
+[[ "${#NOTIFICATION_SHARED_SECRET}" -ge 32 ]] || fail "DPE_MANAGER_NOTIFICATION_SHARED_SECRET must contain at least 32 characters."
+[[ "${#DELIVERY_REPLAY_API_KEY}" -ge 32 ]] || fail "DPE_MANAGER_DELIVERY_REPLAY_API_KEY must contain at least 32 characters."
 [[ "$POSTGRES_DATA_ROOT" == /* ]] || fail "DPE_MANAGER_POSTGRES_DATA_ROOT must be an absolute container path."
 
 require_positive_port "DPE_MANAGER_POSTGRES_PORT" "$POSTGRES_PORT"
@@ -188,8 +194,15 @@ env \
   ConnectionStrings__ManagerPostgres="$CONNECTION_STRING" \
   ManagerHost__ApiKey="$API_KEY" \
   ManagerHost__ConsumerApiKey="$CONSUMER_API_KEY" \
+  ManagerHost__DeliveryReplayApiKey="$DELIVERY_REPLAY_API_KEY" \
   ManagerHost__SourceRoot="$SOURCE_ROOT" \
   ManagerHost__ResultRoot="$RESULT_ROOT" \
+  ManagerHost__AllowPermanentDeletion=true \
+  ManagerNotifications__Observers__0__ConsumerId=apologia-studio \
+  ManagerNotifications__Observers__0__CallbackUrl="$APOLOGIA_NOTIFICATION_URL" \
+  ManagerNotifications__Observers__0__SharedSecret="$NOTIFICATION_SHARED_SECRET" \
+  ManagerNotifications__ReconciliationSeconds=300 \
+  ManagerNotifications__RetrySeconds=10 \
   dotnet run \
     --project "$HOST_PROJECT" \
     --no-launch-profile &
@@ -208,6 +221,8 @@ env \
   ASPNETCORE_URLS="$UI_URL" \
   ManagerApi__BaseAddress="$HOST_URL" \
   ManagerApi__ApiKey="$API_KEY" \
+  ManagerApi__AllowPermanentDeletion=true \
+  ManagerApi__ReplayConsumerId=apologia-studio \
   dotnet run \
     --project "$UI_PROJECT" \
     --no-launch-profile &

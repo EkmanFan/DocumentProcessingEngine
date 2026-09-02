@@ -9,6 +9,41 @@ fences the active lease and changes its processing unit to `Succeeded`. A
 consumer therefore cannot observe an event for a non-terminal unit. Delivery is
 at-least-once and isolated by stable consumer identifier.
 
+## Availability notification
+
+The durable claim/ack contract remains the source of truth. To avoid continuous
+downstream polling, the Host can additionally notify a configured observer
+after a result has been durably registered:
+
+```http
+POST <configured callback URL>
+X-Manager-Notification-Signature: sha256=<HMAC-SHA256>
+Content-Type: application/json
+
+{
+  "notificationId": "00000000-0000-0000-0000-000000000000",
+  "consumerId": "apologia-studio",
+  "occurredAtUtc": "2026-09-02T20:00:00Z"
+}
+```
+
+The HMAC covers the exact UTF-8 request body and uses a per-observer shared
+secret of at least 32 characters. Callback URLs require HTTPS, except for
+loopback development. The notification deliberately contains no result
+reference or document data: it is only a wake-up hint. After accepting it, the
+consumer drains the normal claim/download/verify/persist/ack API until it
+receives HTTP 204.
+
+Delivery of the hint is retried until the observer accepts it. The Host also
+sends a reconciliation hint at startup and every five minutes by default, so a
+lost callback cannot strand a durable result. Duplicate hints are harmless.
+
+Configuration uses `ManagerNotifications:Observers` with `ConsumerId`,
+`CallbackUrl` and `SharedSecret`, plus optional
+`ManagerNotifications:ReconciliationSeconds` and
+`ManagerNotifications:RetrySeconds` values. Notification credentials are
+distinct from the consumer API key.
+
 The canonical JSON remains the content-addressed result artifact. When a visual
 destination is configured, the filesystem adapter also publishes this readable
 export by staging and one atomic directory rename:
@@ -87,6 +122,34 @@ ACK is idempotent for the same consumer and token. It must not occur before the
 downstream transaction commits. An expired, unacknowledged claim becomes
 claimable again with a new token. An ACK from another consumer, another token or
 an expired attempt is rejected.
+
+## Administrative redelivery
+
+Redelivery reopens the existing delivery records for every published result of
+one `SubmissionId`; it does not rerun DPEngine, create new result references or
+alter Manager custody. The Manager clears the selected consumer's claims and
+acknowledgements in one transaction, records a durable replay audit event, then
+sends the normal availability notification.
+
+Apologia uses the narrowly authenticated endpoint:
+
+```http
+POST /api/manager-delivery-administration/submissions/{submissionId}/replay
+X-Manager-Delivery-Replay-Key: <distinct administration credential>
+Content-Type: application/json
+
+{"consumerId":"apologia-studio"}
+```
+
+The Manager UI can request the same operation through its authenticated
+administrative API. `ManagerHost:DeliveryReplayApiKey` is optional, must contain
+at least 32 characters and must differ from the UI and consumer credentials.
+When it is absent, the narrow cross-application endpoint is not mapped.
+
+This operation is intentionally at-least-once. A consumer must therefore keep
+the same `ResultReference` idempotence and digest checks used for ordinary
+delivery. A replay audit row is removed only if the submission itself is later
+purged from Manager custody.
 
 ## Downstream idempotence
 

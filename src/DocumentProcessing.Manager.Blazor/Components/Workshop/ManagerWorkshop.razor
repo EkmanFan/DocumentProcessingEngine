@@ -355,6 +355,15 @@
                                                         ? Localizer["DownloadingResult"]
                                                         : Localizer["DownloadResult"])
                                                 </button>
+                                                @if (Options.ReplayConsumerId is not null)
+                                                {
+                                                    <button type="button"
+                                                            disabled="@_commandRunning"
+                                                            title="@(Localizer["ReplayDeliveryLabel", item.DocumentTitle])"
+                                                            @onclick="() => ReplaySubmissionDeliveryAsync(item)">
+                                                        @Localizer["ReplayDelivery"]
+                                                    </button>
+                                                }
                                             }
                                             else
                                             {
@@ -373,8 +382,11 @@
                                             </button>
                                             <button class="destructive-action"
                                                     type="button"
-                                                    disabled
-                                                    title="@(Localizer["PurgeAdminUnavailableLabel"])">
+                                                    disabled="@(_commandRunning || !Options.AllowPermanentDeletion)"
+                                                    title="@(Options.AllowPermanentDeletion
+                                                        ? Localizer["PurgeProcessedLabel", item.DocumentTitle]
+                                                        : Localizer["PurgeAdminUnavailableLabel"])"
+                                                    @onclick="() => PurgeTerminalProcessingUnitAsync(item)">
                                                 @Localizer["PurgeProcessed"]
                                             </button>
                                         </div>
@@ -623,6 +635,15 @@
                                                         @onclick="() => DownloadResultAsync(item)">
                                                     @(_downloadingResultUnitId == item.UnitId ? Localizer["DownloadingResult"] : Localizer["DownloadResult"])
                                                 </button>
+                                                @if (Options.ReplayConsumerId is not null)
+                                                {
+                                                    <button type="button"
+                                                            disabled="@_commandRunning"
+                                                            title="@(Localizer["ReplayDeliveryLabel", item.DocumentTitle])"
+                                                            @onclick="() => ReplaySubmissionDeliveryAsync(item)">
+                                                        @Localizer["ReplayDelivery"]
+                                                    </button>
+                                                }
                                             }
                                             <button type="button"
                                                     disabled="@_commandRunning"
@@ -632,8 +653,11 @@
                                             </button>
                                             <button class="destructive-action"
                                                     type="button"
-                                                    disabled
-                                                    title="@(Localizer["PurgeAdminUnavailableLabel"])">
+                                                    disabled="@(_commandRunning || !Options.AllowPermanentDeletion)"
+                                                    title="@(Options.AllowPermanentDeletion
+                                                        ? Localizer["PurgeProcessedLabel", item.DocumentTitle]
+                                                        : Localizer["PurgeAdminUnavailableLabel"])"
+                                                    @onclick="() => PurgeTerminalProcessingUnitAsync(item)">
                                                 @Localizer["PurgeProcessed"]
                                             </button>
                                         </div>
@@ -2015,6 +2039,57 @@
         {
             await LoadArchivePageAsync(_archivePage?.Offset ?? 0);
         }
+    }
+
+    private async Task PurgeTerminalProcessingUnitAsync(
+        ManagerWorkItemView item)
+    {
+        if (_snapshot is null ||
+            !Options.AllowPermanentDeletion ||
+            !await ConfirmAsync(
+                "PurgeProcessedConfirmation",
+                item.DocumentTitle))
+        {
+            return;
+        }
+
+        var expectedVersion =
+            _snapshot.QueueVersion;
+
+        await ExecuteQueueMutationAsync(
+            cancellationToken =>
+                ManagerClient.PurgeTerminalProcessingUnitAsync(
+                    item.UnitId,
+                    expectedVersion,
+                    cancellationToken),
+            "purge-terminal");
+
+        if (_archiveOpen && _error is null)
+        {
+            await LoadArchivePageAsync(
+                _archivePage?.Offset ??
+                0);
+        }
+    }
+
+    private async Task ReplaySubmissionDeliveryAsync(
+        ManagerWorkItemView item)
+    {
+        if (Options.ReplayConsumerId is null ||
+            !await ConfirmAsync(
+                "ReplayDeliveryConfirmation",
+                item.DocumentTitle))
+        {
+            return;
+        }
+
+        await ExecuteQueueMutationAsync(
+            cancellationToken =>
+                ManagerClient.ReplaySubmissionDeliveryAsync(
+                    item.SubmissionId,
+                    Options.ReplayConsumerId,
+                    cancellationToken),
+            "replay-delivery");
     }
 
     private async ValueTask<bool> ConfirmAsync(

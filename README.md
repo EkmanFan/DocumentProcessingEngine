@@ -74,6 +74,12 @@ Open `http://127.0.0.1:5092` and press `Ctrl+C` when finished. The Host and UI
 are stopped together; the PostgreSQL container and its named volume remain
 available for the next run. The launcher creates a `visuals` directory below
 the development custody root and prints the path to select in Manager Settings.
+For local testing it also enables the confirmed **Delete permanently** action;
+production configuration keeps that custody purge disabled by default until
+administrator authorization is available.
+The launcher also registers the local Apologia Studio callback. When a result
+becomes durable, the Manager wakes Apologia on port `5090`; failed callbacks are
+retried and a five-minute reconciliation remains as a safety net.
 `DPE_MANAGER_*` environment variables can override the development ports,
 credentials, API key, container names and custody root.
 

@@ -790,6 +790,28 @@ public sealed class PostgresManagerSchema
                     (submission_id, revision DESC);
             """;
 
+    private const string
+        MigrationElevenSql =
+            """
+            CREATE TABLE document_processing_manager.result_delivery_replay_events
+            (
+                replay_id uuid PRIMARY KEY,
+                submission_id uuid NOT NULL
+                    REFERENCES document_processing_manager.document_submissions
+                        (submission_id)
+                    ON DELETE CASCADE,
+                consumer_id text NOT NULL
+                    CHECK (length(consumer_id) > 0),
+                result_count integer NOT NULL
+                    CHECK (result_count > 0),
+                requested_at_utc timestamp with time zone NOT NULL
+            );
+
+            CREATE INDEX ix_result_delivery_replay_events_submission
+                ON document_processing_manager.result_delivery_replay_events
+                    (submission_id, requested_at_utc DESC);
+            """;
+
     private static readonly Migration[]
         Migrations =
         [
@@ -832,7 +854,11 @@ public sealed class PostgresManagerSchema
             new(
                 Version:
                     10,
-                MigrationTenSql)
+                MigrationTenSql),
+            new(
+                Version:
+                    11,
+                MigrationElevenSql)
         ];
 
     private readonly NpgsqlDataSource

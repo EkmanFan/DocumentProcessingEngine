@@ -29,6 +29,10 @@ internal sealed class ManagerApiOptions
 
     public long MaximumUploadBytes { get; }
 
+    public bool AllowPermanentDeletion { get; }
+
+    public string? ReplayConsumerId { get; }
+
     #endregion
 
     #region ctor
@@ -40,7 +44,9 @@ internal sealed class ManagerApiOptions
         TimeSpan requestTimeout,
         TimeSpan submissionTimeout,
         TimeSpan resultDownloadTimeout,
-        long maximumUploadBytes)
+        long maximumUploadBytes,
+        bool allowPermanentDeletion,
+        string? replayConsumerId)
     {
         BaseAddress =
             baseAddress;
@@ -62,6 +68,14 @@ internal sealed class ManagerApiOptions
 
         MaximumUploadBytes =
             maximumUploadBytes;
+
+        AllowPermanentDeletion =
+            allowPermanentDeletion;
+
+        ReplayConsumerId =
+            string.IsNullOrWhiteSpace(replayConsumerId)
+                ? null
+                : replayConsumerId.Trim();
     }
 
     #endregion
@@ -137,7 +151,10 @@ internal sealed class ManagerApiOptions
             ReadPositiveLong(
                 configuration,
                 "ManagerApi:MaximumUploadBytes",
-                DefaultMaximumUploadBytes));
+                DefaultMaximumUploadBytes),
+            configuration.GetValue<bool>(
+                "ManagerApi:AllowPermanentDeletion"),
+            configuration["ManagerApi:ReplayConsumerId"]);
     }
 
     #endregion

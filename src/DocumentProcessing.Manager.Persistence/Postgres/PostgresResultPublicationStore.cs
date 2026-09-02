@@ -12,7 +12,8 @@ namespace DocumentProcessing.Manager.Persistence.Postgres;
 /// PostgreSQL adapter for durable at-least-once result publication.
 /// </summary>
 public sealed class PostgresResultPublicationStore
-    : IResultPublicationStore
+    : IResultPublicationStore,
+      IResultDeliveryAdministrationStore
 {
     #region Variables and Constants
 
@@ -206,6 +207,101 @@ public sealed class PostgresResultPublicationStore
         command.Parameters.AddWithValue("observed_at_utc", NpgsqlDbType.TimestampTz, observedAtUtc.ToUniversalTime());
 
         return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is true;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<ResultDeliveryReplay?> ReplaySubmissionAsync(
+        string consumerId,
+        DocumentSubmissionId submissionId,
+        DateTimeOffset requestedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        consumerId = ValidateConsumerId(consumerId);
+        if (submissionId.Value == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Submission identifier cannot be empty.",
+                nameof(submissionId));
+        }
+
+        var replayId = Guid.NewGuid();
+
+        await using var connection = await _dataSource
+            .OpenConnectionAsync(cancellationToken)
+            .ConfigureAwait(false);
+        await using var transaction = await connection
+            .BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+            .ConfigureAwait(false);
+        await using var command = new NpgsqlCommand(
+            """
+            WITH replayed AS
+            (
+                INSERT INTO document_processing_manager.result_consumer_deliveries
+                    (consumer_id, result_reference,
+                     claim_token, claim_expires_at_utc, acknowledged_at_utc)
+                SELECT @consumer_id, event.result_reference,
+                    NULL, NULL, NULL
+                FROM document_processing_manager.result_available_events AS event
+                INNER JOIN document_processing_manager.processing_results AS result
+                    ON result.result_reference = event.result_reference
+                WHERE result.submission_id = @submission_id
+                ON CONFLICT (consumer_id, result_reference)
+                DO UPDATE SET
+                    claim_token = NULL,
+                    claim_expires_at_utc = NULL,
+                    acknowledged_at_utc = NULL
+                RETURNING result_reference
+            ), recorded AS
+            (
+                INSERT INTO document_processing_manager.result_delivery_replay_events
+                    (replay_id, submission_id, consumer_id,
+                     result_count, requested_at_utc)
+                SELECT @replay_id, @submission_id, @consumer_id,
+                    count(*)::integer, @requested_at_utc
+                FROM replayed
+                HAVING count(*) > 0
+                RETURNING result_count
+            )
+            SELECT result_count
+            FROM recorded;
+            """,
+            connection,
+            transaction);
+        command.Parameters.AddWithValue(
+            "consumer_id",
+            NpgsqlDbType.Text,
+            consumerId);
+        command.Parameters.AddWithValue(
+            "submission_id",
+            NpgsqlDbType.Uuid,
+            submissionId.Value);
+        command.Parameters.AddWithValue(
+            "replay_id",
+            NpgsqlDbType.Uuid,
+            replayId);
+        command.Parameters.AddWithValue(
+            "requested_at_utc",
+            NpgsqlDbType.TimestampTz,
+            requestedAtUtc.ToUniversalTime());
+
+        var result = await command.ExecuteScalarAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (result is null)
+        {
+            await transaction.RollbackAsync(cancellationToken)
+                .ConfigureAwait(false);
+            return null;
+        }
+
+        await transaction.CommitAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return new ResultDeliveryReplay(
+            replayId,
+            submissionId,
+            consumerId,
+            Convert.ToInt32(result),
+            requestedAtUtc.ToUniversalTime());
     }
 
     private static async ValueTask<ResultAvailableDelivery> ReadDeliveryAsync(

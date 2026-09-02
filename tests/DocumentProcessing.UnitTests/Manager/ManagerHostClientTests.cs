@@ -147,6 +147,7 @@ public sealed class ManagerHostClientTests
     [Theory]
     [InlineData("remove")]
     [InlineData("hide")]
+    [InlineData("purge")]
     public async Task AdministrativeUnitCommandAsync_SendsVersionedCommand(
         string operation)
     {
@@ -159,16 +160,23 @@ public sealed class ManagerHostClientTests
         {
             await managerClient.RemovePendingProcessingUnitAsync(unitId, expectedVersion: 14);
         }
-        else
+        else if (operation == "hide")
         {
             await managerClient.HideTerminalProcessingUnitAsync(unitId, expectedVersion: 14);
+        }
+        else
+        {
+            await managerClient.PurgeTerminalProcessingUnitAsync(unitId, expectedVersion: 14);
         }
 
         Assert.Equal(HttpMethod.Post, handler.Method);
         Assert.Equal(
-            operation == "remove"
-                ? $"http://manager.local/api/manager/queue/{unitId:D}/remove"
-                : $"http://manager.local/api/manager/history/{unitId:D}/hide",
+            operation switch
+            {
+                "remove" => $"http://manager.local/api/manager/queue/{unitId:D}/remove",
+                "hide" => $"http://manager.local/api/manager/history/{unitId:D}/hide",
+                _ => $"http://manager.local/api/manager/history/{unitId:D}/purge"
+            },
             handler.RequestUri?.AbsoluteUri);
 
         using var document = JsonDocument.Parse(handler.Content);
@@ -190,6 +198,29 @@ public sealed class ManagerHostClientTests
 
         using var document = JsonDocument.Parse(handler.Content);
         Assert.Equal(18, document.RootElement.GetProperty("expectedVersion").GetInt64());
+    }
+
+    [Fact]
+    public async Task ReplaySubmissionDeliveryAsync_SendsSubmissionAndConsumer()
+    {
+        var submissionId = Guid.NewGuid();
+        var handler = new RecordingHandler();
+        using var client = CreateClient(handler);
+
+        await new ManagerHostClient(client)
+            .ReplaySubmissionDeliveryAsync(
+                submissionId,
+                "apologia-studio");
+
+        Assert.Equal(HttpMethod.Post, handler.Method);
+        Assert.Equal(
+            $"http://manager.local/api/manager/submissions/{submissionId:D}/replay-delivery",
+            handler.RequestUri?.AbsoluteUri);
+
+        using var document = JsonDocument.Parse(handler.Content);
+        Assert.Equal(
+            "apologia-studio",
+            document.RootElement.GetProperty("consumerId").GetString());
     }
 
     [Fact]
