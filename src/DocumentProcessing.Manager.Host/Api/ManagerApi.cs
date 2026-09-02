@@ -574,6 +574,7 @@ internal static class ManagerApi
     private static async Task<IResult> GetQueueAsync(
         IProcessingHistoryReader historyReader,
         IManagerSettingsStore settingsStore,
+        IProcessingProgressReader progressReader,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -587,7 +588,8 @@ internal static class ManagerApi
 
         return HttpResults.Ok(
             ToResponse(
-                snapshot));
+                snapshot,
+                progressReader));
     }
 
     private static async Task<IResult> SearchArchiveAsync(
@@ -1458,12 +1460,16 @@ internal static class ManagerApi
             settings.CompletedRetentionDays);
 
     private static ProcessingQueueResponse ToResponse(
-        ProcessingQueueSnapshot snapshot) =>
+        ProcessingQueueSnapshot snapshot,
+        IProcessingProgressReader? progressReader = null) =>
         new(
             snapshot.Version,
             snapshot.Items
                 .Select(
-                    ToResponse)
+                    item =>
+                        ToResponse(
+                            item,
+                            progressReader))
                 .ToArray());
 
     private static ProcessingArchiveResponse ToResponse(
@@ -1474,12 +1480,23 @@ internal static class ManagerApi
             page.Limit,
             page.Items
                 .Select(
-                    ToResponse)
+                    item =>
+                        ToResponse(
+                            item))
                 .ToArray());
 
     private static ProcessingQueueItemResponse ToResponse(
-        ProcessingQueueItemSnapshot item) =>
-        new(
+        ProcessingQueueItemSnapshot item,
+        IProcessingProgressReader? progressReader = null)
+    {
+        var progress =
+            item.Status ==
+                ProcessingUnitStatus.Active
+                ? progressReader?.TryGet(
+                    item.WorkItem.UnitId)
+                : null;
+
+        return new ProcessingQueueItemResponse(
             item.WorkItem.UnitId.Value,
             item.WorkItem.SubmissionId.Value,
             item.OriginalFileName,
@@ -1494,7 +1511,16 @@ internal static class ManagerApi
             item.LastFailure?.Message,
             item.LastInterruptionReason,
             item.CreatedAtUtc,
-            item.UpdatedAtUtc);
+            item.UpdatedAtUtc,
+            progress is null
+                ? null
+                : new ProcessingProgressResponse(
+                    progress.Stage,
+                    progress.CompletionPercentage,
+                    progress.CompletedUnitCount,
+                    progress.TotalUnitCount,
+                    progress.UpdatedAtUtc));
+    }
 
     private static async ValueTask<ProcessingQueueSnapshot> GetRecentSnapshotAsync(
         IProcessingHistoryReader historyReader,
@@ -2061,6 +2087,14 @@ internal static class ManagerApi
         string? LastFailureMessage,
         ProcessingInterruptionReason? LastInterruptionReason,
         DateTimeOffset CreatedAtUtc,
+        DateTimeOffset UpdatedAtUtc,
+        ProcessingProgressResponse? Progress);
+
+    internal sealed record ProcessingProgressResponse(
+        ProcessingProgressStage Stage,
+        int CompletionPercentage,
+        int? CompletedUnitCount,
+        int? TotalUnitCount,
         DateTimeOffset UpdatedAtUtc);
 
     internal sealed record ProcessingScopeResponse(

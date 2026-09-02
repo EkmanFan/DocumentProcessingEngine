@@ -48,6 +48,17 @@
   <data name="ActiveTitle" xml:space="preserve"><value>En cours</value></data>
   <data name="ActiveBadge" xml:space="preserve"><value>Actif</value></data>
   <data name="NoActiveTitle" xml:space="preserve"><value>Aucun traitement en cours</value></data>
+  <data name="ProcessingProgressAriaLabel" xml:space="preserve"><value>Progression du traitement de {0}</value></data>
+  <data name="ProgressLoadingSource" xml:space="preserve"><value>Chargement de la source</value></data>
+  <data name="ProgressPreparingSource" xml:space="preserve"><value>Préparation du document</value></data>
+  <data name="ProgressInspectingFormat" xml:space="preserve"><value>Inspection du format et du contenu natif</value></data>
+  <data name="ProgressPlanning" xml:space="preserve"><value>Planification du traitement</value></data>
+  <data name="ProgressAnalyzingContent" xml:space="preserve"><value>Analyse du contenu</value></data>
+  <data name="ProgressProcessingContent" xml:space="preserve"><value>Traitement du contenu</value></data>
+  <data name="ProgressAssemblingResult" xml:space="preserve"><value>Assemblage du résultat</value></data>
+  <data name="ProgressStoringResult" xml:space="preserve"><value>Enregistrement du résultat</value></data>
+  <data name="ProgressPublishingResult" xml:space="preserve"><value>Publication du résultat</value></data>
+  <data name="ProgressWithUnits" xml:space="preserve"><value>{0} · {1}/{2}</value></data>
   <data name="SequentialProcessingDetail" xml:space="preserve"><value>Un seul document est traité à la fois</value></data>
   <data name="CompletedKicker" xml:space="preserve"><value>Archives récentes</value></data>
   <data name="CompletedTitle" xml:space="preserve"><value>Traités</value></data>

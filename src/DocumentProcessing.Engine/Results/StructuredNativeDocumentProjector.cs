@@ -4,6 +4,7 @@ using DocumentProcessing.Core.Documents;
 using DocumentProcessing.Core.Documents.Notes;
 using DocumentProcessing.Core.Layout;
 using DocumentProcessing.Core.Normalization;
+using DocumentProcessing.Core.Orchestration;
 using DocumentProcessing.Core.Planning;
 using DocumentProcessing.Core.Provenance;
 using DocumentProcessing.Core.Results;
@@ -43,6 +44,7 @@ internal static class StructuredNativeDocumentProjector
         IPageLayoutAnalyzer layoutAnalyzer,
         ProcessingComponentIdentity layoutAnalysisIdentity,
         bool qualifyUnresolvedVisuals,
+        Action<DocumentProcessingProgress>? progressReporter,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(
@@ -117,9 +119,39 @@ internal static class StructuredNativeDocumentProjector
             new Dictionary<DocumentProcessing.Core.Locations.DocumentSourceLocation,
                 string>();
 
-        foreach (var unit in
-                 evidence.ContentUnits)
+        if (evidence.ContentUnits.Count >
+            0)
         {
+            ReportProgress(
+                progressReporter,
+                DocumentProcessingProgressStage.ProcessingContent,
+                completionPercentage:
+                    35,
+                completedUnitCount:
+                    0,
+                totalUnitCount:
+                    evidence.ContentUnits.Count);
+        }
+
+        for (var unitIndex = 0;
+             unitIndex <
+             evidence.ContentUnits.Count;
+             unitIndex++)
+        {
+            var unit =
+                evidence.ContentUnits[unitIndex];
+
+            ReportProgress(
+                progressReporter,
+                DocumentProcessingProgressStage.ProcessingContent,
+                InterpolatePercentage(
+                    35,
+                    82,
+                    unitIndex,
+                    evidence.ContentUnits.Count),
+                unitIndex,
+                evidence.ContentUnits.Count);
+
             if (unit.IsPresentationOnly)
             {
                 continue;
@@ -289,9 +321,25 @@ internal static class StructuredNativeDocumentProjector
                     [
                         DocumentTextSourceKind.Native
                     ],
-                    hasUnresolvedEvidence:
-                        false));
+                hasUnresolvedEvidence:
+                    false));
         }
+
+        ReportProgress(
+            progressReporter,
+            DocumentProcessingProgressStage.ProcessingContent,
+            completionPercentage:
+                82,
+            completedUnitCount:
+                evidence.ContentUnits.Count >
+                0
+                    ? evidence.ContentUnits.Count
+                    : null,
+            totalUnitCount:
+                evidence.ContentUnits.Count >
+                0
+                    ? evidence.ContentUnits.Count
+                    : null);
 
         var preservableVisuals =
             evidence.Visuals
@@ -331,10 +379,25 @@ internal static class StructuredNativeDocumentProjector
                 new PaddleStructuredVisualEvidenceAnalyzer(
                     layoutAnalyzer);
 
-            foreach (var candidate in
-                     preservableVisuals)
+            ReportProgress(
+                progressReporter,
+                DocumentProcessingProgressStage.AnalyzingContent,
+                completionPercentage:
+                    82,
+                completedUnitCount:
+                    0,
+                totalUnitCount:
+                    preservableVisuals.Length);
+
+            for (var visualIndex = 0;
+                 visualIndex <
+                 preservableVisuals.Length;
+                 visualIndex++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                var candidate =
+                    preservableVisuals[visualIndex];
 
                 var visual =
                     candidate.Visual;
@@ -466,8 +529,27 @@ internal static class StructuredNativeDocumentProjector
 
                 visualPreservationProfileIds.Add(
                     materialization.ProfileId);
+
+                ReportProgress(
+                    progressReporter,
+                    DocumentProcessingProgressStage.AnalyzingContent,
+                    InterpolatePercentage(
+                        82,
+                        94,
+                        visualIndex +
+                        1,
+                        preservableVisuals.Length),
+                    visualIndex +
+                    1,
+                    preservableVisuals.Length);
             }
         }
+
+        ReportProgress(
+            progressReporter,
+            DocumentProcessingProgressStage.AssemblingResult,
+            completionPercentage:
+                96);
 
         var source =
             new DocumentSourceDescriptor(
@@ -497,7 +579,8 @@ internal static class StructuredNativeDocumentProjector
                 NormalizationProfileId,
                 SegmentationProfileId);
 
-        return new DocumentProcessingResult(
+        var result =
+            new DocumentProcessingResult(
             source,
             manifest,
             elements,
@@ -510,6 +593,44 @@ internal static class StructuredNativeDocumentProjector
             ProjectNotes(
                 structuredNotes,
                 elementsByNativeLocation));
+
+        ReportProgress(
+            progressReporter,
+            DocumentProcessingProgressStage.AssemblingResult,
+            completionPercentage:
+                100);
+
+        return result;
+    }
+
+    #endregion
+
+    #region Methods Progress
+
+    private static int InterpolatePercentage(
+        int startPercentage,
+        int endPercentage,
+        int completedUnitCount,
+        int totalUnitCount) =>
+        startPercentage +
+        (endPercentage -
+         startPercentage) *
+        completedUnitCount /
+        totalUnitCount;
+
+    private static void ReportProgress(
+        Action<DocumentProcessingProgress>? progressReporter,
+        DocumentProcessingProgressStage stage,
+        int completionPercentage,
+        int? completedUnitCount = null,
+        int? totalUnitCount = null)
+    {
+        progressReporter?.Invoke(
+            new DocumentProcessingProgress(
+                stage,
+                completionPercentage,
+                completedUnitCount,
+                totalUnitCount));
     }
 
     #endregion

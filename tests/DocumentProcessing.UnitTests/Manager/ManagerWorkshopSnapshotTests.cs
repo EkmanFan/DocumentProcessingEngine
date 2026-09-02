@@ -38,6 +38,17 @@ public sealed class ManagerWorkshopSnapshotTests
             CreateItem(
                 "bauckham.pdf",
                 ManagerQueueItemStatus.Active,
+                progress:
+                    new ManagerProcessingProgressContract(
+                        ManagerProcessingProgressStage.ProcessingContent,
+                        CompletionPercentage:
+                            64,
+                        CompletedUnitCount:
+                            12,
+                        TotalUnitCount:
+                            20,
+                        UpdatedAtUtc:
+                            now),
                 updatedAtUtc:
                     now.AddMinutes(
                         -2));
@@ -96,6 +107,14 @@ public sealed class ManagerWorkshopSnapshotTests
         Assert.Equal(
             "bauckham",
             workshop.ActiveItem?.DocumentTitle);
+
+        Assert.Equal(
+            64,
+            workshop.ActiveItem?.Progress?.CompletionPercentage);
+
+        Assert.Equal(
+            12,
+            workshop.ActiveItem?.Progress?.CompletedUnitCount);
 
         Assert.All(
             workshop.PendingItems,
@@ -276,6 +295,7 @@ public sealed class ManagerWorkshopSnapshotTests
         long? queuePosition = null,
         string? resultReference = null,
         string? failureMessage = null,
+        ManagerProcessingProgressContract? progress = null,
         DateTimeOffset? updatedAtUtc = null) =>
         new(
             Guid.NewGuid(),
@@ -301,7 +321,8 @@ public sealed class ManagerWorkshopSnapshotTests
                     : "manager.failure",
             failureMessage,
             updatedAtUtc ??
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow,
+            progress);
 
     #endregion
 }

@@ -144,6 +144,8 @@ public sealed class NativeEvidenceProcessingSeamTests
                         evidence,
                         openVisualDestinationAsync:
                             null,
+                        progressReporter:
+                            null,
                         CancellationToken.None));
 
         Assert.Equal(

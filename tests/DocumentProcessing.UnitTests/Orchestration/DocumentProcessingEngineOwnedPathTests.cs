@@ -86,6 +86,84 @@ public sealed class DocumentProcessingEngineOwnedPathTests
     }
 
     [Fact]
+    public async Task ProcessDocumentAsync_ReportsMonotonicRealPipelineProgress()
+    {
+        var format =
+            new StubDocumentFormat(
+                new NativeEvidenceExtractionResult.Success(
+                    CreateNativeEvidence()));
+
+        var engine =
+            new DocumentProcessingEngine(
+                [format],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity);
+
+        var observations =
+            new List<DocumentProcessingProgress>();
+
+        await using var stream =
+            new MemoryStream(
+                "%PDF-engine-progress"u8.ToArray(),
+                writable:
+                    false);
+
+        await engine.ProcessDocumentAsync(
+            new DocumentSource(
+                stream,
+                "engine-progress.pdf",
+                "application/pdf"),
+            new DocumentProcessingRequestOptions(
+                progressReporter:
+                    observations.Add));
+
+        Assert.NotEmpty(
+            observations);
+
+        Assert.Equal(
+            new DocumentProcessingProgress(
+                DocumentProcessingProgressStage.PreparingSource,
+                completionPercentage:
+                    0),
+            observations[0]);
+
+        Assert.Contains(
+            observations,
+            progress =>
+                progress.Stage ==
+                    DocumentProcessingProgressStage.InspectingFormat);
+
+        Assert.Contains(
+            observations,
+            progress =>
+                progress.Stage ==
+                    DocumentProcessingProgressStage.ProcessingContent &&
+                progress.CompletedUnitCount ==
+                    2 &&
+                progress.TotalUnitCount ==
+                    2);
+
+        Assert.Equal(
+            new DocumentProcessingProgress(
+                DocumentProcessingProgressStage.AssemblingResult,
+                completionPercentage:
+                    100),
+            observations[^1]);
+
+        Assert.Equal(
+            observations
+                .Select(
+                    progress =>
+                        progress.CompletionPercentage)
+                .Order(),
+            observations.Select(
+                progress =>
+                    progress.CompletionPercentage));
+    }
+
+    [Fact]
     public async Task ProcessDocumentAsync_PropagatesRequestedContentUnitRange()
     {
         var format =

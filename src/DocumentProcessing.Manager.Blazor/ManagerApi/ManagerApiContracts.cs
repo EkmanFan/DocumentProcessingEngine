@@ -29,6 +29,21 @@ internal enum ManagerQueueItemDispatchState
     Ready
 }
 
+[JsonConverter(
+    typeof(JsonStringEnumConverter<ManagerProcessingProgressStage>))]
+internal enum ManagerProcessingProgressStage
+{
+    LoadingSource,
+    PreparingSource,
+    InspectingFormat,
+    Planning,
+    AnalyzingContent,
+    ProcessingContent,
+    AssemblingResult,
+    StoringResult,
+    PublishingResult
+}
+
 internal enum ManagerControlAction
 {
     Start,
@@ -75,6 +90,14 @@ internal sealed record ManagerQueueItemContract(
     string? ResultReference,
     string? LastFailureCode,
     string? LastFailureMessage,
+    DateTimeOffset UpdatedAtUtc,
+    ManagerProcessingProgressContract? Progress = null);
+
+internal sealed record ManagerProcessingProgressContract(
+    ManagerProcessingProgressStage Stage,
+    int CompletionPercentage,
+    int? CompletedUnitCount,
+    int? TotalUnitCount,
     DateTimeOffset UpdatedAtUtc);
 
 internal sealed record ManagerScopeContract(

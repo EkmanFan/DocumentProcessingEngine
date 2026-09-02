@@ -32,6 +32,12 @@ public sealed record DocumentProcessingRequestOptions
     /// <summary>Gets the optional inclusive range of stable native content units to process.</summary>
     public ContentUnitRange? ContentUnitRange { get; }
 
+    /// <summary>
+    /// Gets the optional synchronous observer for request-scoped progress.
+    /// Observations describe completed pipeline work, not elapsed-time estimates.
+    /// </summary>
+    public Action<DocumentProcessingProgress>? ProgressReporter { get; }
+
     #endregion
 
     #region ctor
@@ -41,7 +47,8 @@ public sealed record DocumentProcessingRequestOptions
         bool qualifyUnresolvedVisuals = false,
         UserVisualAssetWriter? userVisualAssetWriter = null,
         PhysicalPageRange? physicalPageRange = null,
-        ContentUnitRange? contentUnitRange = null)
+        ContentUnitRange? contentUnitRange = null,
+        Action<DocumentProcessingProgress>? progressReporter = null)
     {
         if (physicalPageRange is not null &&
             contentUnitRange is not null)
@@ -62,6 +69,9 @@ public sealed record DocumentProcessingRequestOptions
 
         ContentUnitRange =
             contentUnitRange;
+
+        ProgressReporter =
+            progressReporter;
     }
 
     #endregion

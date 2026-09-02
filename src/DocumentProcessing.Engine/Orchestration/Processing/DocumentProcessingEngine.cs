@@ -113,6 +113,12 @@ public sealed class DocumentProcessingEngine
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        ReportProgress(
+            options.ProgressReporter,
+            DocumentProcessingProgressStage.PreparingSource,
+            completionPercentage:
+                0);
+
         var userVisualAssetWriter =
             options.UserVisualAssetWriter ??
             _userVisualAssetWriter;
@@ -149,6 +155,12 @@ public sealed class DocumentProcessingEngine
                     cancellationToken)
                 .ConfigureAwait(false);
 
+        ReportProgress(
+            options.ProgressReporter,
+            DocumentProcessingProgressStage.InspectingFormat,
+            completionPercentage:
+                10);
+
         var selection =
             await formatSelector
                 .SelectAsync(
@@ -157,6 +169,12 @@ public sealed class DocumentProcessingEngine
                     options.ContentUnitRange,
                     cancellationToken)
                 .ConfigureAwait(false);
+
+        ReportProgress(
+            options.ProgressReporter,
+            DocumentProcessingProgressStage.Planning,
+            completionPercentage:
+                30);
 
         switch (selection)
         {
@@ -194,6 +212,7 @@ public sealed class DocumentProcessingEngine
                         engineVersion,
                         layoutAnalysisIdentity,
                         userVisualAssetWriter,
+                        options.ProgressReporter,
                         cancellationToken)
                     .ConfigureAwait(false);
 
@@ -210,6 +229,7 @@ public sealed class DocumentProcessingEngine
                         layoutAnalyzer,
                         layoutAnalysisIdentity,
                         options.QualifyUnresolvedVisuals,
+                        options.ProgressReporter,
                         cancellationToken)
                     .ConfigureAwait(false);
 
@@ -232,6 +252,7 @@ public sealed class DocumentProcessingEngine
             string engineVersion,
             ProcessingComponentIdentity layoutAnalysisIdentity,
             UserVisualAssetWriter? userVisualAssetWriter,
+            Action<DocumentProcessingProgress>? progressReporter,
             CancellationToken cancellationToken)
     {
         var pagedEvidence =
@@ -301,8 +322,20 @@ public sealed class DocumentProcessingEngine
                 selection.DocumentFormat.Format,
                 pagedEvidence,
                 openVisualDestinationAsync,
+                progressReporter,
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    private static void ReportProgress(
+        Action<DocumentProcessingProgress>? progressReporter,
+        DocumentProcessingProgressStage stage,
+        int completionPercentage)
+    {
+        progressReporter?.Invoke(
+            new DocumentProcessingProgress(
+                stage,
+                completionPercentage));
     }
 
     #endregion

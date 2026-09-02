@@ -48,6 +48,9 @@ public sealed class DocumentProcessingHostExecutor
     private readonly IProcessingVisualAssetStore
         _visualAssetStore;
 
+    private readonly IProcessingProgressReporter
+        _progressReporter;
+
     private readonly TimeProvider
         _timeProvider;
 
@@ -69,6 +72,7 @@ public sealed class DocumentProcessingHostExecutor
         IDocumentProcessingResultEncoder resultEncoder,
         IManagerSettingsStore settingsStore,
         IProcessingVisualAssetStore visualAssetStore,
+        IProcessingProgressReporter progressReporter,
         TimeProvider? timeProvider = null)
     {
         _host =
@@ -121,6 +125,11 @@ public sealed class DocumentProcessingHostExecutor
             throw new ArgumentNullException(
                 nameof(visualAssetStore));
 
+        _progressReporter =
+            progressReporter ??
+            throw new ArgumentNullException(
+                nameof(progressReporter));
+
         _timeProvider =
             timeProvider ??
             TimeProvider.System;
@@ -137,6 +146,12 @@ public sealed class DocumentProcessingHostExecutor
     {
         ArgumentNullException.ThrowIfNull(
             workItem);
+
+        ReportProgress(
+            workItem.UnitId,
+            ProcessingProgressStage.LoadingSource,
+            completionPercentage:
+                1);
 
         var existing =
             await _resultRegistryReader
@@ -165,6 +180,12 @@ public sealed class DocumentProcessingHostExecutor
                     $"Registered result '{existing.ResultReference}' has missing or corrupted bytes.");
             }
 
+            ReportProgress(
+                workItem.UnitId,
+                ProcessingProgressStage.PublishingResult,
+                completionPercentage:
+                    100);
+
             return new ProcessingExecutionOutcome.Success(
                 existing.ResultReference);
         }
@@ -192,6 +213,12 @@ public sealed class DocumentProcessingHostExecutor
                     cancellationToken)
                 .ConfigureAwait(false);
 
+        ReportProgress(
+            workItem.UnitId,
+            ProcessingProgressStage.LoadingSource,
+            completionPercentage:
+                4);
+
         var settings =
             await _settingsStore
                 .GetAsync(
@@ -218,6 +245,12 @@ public sealed class DocumentProcessingHostExecutor
                             visual),
                         token);
 
+        ReportProgress(
+            workItem.UnitId,
+            ProcessingProgressStage.PreparingSource,
+            completionPercentage:
+                5);
+
         var outcome =
             await _host
                 .ProcessDocumentAsync(
@@ -233,7 +266,12 @@ public sealed class DocumentProcessingHostExecutor
                                 workItem.Scope),
                         contentUnitRange:
                             ToContentUnitRange(
-                                workItem.Scope)),
+                                workItem.Scope),
+                        progressReporter:
+                            progress =>
+                                ReportEngineProgress(
+                                    workItem.UnitId,
+                                    progress)),
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -249,6 +287,12 @@ public sealed class DocumentProcessingHostExecutor
             outcome.Result ??
             throw new InvalidOperationException(
                 "Successful document processing did not return a result.");
+
+        ReportProgress(
+            workItem.UnitId,
+            ProcessingProgressStage.StoringResult,
+            completionPercentage:
+                88);
 
         EnsureSourceCustodyMatches(
             submission.SourceArtifact.Digest.Value,
@@ -272,6 +316,12 @@ public sealed class DocumentProcessingHostExecutor
                     cancellationToken)
                 .ConfigureAwait(false);
 
+        ReportProgress(
+            workItem.UnitId,
+            ProcessingProgressStage.PublishingResult,
+            completionPercentage:
+                94);
+
         var publicationDirectory =
             visualSession is null
                 ? null
@@ -292,6 +342,12 @@ public sealed class DocumentProcessingHostExecutor
                         cancellationToken)
                     .ConfigureAwait(false);
 
+        ReportProgress(
+            workItem.UnitId,
+            ProcessingProgressStage.PublishingResult,
+            completionPercentage:
+                98);
+
         var registration =
             await _resultRegistryWriter
                 .RegisterAsync(
@@ -306,6 +362,12 @@ public sealed class DocumentProcessingHostExecutor
                         publicationDirectory),
                     cancellationToken)
                 .ConfigureAwait(false);
+
+        ReportProgress(
+            workItem.UnitId,
+            ProcessingProgressStage.PublishingResult,
+            completionPercentage:
+                100);
 
         return new ProcessingExecutionOutcome.Success(
             registration.Result.ResultReference);
@@ -326,6 +388,61 @@ public sealed class DocumentProcessingHostExecutor
             throw new InvalidOperationException(
                 "DPEngine result source custody does not match the submitted source artifact.");
         }
+    }
+
+    private void ReportEngineProgress(
+        ProcessingUnitId unitId,
+        DocumentProcessingProgress progress)
+    {
+        ArgumentNullException.ThrowIfNull(
+            progress);
+
+        ReportProgress(
+            unitId,
+            progress.Stage switch
+            {
+                DocumentProcessingProgressStage.PreparingSource =>
+                    ProcessingProgressStage.PreparingSource,
+                DocumentProcessingProgressStage.InspectingFormat =>
+                    ProcessingProgressStage.InspectingFormat,
+                DocumentProcessingProgressStage.Planning =>
+                    ProcessingProgressStage.Planning,
+                DocumentProcessingProgressStage.AnalyzingContent =>
+                    ProcessingProgressStage.AnalyzingContent,
+                DocumentProcessingProgressStage.ProcessingContent =>
+                    ProcessingProgressStage.ProcessingContent,
+                DocumentProcessingProgressStage.AssemblingResult =>
+                    ProcessingProgressStage.AssemblingResult,
+                _ =>
+                    throw new ArgumentOutOfRangeException(
+                        nameof(progress),
+                        progress.Stage,
+                        "Unknown DPEngine processing-progress stage.")
+            },
+            completionPercentage:
+                5 +
+                progress.CompletionPercentage *
+                80 /
+                100,
+            progress.CompletedUnitCount,
+            progress.TotalUnitCount);
+    }
+
+    private void ReportProgress(
+        ProcessingUnitId unitId,
+        ProcessingProgressStage stage,
+        int completionPercentage,
+        int? completedUnitCount = null,
+        int? totalUnitCount = null)
+    {
+        _progressReporter.Report(
+            unitId,
+            new ProcessingProgressSnapshot(
+                stage,
+                completionPercentage,
+                completedUnitCount,
+                totalUnitCount,
+                _timeProvider.GetUtcNow()));
     }
 
     private static PhysicalPageRange? ToPhysicalPageRange(

@@ -241,24 +241,35 @@
                 }
             </div>
 
-            <div class="current-document" aria-live="polite">
-                @if (_snapshot?.ActiveItem is { } activeItem)
-                {
+            @if (_snapshot?.ActiveItem is { } activeItem)
+            {
+                <div class="current-document current-document-active"
+                     aria-live="polite"
+                     role="progressbar"
+                     aria-label="@(Localizer["ProcessingProgressAriaLabel", activeItem.DocumentTitle])"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="@ActiveProgressPercentage(activeItem)"
+                     style="@ActiveProgressStyle(activeItem)">
+                    <span class="current-document-progress" aria-hidden="true"></span>
                     <div class="document-monogram" aria-hidden="true">@GetMonogram(activeItem.DocumentTitle)</div>
-                    <div>
-                        <strong>@activeItem.DocumentTitle</strong>
+                    <div class="current-document-copy">
+                        <small class="processing-stage">@FormatProgress(activeItem.Progress)</small>
+                        <strong title="@activeItem.DocumentTitle">@activeItem.DocumentTitle</strong>
                         <span>@FormatScope(activeItem.Scope)</span>
                     </div>
-                }
-                else
-                {
+                </div>
+            }
+            else
+            {
+                <div class="current-document" aria-live="polite">
                     <div class="document-monogram document-monogram-empty" aria-hidden="true">—</div>
-                    <div>
+                    <div class="current-document-copy">
                         <strong>@Localizer["NoActiveTitle"]</strong>
                         <span>@IdleMessage</span>
                     </div>
-                }
-            </div>
+                </div>
+            }
 
             <ManagerDocumentDropZone DocumentSubmitted="HandleDocumentSubmittedAsync"
                                      SubmissionBehavior="@CurrentSubmissionBehavior">
@@ -907,6 +918,61 @@
                     .ToString(
                         "T",
                         CultureInfo.CurrentCulture)];
+
+    private static int ActiveProgressPercentage(
+        ManagerWorkItemView activeItem) =>
+        activeItem.Progress?.CompletionPercentage ??
+        1;
+
+    private static string ActiveProgressStyle(
+        ManagerWorkItemView activeItem) =>
+        $"--processing-progress: {ActiveProgressPercentage(activeItem)}%;";
+
+    private string FormatProgress(
+        ManagerProcessingProgressView? progress)
+    {
+        if (progress is null)
+        {
+            return Localizer["ProgressLoadingSource"];
+        }
+
+        var stage =
+            progress.Stage switch
+            {
+                ManagerProcessingProgressStage.LoadingSource =>
+                    Localizer["ProgressLoadingSource"],
+                ManagerProcessingProgressStage.PreparingSource =>
+                    Localizer["ProgressPreparingSource"],
+                ManagerProcessingProgressStage.InspectingFormat =>
+                    Localizer["ProgressInspectingFormat"],
+                ManagerProcessingProgressStage.Planning =>
+                    Localizer["ProgressPlanning"],
+                ManagerProcessingProgressStage.AnalyzingContent =>
+                    Localizer["ProgressAnalyzingContent"],
+                ManagerProcessingProgressStage.ProcessingContent =>
+                    Localizer["ProgressProcessingContent"],
+                ManagerProcessingProgressStage.AssemblingResult =>
+                    Localizer["ProgressAssemblingResult"],
+                ManagerProcessingProgressStage.StoringResult =>
+                    Localizer["ProgressStoringResult"],
+                ManagerProcessingProgressStage.PublishingResult =>
+                    Localizer["ProgressPublishingResult"],
+                _ =>
+                    throw new ArgumentOutOfRangeException(
+                        nameof(progress),
+                        progress.Stage,
+                        "Unknown processing-progress stage.")
+            };
+
+        return progress.CompletedUnitCount is { } completed &&
+               progress.TotalUnitCount is { } total
+            ? Localizer[
+                "ProgressWithUnits",
+                stage,
+                completed,
+                total]
+            : stage;
+    }
 
     private string ErrorMessage =>
         _error switch

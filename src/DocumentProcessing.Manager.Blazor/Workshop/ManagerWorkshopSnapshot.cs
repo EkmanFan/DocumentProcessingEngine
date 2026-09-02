@@ -128,7 +128,8 @@ internal sealed record ManagerWorkItemView(
     long? QueuePosition,
     string? ResultReference,
     string? FailureMessage,
-    DateTimeOffset UpdatedAtUtc)
+    DateTimeOffset UpdatedAtUtc,
+    ManagerProcessingProgressView? Progress = null)
 {
     #region Methods Factory
 
@@ -208,7 +209,55 @@ internal sealed record ManagerWorkItemView(
             item.QueuePosition,
             item.ResultReference,
             item.LastFailureMessage,
-            item.UpdatedAtUtc.ToUniversalTime());
+            item.UpdatedAtUtc.ToUniversalTime(),
+            item.Progress is null
+                ? null
+                : ManagerProcessingProgressView.Create(
+                    item.Progress));
+    }
+
+    #endregion
+}
+
+internal sealed record ManagerProcessingProgressView(
+    ManagerProcessingProgressStage Stage,
+    int CompletionPercentage,
+    int? CompletedUnitCount,
+    int? TotalUnitCount,
+    DateTimeOffset UpdatedAtUtc)
+{
+    #region Methods Factory
+
+    public static ManagerProcessingProgressView Create(
+        ManagerProcessingProgressContract progress)
+    {
+        ArgumentNullException.ThrowIfNull(
+            progress);
+
+        if (!Enum.IsDefined(
+                progress.Stage) ||
+            progress.CompletionPercentage is <
+                0 or >
+                100 ||
+            progress.CompletedUnitCount.HasValue !=
+                progress.TotalUnitCount.HasValue ||
+            progress.CompletedUnitCount is <
+                0 ||
+            progress.TotalUnitCount is <=
+                0 ||
+            progress.CompletedUnitCount >
+                progress.TotalUnitCount)
+        {
+            throw new InvalidDataException(
+                "The Manager returned invalid processing progress.");
+        }
+
+        return new ManagerProcessingProgressView(
+            progress.Stage,
+            progress.CompletionPercentage,
+            progress.CompletedUnitCount,
+            progress.TotalUnitCount,
+            progress.UpdatedAtUtc.ToUniversalTime());
     }
 
     #endregion

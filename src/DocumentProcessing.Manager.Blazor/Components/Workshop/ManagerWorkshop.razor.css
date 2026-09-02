@@ -883,16 +883,37 @@ a:focus-visible {
 }
 
 .current-document {
+    position: relative;
     gap: 13px;
     min-height: 72px;
     margin: 20px 0 16px;
+    overflow: hidden;
     padding: 12px 15px;
     border: 1px solid rgba(29, 51, 66, 0.11);
     border-radius: 15px;
     background: rgba(232, 238, 240, 0.62);
 }
 
+.current-document-active {
+    isolation: isolate;
+}
+
+.current-document-progress {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--processing-progress, 1%);
+    border-right: 1px solid rgba(40, 116, 107, 0.26);
+    background: linear-gradient(90deg, rgba(40, 116, 107, 0.24), rgba(116, 170, 161, 0.16));
+    transition: width 420ms ease;
+    pointer-events: none;
+}
+
 .document-monogram {
+    position: relative;
+    z-index: 1;
     display: grid;
     flex: 0 0 40px;
     width: 40px;
@@ -909,28 +930,46 @@ a:focus-visible {
     background: rgba(255, 255, 255, 0.75);
 }
 
-.current-document div:last-child {
+.current-document-copy {
+    position: relative;
+    z-index: 1;
     display: grid;
     min-width: 0;
     gap: 4px;
 }
 
-.current-document strong,
-.current-document span {
+.current-document-copy strong,
+.current-document-copy > span,
+.processing-stage {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.current-document strong {
+.current-document-copy strong {
     font-family: Georgia, serif;
     font-size: 0.98rem;
     font-weight: 550;
 }
 
-.current-document span {
+.current-document-copy > span {
     color: var(--ink-600);
     font-size: 0.72rem;
+}
+
+.processing-stage {
+    color: var(--teal);
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.055em;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .current-document-progress {
+        transition: none;
+    }
 }
 
 .settings-overlay {

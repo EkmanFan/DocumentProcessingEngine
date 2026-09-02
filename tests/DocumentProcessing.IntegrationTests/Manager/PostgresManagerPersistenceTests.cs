@@ -2575,6 +2575,9 @@ public sealed class PostgresManagerPersistenceTests
                         providerLifecycle:
                             ProcessingProviderLifecycleOptions.External));
 
+            var progressReporter =
+                new RecordingProcessingProgressReporter();
+
             var executor =
                 new DocumentProcessingHostExecutor(
                     host,
@@ -2586,7 +2589,8 @@ public sealed class PostgresManagerPersistenceTests
                     context.ResultRegistry,
                     new PagedDocumentProcessingResultJsonEncoder(),
                     context.SettingsStore,
-                    new FileSystemProcessingVisualAssetStore());
+                    new FileSystemProcessingVisualAssetStore(),
+                    progressReporter);
 
             var workerId =
                 $"managed-page-{Guid.NewGuid():N}";
@@ -2632,6 +2636,40 @@ public sealed class PostgresManagerPersistenceTests
             Assert.Equal(
                 unitId,
                 dispatched.UnitId);
+
+            var progressObservations =
+                progressReporter.Observations;
+
+            Assert.NotEmpty(
+                progressObservations);
+
+            Assert.Equal(
+                ProcessingProgressStage.LoadingSource,
+                progressObservations[0].Stage);
+
+            Assert.Contains(
+                progressObservations,
+                progress =>
+                    progress.Stage ==
+                        ProcessingProgressStage.ProcessingContent &&
+                    progress.CompletedUnitCount ==
+                        1 &&
+                    progress.TotalUnitCount ==
+                        1);
+
+            Assert.Equal(
+                100,
+                progressObservations[^1].CompletionPercentage);
+
+            Assert.Equal(
+                progressObservations
+                    .Select(
+                        progress =>
+                            progress.CompletionPercentage)
+                    .Order(),
+                progressObservations.Select(
+                    progress =>
+                        progress.CompletionPercentage));
 
             var registered =
                 await context.ResultRegistry.GetByUnitAsync(
@@ -3412,6 +3450,38 @@ public sealed class PostgresManagerPersistenceTests
     {
         public override DateTimeOffset GetUtcNow() =>
             utcNow;
+    }
+
+    private sealed class RecordingProcessingProgressReporter
+        : IProcessingProgressReporter
+    {
+        private readonly object _gate =
+            new();
+
+        private readonly List<ProcessingProgressSnapshot> _observations =
+            [];
+
+        public IReadOnlyList<ProcessingProgressSnapshot> Observations
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return [.. _observations];
+                }
+            }
+        }
+
+        public void Report(
+            ProcessingUnitId unitId,
+            ProcessingProgressSnapshot progress)
+        {
+            lock (_gate)
+            {
+                _observations.Add(
+                    progress);
+            }
+        }
     }
 
     private readonly record struct SubmissionCounts(

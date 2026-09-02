@@ -225,6 +225,14 @@ public static class Program
         services.AddSingleton<IDocumentProcessingResultEncoder,
             PagedDocumentProcessingResultJsonEncoder>();
 
+        services.AddSingleton<InMemoryProcessingProgressTracker>();
+        services.AddSingleton<IProcessingProgressReporter>(
+            provider =>
+                provider.GetRequiredService<InMemoryProcessingProgressTracker>());
+        services.AddSingleton<IProcessingProgressReader>(
+            provider =>
+                provider.GetRequiredService<InMemoryProcessingProgressTracker>());
+
         services.AddSingleton<DocumentProcessingHostExecutor>();
         services.AddSingleton<IDocumentProcessingExecutor>(
             provider =>

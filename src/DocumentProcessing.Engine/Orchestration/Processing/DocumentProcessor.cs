@@ -381,6 +381,8 @@ public sealed class DocumentProcessor
                     documentNotes:
                         [],
                     openVisualDestinationAsync,
+                    progressReporter:
+                        null,
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -401,6 +403,8 @@ public sealed class DocumentProcessor
                     selectedFormat,
                     evidence,
                     openVisualDestinationAsync,
+                    progressReporter:
+                        null,
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -413,6 +417,7 @@ public sealed class DocumentProcessor
         PagedNativeDocumentEvidence evidence,
         Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
             openVisualDestinationAsync,
+        Action<DocumentProcessingProgress>? progressReporter,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
@@ -439,6 +444,7 @@ public sealed class DocumentProcessor
             evidence.RasterObservationFailure,
             evidence.DocumentNotes,
             openVisualDestinationAsync,
+            progressReporter,
             cancellationToken);
     }
 
@@ -449,6 +455,7 @@ public sealed class DocumentProcessor
             PagedNativeDocumentEvidence evidence,
             Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
                 openVisualDestinationAsync,
+            Action<DocumentProcessingProgress>? progressReporter,
             CancellationToken cancellationToken = default)
     {
         var model =
@@ -457,13 +464,29 @@ public sealed class DocumentProcessor
                     selectedFormat,
                     evidence,
                     openVisualDestinationAsync,
+                    progressReporter,
                     cancellationToken)
                 .ConfigureAwait(false);
 
-        return DocumentProcessingResultProjector
+        ReportProgress(
+            progressReporter,
+            DocumentProcessingProgressStage.AssemblingResult,
+            completionPercentage:
+                98);
+
+        var result =
+            DocumentProcessingResultProjector
             .Project(
                 model.PagedModel,
                 model.Notes);
+
+        ReportProgress(
+            progressReporter,
+            DocumentProcessingProgressStage.AssemblingResult,
+            completionPercentage:
+                100);
+
+        return result;
     }
 
 
@@ -480,6 +503,7 @@ public sealed class DocumentProcessor
             IReadOnlyList<NativeDocumentNote> documentNotes,
             Func<LayoutObservation, CancellationToken, ValueTask<Stream>>?
                 openVisualDestinationAsync,
+            Action<DocumentProcessingProgress>? progressReporter,
             CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(
@@ -496,6 +520,12 @@ public sealed class DocumentProcessor
         ValidateExtraction(
             format,
             extraction);
+
+        ReportProgress(
+            progressReporter,
+            DocumentProcessingProgressStage.Planning,
+            completionPercentage:
+                32);
 
         var preflight =
             _preflightAnalyzer
@@ -529,6 +559,12 @@ public sealed class DocumentProcessor
                 extraction,
                 decisions))
         {
+            ReportProgress(
+                progressReporter,
+                DocumentProcessingProgressStage.AnalyzingContent,
+                completionPercentage:
+                    35);
+
             prepared.ResetForRead();
 
             try
@@ -637,6 +673,16 @@ public sealed class DocumentProcessor
         {
             if (requiresHybridExecution)
             {
+                ReportProgress(
+                    progressReporter,
+                    DocumentProcessingProgressStage.AnalyzingContent,
+                    completionPercentage:
+                        35,
+                    completedUnitCount:
+                        0,
+                    totalUnitCount:
+                        extraction.Pages.Count);
+
                 prepared.ResetForRead();
 
                 rasterSession =
@@ -684,6 +730,19 @@ public sealed class DocumentProcessor
                             decision,
                             authoritativeVisualDecision))
                     {
+                        ReportProgress(
+                            progressReporter,
+                            DocumentProcessingProgressStage.AnalyzingContent,
+                            InterpolatePercentage(
+                                35,
+                                62,
+                                index +
+                                1,
+                                extraction.Pages.Count),
+                            index +
+                            1,
+                            extraction.Pages.Count);
+
                         continue;
                     }
 
@@ -704,8 +763,35 @@ public sealed class DocumentProcessor
                             preparedLayout.Layout,
                             cancellationToken)
                         .ConfigureAwait(false);
+
+                    ReportProgress(
+                        progressReporter,
+                        DocumentProcessingProgressStage.AnalyzingContent,
+                        InterpolatePercentage(
+                            35,
+                            62,
+                            index +
+                            1,
+                            extraction.Pages.Count),
+                        index +
+                        1,
+                        extraction.Pages.Count);
                 }
             }
+
+            var processingStartPercentage =
+                requiresHybridExecution
+                    ? 62
+                    : 35;
+
+            ReportProgress(
+                progressReporter,
+                DocumentProcessingProgressStage.ProcessingContent,
+                processingStartPercentage,
+                completedUnitCount:
+                    0,
+                totalUnitCount:
+                    extraction.Pages.Count);
 
             for (var index = 0;
                  index <
@@ -737,6 +823,19 @@ public sealed class DocumentProcessor
                             openVisualDestinationAsync,
                             cancellationToken)
                         .ConfigureAwait(false));
+
+                ReportProgress(
+                    progressReporter,
+                    DocumentProcessingProgressStage.ProcessingContent,
+                    InterpolatePercentage(
+                        processingStartPercentage,
+                        95,
+                        index +
+                        1,
+                        extraction.Pages.Count),
+                    index +
+                    1,
+                    extraction.Pages.Count);
             }
         }
         finally
@@ -1327,6 +1426,36 @@ public sealed class DocumentProcessor
                 $"Document preflight classification '{preflight.Classification}' " +
                 "conflicts with page-level routing because every page selected NativeOnly.");
         }
+    }
+
+    #endregion
+
+    #region Methods Progress
+
+    private static int InterpolatePercentage(
+        int startPercentage,
+        int endPercentage,
+        int completedUnitCount,
+        int totalUnitCount) =>
+        startPercentage +
+        (endPercentage -
+         startPercentage) *
+        completedUnitCount /
+        totalUnitCount;
+
+    private static void ReportProgress(
+        Action<DocumentProcessingProgress>? progressReporter,
+        DocumentProcessingProgressStage stage,
+        int completionPercentage,
+        int? completedUnitCount = null,
+        int? totalUnitCount = null)
+    {
+        progressReporter?.Invoke(
+            new DocumentProcessingProgress(
+                stage,
+                completionPercentage,
+                completedUnitCount,
+                totalUnitCount));
     }
 
     #endregion
