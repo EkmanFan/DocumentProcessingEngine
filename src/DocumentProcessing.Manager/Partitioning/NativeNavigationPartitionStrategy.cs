@@ -22,129 +22,14 @@ public sealed class NativeNavigationPartitionStrategy
         ArgumentNullException.ThrowIfNull(
             evidence);
 
-        var candidateLevels =
-            evidence.Boundaries
-                .Where(
-                    boundary =>
-                        boundary.Origin ==
-                        DocumentPartitionEvidenceOrigin.NativeNavigation)
-                .GroupBy(
-                    boundary =>
-                        boundary.HierarchyLevel)
-                .OrderBy(
-                    level =>
-                        level.Key);
-
-        foreach (var candidateLevel in
-                 candidateLevels)
-        {
-            var boundaries =
-                candidateLevel
-                    .OrderBy(
-                        boundary =>
-                            boundary.SourceOrder)
-                    .GroupBy(
-                        boundary =>
-                            boundary.Position.Coordinate)
-                    .Select(
-                        position =>
-                            position.First())
-                    .ToArray();
-
-            if (boundaries.Length <
-                    2 ||
-                !CoordinatesIncreaseStrictly(
-                    boundaries))
-            {
-                continue;
-            }
-
-            return BuildProposal(
-                evidence.Axis,
-                boundaries);
-        }
-
-        return null;
-    }
-
-    private DocumentPartitionProposal BuildProposal(
-        DocumentPartitionAxis axis,
-        IReadOnlyList<DocumentPartitionBoundary> boundaries)
-    {
-        var starts =
-            new List<SegmentStart>(
-                boundaries.Count +
-                1);
-
-        if (boundaries[0].Position.Coordinate >
-            axis.FirstCoordinate)
-        {
-            starts.Add(
-                new SegmentStart(
-                    axis.CreatePosition(
-                        axis.FirstCoordinate),
-                    SuggestedTitle:
-                        null));
-        }
-
-        starts.AddRange(
-            boundaries.Select(
-                boundary =>
-                    new SegmentStart(
-                        boundary.Position,
-                        boundary.Title)));
-
-        var segments =
-            new DocumentPartitionSegment[starts.Count];
-
-        for (var index = 0;
-             index < starts.Count;
-             index++)
-        {
-            var endCoordinate =
-                index ==
-                starts.Count -
-                1
-                    ? axis.LastCoordinate
-                    : starts[index + 1]
-                        .Position
-                        .Coordinate -
-                      1;
-
-            segments[index] =
-                new DocumentPartitionSegment(
-                    starts[index].SuggestedTitle,
-                    new DocumentPartitionExtent(
-                        starts[index].Position,
-                        axis.CreatePosition(
-                            endCoordinate)));
-        }
-
-        return new DocumentPartitionProposal(
+        return HierarchicalPartitionProposalBuilder.TryBuild(
+            evidence,
+            DocumentPartitionEvidenceOrigin.NativeNavigation,
             StrategyId,
-            axis,
             DocumentPartitionProposalReliability.Qualified,
-            segments);
+            rejectDuplicateCoordinates:
+                false,
+            failClosedOnAmbiguousLevel:
+                false);
     }
-
-    private static bool CoordinatesIncreaseStrictly(
-        IReadOnlyList<DocumentPartitionBoundary> boundaries)
-    {
-        for (var index = 1;
-             index < boundaries.Count;
-             index++)
-        {
-            if (boundaries[index].Position.Coordinate <=
-                boundaries[index - 1].Position.Coordinate)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private sealed record SegmentStart(
-        DocumentPartitionPosition Position,
-        string? SuggestedTitle);
 }

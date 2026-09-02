@@ -23,6 +23,7 @@ public sealed class PdfDocumentFormat
     : IPhysicalPageRangeDocumentFormat,
       IPhysicalPagePreviewDocumentFormat,
       INativeDocumentNavigationFormat,
+      IStructuralHeadingDocumentFormat,
       IDocumentRasterizer,
       IVisualRasterObservationSource
 {
@@ -163,7 +164,7 @@ public sealed class PdfDocumentFormat
 
             return new NativeDocumentNavigationInspection(
                 DocumentFormatId.Pdf,
-                new NativeDocumentNavigationAxis.PhysicalPages(
+                new DocumentStructureAxis.PhysicalPages(
                     document.NumberOfPages),
                 entries);
         }
@@ -202,7 +203,7 @@ public sealed class PdfDocumentFormat
                     node.Title,
                     node.Level,
                     currentSourceOrder,
-                    new NativeDocumentNavigationPosition.PhysicalPage(
+                    new DocumentStructurePosition.PhysicalPage(
                         documentNode.PageNumber)));
         }
 
@@ -215,6 +216,61 @@ public sealed class PdfDocumentFormat
                 entries,
                 ref sourceOrder,
                 cancellationToken);
+        }
+    }
+
+    #endregion
+
+    #region Methods Structural Headings
+
+    /// <inheritdoc />
+    public async ValueTask<StructuralHeadingInspection?>
+        TryInspectStructuralHeadingsAsync(
+            DocumentSource source,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            source);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!await _validator
+                .ValidateAsync(
+                    source,
+                    cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        var originalPosition =
+            source.Content.CanSeek
+                ? source.Content.Position
+                : (long?)null;
+
+        try
+        {
+            if (source.Content.CanSeek)
+            {
+                source.Content.Position =
+                    0;
+            }
+
+            using var document =
+                UglyToad.PdfPig.PdfDocument.Open(
+                    source.Content);
+
+            return PdfStructuralHeadingInspector.Inspect(
+                document,
+                cancellationToken);
+        }
+        finally
+        {
+            if (originalPosition.HasValue)
+            {
+                source.Content.Position =
+                    originalPosition.Value;
+            }
         }
     }
 

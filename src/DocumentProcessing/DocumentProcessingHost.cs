@@ -37,6 +37,9 @@ public sealed class DocumentProcessingHost
     private readonly NativeDocumentNavigationEngine
         _nativeDocumentNavigationEngine;
 
+    private readonly StructuralHeadingEngine
+        _structuralHeadingEngine;
+
     private bool _disposed;
 
     #endregion
@@ -79,6 +82,10 @@ public sealed class DocumentProcessingHost
 
             _nativeDocumentNavigationEngine =
                 new NativeDocumentNavigationEngine(
+                    formats);
+
+            _structuralHeadingEngine =
+                new StructuralHeadingEngine(
                     formats);
         }
         catch
@@ -129,6 +136,23 @@ public sealed class DocumentProcessingHost
         ThrowIfDisposed();
 
         return _nativeDocumentNavigationEngine
+            .TryInspectAsync(
+                source,
+                cancellationToken);
+    }
+
+    /// <summary>
+    /// Inspects deterministic structural headings without running the complete
+    /// processing pipeline.
+    /// </summary>
+    public ValueTask<StructuralHeadingInspection?>
+        TryInspectStructuralHeadingsAsync(
+            DocumentSource source,
+            CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        return _structuralHeadingEngine
             .TryInspectAsync(
                 source,
                 cancellationToken);

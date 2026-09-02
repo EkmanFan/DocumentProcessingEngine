@@ -1,23 +1,23 @@
 namespace DocumentProcessing.Core.Documents;
 
 /// <summary>
-/// Optional format capability for inspecting publisher-supplied navigation
-/// without running document processing.
+/// Optional format capability for inspecting deterministic native heading
+/// evidence without running the complete processing pipeline.
 /// </summary>
-public interface INativeDocumentNavigationFormat
+public interface IStructuralHeadingDocumentFormat
     : IDocumentFormat
 {
     /// <summary>
-    /// Returns native navigation when this format recognizes the source, or
-    /// <see langword="null"/> when it does not recognize it.
+    /// Returns structural heading evidence when this format recognizes the
+    /// source, or <see langword="null"/> when it does not recognize it.
     /// </summary>
-    ValueTask<NativeDocumentNavigationInspection?> TryInspectNativeNavigationAsync(
+    ValueTask<StructuralHeadingInspection?> TryInspectStructuralHeadingsAsync(
         DocumentSource source,
         CancellationToken cancellationToken = default);
 }
 
-/// <summary>Describes publisher-supplied navigation for one recognized source.</summary>
-public sealed record NativeDocumentNavigationInspection
+/// <summary>Describes deterministic heading evidence for one recognized source.</summary>
+public sealed record StructuralHeadingInspection
 {
     /// <summary>Gets the recognized document format.</summary>
     public DocumentFormatId Format { get; }
@@ -25,14 +25,14 @@ public sealed record NativeDocumentNavigationInspection
     /// <summary>Gets the complete source coordinate axis.</summary>
     public DocumentStructureAxis Axis { get; }
 
-    /// <summary>Gets navigation entries in publisher order.</summary>
-    public IReadOnlyList<NativeDocumentNavigationEntry> Entries { get; }
+    /// <summary>Gets structural headings in source reading order.</summary>
+    public IReadOnlyList<StructuralHeadingEntry> Entries { get; }
 
-    /// <summary>Creates a validated native-navigation inspection.</summary>
-    public NativeDocumentNavigationInspection(
+    /// <summary>Creates one validated structural-heading inspection.</summary>
+    public StructuralHeadingInspection(
         DocumentFormatId format,
         DocumentStructureAxis axis,
-        IReadOnlyList<NativeDocumentNavigationEntry> entries)
+        IReadOnlyList<StructuralHeadingEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(
             axis);
@@ -48,7 +48,7 @@ public sealed record NativeDocumentNavigationInspection
                     entry is null))
         {
             throw new ArgumentException(
-                "Native navigation cannot contain null entries.",
+                "Structural heading evidence cannot contain null entries.",
                 nameof(entries));
         }
 
@@ -58,7 +58,7 @@ public sealed record NativeDocumentNavigationInspection
                         entry.Position)))
         {
             throw new ArgumentException(
-                "Every native-navigation entry must belong to the declared source axis.",
+                "Every structural heading must belong to the declared source axis.",
                 nameof(entries));
         }
 
@@ -71,7 +71,7 @@ public sealed record NativeDocumentNavigationInspection
             entryArray.Length)
         {
             throw new ArgumentException(
-                "Native-navigation source orders must be unique.",
+                "Structural-heading source orders must be unique.",
                 nameof(entries));
         }
 
@@ -86,23 +86,23 @@ public sealed record NativeDocumentNavigationInspection
     }
 }
 
-/// <summary>Describes one publisher-supplied navigation destination.</summary>
-public sealed record NativeDocumentNavigationEntry
+/// <summary>Describes one deterministic structural-heading observation.</summary>
+public sealed record StructuralHeadingEntry
 {
-    /// <summary>Gets the publisher-supplied title.</summary>
+    /// <summary>Gets the source heading text.</summary>
     public string Title { get; }
 
-    /// <summary>Gets the zero-based navigation hierarchy level.</summary>
+    /// <summary>Gets the zero-based structural hierarchy level.</summary>
     public int HierarchyLevel { get; }
 
-    /// <summary>Gets the entry order in a depth-first traversal.</summary>
+    /// <summary>Gets the heading order in source reading order.</summary>
     public int SourceOrder { get; }
 
     /// <summary>Gets the resolved source position.</summary>
     public DocumentStructurePosition Position { get; }
 
-    /// <summary>Creates one resolved native-navigation entry.</summary>
-    public NativeDocumentNavigationEntry(
+    /// <summary>Creates one validated structural-heading observation.</summary>
+    public StructuralHeadingEntry(
         string title,
         int hierarchyLevel,
         int sourceOrder,
@@ -112,7 +112,7 @@ public sealed record NativeDocumentNavigationEntry
                 title))
         {
             throw new ArgumentException(
-                "Native-navigation title cannot be empty.",
+                "Structural-heading title cannot be empty.",
                 nameof(title));
         }
 
@@ -122,7 +122,7 @@ public sealed record NativeDocumentNavigationEntry
             throw new ArgumentOutOfRangeException(
                 nameof(hierarchyLevel),
                 hierarchyLevel,
-                "Native-navigation hierarchy level cannot be negative.");
+                "Structural-heading hierarchy level cannot be negative.");
         }
 
         if (sourceOrder <
@@ -131,7 +131,7 @@ public sealed record NativeDocumentNavigationEntry
             throw new ArgumentOutOfRangeException(
                 nameof(sourceOrder),
                 sourceOrder,
-                "Native-navigation source order cannot be negative.");
+                "Structural-heading source order cannot be negative.");
         }
 
         ArgumentNullException.ThrowIfNull(

@@ -547,6 +547,72 @@ internal static class TestEpubFactory
         return output.ToArray();
     }
 
+    public static byte[] CreateStructuralHeadingFixture(
+        bool duplicateTopLevelHeading = false)
+    {
+        using var output =
+            new MemoryStream();
+
+        using (var archive =
+               new ZipArchive(
+                   output,
+                   ZipArchiveMode.Create,
+                   leaveOpen:
+                       true))
+        {
+            Write(
+                archive,
+                "mimetype",
+                "application/epub+zip",
+                CompressionLevel.NoCompression);
+
+            Write(
+                archive,
+                "META-INF/container.xml",
+                """
+                <?xml version="1.0"?>
+                <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                  <rootfiles><rootfile full-path="OPS/package.opf" media-type="application/oebps-package+xml" /></rootfiles>
+                </container>
+                """);
+
+            Write(
+                archive,
+                "OPS/package.opf",
+                """
+                <?xml version="1.0" encoding="utf-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">
+                  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">urn:test:headings</dc:identifier><dc:title>Heading fixture</dc:title><dc:language>en</dc:language></metadata>
+                  <manifest>
+                    <item id="front" href="text/front.xhtml" media-type="application/xhtml+xml" />
+                    <item id="chapter-1" href="text/chapter1.xhtml" media-type="application/xhtml+xml" />
+                    <item id="chapter-2" href="text/chapter2.xhtml" media-type="application/xhtml+xml" />
+                  </manifest>
+                  <spine><itemref idref="front" /><itemref idref="chapter-1" /><itemref idref="chapter-2" /></spine>
+                </package>
+                """);
+
+            Write(
+                archive,
+                "OPS/text/front.xhtml",
+                "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>Front</title></head><body><p>Front matter.</p></body></html>");
+
+            Write(
+                archive,
+                "OPS/text/chapter1.xhtml",
+                duplicateTopLevelHeading
+                    ? "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>One</title></head><body><h1>Chapter One</h1><h1>Ambiguous Peer</h1><p>Body.</p></body></html>"
+                    : "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>One</title></head><body><h1>Chapter One</h1><h2>Section One</h2><p>Body.</p></body></html>");
+
+            Write(
+                archive,
+                "OPS/text/chapter2.xhtml",
+                "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>Two</title></head><body><h1>Chapter Two</h1><p>Body.</p></body></html>");
+        }
+
+        return output.ToArray();
+    }
+
     private static void Write(
         ZipArchive archive,
         string path,

@@ -187,6 +187,14 @@ semantics. Terminal work keeps its durable `Succeeded` or `Failed` state;
 versioned retention setting, not additional lifecycle states. Archive searches
 are bounded and support title/date filters plus deterministic title/date sorts.
 
+Split proposals use an ordered deterministic policy. Publisher-supplied PDF
+outlines or EPUB navigation are preferred. When they cannot produce a safe
+complete proposal, format adapters may expose native structural headings: PDF
+uses text-layer typography and EPUB uses XHTML heading elements. Manager Core
+applies the same neutral structural-heading strategy to physical-page and
+content-unit axes. Ambiguous evidence produces no automatic proposal, and every
+proposal remains subject to human approval before atomic queue replacement.
+
 ## Current format and execution status
 
 - PDF and EPUB are registered production formats.

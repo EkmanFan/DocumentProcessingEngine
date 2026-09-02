@@ -41,7 +41,7 @@ public sealed record DocumentSplitPreviewManifest
     /// <summary>Gets whether splitting is recommended.</summary>
     public bool SplitSuggested { get; }
 
-    /// <summary>Gets the optional non-destructive native-navigation proposal.</summary>
+    /// <summary>Gets the optional non-destructive evidence-backed proposal.</summary>
     public DocumentPartitionProposal? SuggestedProposal { get; }
 
     /// <summary>Gets optional user-visible labels for ordered content units.</summary>

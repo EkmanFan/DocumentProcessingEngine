@@ -15,6 +15,7 @@ namespace DocumentProcessing.Epub;
 public sealed class EpubDocumentFormat
     : IDocumentFormat,
       INativeDocumentNavigationFormat,
+      IStructuralHeadingDocumentFormat,
       IContentUnitRangeDocumentFormat,
       IStructuredNativeVisualMaterializer
 {
@@ -124,6 +125,62 @@ public sealed class EpubDocumentFormat
                     cancellationToken);
 
             return ValueTask.FromResult<NativeDocumentNavigationInspection?>(
+                inspection);
+        }
+        finally
+        {
+            source.Content.Position =
+                originalPosition;
+        }
+    }
+
+    #endregion
+
+    #region Methods Structural Headings
+
+    /// <inheritdoc />
+    public ValueTask<StructuralHeadingInspection?>
+        TryInspectStructuralHeadingsAsync(
+            DocumentSource source,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            source);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!source.Content.CanSeek)
+        {
+            throw new InvalidOperationException(
+                "EPUB structural-heading inspection requires the Engine-prepared seekable source.");
+        }
+
+        var originalPosition =
+            source.Content.Position;
+
+        try
+        {
+            if (!_recognizer.IsRecognized(
+                    source))
+            {
+                return ValueTask.FromResult<StructuralHeadingInspection?>(
+                    null);
+            }
+
+            if (source.Content.Length >
+                _options.MaximumSourceBytes)
+            {
+                throw new InvalidDataException(
+                    SourceTooLargeMessage);
+            }
+
+            var inspection =
+                _extractor.InspectStructuralHeadings(
+                    source.Content,
+                    _options,
+                    cancellationToken);
+
+            return ValueTask.FromResult<StructuralHeadingInspection?>(
                 inspection);
         }
         finally

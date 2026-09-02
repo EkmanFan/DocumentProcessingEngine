@@ -430,7 +430,7 @@ internal sealed class EpubPackageExtractor
                 manifest);
 
         var axis =
-            new NativeDocumentNavigationAxis.ContentUnits(
+            new DocumentStructureAxis.ContentUnits(
                 spineItems
                     .Select(
                         item =>
@@ -454,6 +454,187 @@ internal sealed class EpubPackageExtractor
             axis,
             navigationEntries);
     }
+
+    /// <summary>
+    /// Reads native XHTML headings on the authoritative spine axis without
+    /// running complete document extraction.
+    /// </summary>
+    public StructuralHeadingInspection InspectStructuralHeadings(
+        Stream source,
+        EpubDocumentFormatOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            source);
+
+        ArgumentNullException.ThrowIfNull(
+            options);
+
+        if (!source.CanSeek)
+        {
+            throw new InvalidOperationException(
+                "EPUB structural-heading inspection requires a prepared seekable source.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        source.Position =
+            0;
+
+        using var archive =
+            new ZipArchive(
+                source,
+                ZipArchiveMode.Read,
+                leaveOpen:
+                    true);
+
+        var entries =
+            ValidateAndIndexEntries(
+                archive,
+                options,
+                cancellationToken);
+
+        var container =
+            LoadXml(
+                GetRequiredEntry(
+                    entries,
+                    "META-INF/container.xml"),
+                options.MaximumTextResourceBytes);
+
+        var packagePath =
+            container
+                .Descendants()
+                .Where(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "rootfile",
+                            StringComparison.Ordinal))
+                .Select(
+                    element =>
+                        element.Attribute(
+                                "full-path")?
+                            .Value)
+                .FirstOrDefault(
+                    value =>
+                        !string.IsNullOrWhiteSpace(
+                            value)) ??
+            throw new InvalidDataException(
+                "EPUB container does not identify a package document.");
+
+        packagePath =
+            EpubArchivePath.NormalizeEntryPath(
+                Uri.UnescapeDataString(
+                    packagePath));
+
+        var package =
+            LoadXml(
+                GetRequiredEntry(
+                    entries,
+                    packagePath),
+                options.MaximumTextResourceBytes);
+
+        var manifest =
+            ReadManifest(
+                package,
+                packagePath);
+
+        var spineItems =
+            ReadSpine(
+                package,
+                manifest);
+
+        var headingEntries =
+            new List<StructuralHeadingEntry>();
+
+        var sourceOrder =
+            0;
+
+        foreach (var spineItem in
+                 spineItems)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!string.Equals(
+                    spineItem.MediaType,
+                    "application/xhtml+xml",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var document =
+                LoadXml(
+                    GetRequiredEntry(
+                        entries,
+                        spineItem.ResourcePath),
+                    options.MaximumTextResourceBytes);
+
+            var body =
+                document
+                    .Descendants()
+                    .FirstOrDefault(
+                        element =>
+                            string.Equals(
+                                element.Name.LocalName,
+                                "body",
+                                StringComparison.OrdinalIgnoreCase));
+
+            if (body is null)
+            {
+                throw new InvalidDataException(
+                    "EPUB XHTML spine resource does not contain a body.");
+            }
+
+            foreach (var heading in
+                     body
+                         .Descendants()
+                         .Where(
+                             element =>
+                                 IsNativeHeadingElement(
+                                     element.Name.LocalName)))
+            {
+                var title =
+                    NormalizeNavigationTitle(
+                        heading.Value);
+
+                if (title is null)
+                {
+                    continue;
+                }
+
+                headingEntries.Add(
+                    new StructuralHeadingEntry(
+                        title,
+                        heading.Name.LocalName[1] -
+                        '1',
+                        sourceOrder++,
+                        new DocumentStructurePosition.ContentUnit(
+                            spineItem.SpineIndex,
+                            spineItem.ResourcePath)));
+            }
+        }
+
+        source.Position =
+            0;
+
+        return new StructuralHeadingInspection(
+            DocumentFormatId.Epub,
+            new DocumentStructureAxis.ContentUnits(
+                spineItems
+                    .Select(
+                        item =>
+                            item.ResourcePath)
+                    .ToArray()),
+            headingEntries);
+    }
+
+    private static bool IsNativeHeadingElement(
+        string localName) =>
+        localName.Length ==
+            2 &&
+        (localName[0] is 'h' or 'H') &&
+        localName[1] is >= '1' and <= '6';
 
     #endregion
 
@@ -1271,7 +1452,7 @@ internal sealed class EpubPackageExtractor
                         item.Candidate.Title,
                         item.Candidate.HierarchyLevel,
                         item.Candidate.SourceOrder,
-                        new NativeDocumentNavigationPosition.ContentUnit(
+                        new DocumentStructurePosition.ContentUnit(
                             item.SpineItem.SpineIndex,
                             item.SpineItem.ResourcePath)))
             .ToArray();

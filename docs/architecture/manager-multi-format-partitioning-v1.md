@@ -5,6 +5,9 @@ MGR-BAT-02C3 are complete: PDF and EPUB now share the neutral partition
 strategy while retaining their native coordinate systems from proposal through
 approved execution.
 
+The later structural-heading fallback is specified separately in
+[Manager structural-heading partitioning V1](manager-structural-heading-partitioning-v1.md).
+
 ## Context
 
 The Manager can currently replace one pending whole-document unit with ordered

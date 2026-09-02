@@ -18,7 +18,8 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
     private readonly IDocumentSubmissionReader _submissionReader;
     private readonly ISourceArtifactReader _sourceReader;
     private readonly int _complexDocumentPageThreshold;
-    private readonly IDocumentPartitionStrategy _partitionStrategy;
+    private readonly IDocumentPartitionStrategy _nativeNavigationStrategy;
+    private readonly IDocumentPartitionStrategy _structuralHeadingStrategy;
 
     #endregion
 
@@ -31,7 +32,8 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
         IDocumentSubmissionReader submissionReader,
         ISourceArtifactReader sourceReader,
         int complexDocumentPageThreshold = DefaultComplexDocumentPageThreshold,
-        IDocumentPartitionStrategy? partitionStrategy = null)
+        IDocumentPartitionStrategy? nativeNavigationStrategy = null,
+        IDocumentPartitionStrategy? structuralHeadingStrategy = null)
     {
         _host = host ?? throw new ArgumentNullException(nameof(host));
         _queueReader = queueReader ?? throw new ArgumentNullException(nameof(queueReader));
@@ -45,9 +47,13 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
 
         _complexDocumentPageThreshold = complexDocumentPageThreshold;
 
-        _partitionStrategy =
-            partitionStrategy ??
+        _nativeNavigationStrategy =
+            nativeNavigationStrategy ??
             new NativeNavigationPartitionStrategy();
+
+        _structuralHeadingStrategy =
+            structuralHeadingStrategy ??
+            new StructuralHeadingPartitionStrategy();
     }
 
     #endregion
@@ -79,28 +85,41 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
                 .ConfigureAwait(false);
 
         if (navigation?.Axis is
-            NativeDocumentNavigationAxis.ContentUnits contentAxis)
+            DocumentStructureAxis.ContentUnits contentAxis)
         {
-            var axis =
-                new DocumentPartitionAxis.ContentUnits(
-                    contentAxis.ContentUnitIds);
-
-            var proposal =
-                BuildProposal(
-                    axis,
-                    navigation);
-
-            return new DocumentSplitPreviewManifest(
+            return await BuildContentUnitPreviewAsync(
                 unitId,
-                context.Submission.SubmissionId,
-                context.Submission.OriginalFileName,
-                axis,
-                splitSuggested:
-                    proposal is not null,
-                proposal,
-                BuildContentUnitLabels(
-                    contentAxis,
-                    navigation));
+                context,
+                documentSource,
+                contentAxis,
+                navigation,
+                cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        StructuralHeadingInspection? structuralHeadings =
+            null;
+
+        if (navigation is null)
+        {
+            structuralHeadings =
+                await _host
+                    .TryInspectStructuralHeadingsAsync(
+                        documentSource,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            if (structuralHeadings?.Axis is
+                DocumentStructureAxis.ContentUnits structuralContentAxis)
+            {
+                return BuildContentUnitPreview(
+                    unitId,
+                    context,
+                    structuralContentAxis,
+                    navigation:
+                        null,
+                    structuralHeadings);
+            }
         }
 
         var inspection =
@@ -114,12 +133,33 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
                 inspection.PhysicalPageCount);
 
         var physicalProposal =
-            navigation?.Axis is NativeDocumentNavigationAxis.PhysicalPages nativePages &&
+            navigation?.Axis is DocumentStructureAxis.PhysicalPages nativePages &&
             nativePages.PhysicalPageCount == inspection.PhysicalPageCount
-                ? BuildProposal(
+                ? BuildNativeNavigationProposal(
                     physicalAxis,
                     navigation)
                 : null;
+
+        if (physicalProposal is null)
+        {
+            structuralHeadings ??=
+                await _host
+                    .TryInspectStructuralHeadingsAsync(
+                        documentSource,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            if (structuralHeadings?.Axis is
+                    DocumentStructureAxis.PhysicalPages structuralPages &&
+                structuralPages.PhysicalPageCount ==
+                inspection.PhysicalPageCount)
+            {
+                physicalProposal =
+                    BuildStructuralHeadingProposal(
+                        physicalAxis,
+                        structuralHeadings);
+            }
+        }
 
         return new DocumentSplitPreviewManifest(
             unitId,
@@ -129,6 +169,106 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
             inspection.PhysicalPageCount >= _complexDocumentPageThreshold ||
             physicalProposal is not null,
             physicalProposal);
+    }
+
+    private async ValueTask<DocumentSplitPreviewManifest>
+        BuildContentUnitPreviewAsync(
+            ProcessingUnitId unitId,
+            PreviewContext context,
+            DocumentSource source,
+            DocumentStructureAxis.ContentUnits contentAxis,
+            NativeDocumentNavigationInspection navigation,
+            CancellationToken cancellationToken)
+    {
+        var axis =
+            new DocumentPartitionAxis.ContentUnits(
+                contentAxis.ContentUnitIds);
+
+        var nativeProposal =
+            BuildNativeNavigationProposal(
+                axis,
+                navigation);
+
+        if (nativeProposal is not null)
+        {
+            return BuildContentUnitPreview(
+                unitId,
+                context,
+                contentAxis,
+                navigation,
+                structuralHeadings:
+                    null);
+        }
+
+        var structuralHeadings =
+            await _host
+                .TryInspectStructuralHeadingsAsync(
+                    source,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return BuildContentUnitPreview(
+            unitId,
+            context,
+            contentAxis,
+            navigation,
+            structuralHeadings);
+    }
+
+    private DocumentSplitPreviewManifest BuildContentUnitPreview(
+        ProcessingUnitId unitId,
+        PreviewContext context,
+        DocumentStructureAxis.ContentUnits contentAxis,
+        NativeDocumentNavigationInspection? navigation,
+        StructuralHeadingInspection? structuralHeadings)
+    {
+        var axis =
+            new DocumentPartitionAxis.ContentUnits(
+                contentAxis.ContentUnitIds);
+
+        var nativeProposal =
+            navigation is not null
+                ? BuildNativeNavigationProposal(
+                    axis,
+                    navigation)
+                : null;
+
+        var structuralProposal =
+            nativeProposal is null &&
+            structuralHeadings?.Axis is
+                DocumentStructureAxis.ContentUnits structuralAxis &&
+            ContentUnitAxesMatch(
+                structuralAxis,
+                contentAxis)
+                ? BuildStructuralHeadingProposal(
+                    axis,
+                    structuralHeadings)
+                : null;
+
+        var proposal =
+            nativeProposal ??
+            structuralProposal;
+
+        var labels =
+            structuralProposal is not null
+                ? BuildContentUnitLabels(
+                    contentAxis,
+                    structuralHeadings!)
+                : navigation is not null
+                    ? BuildContentUnitLabels(
+                        contentAxis,
+                        navigation)
+                    : [];
+
+        return new DocumentSplitPreviewManifest(
+            unitId,
+            context.Submission.SubmissionId,
+            context.Submission.OriginalFileName,
+            axis,
+            splitSuggested:
+                proposal is not null,
+            proposal,
+            labels);
     }
 
     /// <inheritdoc />
@@ -181,7 +321,7 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
         return new PreviewContext(unit, submission);
     }
 
-    private DocumentPartitionProposal? BuildProposal(
+    private DocumentPartitionProposal? BuildNativeNavigationProposal(
         DocumentPartitionAxis axis,
         NativeDocumentNavigationInspection navigation)
     {
@@ -198,20 +338,43 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
                             DocumentPartitionEvidenceOrigin.NativeNavigation))
                 .ToArray();
 
-        return _partitionStrategy.TryPropose(
+        return _nativeNavigationStrategy.TryPropose(
+            new DocumentPartitionEvidence(
+                axis,
+                boundaries));
+    }
+
+    private DocumentPartitionProposal? BuildStructuralHeadingProposal(
+        DocumentPartitionAxis axis,
+        StructuralHeadingInspection inspection)
+    {
+        var boundaries =
+            inspection.Entries
+                .Select(
+                    entry =>
+                        new DocumentPartitionBoundary(
+                            ToPartitionPosition(
+                                entry.Position),
+                            entry.Title,
+                            entry.HierarchyLevel,
+                            entry.SourceOrder,
+                            DocumentPartitionEvidenceOrigin.StructuralHeading))
+                .ToArray();
+
+        return _structuralHeadingStrategy.TryPropose(
             new DocumentPartitionEvidence(
                 axis,
                 boundaries));
     }
 
     private static DocumentPartitionPosition ToPartitionPosition(
-        NativeDocumentNavigationPosition position) =>
+        DocumentStructurePosition position) =>
         position switch
         {
-            NativeDocumentNavigationPosition.PhysicalPage page =>
+            DocumentStructurePosition.PhysicalPage page =>
                 new DocumentPartitionPosition.PhysicalPage(
                     page.PhysicalPageNumber),
-            NativeDocumentNavigationPosition.ContentUnit unit =>
+            DocumentStructurePosition.ContentUnit unit =>
                 new DocumentPartitionPosition.ContentUnit(
                     unit.ContentUnitIndex,
                     unit.ContentUnitId),
@@ -219,12 +382,12 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
                 throw new ArgumentOutOfRangeException(
                     nameof(position),
                     position,
-                    "Unknown native-navigation position.")
+                    "Unknown source-structure position.")
         };
 
     private static IReadOnlyList<DocumentSplitContentUnitLabel>
         BuildContentUnitLabels(
-            NativeDocumentNavigationAxis.ContentUnits axis,
+            DocumentStructureAxis.ContentUnits axis,
             NativeDocumentNavigationInspection navigation) =>
         navigation.Entries
             .Select(
@@ -233,7 +396,7 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
                         Entry:
                             entry,
                         Position:
-                            (NativeDocumentNavigationPosition.ContentUnit)
+                            (DocumentStructurePosition.ContentUnit)
                             entry.Position
                     ))
             .GroupBy(
@@ -259,6 +422,51 @@ public sealed class DocumentProcessingSplitPreviewProvider : IDocumentSplitPrevi
                         axis.ContentUnitIds[item.Position.ContentUnitIndex],
                         item.Entry.Title))
             .ToArray();
+
+    private static IReadOnlyList<DocumentSplitContentUnitLabel>
+        BuildContentUnitLabels(
+            DocumentStructureAxis.ContentUnits axis,
+            StructuralHeadingInspection inspection) =>
+        inspection.Entries
+            .Select(
+                entry =>
+                    (
+                        Entry:
+                            entry,
+                        Position:
+                            (DocumentStructurePosition.ContentUnit)
+                            entry.Position
+                    ))
+            .GroupBy(
+                item =>
+                    item.Position.ContentUnitIndex)
+            .Select(
+                group =>
+                    group
+                        .OrderBy(
+                            item =>
+                                item.Entry.HierarchyLevel)
+                        .ThenBy(
+                            item =>
+                                item.Entry.SourceOrder)
+                        .First())
+            .OrderBy(
+                item =>
+                    item.Position.ContentUnitIndex)
+            .Select(
+                item =>
+                    new DocumentSplitContentUnitLabel(
+                        item.Position.ContentUnitIndex,
+                        axis.ContentUnitIds[item.Position.ContentUnitIndex],
+                        item.Entry.Title))
+            .ToArray();
+
+    private static bool ContentUnitAxesMatch(
+        DocumentStructureAxis.ContentUnits first,
+        DocumentStructureAxis.ContentUnits second) =>
+        first.ContentUnitIds.SequenceEqual(
+            second.ContentUnitIds,
+            StringComparer.Ordinal);
 
     private sealed record PreviewContext(
         ProcessingQueueItemSnapshot Unit,

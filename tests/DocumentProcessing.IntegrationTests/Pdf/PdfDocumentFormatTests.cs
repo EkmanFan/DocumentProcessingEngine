@@ -228,7 +228,7 @@ public sealed class PdfDocumentFormatTests
 
         Assert.Equal(
             4,
-            Assert.IsType<NativeDocumentNavigationAxis.PhysicalPages>(
+            Assert.IsType<DocumentStructureAxis.PhysicalPages>(
                     inspection.Axis)
                 .PhysicalPageCount);
 
@@ -264,6 +264,72 @@ public sealed class PdfDocumentFormatTests
                         2,
                     physicalPageNumber:
                         3));
+
+        Assert.Equal(
+            7,
+            stream.Position);
+    }
+
+    [Fact]
+    public async Task TryInspectStructuralHeadingsAsync_UsesNativeTypographyAndIgnoresRunningHeaders()
+    {
+        await using var stream =
+            new MemoryStream(
+                CreatePdfWithStructuralHeadings());
+
+        stream.Position =
+            7;
+
+        var format =
+            new PdfDocumentFormat();
+
+        var navigation =
+            await format.TryInspectNativeNavigationAsync(
+                new DocumentSource(
+                    stream,
+                    "headings.pdf",
+                    "application/pdf"));
+
+        var inspection =
+            await format.TryInspectStructuralHeadingsAsync(
+                new DocumentSource(
+                    stream,
+                    "headings.pdf",
+                    "application/pdf"));
+
+        Assert.NotNull(
+            navigation);
+
+        Assert.Empty(
+            navigation.Entries);
+
+        Assert.NotNull(
+            inspection);
+
+        Assert.Equal(
+            5,
+            Assert.IsType<DocumentStructureAxis.PhysicalPages>(
+                    inspection.Axis)
+                .PhysicalPageCount);
+
+        Assert.Collection(
+            inspection.Entries,
+            entry =>
+                AssertStructuralHeadingEntry(
+                    entry,
+                    "Chapter One",
+                    hierarchyLevel:
+                        0,
+                    physicalPageNumber:
+                        2),
+            entry =>
+                AssertStructuralHeadingEntry(
+                    entry,
+                    "Chapter Two",
+                    hierarchyLevel:
+                        0,
+                    physicalPageNumber:
+                        4));
 
         Assert.Equal(
             7,
@@ -351,6 +417,57 @@ public sealed class PdfDocumentFormatTests
         return builder.Build();
     }
 
+    private static byte[] CreatePdfWithStructuralHeadings()
+    {
+        var builder =
+            new PdfDocumentBuilder();
+
+        var font =
+            builder.AddStandard14Font(
+                Standard14Font.Helvetica);
+
+        for (var pageNumber = 1;
+             pageNumber <= 5;
+             pageNumber++)
+        {
+            var page =
+                builder.AddPage(
+                    PageSize.A4);
+
+            page.AddText(
+                "Example Book",
+                16,
+                new PdfPoint(
+                    72,
+                    790),
+                font);
+
+            if (pageNumber is 2 or 4)
+            {
+                page.AddText(
+                    pageNumber ==
+                        2
+                        ? "Chapter One"
+                        : "Chapter Two",
+                    24,
+                    new PdfPoint(
+                        72,
+                        700),
+                    font);
+            }
+
+            page.AddText(
+                "This ordinary paragraph contains enough native body words to establish the document baseline.",
+                12,
+                new PdfPoint(
+                    72,
+                    620),
+                font);
+        }
+
+        return builder.Build();
+    }
+
     private static ExplicitDestination Destination(
         int physicalPageNumber) =>
         new(
@@ -379,7 +496,28 @@ public sealed class PdfDocumentFormatTests
 
         Assert.Equal(
             physicalPageNumber,
-            Assert.IsType<NativeDocumentNavigationPosition.PhysicalPage>(
+            Assert.IsType<DocumentStructurePosition.PhysicalPage>(
+                    entry.Position)
+                .PhysicalPageNumber);
+    }
+
+    private static void AssertStructuralHeadingEntry(
+        StructuralHeadingEntry entry,
+        string expectedTitle,
+        int hierarchyLevel,
+        int physicalPageNumber)
+    {
+        Assert.Equal(
+            expectedTitle,
+            entry.Title);
+
+        Assert.Equal(
+            hierarchyLevel,
+            entry.HierarchyLevel);
+
+        Assert.Equal(
+            physicalPageNumber,
+            Assert.IsType<DocumentStructurePosition.PhysicalPage>(
                     entry.Position)
                 .PhysicalPageNumber);
     }

@@ -859,7 +859,7 @@ public sealed class EpubDocumentFormatTests
             inspection.Format);
 
         var axis =
-            Assert.IsType<NativeDocumentNavigationAxis.ContentUnits>(
+            Assert.IsType<DocumentStructureAxis.ContentUnits>(
                 inspection.Axis);
 
         Assert.Equal(
@@ -918,7 +918,7 @@ public sealed class EpubDocumentFormatTests
         Assert.NotNull(
             inspection);
 
-        Assert.IsType<NativeDocumentNavigationAxis.ContentUnits>(
+        Assert.IsType<DocumentStructureAxis.ContentUnits>(
             inspection.Axis);
 
         Assert.Equal(
@@ -934,7 +934,7 @@ public sealed class EpubDocumentFormatTests
             [1, 2],
             inspection.Entries.Select(
                 entry =>
-                    Assert.IsType<NativeDocumentNavigationPosition.ContentUnit>(
+                    Assert.IsType<DocumentStructurePosition.ContentUnit>(
                             entry.Position)
                         .ContentUnitIndex));
     }
@@ -965,6 +965,192 @@ public sealed class EpubDocumentFormatTests
 
         Assert.Empty(
             inspection.Entries);
+    }
+
+    [Fact]
+    public async Task DocumentFormat_InspectsNativeXhtmlHeadingsWithoutNavigation()
+    {
+        await using var stream =
+            new MemoryStream(
+                TestEpubFactory.CreateStructuralHeadingFixture());
+
+        stream.Position =
+            7;
+
+        var format =
+            new EpubDocumentFormat();
+
+        var navigation =
+            await format.TryInspectNativeNavigationAsync(
+                new DocumentSource(
+                    stream,
+                    "headings.epub",
+                    "application/epub+zip"));
+
+        var inspection =
+            await format.TryInspectStructuralHeadingsAsync(
+                new DocumentSource(
+                    stream,
+                    "headings.epub",
+                    "application/epub+zip"));
+
+        Assert.NotNull(
+            navigation);
+
+        Assert.Empty(
+            navigation.Entries);
+
+        Assert.NotNull(
+            inspection);
+
+        var axis =
+            Assert.IsType<DocumentStructureAxis.ContentUnits>(
+                inspection.Axis);
+
+        Assert.Equal(
+            [
+                "OPS/text/front.xhtml",
+                "OPS/text/chapter1.xhtml",
+                "OPS/text/chapter2.xhtml"
+            ],
+            axis.ContentUnitIds);
+
+        Assert.Collection(
+            inspection.Entries,
+            entry =>
+                AssertStructuralHeadingEntry(
+                    entry,
+                    "Chapter One",
+                    hierarchyLevel:
+                        0,
+                    sourceOrder:
+                        0,
+                    contentUnitIndex:
+                        1,
+                    "OPS/text/chapter1.xhtml"),
+            entry =>
+                AssertStructuralHeadingEntry(
+                    entry,
+                    "Section One",
+                    hierarchyLevel:
+                        1,
+                    sourceOrder:
+                        1,
+                    contentUnitIndex:
+                        1,
+                    "OPS/text/chapter1.xhtml"),
+            entry =>
+                AssertStructuralHeadingEntry(
+                    entry,
+                    "Chapter Two",
+                    hierarchyLevel:
+                        0,
+                    sourceOrder:
+                        2,
+                    contentUnitIndex:
+                        2,
+                    "OPS/text/chapter2.xhtml"));
+
+        var proposal =
+            new StructuralHeadingPartitionStrategy()
+                .TryPropose(
+                    new DocumentPartitionEvidence(
+                        new DocumentPartitionAxis.ContentUnits(
+                            axis.ContentUnitIds),
+                        inspection.Entries
+                            .Select(
+                                entry =>
+                                {
+                                    var position =
+                                        Assert.IsType<DocumentStructurePosition.ContentUnit>(
+                                            entry.Position);
+
+                                    return new DocumentPartitionBoundary(
+                                        new DocumentPartitionPosition.ContentUnit(
+                                            position.ContentUnitIndex,
+                                            position.ContentUnitId),
+                                        entry.Title,
+                                        entry.HierarchyLevel,
+                                        entry.SourceOrder,
+                                        DocumentPartitionEvidenceOrigin.StructuralHeading);
+                                })
+                            .ToArray()));
+
+        Assert.NotNull(
+            proposal);
+
+        Assert.Equal(
+            StructuralHeadingPartitionStrategy.StructuralHeadingStrategyId,
+            proposal.StrategyId);
+
+        Assert.Equal(
+            7,
+            stream.Position);
+    }
+
+    [Theory]
+    [InlineData("habermas-case-for-resurrection.epub", 0)]
+    [InlineData("Jesus and the Eyewitnesses - The Gospels as Eyewitness Testimony - Richard Bauckham.epub", 2)]
+    public async Task DocumentFormat_TargetedLocalStructuralHeadingsRetainSpineCoordinates(
+        string fileName,
+        int minimumHeadingCount)
+    {
+        var path =
+            Path.Combine(
+                FindRepositoryRoot(),
+                "tests",
+                "document_corpus",
+                "epub",
+                fileName);
+
+        if (!File.Exists(
+                path))
+        {
+            throw Xunit.Sdk.SkipException.ForSkip(
+                $"Targeted EPUB control '{fileName}' is unavailable.");
+        }
+
+        await using var stream =
+            File.OpenRead(
+                path);
+
+        var inspection =
+            await new EpubDocumentFormat()
+                .TryInspectStructuralHeadingsAsync(
+                    new DocumentSource(
+                        stream,
+                        fileName,
+                        "application/epub+zip"));
+
+        Assert.NotNull(
+            inspection);
+
+        var axis =
+            Assert.IsType<DocumentStructureAxis.ContentUnits>(
+                inspection.Axis);
+
+        Assert.True(
+            inspection.Entries.Count >=
+            minimumHeadingCount);
+
+        Assert.All(
+            inspection.Entries,
+            entry =>
+            {
+                var position =
+                    Assert.IsType<DocumentStructurePosition.ContentUnit>(
+                        entry.Position);
+
+                Assert.InRange(
+                    position.ContentUnitIndex,
+                    0,
+                    axis.ContentUnitIds.Count -
+                    1);
+
+                Assert.Equal(
+                    axis.ContentUnitIds[position.ContentUnitIndex],
+                    position.ContentUnitId);
+            });
     }
 
     [Theory]
@@ -1004,7 +1190,7 @@ public sealed class EpubDocumentFormatTests
             inspection);
 
         var nativeAxis =
-            Assert.IsType<NativeDocumentNavigationAxis.ContentUnits>(
+            Assert.IsType<DocumentStructureAxis.ContentUnits>(
                 inspection.Axis);
 
         Assert.NotEmpty(
@@ -1024,7 +1210,7 @@ public sealed class EpubDocumentFormatTests
                                 entry =>
                                 {
                                     var position =
-                                        Assert.IsType<NativeDocumentNavigationPosition.ContentUnit>(
+                                        Assert.IsType<DocumentStructurePosition.ContentUnit>(
                                             entry.Position);
 
                                     return new DocumentPartitionBoundary(
@@ -1107,7 +1293,7 @@ public sealed class EpubDocumentFormatTests
                     "application/epub+zip"));
 
         var axis =
-            Assert.IsType<NativeDocumentNavigationAxis.ContentUnits>(
+            Assert.IsType<DocumentStructureAxis.ContentUnits>(
                 Assert.IsType<NativeDocumentNavigationInspection>(
                         inspection)
                     .Axis);
@@ -1217,7 +1403,40 @@ public sealed class EpubDocumentFormatTests
             entry.SourceOrder);
 
         var position =
-            Assert.IsType<NativeDocumentNavigationPosition.ContentUnit>(
+            Assert.IsType<DocumentStructurePosition.ContentUnit>(
+                entry.Position);
+
+        Assert.Equal(
+            contentUnitIndex,
+            position.ContentUnitIndex);
+
+        Assert.Equal(
+            contentUnitId,
+            position.ContentUnitId);
+    }
+
+    private static void AssertStructuralHeadingEntry(
+        StructuralHeadingEntry entry,
+        string expectedTitle,
+        int hierarchyLevel,
+        int sourceOrder,
+        int contentUnitIndex,
+        string contentUnitId)
+    {
+        Assert.Equal(
+            expectedTitle,
+            entry.Title);
+
+        Assert.Equal(
+            hierarchyLevel,
+            entry.HierarchyLevel);
+
+        Assert.Equal(
+            sourceOrder,
+            entry.SourceOrder);
+
+        var position =
+            Assert.IsType<DocumentStructurePosition.ContentUnit>(
                 entry.Position);
 
         Assert.Equal(
