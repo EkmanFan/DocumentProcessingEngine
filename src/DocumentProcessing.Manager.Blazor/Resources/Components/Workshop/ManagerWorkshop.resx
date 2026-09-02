@@ -90,6 +90,7 @@
   <data name="HostUnavailableDetail" xml:space="preserve"><value>Check that the Host is running and that the API key is correct.</value></data>
   <data name="WholeDocumentScope" xml:space="preserve"><value>Whole document</value></data>
   <data name="PageRangeScope" xml:space="preserve"><value>{0} · pages {1}–{2}</value></data>
+  <data name="ContentUnitRangeScope" xml:space="preserve"><value>{0} · sections {1}–{2}</value></data>
   <data name="TodayAt" xml:space="preserve"><value>Today at {0}</value></data>
   <data name="Settings" xml:space="preserve"><value>Settings</value></data>
   <data name="OpenSettings" xml:space="preserve"><value>Open Manager settings</value></data>
@@ -132,7 +133,7 @@
   <data name="NextPage" xml:space="preserve"><value>Next</value></data>
   <data name="ArchiveDateRangeInvalid" xml:space="preserve"><value>Enter a valid date range.</value></data>
   <data name="ArchiveLoadFailed" xml:space="preserve"><value>The archives could not be loaded.</value></data>
-  <data name="OpenSplit" xml:space="preserve"><value>Choose a PDF to split</value></data>
+  <data name="OpenSplit" xml:space="preserve"><value>Choose a PDF or EPUB to split</value></data>
   <data name="SplitDocument" xml:space="preserve"><value>Split</value></data>
   <data name="SplitQueuedItem" xml:space="preserve"><value>Split</value></data>
   <data name="SplitQueuedItemLabel" xml:space="preserve"><value>Split {0} before processing</value></data>

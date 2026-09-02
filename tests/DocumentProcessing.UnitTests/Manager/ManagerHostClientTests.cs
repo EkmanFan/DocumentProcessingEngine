@@ -208,15 +208,19 @@ public sealed class ManagerHostClientTests
                   "unitId": "{{unitId:D}}",
                   "submissionId": "{{submissionId:D}}",
                   "originalFileName": "outlined.pdf",
+                  "axisKind": "physicalPages",
                   "physicalPageCount": 30,
+                  "contentUnits": [],
                   "splitSuggested": false,
                   "suggestedRanges": [
                     {
+                      "kind": "physicalPageRange",
                       "startPhysicalPageNumber": 1,
                       "endPhysicalPageNumber": 10,
                       "suggestedTitle": "Chapter 1"
                     },
                     {
+                      "kind": "physicalPageRange",
                       "startPhysicalPageNumber": 11,
                       "endPhysicalPageNumber": 30,
                       "suggestedTitle": "Chapter 2"
@@ -269,6 +273,160 @@ public sealed class ManagerHostClientTests
                     "Chapter 2",
                     range.SuggestedTitle);
             });
+    }
+
+    [Fact]
+    public async Task GetSplitPreviewAsync_MapsStructuredContentUnitProposal()
+    {
+        var unitId =
+            Guid.NewGuid();
+
+        var submissionId =
+            Guid.NewGuid();
+
+        var handler =
+            new RecordingHandler(
+                $$"""
+                {
+                  "unitId": "{{unitId:D}}",
+                  "submissionId": "{{submissionId:D}}",
+                  "originalFileName": "book.epub",
+                  "axisKind": "contentUnits",
+                  "physicalPageCount": null,
+                  "contentUnits": [
+                    {
+                      "contentUnitIndex": 0,
+                      "contentUnitId": "OPS/front.xhtml",
+                      "suggestedTitle": null
+                    },
+                    {
+                      "contentUnitIndex": 1,
+                      "contentUnitId": "OPS/chapter1.xhtml",
+                      "suggestedTitle": "Chapter 1"
+                    }
+                  ],
+                  "splitSuggested": true,
+                  "suggestedRanges": [
+                    {
+                      "kind": "contentUnitRange",
+                      "startContentUnitIndex": 0,
+                      "startContentUnitId": "OPS/front.xhtml",
+                      "endContentUnitIndex": 0,
+                      "endContentUnitId": "OPS/front.xhtml",
+                      "suggestedTitle": null
+                    },
+                    {
+                      "kind": "contentUnitRange",
+                      "startContentUnitIndex": 1,
+                      "startContentUnitId": "OPS/chapter1.xhtml",
+                      "endContentUnitIndex": 1,
+                      "endContentUnitId": "OPS/chapter1.xhtml",
+                      "suggestedTitle": "Chapter 1"
+                    }
+                  ]
+                }
+                """);
+
+        using var client =
+            CreateClient(
+                handler);
+
+        var preview =
+            await new ManagerHostClient(
+                    client)
+                .GetSplitPreviewAsync(
+                    unitId);
+
+        Assert.Equal(
+            "contentUnits",
+            preview.AxisKind);
+
+        Assert.Null(
+            preview.PhysicalPageCount);
+
+        Assert.Equal(
+            "OPS/chapter1.xhtml",
+            preview.ContentUnits[1].ContentUnitId);
+
+        Assert.Equal(
+            1,
+            preview.SuggestedRanges[1].StartContentUnitIndex);
+    }
+
+    [Fact]
+    public async Task SplitPendingUnitAsync_SendsStableContentUnitBoundaries()
+    {
+        var unitId =
+            Guid.NewGuid();
+
+        var handler =
+            new RecordingHandler(
+                """
+                { "processingUnitIds": [] }
+                """);
+
+        using var client =
+            CreateClient(
+                handler);
+
+        await new ManagerHostClient(
+                client)
+            .SplitPendingUnitAsync(
+                unitId,
+                expectedVersion:
+                    12,
+                [
+                    new ManagerSplitRangeDraft.ContentUnitRange(
+                        0,
+                        "OPS/front.xhtml",
+                        1,
+                        "OPS/chapter1.xhtml",
+                        "Part one"),
+                    new ManagerSplitRangeDraft.ContentUnitRange(
+                        2,
+                        "OPS/chapter2.xhtml",
+                        3,
+                        "OPS/chapter3.xhtml",
+                        "Part two")
+                ],
+                releaseAfterSplit:
+                    true);
+
+        using var document =
+            JsonDocument.Parse(
+                handler.Content);
+
+        var root =
+            document.RootElement;
+
+        Assert.Equal(
+            12,
+            root.GetProperty(
+                    "expectedVersion")
+                .GetInt64());
+
+        Assert.True(
+            root.GetProperty(
+                    "releaseAfterSplit")
+                .GetBoolean());
+
+        var first =
+            root.GetProperty(
+                    "ranges")
+                .EnumerateArray()
+                .First();
+
+        Assert.Equal(
+            "contentUnitRange",
+            first.GetProperty(
+                    "kind")
+                .GetString());
+
+        Assert.Equal(
+            "OPS/front.xhtml",
+            first.GetProperty(
+                    "startContentUnitId")
+                .GetString());
     }
 
     [Fact]

@@ -29,6 +29,9 @@ public sealed record DocumentProcessingRequestOptions
     /// <summary>Gets the optional inclusive range of original physical pages to process.</summary>
     public PhysicalPageRange? PhysicalPageRange { get; }
 
+    /// <summary>Gets the optional inclusive range of stable native content units to process.</summary>
+    public ContentUnitRange? ContentUnitRange { get; }
+
     #endregion
 
     #region ctor
@@ -37,8 +40,17 @@ public sealed record DocumentProcessingRequestOptions
     public DocumentProcessingRequestOptions(
         bool qualifyUnresolvedVisuals = false,
         UserVisualAssetWriter? userVisualAssetWriter = null,
-        PhysicalPageRange? physicalPageRange = null)
+        PhysicalPageRange? physicalPageRange = null,
+        ContentUnitRange? contentUnitRange = null)
     {
+        if (physicalPageRange is not null &&
+            contentUnitRange is not null)
+        {
+            throw new ArgumentException(
+                "A processing request cannot combine physical-page and content-unit ranges.",
+                nameof(contentUnitRange));
+        }
+
         QualifyUnresolvedVisuals =
             qualifyUnresolvedVisuals;
 
@@ -47,6 +59,9 @@ public sealed record DocumentProcessingRequestOptions
 
         PhysicalPageRange =
             physicalPageRange;
+
+        ContentUnitRange =
+            contentUnitRange;
     }
 
     #endregion

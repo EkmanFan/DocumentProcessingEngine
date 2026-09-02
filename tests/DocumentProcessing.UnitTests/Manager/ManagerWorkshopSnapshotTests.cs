@@ -198,6 +198,72 @@ public sealed class ManagerWorkshopSnapshotTests
             scope.Title);
     }
 
+    [Fact]
+    public void Create_PreservesContentUnitRangeSemanticsWithoutSyntheticPages()
+    {
+        var item =
+            CreateItem(
+                "habermas.epub",
+                ManagerQueueItemStatus.Pending,
+                queuePosition:
+                    1) with
+            {
+                Scope =
+                    new ManagerScopeContract(
+                        "contentUnitRange",
+                        StartPhysicalPageNumber:
+                            null,
+                        EndPhysicalPageNumber:
+                            null,
+                        Title:
+                            "Chapter 2",
+                        StartContentUnitIndex:
+                            4,
+                        StartContentUnitId:
+                            "OPS/chapter2.xhtml",
+                        EndContentUnitIndex:
+                            6,
+                        EndContentUnitId:
+                            "OPS/chapter2-notes.xhtml")
+            };
+
+        var workshop =
+            ManagerWorkshopSnapshot.Create(
+                new ManagerStateContract(
+                    ManagerHostState.Running,
+                    Version:
+                        1),
+                new ManagerQueueContract(
+                    Version:
+                        1,
+                    [item]));
+
+        var scope =
+            Assert.Single(
+                    workshop.PendingItems)
+                .Scope;
+
+        Assert.Equal(
+            ManagerWorkItemScopeKind.ContentUnitRange,
+            scope.Kind);
+
+        Assert.Equal(
+            4,
+            scope.StartContentUnitIndex);
+
+        Assert.Equal(
+            "OPS/chapter2.xhtml",
+            scope.StartContentUnitId);
+
+        Assert.Equal(
+            6,
+            scope.EndContentUnitIndex);
+
+        Assert.Equal(
+            "OPS/chapter2-notes.xhtml",
+            scope.EndContentUnitId);
+    }
+
     #endregion
 
     #region Methods

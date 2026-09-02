@@ -1,7 +1,9 @@
 # Manager multi-format document partitioning v1
 
-Status: accepted on 2026-09-02. MGR-BAT-02A and MGR-BAT-02B are implemented;
-EPUB execution and its structured editor remain MGR-BAT-02C.
+Status: accepted and implemented on 2026-09-02. MGR-BAT-02A through
+MGR-BAT-02C3 are complete: PDF and EPUB now share the neutral partition
+strategy while retaining their native coordinate systems from proposal through
+approved execution.
 
 ## Context
 
@@ -131,14 +133,39 @@ Core never references PDF or EPUB assemblies.
 - map reliable internal destinations to physical-page boundary evidence;
 - prefill the existing paged splitter without changing manual fallback.
 
-### MGR-BAT-02C — EPUB navigation adapter and execution
+### MGR-BAT-02C1 — EPUB navigation adapter
 
 - expose resolved `nav`/NCX hierarchy and spine targets as content-unit evidence;
+- project only unambiguous, distinct spine-unit boundaries;
+- exercise the same neutral strategy on representative EPUB sources.
+
+### MGR-BAT-02C2 — EPUB content-unit execution
+
 - add a typed content-unit processing scope and format execution capability;
-- add the structured preview/editor variant and atomic persistence mapping.
+- persist and reload stable range boundary indexes and identifiers;
+- propagate the typed scope through the Manager, Host and Engine;
+- validate the approved boundaries against the current spine and extract only
+  the requested units.
+
+### MGR-BAT-02C3 — EPUB structured approval editor
+
+- add the structured preview/editor variant;
+- map an approved neutral proposal to typed content-unit scopes;
+- atomically replace the pending whole-document unit with the approved ranges.
 
 MGR-BAT-02 is complete only after both a qualified PDF and a qualified EPUB
 exercise the same neutral strategy contract end to end.
+
+MGR-BAT-02C2 acceptance evidence includes a real EPUBCheck-qualified execution
+that retains only the approved spine range, Engine propagation tests, and a
+PostgreSQL round trip through queue leasing and result publication.
+
+MGR-BAT-02C3 acceptance evidence includes a real Habermas EPUB producing a
+complete structured proposal, discriminated API/client contracts that preserve
+stable content-unit boundary identifiers, and atomic PostgreSQL replacement
+tests for both physical-page and content-unit ranges. The approval editor shows
+PDF thumbnails only for paged documents and an ordered native-section list for
+EPUB; it never synthesizes EPUB pages.
 
 ## Alternatives rejected
 

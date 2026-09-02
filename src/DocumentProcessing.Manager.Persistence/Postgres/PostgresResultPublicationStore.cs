@@ -230,7 +230,11 @@ public sealed class PostgresResultPublicationStore
                 result.media_type,
                 artifact.byte_length,
                 result.result_sha256_digest,
-                event.available_at_utc
+                event.available_at_utc,
+                unit.start_content_unit_index,
+                unit.start_content_unit_id,
+                unit.end_content_unit_index,
+                unit.end_content_unit_id
             FROM document_processing_manager.processing_results AS result
             INNER JOIN document_processing_manager.processing_result_artifacts AS artifact
                 ON artifact.sha256_digest = result.result_sha256_digest
@@ -250,12 +254,16 @@ public sealed class PostgresResultPublicationStore
             throw new InvalidOperationException("A claimed result publication disappeared inside its transaction.");
         }
 
-        ProcessingUnitScope scope = reader.GetInt16(3) switch
-        {
-            0 => new ProcessingUnitScope.WholeDocument(),
-            1 => new ProcessingUnitScope.PageRange(reader.GetInt32(4), reader.GetInt32(5), reader.GetString(6)),
-            var kind => throw new InvalidOperationException($"Unknown processing-unit scope kind '{kind}'.")
-        };
+        var scope = PostgresProcessingUnitScopeMapper.ReadScope(
+            reader,
+            kindOrdinal: 3,
+            startPageOrdinal: 4,
+            endPageOrdinal: 5,
+            titleOrdinal: 6,
+            startContentUnitIndexOrdinal: 12,
+            startContentUnitIdOrdinal: 13,
+            endContentUnitIndexOrdinal: 14,
+            endContentUnitIdOrdinal: 15);
 
         return new ResultAvailableDelivery(
             reader.GetString(0),

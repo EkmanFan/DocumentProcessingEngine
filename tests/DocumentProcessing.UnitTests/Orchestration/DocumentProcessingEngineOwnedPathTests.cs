@@ -86,6 +86,49 @@ public sealed class DocumentProcessingEngineOwnedPathTests
     }
 
     [Fact]
+    public async Task ProcessDocumentAsync_PropagatesRequestedContentUnitRange()
+    {
+        var format =
+            new StubDocumentFormat(
+                new NativeEvidenceExtractionResult.Success(
+                    CreateNativeEvidence()));
+
+        var engine =
+            new DocumentProcessingEngine(
+                [format],
+                new UnexpectedLayoutAnalyzer(),
+                new UnexpectedTextRecognizer(),
+                "test-engine-v1",
+                LayoutIdentity);
+
+        var requestedRange =
+            new ContentUnitRange(
+                2,
+                "OPS/chapter2.xhtml",
+                4,
+                "OPS/chapter4.xhtml");
+
+        await using var stream =
+            new MemoryStream(
+                "%PDF-engine-content-range"u8.ToArray(),
+                writable:
+                    false);
+
+        await engine.ProcessDocumentAsync(
+            new DocumentSource(
+                stream,
+                "engine-content-range.pdf",
+                "application/pdf"),
+            new DocumentProcessingRequestOptions(
+                contentUnitRange:
+                    requestedRange));
+
+        Assert.Equal(
+            requestedRange,
+            format.RequestedContentUnitRange);
+    }
+
+    [Fact]
     public async Task ProcessDocumentAsync_ConsumesAdapterConcludedNotes()
     {
         var format =
@@ -555,7 +598,8 @@ public sealed class DocumentProcessingEngineOwnedPathTests
     private sealed class StubDocumentFormat(
         NativeEvidenceExtractionResult outcome)
         : IDocumentFormat,
-          IPhysicalPageRangeDocumentFormat
+          IPhysicalPageRangeDocumentFormat,
+          IContentUnitRangeDocumentFormat
     {
         public DocumentFormatId Format =>
             DocumentFormatId.Pdf;
@@ -563,6 +607,8 @@ public sealed class DocumentProcessingEngineOwnedPathTests
         public int AcquisitionCallCount { get; private set; }
 
         public PhysicalPageRange? RequestedPhysicalPageRange { get; private set; }
+
+        public ContentUnitRange? RequestedContentUnitRange { get; private set; }
 
         public ValueTask<NativeEvidenceExtractionResult>
             TryExtractNativeEvidenceAsync(
@@ -588,6 +634,20 @@ public sealed class DocumentProcessingEngineOwnedPathTests
         {
             RequestedPhysicalPageRange =
                 physicalPageRange;
+
+            return TryExtractNativeEvidenceAsync(
+                source,
+                cancellationToken);
+        }
+
+        public ValueTask<NativeEvidenceExtractionResult>
+            TryExtractNativeEvidenceAsync(
+                DocumentSource source,
+                ContentUnitRange contentUnitRange,
+                CancellationToken cancellationToken = default)
+        {
+            RequestedContentUnitRange =
+                contentUnitRange;
 
             return TryExtractNativeEvidenceAsync(
                 source,

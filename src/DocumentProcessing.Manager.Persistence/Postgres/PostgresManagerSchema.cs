@@ -624,6 +624,88 @@ public sealed class PostgresManagerSchema
             $$;
             """;
 
+    private const string
+        MigrationNineSql =
+            """
+            ALTER TABLE document_processing_manager.processing_units
+                ADD COLUMN start_content_unit_index integer NULL,
+                ADD COLUMN start_content_unit_id text NULL,
+                ADD COLUMN end_content_unit_index integer NULL,
+                ADD COLUMN end_content_unit_id text NULL;
+
+            ALTER TABLE document_processing_manager.processing_units
+                DROP CONSTRAINT processing_units_scope_kind_check,
+                DROP CONSTRAINT processing_units_check;
+
+            ALTER TABLE document_processing_manager.processing_units
+                ADD CONSTRAINT processing_units_scope_kind_check
+                    CHECK (scope_kind BETWEEN 0 AND 2),
+                ADD CONSTRAINT processing_units_check
+                    CHECK
+                    (
+                        (scope_kind = 0
+                            AND start_physical_page_number IS NULL
+                            AND end_physical_page_number IS NULL
+                            AND start_content_unit_index IS NULL
+                            AND start_content_unit_id IS NULL
+                            AND end_content_unit_index IS NULL
+                            AND end_content_unit_id IS NULL
+                            AND scope_title IS NULL)
+                        OR
+                        (scope_kind = 1
+                            AND start_physical_page_number IS NOT NULL
+                            AND start_physical_page_number > 0
+                            AND end_physical_page_number IS NOT NULL
+                            AND end_physical_page_number >= start_physical_page_number
+                            AND start_content_unit_index IS NULL
+                            AND start_content_unit_id IS NULL
+                            AND end_content_unit_index IS NULL
+                            AND end_content_unit_id IS NULL
+                            AND scope_title IS NOT NULL
+                            AND length(scope_title) > 0)
+                        OR
+                        (scope_kind = 2
+                            AND start_physical_page_number IS NULL
+                            AND end_physical_page_number IS NULL
+                            AND start_content_unit_index IS NOT NULL
+                            AND start_content_unit_index >= 0
+                            AND start_content_unit_id IS NOT NULL
+                            AND length(btrim(start_content_unit_id)) > 0
+                            AND end_content_unit_index IS NOT NULL
+                            AND end_content_unit_index >= start_content_unit_index
+                            AND end_content_unit_id IS NOT NULL
+                            AND length(btrim(end_content_unit_id)) > 0
+                            AND scope_title IS NOT NULL
+                            AND length(scope_title) > 0)
+                    );
+
+            CREATE OR REPLACE FUNCTION
+                document_processing_manager.reject_processing_unit_identity_mutation()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $$
+            BEGIN
+                IF NEW.unit_id IS DISTINCT FROM OLD.unit_id
+                    OR NEW.submission_id IS DISTINCT FROM OLD.submission_id
+                    OR NEW.scope_kind IS DISTINCT FROM OLD.scope_kind
+                    OR NEW.start_physical_page_number IS DISTINCT FROM OLD.start_physical_page_number
+                    OR NEW.end_physical_page_number IS DISTINCT FROM OLD.end_physical_page_number
+                    OR NEW.start_content_unit_index IS DISTINCT FROM OLD.start_content_unit_index
+                    OR NEW.start_content_unit_id IS DISTINCT FROM OLD.start_content_unit_id
+                    OR NEW.end_content_unit_index IS DISTINCT FROM OLD.end_content_unit_index
+                    OR NEW.end_content_unit_id IS DISTINCT FROM OLD.end_content_unit_id
+                    OR NEW.scope_title IS DISTINCT FROM OLD.scope_title
+                    OR NEW.submission_unit_ordinal IS DISTINCT FROM OLD.submission_unit_ordinal
+                    OR NEW.created_at_utc IS DISTINCT FROM OLD.created_at_utc
+                THEN
+                    RAISE EXCEPTION 'Processing-unit identity and source scope are immutable.';
+                END IF;
+
+                RETURN NEW;
+            END;
+            $$;
+            """;
+
     private static readonly Migration[]
         Migrations =
         [
@@ -658,7 +740,11 @@ public sealed class PostgresManagerSchema
             new(
                 Version:
                     8,
-                MigrationEightSql)
+                MigrationEightSql),
+            new(
+                Version:
+                    9,
+                MigrationNineSql)
         ];
 
     private readonly NpgsqlDataSource

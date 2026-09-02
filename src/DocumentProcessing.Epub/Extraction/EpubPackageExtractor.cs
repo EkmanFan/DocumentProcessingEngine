@@ -71,7 +71,8 @@ internal sealed class EpubPackageExtractor
     public StructuredNativeDocumentEvidence Extract(
         Stream source,
         EpubDocumentFormatOptions options,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        ContentUnitRange? contentUnitRange = null)
     {
         ArgumentNullException.ThrowIfNull(
             source);
@@ -180,6 +181,11 @@ internal sealed class EpubPackageExtractor
                 package,
                 manifest);
 
+        var selectedSpineItems =
+            SelectSpineItems(
+                spineItems,
+                contentUnitRange);
+
         var bodyMatterResourcePath =
             navigationReferences.BodyMatterResourcePath ??
             ReadGuideBodyMatterResourcePath(
@@ -203,7 +209,7 @@ internal sealed class EpubPackageExtractor
 
         var contentUnits =
             new List<StructuredNativeContentUnit>(
-                spineItems.Count);
+                selectedSpineItems.Count);
 
         var visualUsages =
             new List<VisualUsage>();
@@ -215,7 +221,7 @@ internal sealed class EpubPackageExtractor
             new List<NoteReferenceCandidate>();
 
         foreach (var spineItem in
-                 spineItems)
+                 selectedSpineItems)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -283,6 +289,170 @@ internal sealed class EpubPackageExtractor
                 visualUsages),
             noteExtraction.DocumentNotes,
             noteExtraction.PayloadCandidateLocations);
+    }
+
+    private static IReadOnlyList<EpubSpineItemDescriptor> SelectSpineItems(
+        IReadOnlyList<EpubSpineItemDescriptor> spineItems,
+        ContentUnitRange? contentUnitRange)
+    {
+        if (contentUnitRange is null)
+        {
+            return spineItems;
+        }
+
+        if (contentUnitRange.EndContentUnitIndex >=
+            spineItems.Count)
+        {
+            throw new EpubContentUnitRangeException(
+                $"Requested content-unit range {contentUnitRange.StartContentUnitIndex}-" +
+                $"{contentUnitRange.EndContentUnitIndex} exceeds the EPUB spine's " +
+                $"{spineItems.Count} unit(s).");
+        }
+
+        var actualStartId =
+            spineItems[contentUnitRange.StartContentUnitIndex]
+                .ResourcePath;
+
+        var actualEndId =
+            spineItems[contentUnitRange.EndContentUnitIndex]
+                .ResourcePath;
+
+        if (!string.Equals(
+                actualStartId,
+                contentUnitRange.StartContentUnitId,
+                StringComparison.Ordinal) ||
+            !string.Equals(
+                actualEndId,
+                contentUnitRange.EndContentUnitId,
+                StringComparison.Ordinal))
+        {
+            throw new EpubContentUnitRangeException(
+                "The requested content-unit boundary identifiers no longer match the EPUB spine.");
+        }
+
+        return spineItems
+            .Skip(
+                contentUnitRange.StartContentUnitIndex)
+            .Take(
+                contentUnitRange.EndContentUnitIndex -
+                contentUnitRange.StartContentUnitIndex +
+                1)
+            .ToArray();
+    }
+
+    /// <summary>
+    /// Reads only package, spine and publisher navigation facts without
+    /// extracting the XHTML document body.
+    /// </summary>
+    public NativeDocumentNavigationInspection InspectNativeNavigation(
+        Stream source,
+        EpubDocumentFormatOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            source);
+
+        ArgumentNullException.ThrowIfNull(
+            options);
+
+        if (!source.CanSeek)
+        {
+            throw new InvalidOperationException(
+                "EPUB navigation inspection requires a prepared seekable source.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        source.Position =
+            0;
+
+        using var archive =
+            new ZipArchive(
+                source,
+                ZipArchiveMode.Read,
+                leaveOpen:
+                    true);
+
+        var entries =
+            ValidateAndIndexEntries(
+                archive,
+                options,
+                cancellationToken);
+
+        var container =
+            LoadXml(
+                GetRequiredEntry(
+                    entries,
+                    "META-INF/container.xml"),
+                options.MaximumTextResourceBytes);
+
+        var packagePath =
+            container
+                .Descendants()
+                .Where(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "rootfile",
+                            StringComparison.Ordinal))
+                .Select(
+                    element =>
+                        element.Attribute(
+                                "full-path")?
+                            .Value)
+                .FirstOrDefault(
+                    value =>
+                        !string.IsNullOrWhiteSpace(
+                            value)) ??
+            throw new InvalidDataException(
+                "EPUB container does not identify a package document.");
+
+        packagePath =
+            EpubArchivePath.NormalizeEntryPath(
+                Uri.UnescapeDataString(
+                    packagePath));
+
+        var package =
+            LoadXml(
+                GetRequiredEntry(
+                    entries,
+                    packagePath),
+                options.MaximumTextResourceBytes);
+
+        var manifest =
+            ReadManifest(
+                package,
+                packagePath);
+
+        var spineItems =
+            ReadSpine(
+                package,
+                manifest);
+
+        var axis =
+            new NativeDocumentNavigationAxis.ContentUnits(
+                spineItems
+                    .Select(
+                        item =>
+                            item.ResourcePath)
+                    .ToArray());
+
+        var navigationEntries =
+            ReadPartitionNavigationEntries(
+                entries,
+                package,
+                manifest,
+                spineItems,
+                options.MaximumTextResourceBytes,
+                cancellationToken);
+
+        source.Position =
+            0;
+
+        return new NativeDocumentNavigationInspection(
+            DocumentFormatId.Epub,
+            axis,
+            navigationEntries);
     }
 
     #endregion
@@ -604,6 +774,523 @@ internal sealed class EpubPackageExtractor
             tocTargets.ToArray(),
             listedResourcePaths,
             bodyMatterResourcePath);
+    }
+
+    private static IReadOnlyList<NativeDocumentNavigationEntry>
+        ReadPartitionNavigationEntries(
+            IReadOnlyDictionary<string, ZipArchiveEntry> entries,
+            XDocument package,
+            IReadOnlyDictionary<string, ManifestItem> manifest,
+            IReadOnlyList<EpubSpineItemDescriptor> spineItems,
+            long maximumTextResourceBytes,
+            CancellationToken cancellationToken)
+    {
+        var navigationItems =
+            manifest.Values
+                .Where(
+                    item =>
+                        item.Properties.Contains(
+                            "nav") &&
+                        string.Equals(
+                            item.MediaType,
+                            "application/xhtml+xml",
+                            StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+        if (navigationItems.Length >
+            1)
+        {
+            return [];
+        }
+
+        if (navigationItems.Length ==
+            1)
+        {
+            var navigationRead =
+                ReadXhtmlPartitionNavigation(
+                    entries,
+                    navigationItems[0],
+                    maximumTextResourceBytes,
+                    cancellationToken);
+
+            if (navigationRead.Status ==
+                PartitionNavigationReadStatus.Unsafe)
+            {
+                return [];
+            }
+
+            if (navigationRead.Candidates.Count >
+                0)
+            {
+                return ProjectPartitionNavigation(
+                    navigationRead.Candidates,
+                    spineItems);
+            }
+        }
+
+        var ncxItems =
+            FindNcxItems(
+                package,
+                manifest);
+
+        if (ncxItems.Count !=
+            1)
+        {
+            return [];
+        }
+
+        var ncxRead =
+            ReadNcxPartitionNavigation(
+                entries,
+                ncxItems[0],
+                maximumTextResourceBytes,
+                cancellationToken);
+
+        return ncxRead.Status ==
+               PartitionNavigationReadStatus.Read
+            ? ProjectPartitionNavigation(
+                ncxRead.Candidates,
+                spineItems)
+            : [];
+    }
+
+    private static PartitionNavigationRead ReadXhtmlPartitionNavigation(
+        IReadOnlyDictionary<string, ZipArchiveEntry> entries,
+        ManifestItem navigationItem,
+        long maximumTextResourceBytes,
+        CancellationToken cancellationToken)
+    {
+        var navigation =
+            LoadXml(
+                GetRequiredEntry(
+                    entries,
+                    navigationItem.ResourcePath),
+                maximumTextResourceBytes);
+
+        var tocElements =
+            navigation
+                .Descendants()
+                .Where(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "nav",
+                            StringComparison.OrdinalIgnoreCase) &&
+                        HasToken(
+                            AttributeValue(
+                                element,
+                                "type"),
+                            "toc"))
+                .ToArray();
+
+        if (tocElements.Length ==
+            0)
+        {
+            return PartitionNavigationRead.Absent();
+        }
+
+        if (tocElements.Length >
+            1)
+        {
+            return PartitionNavigationRead.Unsafe();
+        }
+
+        var candidates =
+            new List<PartitionNavigationCandidate>();
+
+        var sourceOrder =
+            0;
+
+        var rootLists =
+            tocElements[0]
+                .Descendants()
+                .Where(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "ol",
+                            StringComparison.OrdinalIgnoreCase) &&
+                        !element.Ancestors()
+                            .TakeWhile(
+                                ancestor =>
+                                    ancestor !=
+                                    tocElements[0])
+                            .Any(
+                                ancestor =>
+                                    string.Equals(
+                                        ancestor.Name.LocalName,
+                                        "ol",
+                                        StringComparison.OrdinalIgnoreCase)))
+                .ToArray();
+
+        if (rootLists.Length !=
+            1 ||
+            !ReadXhtmlPartitionList(
+                rootLists[0],
+                navigationItem.ResourcePath,
+                hierarchyLevel:
+                    0,
+                candidates,
+                ref sourceOrder,
+                cancellationToken))
+        {
+            return PartitionNavigationRead.Unsafe();
+        }
+
+        return PartitionNavigationRead.Read(
+            candidates);
+    }
+
+    private static bool ReadXhtmlPartitionList(
+        XElement list,
+        string navigationResourcePath,
+        int hierarchyLevel,
+        ICollection<PartitionNavigationCandidate> candidates,
+        ref int sourceOrder,
+        CancellationToken cancellationToken)
+    {
+        foreach (var item in
+                 list.Elements()
+                     .Where(
+                         element =>
+                             string.Equals(
+                                 element.Name.LocalName,
+                                 "li",
+                                 StringComparison.OrdinalIgnoreCase)))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var anchor =
+                item.Elements()
+                    .FirstOrDefault(
+                        element =>
+                            string.Equals(
+                                element.Name.LocalName,
+                                "a",
+                                StringComparison.OrdinalIgnoreCase));
+
+            if (anchor is not null)
+            {
+                var title =
+                    NormalizeNavigationTitle(
+                        anchor.Value);
+
+                var href =
+                    AttributeValue(
+                        anchor,
+                        "href");
+
+                if (title is null ||
+                    !TryReadNavigationTarget(
+                        navigationResourcePath,
+                        href,
+                        out var target))
+                {
+                    return false;
+                }
+
+                candidates.Add(
+                    new PartitionNavigationCandidate(
+                        title,
+                        hierarchyLevel,
+                        sourceOrder++,
+                        target.ResourcePath));
+            }
+
+            foreach (var childList in
+                     item.Elements()
+                         .Where(
+                             element =>
+                                 string.Equals(
+                                     element.Name.LocalName,
+                                     "ol",
+                                     StringComparison.OrdinalIgnoreCase)))
+            {
+                if (!ReadXhtmlPartitionList(
+                        childList,
+                        navigationResourcePath,
+                        hierarchyLevel +
+                        1,
+                        candidates,
+                        ref sourceOrder,
+                        cancellationToken))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static IReadOnlyList<ManifestItem> FindNcxItems(
+        XDocument package,
+        IReadOnlyDictionary<string, ManifestItem> manifest)
+    {
+        var spine =
+            package
+                .Descendants()
+                .FirstOrDefault(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "spine",
+                            StringComparison.Ordinal));
+
+        var tocId =
+            spine is null
+                ? null
+                : AttributeValue(
+                    spine,
+                    "toc");
+
+        if (!string.IsNullOrWhiteSpace(
+                tocId))
+        {
+            return manifest.TryGetValue(
+                       tocId,
+                       out var referenced) &&
+                   string.Equals(
+                       referenced.MediaType,
+                       "application/x-dtbncx+xml",
+                       StringComparison.OrdinalIgnoreCase)
+                ? [referenced]
+                : [];
+        }
+
+        return manifest.Values
+            .Where(
+                item =>
+                    string.Equals(
+                        item.MediaType,
+                        "application/x-dtbncx+xml",
+                        StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+    }
+
+    private static PartitionNavigationRead ReadNcxPartitionNavigation(
+        IReadOnlyDictionary<string, ZipArchiveEntry> entries,
+        ManifestItem ncxItem,
+        long maximumTextResourceBytes,
+        CancellationToken cancellationToken)
+    {
+        var ncx =
+            LoadXml(
+                GetRequiredEntry(
+                    entries,
+                    ncxItem.ResourcePath),
+                maximumTextResourceBytes);
+
+        var navigationMaps =
+            ncx
+                .Descendants()
+                .Where(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "navMap",
+                            StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+        if (navigationMaps.Length !=
+            1)
+        {
+            return navigationMaps.Length ==
+                   0
+                ? PartitionNavigationRead.Absent()
+                : PartitionNavigationRead.Unsafe();
+        }
+
+        var candidates =
+            new List<PartitionNavigationCandidate>();
+
+        var sourceOrder =
+            0;
+
+        foreach (var navigationPoint in
+                 navigationMaps[0]
+                     .Elements()
+                     .Where(
+                         element =>
+                             string.Equals(
+                                 element.Name.LocalName,
+                                 "navPoint",
+                                 StringComparison.OrdinalIgnoreCase)))
+        {
+            if (!ReadNcxPartitionPoint(
+                    navigationPoint,
+                    ncxItem.ResourcePath,
+                    hierarchyLevel:
+                        0,
+                    candidates,
+                    ref sourceOrder,
+                    cancellationToken))
+            {
+                return PartitionNavigationRead.Unsafe();
+            }
+        }
+
+        return PartitionNavigationRead.Read(
+            candidates);
+    }
+
+    private static bool ReadNcxPartitionPoint(
+        XElement navigationPoint,
+        string ncxResourcePath,
+        int hierarchyLevel,
+        ICollection<PartitionNavigationCandidate> candidates,
+        ref int sourceOrder,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var label =
+            navigationPoint
+                .Elements()
+                .FirstOrDefault(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "navLabel",
+                            StringComparison.OrdinalIgnoreCase))?
+                .Descendants()
+                .FirstOrDefault(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "text",
+                            StringComparison.OrdinalIgnoreCase));
+
+        var content =
+            navigationPoint
+                .Elements()
+                .FirstOrDefault(
+                    element =>
+                        string.Equals(
+                            element.Name.LocalName,
+                            "content",
+                            StringComparison.OrdinalIgnoreCase));
+
+        var title =
+            NormalizeNavigationTitle(
+                label?.Value);
+
+        if (title is null ||
+            !TryReadNavigationTarget(
+                ncxResourcePath,
+                AttributeValue(
+                    content ??
+                    navigationPoint,
+                    "src"),
+                out var target))
+        {
+            return false;
+        }
+
+        candidates.Add(
+            new PartitionNavigationCandidate(
+                title,
+                hierarchyLevel,
+                sourceOrder++,
+                target.ResourcePath));
+
+        foreach (var child in
+                 navigationPoint.Elements()
+                     .Where(
+                         element =>
+                             string.Equals(
+                                 element.Name.LocalName,
+                                 "navPoint",
+                                 StringComparison.OrdinalIgnoreCase)))
+        {
+            if (!ReadNcxPartitionPoint(
+                    child,
+                    ncxResourcePath,
+                    hierarchyLevel +
+                    1,
+                    candidates,
+                    ref sourceOrder,
+                    cancellationToken))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static IReadOnlyList<NativeDocumentNavigationEntry>
+        ProjectPartitionNavigation(
+            IReadOnlyList<PartitionNavigationCandidate> candidates,
+            IReadOnlyList<EpubSpineItemDescriptor> spineItems)
+    {
+        var spineByResourcePath =
+            spineItems.ToDictionary(
+                item =>
+                    item.ResourcePath,
+                StringComparer.Ordinal);
+
+        if (candidates.Count ==
+                0 ||
+            candidates.Any(
+                candidate =>
+                    !spineByResourcePath.ContainsKey(
+                        candidate.ResourcePath)))
+        {
+            return [];
+        }
+
+        var resolved =
+            candidates
+                .Select(
+                    candidate =>
+                        new
+                        {
+                            Candidate =
+                                candidate,
+                            SpineItem =
+                                spineByResourcePath[candidate.ResourcePath]
+                        })
+                .ToArray();
+
+        if (resolved
+                .Select(
+                    item =>
+                        item.SpineItem.SpineIndex)
+                .Distinct()
+                .Count() !=
+            resolved.Length)
+        {
+            return [];
+        }
+
+        return resolved
+            .Select(
+                item =>
+                    new NativeDocumentNavigationEntry(
+                        item.Candidate.Title,
+                        item.Candidate.HierarchyLevel,
+                        item.Candidate.SourceOrder,
+                        new NativeDocumentNavigationPosition.ContentUnit(
+                            item.SpineItem.SpineIndex,
+                            item.SpineItem.ResourcePath)))
+            .ToArray();
+    }
+
+    private static string? NormalizeNavigationTitle(
+        string? value)
+    {
+        if (string.IsNullOrWhiteSpace(
+                value))
+        {
+            return null;
+        }
+
+        return string.Join(
+            ' ',
+            value.Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries));
     }
 
     private static bool TryReadNavigationTarget(
@@ -2114,6 +2801,40 @@ internal sealed class EpubPackageExtractor
         IReadOnlyList<NavigationTarget> TocTargets,
         IReadOnlySet<string> ListedResourcePaths,
         string? BodyMatterResourcePath);
+
+    private enum PartitionNavigationReadStatus
+    {
+        Absent = 0,
+        Read = 1,
+        Unsafe = 2
+    }
+
+    private sealed record PartitionNavigationCandidate(
+        string Title,
+        int HierarchyLevel,
+        int SourceOrder,
+        string ResourcePath);
+
+    private sealed record PartitionNavigationRead(
+        PartitionNavigationReadStatus Status,
+        IReadOnlyList<PartitionNavigationCandidate> Candidates)
+    {
+        public static PartitionNavigationRead Absent() =>
+            new(
+                PartitionNavigationReadStatus.Absent,
+                []);
+
+        public static PartitionNavigationRead Read(
+            IReadOnlyList<PartitionNavigationCandidate> candidates) =>
+            new(
+                PartitionNavigationReadStatus.Read,
+                candidates);
+
+        public static PartitionNavigationRead Unsafe() =>
+            new(
+                PartitionNavigationReadStatus.Unsafe,
+                []);
+    }
 
     private sealed record VisualUsage(
         string ResourcePath,

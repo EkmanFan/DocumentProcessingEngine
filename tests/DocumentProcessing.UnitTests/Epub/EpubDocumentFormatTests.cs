@@ -4,6 +4,7 @@ using DocumentProcessing.Epub;
 using DocumentProcessing.Epub.Extraction;
 using DocumentProcessing.Epub.Locations;
 using DocumentProcessing.Epub.Recognition;
+using DocumentProcessing.Manager.Partitioning;
 
 namespace DocumentProcessing.UnitTests.Epub;
 
@@ -161,6 +162,67 @@ public sealed class EpubDocumentFormatTests
             block =>
                 block.Location is
                     DocumentProcessing.Core.Locations.PagedDocumentSourceLocation);
+    }
+
+    [Fact]
+    public void Extractor_ContentUnitRangeRetainsOnlyApprovedSpineUnits()
+    {
+        using var stream =
+            new MemoryStream(
+                TestEpubFactory.Create());
+
+        var evidence =
+            new EpubPackageExtractor()
+                .Extract(
+                    stream,
+                    new EpubDocumentFormatOptions(),
+                    contentUnitRange:
+                        new ContentUnitRange(
+                            1,
+                            "OEBPS/chapter2.xhtml",
+                            1,
+                            "OEBPS/chapter2.xhtml"));
+
+        Assert.Equal(
+            "OEBPS/chapter2.xhtml",
+            Assert.Single(
+                    evidence.ContentUnits)
+                .UnitId);
+
+        var structure =
+            Assert.IsType<EpubDocumentSourceStructure>(
+                evidence.SourceStructure);
+
+        Assert.Equal(
+            2,
+            structure.SpineItems.Count);
+    }
+
+    [Fact]
+    public void Extractor_ContentUnitRangeRejectsChangedBoundaryIdentity()
+    {
+        using var stream =
+            new MemoryStream(
+                TestEpubFactory.Create());
+
+        var exception =
+            Assert.Throws<EpubContentUnitRangeException>(
+                () =>
+                    new EpubPackageExtractor()
+                        .Extract(
+                            stream,
+                            new EpubDocumentFormatOptions(),
+                            contentUnitRange:
+                                new ContentUnitRange(
+                                    1,
+                                    "OEBPS/not-chapter2.xhtml",
+                                    1,
+                                    "OEBPS/not-chapter2.xhtml")));
+
+        Assert.Contains(
+            "no longer match",
+            exception.Message,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -772,6 +834,314 @@ public sealed class EpubDocumentFormatTests
     }
 
     [Fact]
+    public async Task DocumentFormat_InspectsEpubThreeNavigationOnTheSpineAxis()
+    {
+        await using var stream =
+            new MemoryStream(
+                TestEpubFactory.CreateNavigationFixture());
+
+        stream.Position =
+            9;
+
+        var inspection =
+            await new EpubDocumentFormat()
+                .TryInspectNativeNavigationAsync(
+                    new DocumentSource(
+                        stream,
+                        "navigation.epub",
+                        "application/epub+zip"));
+
+        Assert.NotNull(
+            inspection);
+
+        Assert.Equal(
+            DocumentFormatId.Epub,
+            inspection.Format);
+
+        var axis =
+            Assert.IsType<NativeDocumentNavigationAxis.ContentUnits>(
+                inspection.Axis);
+
+        Assert.Equal(
+            [
+                "OPS/text/front.xhtml",
+                "OPS/text/chapter1.xhtml",
+                "OPS/text/chapter2.xhtml"
+            ],
+            axis.ContentUnitIds);
+
+        Assert.Collection(
+            inspection.Entries,
+            entry =>
+                AssertNavigationEntry(
+                    entry,
+                    "Chapter One",
+                    hierarchyLevel:
+                        0,
+                    sourceOrder:
+                        0,
+                    contentUnitIndex:
+                        1,
+                    "OPS/text/chapter1.xhtml"),
+            entry =>
+                AssertNavigationEntry(
+                    entry,
+                    "Chapter Two",
+                    hierarchyLevel:
+                        0,
+                    sourceOrder:
+                        1,
+                    contentUnitIndex:
+                        2,
+                    "OPS/text/chapter2.xhtml"));
+
+        Assert.Equal(
+            9,
+            stream.Position);
+    }
+
+    [Fact]
+    public async Task DocumentFormat_InspectsLegacyNcxNavigationOnTheSameSpineAxis()
+    {
+        await using var stream =
+            new MemoryStream(
+                TestEpubFactory.CreateNavigationFixture(
+                    useNcx:
+                        true));
+
+        var inspection =
+            await new EpubDocumentFormat()
+                .TryInspectNativeNavigationAsync(
+                    new DocumentSource(
+                        stream));
+
+        Assert.NotNull(
+            inspection);
+
+        Assert.IsType<NativeDocumentNavigationAxis.ContentUnits>(
+            inspection.Axis);
+
+        Assert.Equal(
+            [
+                "Chapter One",
+                "Chapter Two"
+            ],
+            inspection.Entries.Select(
+                entry =>
+                    entry.Title));
+
+        Assert.Equal(
+            [1, 2],
+            inspection.Entries.Select(
+                entry =>
+                    Assert.IsType<NativeDocumentNavigationPosition.ContentUnit>(
+                            entry.Position)
+                        .ContentUnitIndex));
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task DocumentFormat_UnsafeContentUnitProjectionFailsClosed(
+        bool duplicateSpineTarget,
+        bool unresolvedTarget)
+    {
+        await using var stream =
+            new MemoryStream(
+                TestEpubFactory.CreateNavigationFixture(
+                    duplicateSpineTarget:
+                        duplicateSpineTarget,
+                    unresolvedTarget:
+                        unresolvedTarget));
+
+        var inspection =
+            await new EpubDocumentFormat()
+                .TryInspectNativeNavigationAsync(
+                    new DocumentSource(
+                        stream));
+
+        Assert.NotNull(
+            inspection);
+
+        Assert.Empty(
+            inspection.Entries);
+    }
+
+    [Theory]
+    [InlineData("habermas-case-for-resurrection.epub")]
+    [InlineData("Jesus and the Eyewitnesses - The Gospels as Eyewitness Testimony - Richard Bauckham.epub")]
+    public async Task DocumentFormat_TargetedLocalNavigationProducesACompleteNeutralProposal(
+        string fileName)
+    {
+        var path =
+            Path.Combine(
+                FindRepositoryRoot(),
+                "tests",
+                "document_corpus",
+                "epub",
+                fileName);
+
+        if (!File.Exists(
+                path))
+        {
+            throw Xunit.Sdk.SkipException.ForSkip(
+                $"Targeted EPUB control '{fileName}' is unavailable.");
+        }
+
+        await using var stream =
+            File.OpenRead(
+                path);
+
+        var inspection =
+            await new EpubDocumentFormat()
+                .TryInspectNativeNavigationAsync(
+                    new DocumentSource(
+                        stream,
+                        fileName,
+                        "application/epub+zip"));
+
+        Assert.NotNull(
+            inspection);
+
+        var nativeAxis =
+            Assert.IsType<NativeDocumentNavigationAxis.ContentUnits>(
+                inspection.Axis);
+
+        Assert.NotEmpty(
+            inspection.Entries);
+
+        var managerAxis =
+            new DocumentPartitionAxis.ContentUnits(
+                nativeAxis.ContentUnitIds);
+
+        var proposal =
+            new NativeNavigationPartitionStrategy()
+                .TryPropose(
+                    new DocumentPartitionEvidence(
+                        managerAxis,
+                        inspection.Entries
+                            .Select(
+                                entry =>
+                                {
+                                    var position =
+                                        Assert.IsType<NativeDocumentNavigationPosition.ContentUnit>(
+                                            entry.Position);
+
+                                    return new DocumentPartitionBoundary(
+                                        new DocumentPartitionPosition.ContentUnit(
+                                            position.ContentUnitIndex,
+                                            position.ContentUnitId),
+                                        entry.Title,
+                                        entry.HierarchyLevel,
+                                        entry.SourceOrder,
+                                        DocumentPartitionEvidenceOrigin.NativeNavigation);
+                                })
+                            .ToArray()));
+
+        Assert.NotNull(
+            proposal);
+
+        Assert.Equal(
+            0,
+            Assert.IsType<DocumentPartitionPosition.ContentUnit>(
+                    proposal.Segments[0].Extent.Start)
+                .ContentUnitIndex);
+
+        Assert.Equal(
+            nativeAxis.ContentUnitIds.Count -
+            1,
+            Assert.IsType<DocumentPartitionPosition.ContentUnit>(
+                    proposal.Segments[^1].Extent.End)
+                .ContentUnitIndex);
+    }
+
+    [Fact]
+    public async Task DocumentFormat_TargetedLocalEpubExecutesOnlyApprovedContentUnitRange()
+    {
+        var repositoryRoot =
+            FindRepositoryRoot();
+
+        var path =
+            Path.Combine(
+                repositoryRoot,
+                "tests",
+                "document_corpus",
+                "epub",
+                "habermas-case-for-resurrection.epub");
+
+        var epubCheckDistribution =
+            Path.Combine(
+                repositoryRoot,
+                "scripts",
+                "tmp",
+                "tool-cache",
+                "epubcheck-5.3.0");
+
+        if (!File.Exists(
+                path) ||
+            !File.Exists(
+                Path.Combine(
+                    epubCheckDistribution,
+                    "epubcheck.jar")))
+        {
+            throw Xunit.Sdk.SkipException.ForSkip(
+                "The targeted EPUB or qualified EPUBCheck distribution is unavailable.");
+        }
+
+        var format =
+            new EpubDocumentFormat(
+                new EpubDocumentFormatOptions(
+                    new EpubCheckOptions(
+                        epubCheckDistribution)));
+
+        await using var stream =
+            File.OpenRead(
+                path);
+
+        var inspection =
+            await format.TryInspectNativeNavigationAsync(
+                new DocumentSource(
+                    stream,
+                    Path.GetFileName(
+                        path),
+                    "application/epub+zip"));
+
+        var axis =
+            Assert.IsType<NativeDocumentNavigationAxis.ContentUnits>(
+                Assert.IsType<NativeDocumentNavigationInspection>(
+                        inspection)
+                    .Axis);
+
+        const int selectedIndex =
+            1;
+
+        var outcome =
+            await format.TryExtractNativeEvidenceAsync(
+                new DocumentSource(
+                    stream,
+                    Path.GetFileName(
+                        path),
+                    "application/epub+zip"),
+                new ContentUnitRange(
+                    selectedIndex,
+                    axis.ContentUnitIds[selectedIndex],
+                    selectedIndex,
+                    axis.ContentUnitIds[selectedIndex]));
+
+        var evidence =
+            Assert.IsType<StructuredNativeDocumentEvidence>(
+                Assert.IsType<NativeEvidenceExtractionResult.Success>(
+                        outcome)
+                    .Evidence);
+
+        Assert.Equal(
+            axis.ContentUnitIds[selectedIndex],
+            Assert.Single(
+                    evidence.ContentUnits)
+                .UnitId);
+    }
+
+    [Fact]
     public async Task DocumentFormat_SourceAboveConfiguredBoundaryReturnsInvalidBeforeChecker()
     {
         var format =
@@ -824,6 +1194,39 @@ public sealed class EpubDocumentFormatTests
 
         throw new InvalidOperationException(
             "DocumentProcessingEngine repository root could not be located.");
+    }
+
+    private static void AssertNavigationEntry(
+        NativeDocumentNavigationEntry entry,
+        string expectedTitle,
+        int hierarchyLevel,
+        int sourceOrder,
+        int contentUnitIndex,
+        string contentUnitId)
+    {
+        Assert.Equal(
+            expectedTitle,
+            entry.Title);
+
+        Assert.Equal(
+            hierarchyLevel,
+            entry.HierarchyLevel);
+
+        Assert.Equal(
+            sourceOrder,
+            entry.SourceOrder);
+
+        var position =
+            Assert.IsType<NativeDocumentNavigationPosition.ContentUnit>(
+                entry.Position);
+
+        Assert.Equal(
+            contentUnitIndex,
+            position.ContentUnitIndex);
+
+        Assert.Equal(
+            contentUnitId,
+            position.ContentUnitId);
     }
 
     #endregion

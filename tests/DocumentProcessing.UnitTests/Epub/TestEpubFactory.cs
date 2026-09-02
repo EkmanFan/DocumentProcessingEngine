@@ -425,6 +425,128 @@ internal static class TestEpubFactory
         return output.ToArray();
     }
 
+    public static byte[] CreateNavigationFixture(
+        bool useNcx = false,
+        bool duplicateSpineTarget = false,
+        bool unresolvedTarget = false)
+    {
+        using var output =
+            new MemoryStream();
+
+        using (var archive =
+               new ZipArchive(
+                   output,
+                   ZipArchiveMode.Create,
+                   leaveOpen:
+                       true))
+        {
+            Write(
+                archive,
+                "mimetype",
+                "application/epub+zip",
+                CompressionLevel.NoCompression);
+
+            Write(
+                archive,
+                "META-INF/container.xml",
+                """
+                <?xml version="1.0"?>
+                <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                  <rootfiles><rootfile full-path="OPS/package.opf" media-type="application/oebps-package+xml" /></rootfiles>
+                </container>
+                """);
+
+            Write(
+                archive,
+                "OPS/package.opf",
+                useNcx
+                    ? """
+                <?xml version="1.0" encoding="utf-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="book-id">
+                  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">urn:test:ncx</dc:identifier><dc:title>NCX fixture</dc:title><dc:language>en</dc:language></metadata>
+                  <manifest>
+                    <item id="toc" href="toc.ncx" media-type="application/x-dtbncx+xml" />
+                    <item id="front" href="text/front.xhtml" media-type="application/xhtml+xml" />
+                    <item id="chapter-1" href="text/chapter1.xhtml" media-type="application/xhtml+xml" />
+                    <item id="chapter-2" href="text/chapter2.xhtml" media-type="application/xhtml+xml" />
+                  </manifest>
+                  <spine toc="toc"><itemref idref="front" /><itemref idref="chapter-1" /><itemref idref="chapter-2" /></spine>
+                </package>
+                """
+                    : """
+                <?xml version="1.0" encoding="utf-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">
+                  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">urn:test:nav</dc:identifier><dc:title>Navigation fixture</dc:title><dc:language>en</dc:language></metadata>
+                  <manifest>
+                    <item id="navigation" href="navigation.xhtml" media-type="application/xhtml+xml" properties="nav" />
+                    <item id="front" href="text/front.xhtml" media-type="application/xhtml+xml" />
+                    <item id="chapter-1" href="text/chapter1.xhtml" media-type="application/xhtml+xml" />
+                    <item id="chapter-2" href="text/chapter2.xhtml" media-type="application/xhtml+xml" />
+                  </manifest>
+                  <spine><itemref idref="front" /><itemref idref="chapter-1" /><itemref idref="chapter-2" /></spine>
+                </package>
+                """);
+
+            if (useNcx)
+            {
+                Write(
+                    archive,
+                    "OPS/toc.ncx",
+                    """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+                      <head><meta name="dtb:uid" content="urn:test:ncx" /></head>
+                      <docTitle><text>NCX fixture</text></docTitle>
+                      <navMap>
+                        <navPoint id="chapter-1" playOrder="1"><navLabel><text> Chapter   One </text></navLabel><content src="text/chapter1.xhtml#title" /></navPoint>
+                        <navPoint id="chapter-2" playOrder="2"><navLabel><text>Chapter Two</text></navLabel><content src="text/chapter2.xhtml#title" /></navPoint>
+                      </navMap>
+                    </ncx>
+                    """);
+            }
+            else
+            {
+                var secondTarget =
+                    duplicateSpineTarget
+                        ? "text/chapter1.xhtml#second-title"
+                        : unresolvedTarget
+                            ? "text/missing.xhtml#title"
+                            : "text/chapter2.xhtml#title";
+
+                Write(
+                    archive,
+                    "OPS/navigation.xhtml",
+                    $$"""
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+                      <head><title>Navigation</title></head>
+                      <body><nav epub:type="toc"><ol>
+                        <li><a href="text/chapter1.xhtml#title"> Chapter   One </a></li>
+                        <li><a href="{{secondTarget}}">Chapter Two</a></li>
+                      </ol></nav></body>
+                    </html>
+                    """);
+            }
+
+            Write(
+                archive,
+                "OPS/text/front.xhtml",
+                "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>Front</title></head><body><p>Front matter.</p></body></html>");
+
+            Write(
+                archive,
+                "OPS/text/chapter1.xhtml",
+                "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>One</title></head><body><h1 id=\"title\">One</h1><h2 id=\"second-title\">Second heading</h2></body></html>");
+
+            Write(
+                archive,
+                "OPS/text/chapter2.xhtml",
+                "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>Two</title></head><body><h1 id=\"title\">Two</h1></body></html>");
+        }
+
+        return output.ToArray();
+    }
+
     private static void Write(
         ZipArchive archive,
         string path,

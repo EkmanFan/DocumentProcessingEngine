@@ -6,21 +6,35 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Title" xml:space="preserve"><value>Split document</value></data>
   <data name="PageCount" xml:space="preserve"><value>{0} physical pages</value></data>
+  <data name="ContentUnitCount" xml:space="preserve"><value>{0} structured sections</value></data>
   <data name="Suggestion" xml:space="preserve"><value>This document is long. Splitting it into independent units is recommended.</value></data>
   <data name="NativeNavigationSuggestion" xml:space="preserve"><value>A split proposal was prepared from the document's native table of contents. Review it before applying.</value></data>
   <data name="PreviewPages" xml:space="preserve"><value>Physical page previews</value></data>
+  <data name="StructuredUnits" xml:space="preserve"><value>Document structure</value></data>
   <data name="SelectPage" xml:space="preserve"><value>Select physical page {0}</value></data>
   <data name="PagePreviewAlt" xml:space="preserve"><value>Preview of physical page {0}</value></data>
   <data name="LoadMore" xml:space="preserve"><value>Load more pages</value></data>
+  <data name="LoadMoreInRange" xml:space="preserve"><value>Load more from this range</value></data>
+  <data name="PageRangeSummary" xml:space="preserve"><value>Pages {0}–{1}</value></data>
+  <data name="ExpandRange" xml:space="preserve"><value>Expand {0}</value></data>
+  <data name="CollapseRange" xml:space="preserve"><value>Collapse {0}</value></data>
   <data name="HelpTitle" xml:space="preserve"><value>Visual range selection</value></data>
+  <data name="StructuredHelpTitle" xml:space="preserve"><value>Structural range selection</value></data>
   <data name="ChooseStart" xml:space="preserve"><value>Choose the first page, then the last page.</value></data>
   <data name="ChooseEnd" xml:space="preserve"><value>First page: {0}. Now choose the last page.</value></data>
+  <data name="ChooseContentStart" xml:space="preserve"><value>Choose the first section, then the last section.</value></data>
+  <data name="ChooseContentEnd" xml:space="preserve"><value>First section: {0}. Now choose the last section.</value></data>
+  <data name="ContentUnit" xml:space="preserve"><value>Section {0}</value></data>
   <data name="RangeTitle" xml:space="preserve"><value>Range title</value></data>
   <data name="Start" xml:space="preserve"><value>Start</value></data>
   <data name="End" xml:space="preserve"><value>End</value></data>
   <data name="DefaultRangeTitle" xml:space="preserve"><value>Part {0}</value></data>
   <data name="InvalidRange" xml:space="preserve"><value>Every range needs a title and valid document bounds.</value></data>
   <data name="Overlap" xml:space="preserve"><value>Ranges cannot overlap.</value></data>
+  <data name="AtLeastTwoRanges" xml:space="preserve"><value>A split needs at least two ranges.</value></data>
+  <data name="CompleteCoverage" xml:space="preserve"><value>The ranges must cover the complete document without gaps or overlaps.</value></data>
+  <data name="InvalidPreview" xml:space="preserve"><value>The document structure returned by the Manager is invalid.</value></data>
+  <data name="RemoveRange" xml:space="preserve"><value>Remove this range</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Apply" xml:space="preserve"><value>Apply split</value></data>
 </root>

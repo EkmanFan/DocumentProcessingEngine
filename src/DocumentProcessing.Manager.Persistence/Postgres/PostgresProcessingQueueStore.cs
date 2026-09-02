@@ -170,7 +170,9 @@ public sealed class PostgresProcessingQueueStore
         for (var index = 0; index < command.ReplacementUnits.Count; index++)
         {
             var intake = command.ReplacementUnits[index];
-            var range = (ProcessingUnitScope.PageRange)intake.WorkItem.Scope;
+            var durableScope =
+                PostgresProcessingUnitScopeMapper.ToDurableScope(
+                    intake.WorkItem.Scope);
 
             await using var insert = new NpgsqlCommand(
                 """
@@ -178,12 +180,16 @@ public sealed class PostgresProcessingQueueStore
                 (
                     unit_id, submission_id, scope_kind,
                     start_physical_page_number, end_physical_page_number, scope_title,
+                    start_content_unit_index, start_content_unit_id,
+                    end_content_unit_index, end_content_unit_id,
                     attempt_number, submission_unit_ordinal, status, queue_position, released_at_utc
                 )
                 VALUES
                 (
-                    @unit_id, @submission_id, 1,
+                    @unit_id, @submission_id, @scope_kind,
                     @start_page, @end_page, @title,
+                    @start_content_unit_index, @start_content_unit_id,
+                    @end_content_unit_index, @end_content_unit_id,
                     1, @ordinal, 0, @queue_position,
                     CASE WHEN @is_ready THEN clock_timestamp() ELSE NULL END
                 );
@@ -193,9 +199,44 @@ public sealed class PostgresProcessingQueueStore
 
             insert.Parameters.AddWithValue("unit_id", NpgsqlDbType.Uuid, intake.WorkItem.UnitId.Value);
             insert.Parameters.AddWithValue("submission_id", NpgsqlDbType.Uuid, submissionId);
-            insert.Parameters.AddWithValue("start_page", NpgsqlDbType.Integer, range.StartPhysicalPageNumber);
-            insert.Parameters.AddWithValue("end_page", NpgsqlDbType.Integer, range.EndPhysicalPageNumber);
-            insert.Parameters.AddWithValue("title", NpgsqlDbType.Text, range.Title);
+            insert.Parameters.AddWithValue("scope_kind", NpgsqlDbType.Smallint, durableScope.Kind);
+            insert.Parameters.AddWithValue(
+                "start_page",
+                NpgsqlDbType.Integer,
+                durableScope.StartPhysicalPageNumber is null
+                    ? DBNull.Value
+                    : durableScope.StartPhysicalPageNumber.Value);
+            insert.Parameters.AddWithValue(
+                "end_page",
+                NpgsqlDbType.Integer,
+                durableScope.EndPhysicalPageNumber is null
+                    ? DBNull.Value
+                    : durableScope.EndPhysicalPageNumber.Value);
+            insert.Parameters.AddWithValue("title", NpgsqlDbType.Text, durableScope.Title!);
+            insert.Parameters.AddWithValue(
+                "start_content_unit_index",
+                NpgsqlDbType.Integer,
+                durableScope.StartContentUnitIndex is null
+                    ? DBNull.Value
+                    : durableScope.StartContentUnitIndex.Value);
+            insert.Parameters.AddWithValue(
+                "start_content_unit_id",
+                NpgsqlDbType.Text,
+                durableScope.StartContentUnitId is null
+                    ? DBNull.Value
+                    : durableScope.StartContentUnitId);
+            insert.Parameters.AddWithValue(
+                "end_content_unit_index",
+                NpgsqlDbType.Integer,
+                durableScope.EndContentUnitIndex is null
+                    ? DBNull.Value
+                    : durableScope.EndContentUnitIndex.Value);
+            insert.Parameters.AddWithValue(
+                "end_content_unit_id",
+                NpgsqlDbType.Text,
+                durableScope.EndContentUnitId is null
+                    ? DBNull.Value
+                    : durableScope.EndContentUnitId);
             insert.Parameters.AddWithValue("ordinal", NpgsqlDbType.Integer, index + 1);
             insert.Parameters.AddWithValue("queue_position", NpgsqlDbType.Bigint, queuePosition + index);
             insert.Parameters.AddWithValue(
@@ -321,7 +362,11 @@ public sealed class PostgresProcessingQueueStore
                     processing_unit.unit_lease_token,
                     processing_unit.runtime_lease_token,
                     processing_unit.worker_id,
-                    processing_unit.unit_lease_expires_at_utc;
+                    processing_unit.unit_lease_expires_at_utc,
+                    processing_unit.start_content_unit_index,
+                    processing_unit.start_content_unit_id,
+                    processing_unit.end_content_unit_index,
+                    processing_unit.end_content_unit_id;
                 """,
                 connection,
                 transaction);
@@ -1392,24 +1437,25 @@ public sealed class PostgresProcessingQueueStore
     private static ProcessingLease ReadLease(
         NpgsqlDataReader reader)
     {
-        ProcessingUnitScope scope =
-            reader.GetInt16(
-                2) switch
-            {
-                0 =>
-                    new ProcessingUnitScope.WholeDocument(),
-                1 =>
-                    new ProcessingUnitScope.PageRange(
-                        reader.GetInt32(
-                            3),
-                        reader.GetInt32(
-                            4),
-                        reader.GetString(
-                            5)),
-                var scopeKind =>
-                    throw new InvalidOperationException(
-                        $"Unknown durable processing scope kind '{scopeKind}'.")
-            };
+        var scope =
+            PostgresProcessingUnitScopeMapper.ReadScope(
+                reader,
+                kindOrdinal:
+                    2,
+                startPageOrdinal:
+                    3,
+                endPageOrdinal:
+                    4,
+                titleOrdinal:
+                    5,
+                startContentUnitIndexOrdinal:
+                    11,
+                startContentUnitIdOrdinal:
+                    12,
+                endContentUnitIndexOrdinal:
+                    13,
+                endContentUnitIdOrdinal:
+                    14);
 
         var workItem =
             new ProcessingWorkItem(

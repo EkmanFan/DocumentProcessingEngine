@@ -73,7 +73,7 @@
                 @Localizer["SplitDocument"]
                 <InputFile class="split-file-input"
                            disabled="@_commandRunning"
-                           accept=".pdf,application/pdf"
+                           accept=".pdf,.epub,application/pdf,application/epub+zip"
                            OnChange="PrepareUploadedSplitAsync" />
             </label>
 
@@ -1200,10 +1200,7 @@
             await ManagerClient.SplitPendingUnitAsync(
                 _splitPreview.UnitId,
                 _snapshot.QueueVersion,
-                ranges.Select(range => new ManagerPageRangeRequest(
-                    range.StartPhysicalPageNumber,
-                    range.EndPhysicalPageNumber,
-                    range.Title)).ToArray(),
+                ranges,
                 _splitRunAfterApply,
                 _lifetime.Token);
 
@@ -2151,6 +2148,12 @@
                     scope.Title!,
                     scope.StartPhysicalPageNumber!,
                     scope.EndPhysicalPageNumber!],
+            ManagerWorkItemScopeKind.ContentUnitRange =>
+                Localizer[
+                    "ContentUnitRangeScope",
+                    scope.Title!,
+                    scope.StartContentUnitIndex! + 1,
+                    scope.EndContentUnitIndex! + 1],
             _ =>
                 throw new ArgumentOutOfRangeException(
                     nameof(scope),
@@ -2160,13 +2163,13 @@
 
     private static string GetRetryTextKey(
         ManagerWorkItemScopeView scope) =>
-        scope.Kind == ManagerWorkItemScopeKind.PageRange
+        scope.Kind != ManagerWorkItemScopeKind.WholeDocument
             ? "RetryBatch"
             : "RetryDocument";
 
     private static string GetRetryLabelKey(
         ManagerWorkItemScopeView scope) =>
-        scope.Kind == ManagerWorkItemScopeKind.PageRange
+        scope.Kind != ManagerWorkItemScopeKind.WholeDocument
             ? "RetryBatchLabel"
             : "RetryDocumentLabel";
 

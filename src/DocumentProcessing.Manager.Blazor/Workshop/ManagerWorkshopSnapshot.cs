@@ -218,7 +218,11 @@ internal sealed record ManagerWorkItemScopeView(
     ManagerWorkItemScopeKind Kind,
     int? StartPhysicalPageNumber,
     int? EndPhysicalPageNumber,
-    string? Title)
+    string? Title,
+    int? StartContentUnitIndex = null,
+    string? StartContentUnitId = null,
+    int? EndContentUnitIndex = null,
+    string? EndContentUnitId = null)
 {
     #region Methods Factory
 
@@ -249,6 +253,35 @@ internal sealed record ManagerWorkItemScopeView(
                     scope.StartPhysicalPageNumber,
                     scope.EndPhysicalPageNumber,
                     scope.Title.Trim()),
+            "contentUnitRange"
+                when scope.StartContentUnitIndex is not null &&
+                     scope.StartContentUnitIndex >=
+                     0 &&
+                     !string.IsNullOrWhiteSpace(
+                         scope.StartContentUnitId) &&
+                     scope.EndContentUnitIndex is not null &&
+                     scope.EndContentUnitIndex >=
+                     scope.StartContentUnitIndex &&
+                     !string.IsNullOrWhiteSpace(
+                         scope.EndContentUnitId) &&
+                     !string.IsNullOrWhiteSpace(
+                         scope.Title) =>
+                new ManagerWorkItemScopeView(
+                    ManagerWorkItemScopeKind.ContentUnitRange,
+                    StartPhysicalPageNumber:
+                        null,
+                    EndPhysicalPageNumber:
+                        null,
+                    Title:
+                        scope.Title.Trim(),
+                    StartContentUnitIndex:
+                        scope.StartContentUnitIndex,
+                    StartContentUnitId:
+                        scope.StartContentUnitId.Trim(),
+                    EndContentUnitIndex:
+                        scope.EndContentUnitIndex,
+                    EndContentUnitId:
+                        scope.EndContentUnitId.Trim()),
             _ =>
                 throw new InvalidDataException(
                     "The Manager returned an unsupported processing scope.")
@@ -261,5 +294,6 @@ internal sealed record ManagerWorkItemScopeView(
 internal enum ManagerWorkItemScopeKind
 {
     WholeDocument,
-    PageRange
+    PageRange,
+    ContentUnitRange
 }

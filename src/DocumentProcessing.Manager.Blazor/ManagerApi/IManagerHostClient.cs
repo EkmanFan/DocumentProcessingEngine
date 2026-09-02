@@ -72,7 +72,7 @@ internal interface IManagerHostClient
     ValueTask<ManagerSplitPendingUnitResult> SplitPendingUnitAsync(
         Guid unitId,
         long expectedVersion,
-        IReadOnlyList<ManagerPageRangeRequest> ranges,
+        IReadOnlyList<ManagerSplitRangeDraft> ranges,
         bool releaseAfterSplit,
         CancellationToken cancellationToken = default);
 }

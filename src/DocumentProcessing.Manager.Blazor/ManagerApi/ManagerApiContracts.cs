@@ -81,7 +81,11 @@ internal sealed record ManagerScopeContract(
     string Kind,
     int? StartPhysicalPageNumber,
     int? EndPhysicalPageNumber,
-    string? Title);
+    string? Title,
+    int? StartContentUnitIndex = null,
+    string? StartContentUnitId = null,
+    int? EndContentUnitIndex = null,
+    string? EndContentUnitId = null);
 
 internal sealed record ManagerDocumentSubmissionRequest(
     Guid SubmissionId,
@@ -91,11 +95,6 @@ internal sealed record ManagerDocumentSubmissionRequest(
     string MediaType,
     string? SourceOrigin,
     Components.Workshop.ManagerDocumentSubmissionBehavior SubmissionBehavior);
-
-internal sealed record ManagerPageRangeRequest(
-    int StartPhysicalPageNumber,
-    int EndPhysicalPageNumber,
-    string Title);
 
 internal sealed record ManagerQueueReorderRequest(
     long ExpectedVersion,
@@ -114,18 +113,40 @@ public sealed record ManagerSplitPreviewContract(
     Guid UnitId,
     Guid SubmissionId,
     string OriginalFileName,
-    int PhysicalPageCount,
+    string AxisKind,
+    int? PhysicalPageCount,
+    IReadOnlyList<ManagerSplitContentUnitContract> ContentUnits,
     bool SplitSuggested,
     IReadOnlyList<ManagerSplitSuggestedRangeContract> SuggestedRanges);
 
-public sealed record ManagerSplitSuggestedRangeContract(
-    int StartPhysicalPageNumber,
-    int EndPhysicalPageNumber,
+public sealed record ManagerSplitContentUnitContract(
+    int ContentUnitIndex,
+    string ContentUnitId,
     string? SuggestedTitle);
+
+public sealed record ManagerSplitSuggestedRangeContract(
+    string Kind,
+    int? StartPhysicalPageNumber,
+    int? EndPhysicalPageNumber,
+    int? StartContentUnitIndex,
+    string? StartContentUnitId,
+    int? EndContentUnitIndex,
+    string? EndContentUnitId,
+    string? SuggestedTitle);
+
+internal sealed record ManagerSplitRangeRequest(
+    string Kind,
+    int? StartPhysicalPageNumber,
+    int? EndPhysicalPageNumber,
+    int? StartContentUnitIndex,
+    string? StartContentUnitId,
+    int? EndContentUnitIndex,
+    string? EndContentUnitId,
+    string Title);
 
 internal sealed record ManagerSplitPendingUnitRequest(
     long ExpectedVersion,
-    IReadOnlyList<ManagerPageRangeRequest> Ranges,
+    IReadOnlyList<ManagerSplitRangeRequest> Ranges,
     bool ReleaseAfterSplit);
 
 internal sealed record ManagerSplitPendingUnitResult(

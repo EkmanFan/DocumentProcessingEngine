@@ -3,7 +3,8 @@ using DocumentProcessing.Manager.Ports;
 namespace DocumentProcessing.Manager.Queue;
 
 /// <summary>
-/// Replaces one pending whole-document unit by an ordered, validated page plan.
+/// Replaces one pending whole-document unit by an ordered, validated native
+/// range plan.
 /// </summary>
 public sealed class SplitPendingProcessingUnitService
 {
@@ -33,7 +34,7 @@ public sealed class SplitPendingProcessingUnitService
     public async ValueTask<IReadOnlyList<ProcessingUnitId>> SplitAsync(
         ProcessingUnitId unitId,
         long expectedQueueVersion,
-        IReadOnlyList<ProcessingUnitScope.PageRange> ranges,
+        IReadOnlyList<ProcessingUnitScope> ranges,
         ProcessingUnitDispatchState? replacementDispatchState = null,
         CancellationToken cancellationToken = default)
     {
@@ -84,21 +85,83 @@ public sealed class SplitPendingProcessingUnitService
     }
 
     private static void ValidateRanges(
-        IReadOnlyList<ProcessingUnitScope.PageRange> ranges)
+        IReadOnlyList<ProcessingUnitScope> ranges)
     {
         if (ranges.Count == 0)
         {
-            throw new ArgumentException("At least one page range is required.", nameof(ranges));
+            throw new ArgumentException(
+                "At least one range is required.",
+                nameof(ranges));
         }
 
-        var ordered = ranges.OrderBy(range => range.StartPhysicalPageNumber).ToArray();
-
-        for (var index = 1; index < ordered.Length; index++)
+        if (ranges.All(
+                range =>
+                    range is ProcessingUnitScope.PageRange))
         {
-            if (ordered[index].StartPhysicalPageNumber <= ordered[index - 1].EndPhysicalPageNumber)
+            ValidatePageRanges(
+                ranges.Cast<ProcessingUnitScope.PageRange>());
+
+            return;
+        }
+
+        if (ranges.All(
+                range =>
+                    range is ProcessingUnitScope.ContentUnitRange))
+        {
+            ValidateContentUnitRanges(
+                ranges.Cast<ProcessingUnitScope.ContentUnitRange>());
+
+            return;
+        }
+
+        throw new ArgumentException(
+            "Ranges must use one supported native coordinate system.",
+            nameof(ranges));
+    }
+
+    private static void ValidatePageRanges(
+        IEnumerable<ProcessingUnitScope.PageRange> ranges)
+    {
+        ProcessingUnitScope.PageRange? previous =
+            null;
+
+        foreach (var range in
+                 ranges)
+        {
+            if (previous is not null &&
+                range.StartPhysicalPageNumber <=
+                previous.EndPhysicalPageNumber)
             {
-                throw new ArgumentException("Page ranges cannot overlap.", nameof(ranges));
+                throw new ArgumentException(
+                    "Page ranges must be ordered and cannot overlap.",
+                    nameof(ranges));
             }
+
+            previous =
+                range;
+        }
+    }
+
+    private static void ValidateContentUnitRanges(
+        IEnumerable<ProcessingUnitScope.ContentUnitRange> ranges)
+    {
+        ProcessingUnitScope.ContentUnitRange? previous =
+            null;
+
+        foreach (var range in
+                 ranges)
+        {
+            if (previous is not null &&
+                range.StartContentUnitIndex <=
+                previous.EndContentUnitIndex)
+            {
+                throw new ArgumentException(
+                    "Content-unit ranges must be ordered and cannot overlap.",
+                    nameof(ranges));
+            }
+
+            previous =
+                range;
         }
     }
 

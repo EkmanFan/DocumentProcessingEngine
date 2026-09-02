@@ -7,7 +7,7 @@
             <div>
                 <p>DPEngine Manager</p>
                 <h2 id="split-dialog-title">@Localizer["Title"]</h2>
-                <span>@Preview.OriginalFileName · @Localizer["PageCount", Preview.PhysicalPageCount]</span>
+                <span>@Preview.OriginalFileName · @AxisSummary</span>
             </div>
             <button type="button" disabled="@Busy" @onclick="Cancel">×</button>
         </header>
@@ -22,74 +22,197 @@
                 <div class="split-suggestion">@Localizer["Suggestion"]</div>
             }
 
-            <div class="split-body">
-            <section class="split-pages" aria-label="@(Localizer["PreviewPages"])" aria-busy="@_loadingPages">
-                <div class="page-grid">
-                    @foreach (var page in _pages)
+            <div class="split-body @(IsContentUnitAxis ? "structured" : null)">
+                @if (IsPhysicalPageAxis)
+                {
+                    <section class="split-pages" aria-label="@(Localizer["PreviewPages"])" aria-busy="@_loadingPages">
+                        @if (HasGroupedPagePreview)
+                        {
+                            <div class="range-preview-list">
+                                @for (var rangeIndex = 0; rangeIndex < _ranges.Count; rangeIndex++)
+                                {
+                                    var range = _ranges[rangeIndex];
+                                    var displayIndex = rangeIndex;
+
+                                    <section class="range-preview range-@(displayIndex % 5)" @key="range.Id">
+                                        <button class="range-preview-toggle"
+                                                type="button"
+                                                disabled="@Busy"
+                                                aria-expanded="@range.IsExpanded"
+                                                title="@(range.IsExpanded
+                                                    ? Localizer["CollapseRange", RangeDisplayTitle(range, displayIndex)]
+                                                    : Localizer["ExpandRange", RangeDisplayTitle(range, displayIndex)])"
+                                                @onclick="() => ToggleRangeAsync(range)">
+                                            <span class="range-preview-chevron">@(range.IsExpanded ? "▾" : "▸")</span>
+                                            <span class="range-preview-heading">
+                                                <strong>@RangeDisplayTitle(range, displayIndex)</strong>
+                                                <small>@Localizer["PageRangeSummary", range.Start, range.End]</small>
+                                            </span>
+                                            <span class="range-preview-count">@RangePageCount(range)</span>
+                                        </button>
+
+                                        <div class="page-grid range-page-grid">
+                                            @foreach (var pageNumber in VisiblePageNumbers(range))
+                                            {
+                                                <button type="button"
+                                                        class="page-card @CoordinateSelectionClass(pageNumber)"
+                                                        disabled="@Busy"
+                                                        title="@(Localizer["SelectPage", pageNumber])"
+                                                        @onclick="() => SelectCoordinate(pageNumber)">
+                                                    @if (PagePreviewDataUrl(pageNumber) is { } dataUrl)
+                                                    {
+                                                        <img src="@dataUrl" alt="@(Localizer["PagePreviewAlt", pageNumber])" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="page-placeholder">…</span>
+                                                    }
+                                                    <strong>@pageNumber</strong>
+                                                </button>
+                                            }
+                                        </div>
+
+                                        @if (HasMorePages(range))
+                                        {
+                                            <button class="load-pages range-load-pages"
+                                                    type="button"
+                                                    disabled="@(_loadingPages || Busy)"
+                                                    @onclick="() => LoadMoreRangePagesAsync(range)">
+                                                @Localizer["LoadMoreInRange"]
+                                            </button>
+                                        }
+                                    </section>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="page-grid">
+                                @foreach (var pageNumber in FallbackPageNumbers)
+                                {
+                                    <button type="button"
+                                            class="page-card @CoordinateSelectionClass(pageNumber)"
+                                            disabled="@Busy"
+                                            title="@(Localizer["SelectPage", pageNumber])"
+                                            @onclick="() => SelectCoordinate(pageNumber)">
+                                        @if (PagePreviewDataUrl(pageNumber) is { } dataUrl)
+                                        {
+                                            <img src="@dataUrl" alt="@(Localizer["PagePreviewAlt", pageNumber])" />
+                                        }
+                                        else
+                                        {
+                                            <span class="page-placeholder">…</span>
+                                        }
+                                        <strong>@pageNumber</strong>
+                                    </button>
+                                }
+                            </div>
+                        }
+
+                        @if (!HasGroupedPagePreview &&
+                             _fallbackLoadedPageCount < PhysicalPageCount)
+                        {
+                            <button class="load-pages"
+                                    type="button"
+                                    disabled="@(_loadingPages || Busy)"
+                                    @onclick="LoadMoreFallbackPagesAsync">
+                                @Localizer["LoadMore"]
+                            </button>
+                        }
+                    </section>
+                }
+                else if (IsContentUnitAxis)
+                {
+                    <section class="split-structure" aria-label="@(Localizer["StructuredUnits"])">
+                        <div class="structure-list">
+                            @foreach (var unit in Preview.ContentUnits)
+                            {
+                                <button type="button"
+                                        class="structure-unit @CoordinateSelectionClass(unit.ContentUnitIndex)"
+                                        disabled="@Busy"
+                                        title="@unit.ContentUnitId"
+                                        @onclick="() => SelectCoordinate(unit.ContentUnitIndex)">
+                                    <span>@(unit.ContentUnitIndex + 1)</span>
+                                    <strong>@ContentUnitTitle(unit)</strong>
+                                </button>
+                            }
+                        </div>
+                    </section>
+                }
+
+                <aside class="split-plan">
+                    <div class="split-help">
+                        <strong>@(IsPhysicalPageAxis ? Localizer["HelpTitle"] : Localizer["StructuredHelpTitle"])</strong>
+                        <span>@SelectionHelp</span>
+                    </div>
+
+                    <ol>
+                        @foreach (var range in _ranges)
+                        {
+                            <li class="@(IsContentUnitAxis ? "content-range" : null)" @key="range.Id">
+                                <input type="text"
+                                       aria-label="@(Localizer["RangeTitle"])"
+                                       @bind="range.Title"
+                                       @bind:event="oninput" />
+                                @if (IsPhysicalPageAxis)
+                                {
+                                    <label>
+                                        <span>@Localizer["Start"]</span>
+                                        <input type="number"
+                                               min="1"
+                                               max="@PhysicalPageCount"
+                                               @bind="range.Start"
+                                               @bind:event="oninput"
+                                               @bind:after="LoadVisiblePagePreviewsAsync" />
+                                    </label>
+                                    <label>
+                                        <span>@Localizer["End"]</span>
+                                        <input type="number"
+                                               min="1"
+                                               max="@PhysicalPageCount"
+                                               @bind="range.End"
+                                               @bind:event="oninput"
+                                               @bind:after="LoadVisiblePagePreviewsAsync" />
+                                    </label>
+                                }
+                                else
+                                {
+                                    <label>
+                                        <span>@Localizer["Start"]</span>
+                                        <select @bind="range.Start">
+                                            @foreach (var unit in Preview.ContentUnits)
+                                            {
+                                                <option value="@unit.ContentUnitIndex">@ContentUnitOption(unit)</option>
+                                            }
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span>@Localizer["End"]</span>
+                                        <select @bind="range.End">
+                                            @foreach (var unit in Preview.ContentUnits)
+                                            {
+                                                <option value="@unit.ContentUnitIndex">@ContentUnitOption(unit)</option>
+                                            }
+                                        </select>
+                                    </label>
+                                }
+                                <button type="button" disabled="@Busy" title="@(Localizer["RemoveRange"])" @onclick="() => Remove(range)">×</button>
+                            </li>
+                        }
+                    </ol>
+
+                    @if (_error is not null)
                     {
-                        <button type="button"
-                                class="page-card @PageSelectionClass(page.PageNumber)"
-                                disabled="@Busy"
-                                title="@(Localizer["SelectPage", page.PageNumber])"
-                                @onclick="() => SelectPage(page.PageNumber)">
-                            @if (page.DataUrl is null)
-                            {
-                                <span class="page-placeholder">…</span>
-                            }
-                            else
-                            {
-                                <img src="@(page.DataUrl)" alt="@(Localizer["PagePreviewAlt", page.PageNumber])" />
-                            }
-                            <strong>@(page.PageNumber)</strong>
+                        <p class="split-error" role="alert">@_error</p>
+                    }
+
+                    <footer>
+                        <button type="button" disabled="@Busy" @onclick="Cancel">@Localizer["Cancel"]</button>
+                        <button class="split-apply" type="button" disabled="@(Busy || _ranges.Count < 2)" @onclick="ApplyAsync">
+                            @Localizer["Apply"]
                         </button>
-                    }
-                </div>
-                @if (_pages.Count < Preview.PhysicalPageCount)
-                {
-                    <button class="load-pages" type="button" disabled="@(_loadingPages || Busy)" @onclick="LoadMoreAsync">
-                        @Localizer["LoadMore"]
-                    </button>
-                }
-            </section>
-
-            <aside class="split-plan">
-                <div class="split-help">
-                    <strong>@Localizer["HelpTitle"]</strong>
-                    <span>@(_selectionStart.HasValue
-                        ? Localizer["ChooseEnd", _selectionStart.Value]
-                        : Localizer["ChooseStart"])</span>
-                </div>
-
-                <ol>
-                    @foreach (var range in _ranges)
-                    {
-                        <li @key="range.Id">
-                            <input type="text" aria-label="@(Localizer["RangeTitle"])" @bind="range.Title" />
-                            <label>
-                                <span>@Localizer["Start"]</span>
-                                <input type="number" min="1" max="@Preview.PhysicalPageCount" @bind="range.Start" />
-                            </label>
-                            <label>
-                                <span>@Localizer["End"]</span>
-                                <input type="number" min="1" max="@Preview.PhysicalPageCount" @bind="range.End" />
-                            </label>
-                            <button type="button" disabled="@Busy" @onclick="() => Remove(range)">×</button>
-                        </li>
-                    }
-                </ol>
-
-                @if (_error is not null)
-                {
-                    <p class="split-error" role="alert">@_error</p>
-                }
-
-                <footer>
-                    <button type="button" disabled="@Busy" @onclick="Cancel">@Localizer["Cancel"]</button>
-                    <button class="split-apply" type="button" disabled="@(Busy || _ranges.Count == 0)" @onclick="ApplyAsync">
-                        @Localizer["Apply"]
-                    </button>
-                </footer>
-            </aside>
+                    </footer>
+                </aside>
             </div>
         </div>
     </section>
@@ -98,8 +221,9 @@
 @code {
     private const int PageBatchSize = 12;
 
-    private readonly List<PagePreview> _pages = [];
+    private readonly Dictionary<int, string> _pagePreviewDataUrls = [];
     private readonly List<RangeDraft> _ranges = [];
+    private int _fallbackLoadedPageCount;
     private int? _selectionStart;
     private bool _loadingPages;
     private string? _error;
@@ -116,25 +240,266 @@
     [Parameter]
     public EventCallback<IReadOnlyList<ManagerSplitRangeDraft>> Apply { get; set; }
 
+    private bool IsPhysicalPageAxis =>
+        string.Equals(
+            Preview.AxisKind,
+            "physicalPages",
+            StringComparison.Ordinal);
+
+    private bool IsContentUnitAxis =>
+        string.Equals(
+            Preview.AxisKind,
+            "contentUnits",
+            StringComparison.Ordinal);
+
+    private int PhysicalPageCount =>
+        Preview.PhysicalPageCount ??
+        0;
+
+    private int AxisCount =>
+        IsPhysicalPageAxis
+            ? PhysicalPageCount
+            : Preview.ContentUnits.Count;
+
+    private bool HasGroupedPagePreview =>
+        IsPhysicalPageAxis &&
+        Preview.SuggestedRanges.Count >
+            0 &&
+        _ranges.Count >
+            0;
+
+    private IEnumerable<int> FallbackPageNumbers =>
+        Enumerable.Range(
+            1,
+            _fallbackLoadedPageCount);
+
+    private string AxisSummary =>
+        IsPhysicalPageAxis
+            ? Localizer["PageCount", PhysicalPageCount]
+            : Localizer["ContentUnitCount", Preview.ContentUnits.Count];
+
+    private string SelectionHelp =>
+        _selectionStart.HasValue
+            ? IsPhysicalPageAxis
+                ? Localizer["ChooseEnd", _selectionStart.Value]
+                : Localizer["ChooseContentEnd", _selectionStart.Value + 1]
+            : IsPhysicalPageAxis
+                ? Localizer["ChooseStart"]
+                : Localizer["ChooseContentStart"];
+
     protected override async Task OnInitializedAsync()
     {
+        if (!HasValidPreviewAxis())
+        {
+            _error = Localizer["InvalidPreview"];
+            return;
+        }
+
         foreach (var suggestedRange in
                  Preview.SuggestedRanges)
         {
+            if (!TryCreateRangeDraft(
+                    suggestedRange,
+                    out var draft))
+            {
+                _ranges.Clear();
+                _error = Localizer["InvalidPreview"];
+                return;
+            }
+
             _ranges.Add(
-                new RangeDraft(
-                    suggestedRange.StartPhysicalPageNumber,
-                    suggestedRange.EndPhysicalPageNumber,
-                    suggestedRange.SuggestedTitle ??
-                    Localizer["DefaultRangeTitle", _ranges.Count + 1]));
+                draft);
         }
 
-        await LoadMoreAsync();
+        if (IsPhysicalPageAxis)
+        {
+            if (!HasGroupedPagePreview)
+            {
+                _fallbackLoadedPageCount =
+                    Math.Min(
+                        PageBatchSize,
+                        PhysicalPageCount);
+            }
+
+            await LoadVisiblePagePreviewsAsync();
+        }
     }
 
-    private async Task LoadMoreAsync()
+    private bool HasValidPreviewAxis()
     {
-        if (_loadingPages)
+        if (IsPhysicalPageAxis)
+        {
+            return PhysicalPageCount >
+                   0 &&
+                   Preview.ContentUnits.Count ==
+                   0;
+        }
+
+        if (!IsContentUnitAxis ||
+            Preview.PhysicalPageCount is not null ||
+            Preview.ContentUnits.Count ==
+            0)
+        {
+            return false;
+        }
+
+        for (var index = 0;
+             index < Preview.ContentUnits.Count;
+             index++)
+        {
+            var unit =
+                Preview.ContentUnits[index];
+
+            if (unit.ContentUnitIndex !=
+                    index ||
+                string.IsNullOrWhiteSpace(
+                    unit.ContentUnitId))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool TryCreateRangeDraft(
+        ManagerSplitSuggestedRangeContract suggestedRange,
+        out RangeDraft draft)
+    {
+        var title =
+            suggestedRange.SuggestedTitle ??
+            Localizer["DefaultRangeTitle", _ranges.Count + 1];
+
+        if (IsPhysicalPageAxis &&
+            string.Equals(
+                suggestedRange.Kind,
+                "physicalPageRange",
+                StringComparison.Ordinal) &&
+            suggestedRange.StartPhysicalPageNumber is not null &&
+            suggestedRange.EndPhysicalPageNumber is not null)
+        {
+            draft =
+                new RangeDraft(
+                    suggestedRange.StartPhysicalPageNumber.Value,
+                    suggestedRange.EndPhysicalPageNumber.Value,
+                    title);
+
+            return true;
+        }
+
+        if (IsContentUnitAxis &&
+            string.Equals(
+                suggestedRange.Kind,
+                "contentUnitRange",
+                StringComparison.Ordinal) &&
+            suggestedRange.StartContentUnitIndex is not null &&
+            suggestedRange.EndContentUnitIndex is not null &&
+            BoundaryMatches(
+                suggestedRange.StartContentUnitIndex.Value,
+                suggestedRange.StartContentUnitId) &&
+            BoundaryMatches(
+                suggestedRange.EndContentUnitIndex.Value,
+                suggestedRange.EndContentUnitId))
+        {
+            draft =
+                new RangeDraft(
+                    suggestedRange.StartContentUnitIndex.Value,
+                    suggestedRange.EndContentUnitIndex.Value,
+                    title);
+
+            return true;
+        }
+
+        draft =
+            null!;
+
+        return false;
+    }
+
+    private bool BoundaryMatches(
+        int index,
+        string? contentUnitId) =>
+        index >=
+            0 &&
+        index <
+            Preview.ContentUnits.Count &&
+        string.Equals(
+            Preview.ContentUnits[index].ContentUnitId,
+            contentUnitId,
+            StringComparison.Ordinal);
+
+    private async Task ToggleRangeAsync(
+        RangeDraft range)
+    {
+        range.IsExpanded =
+            !range.IsExpanded;
+
+        if (range.IsExpanded)
+        {
+            range.LoadedPageCount =
+                Math.Max(
+                    range.LoadedPageCount,
+                    Math.Min(
+                        PageBatchSize,
+                        RangePageCount(
+                            range)));
+        }
+
+        await LoadVisiblePagePreviewsAsync();
+    }
+
+    private async Task LoadMoreRangePagesAsync(
+        RangeDraft range)
+    {
+        if (!range.IsExpanded)
+        {
+            return;
+        }
+
+        range.LoadedPageCount =
+            Math.Min(
+                RangePageCount(
+                    range),
+                range.LoadedPageCount +
+                PageBatchSize);
+
+        await LoadVisiblePagePreviewsAsync();
+    }
+
+    private async Task LoadMoreFallbackPagesAsync()
+    {
+        _fallbackLoadedPageCount =
+            Math.Min(
+                PhysicalPageCount,
+                _fallbackLoadedPageCount +
+                PageBatchSize);
+
+        await LoadVisiblePagePreviewsAsync();
+    }
+
+    private async Task LoadVisiblePagePreviewsAsync()
+    {
+        if (_loadingPages ||
+            !IsPhysicalPageAxis)
+        {
+            return;
+        }
+
+        var missingPageNumbers =
+            GetRequiredPageNumbers()
+                .Where(
+                    pageNumber =>
+                        pageNumber >=
+                            1 &&
+                        pageNumber <=
+                            PhysicalPageCount &&
+                        !_pagePreviewDataUrls.ContainsKey(
+                            pageNumber))
+                .Distinct()
+                .ToArray();
+
+        if (missingPageNumbers.Length ==
+            0)
         {
             return;
         }
@@ -143,77 +508,353 @@
 
         try
         {
-            var last = Math.Min(_pages.Count + PageBatchSize, Preview.PhysicalPageCount);
-
-            for (var pageNumber = _pages.Count + 1; pageNumber <= last; pageNumber++)
+            while (true)
             {
-                var bytes = await ManagerClient.GetSplitPreviewPageAsync(Preview.UnitId, pageNumber);
-                _pages.Add(new PagePreview(pageNumber, $"data:image/png;base64,{Convert.ToBase64String(bytes)}"));
-                await InvokeAsync(StateHasChanged);
+                var nextPageNumbers =
+                    GetRequiredPageNumbers()
+                        .Where(
+                            pageNumber =>
+                                pageNumber >=
+                                    1 &&
+                                pageNumber <=
+                                    PhysicalPageCount &&
+                                !_pagePreviewDataUrls.ContainsKey(
+                                    pageNumber))
+                        .Distinct()
+                        .Take(
+                            4)
+                        .ToArray();
+
+                if (nextPageNumbers.Length ==
+                    0)
+                {
+                    break;
+                }
+
+                var loadedPages =
+                    await Task.WhenAll(
+                        nextPageNumbers.Select(
+                            async pageNumber =>
+                            {
+                                var bytes =
+                                    await ManagerClient.GetSplitPreviewPageAsync(
+                                        Preview.UnitId,
+                                        pageNumber);
+
+                                return (
+                                    PageNumber:
+                                        pageNumber,
+                                    DataUrl:
+                                        $"data:image/png;base64,{Convert.ToBase64String(bytes)}"
+                                );
+                            }));
+
+                foreach (var loadedPage in
+                         loadedPages)
+                {
+                    _pagePreviewDataUrls[loadedPage.PageNumber] =
+                        loadedPage.DataUrl;
+                }
+
+                await InvokeAsync(
+                    StateHasChanged);
             }
         }
         finally
         {
-            _loadingPages = false;
+            _loadingPages =
+                false;
         }
+
+        await InvokeAsync(
+            StateHasChanged);
     }
 
-    private void SelectPage(int pageNumber)
+    private IEnumerable<int> GetRequiredPageNumbers()
+    {
+        if (!HasGroupedPagePreview)
+        {
+            return FallbackPageNumbers;
+        }
+
+        var firstPages =
+            _ranges
+                .Where(
+                    range =>
+                        RangePageCount(
+                            range) >
+                        0)
+                .Select(
+                    range =>
+                        range.Start);
+
+        var expandedPages =
+            _ranges
+                .Where(
+                    range =>
+                        range.IsExpanded)
+                .SelectMany(
+                    range =>
+                        VisiblePageNumbers(
+                                range)
+                            .Skip(
+                                1));
+
+        return firstPages.Concat(
+            expandedPages);
+    }
+
+    private IEnumerable<int> VisiblePageNumbers(
+        RangeDraft range)
+    {
+        var pageCount =
+            RangePageCount(
+                range);
+
+        if (pageCount ==
+            0)
+        {
+            return [];
+        }
+
+        var visiblePageCount =
+            range.IsExpanded
+                ? Math.Min(
+                    Math.Max(
+                        1,
+                        range.LoadedPageCount),
+                    pageCount)
+                : 1;
+
+        return Enumerable.Range(
+            range.Start,
+            visiblePageCount);
+    }
+
+    private int RangePageCount(
+        RangeDraft range) =>
+        range.Start >=
+            1 &&
+        range.Start <=
+            PhysicalPageCount &&
+        range.End >=
+            range.Start
+            ? Math.Min(
+                  range.End,
+                  PhysicalPageCount) -
+              range.Start +
+              1
+            : 0;
+
+    private bool HasMorePages(
+        RangeDraft range) =>
+        range.IsExpanded &&
+        range.LoadedPageCount <
+        RangePageCount(
+            range);
+
+    private string? PagePreviewDataUrl(
+        int pageNumber) =>
+        _pagePreviewDataUrls.GetValueOrDefault(
+            pageNumber);
+
+    private string RangeDisplayTitle(
+        RangeDraft range,
+        int rangeIndex) =>
+        string.IsNullOrWhiteSpace(
+            range.Title)
+            ? Localizer["DefaultRangeTitle", rangeIndex + 1]
+            : range.Title.Trim();
+
+    private void SelectCoordinate(
+        int coordinate)
     {
         if (!_selectionStart.HasValue)
         {
-            _selectionStart = pageNumber;
+            _selectionStart =
+                coordinate;
+
             return;
         }
 
-        var start = Math.Min(_selectionStart.Value, pageNumber);
-        var end = Math.Max(_selectionStart.Value, pageNumber);
-        _ranges.Add(new RangeDraft(start, end, Localizer["DefaultRangeTitle", _ranges.Count + 1]));
-        _selectionStart = null;
-        _error = null;
+        var start =
+            Math.Min(
+                _selectionStart.Value,
+                coordinate);
+
+        var end =
+            Math.Max(
+                _selectionStart.Value,
+                coordinate);
+
+        _ranges.Add(
+            new RangeDraft(
+                start,
+                end,
+                Localizer["DefaultRangeTitle", _ranges.Count + 1]));
+
+        _selectionStart =
+            null;
+
+        _error =
+            null;
     }
 
-    private string? PageSelectionClass(int pageNumber)
+    private string? CoordinateSelectionClass(
+        int coordinate)
     {
-        if (_selectionStart == pageNumber)
+        if (_selectionStart ==
+            coordinate)
         {
             return "selection-start";
         }
 
-        var index = _ranges.FindIndex(range => pageNumber >= range.Start && pageNumber <= range.End);
-        return index >= 0 ? $"range-{index % 5}" : null;
+        var index =
+            _ranges.FindIndex(
+                range =>
+                    coordinate >=
+                        range.Start &&
+                    coordinate <=
+                        range.End);
+
+        return index >=
+               0
+            ? $"range-{index % 5}"
+            : null;
     }
 
-    private void Remove(RangeDraft range) => _ranges.Remove(range);
+    private string ContentUnitTitle(
+        ManagerSplitContentUnitContract unit) =>
+        string.IsNullOrWhiteSpace(
+            unit.SuggestedTitle)
+            ? Localizer["ContentUnit", unit.ContentUnitIndex + 1]
+            : unit.SuggestedTitle;
+
+    private string ContentUnitOption(
+        ManagerSplitContentUnitContract unit) =>
+        $"{unit.ContentUnitIndex + 1} · {ContentUnitTitle(unit)}";
+
+    private void Remove(
+        RangeDraft range) =>
+        _ranges.Remove(
+            range);
 
     private async Task ApplyAsync()
     {
-        var ordered = _ranges.OrderBy(range => range.Start).ToArray();
+        var ordered =
+            _ranges
+                .OrderBy(
+                    range =>
+                        range.Start)
+                .ToArray();
 
-        if (ordered.Any(range => string.IsNullOrWhiteSpace(range.Title) || range.Start <= 0 ||
-                                 range.End < range.Start || range.End > Preview.PhysicalPageCount))
+        if (ordered.Length <
+            2)
         {
-            _error = Localizer["InvalidRange"];
+            _error =
+                Localizer["AtLeastTwoRanges"];
+
             return;
         }
 
-        if (ordered.Skip(1).Zip(ordered, (current, previous) => current.Start <= previous.End).Any(value => value))
+        var firstCoordinate =
+            IsPhysicalPageAxis
+                ? 1
+                : 0;
+
+        var lastCoordinate =
+            IsPhysicalPageAxis
+                ? AxisCount
+                : AxisCount -
+                  1;
+
+        if (ordered.Any(
+                range =>
+                    string.IsNullOrWhiteSpace(
+                        range.Title) ||
+                    range.Start <
+                        firstCoordinate ||
+                    range.End <
+                        range.Start ||
+                    range.End >
+                        lastCoordinate))
         {
-            _error = Localizer["Overlap"];
+            _error =
+                Localizer["InvalidRange"];
+
             return;
         }
+
+        if (ordered[0].Start !=
+                firstCoordinate ||
+            ordered[^1].End !=
+                lastCoordinate ||
+            ordered
+                .Skip(
+                    1)
+                .Zip(
+                    ordered,
+                    (current, previous) =>
+                        current.Start !=
+                        previous.End +
+                        1)
+                .Any(
+                    invalid =>
+                        invalid))
+        {
+            _error =
+                Localizer["CompleteCoverage"];
+
+            return;
+        }
+
+        IReadOnlyList<ManagerSplitRangeDraft> approved =
+            IsPhysicalPageAxis
+                ? ordered
+                    .Select(
+                        range =>
+                            (ManagerSplitRangeDraft)
+                            new ManagerSplitRangeDraft.PhysicalPageRange(
+                                range.Start,
+                                range.End,
+                                range.Title.Trim()))
+                    .ToArray()
+                : ordered
+                    .Select(
+                        range =>
+                            (ManagerSplitRangeDraft)
+                            new ManagerSplitRangeDraft.ContentUnitRange(
+                                range.Start,
+                                Preview.ContentUnits[range.Start].ContentUnitId,
+                                range.End,
+                                Preview.ContentUnits[range.End].ContentUnitId,
+                                range.Title.Trim()))
+                    .ToArray();
 
         await Apply.InvokeAsync(
-            _ranges.Select(range => new ManagerSplitRangeDraft(range.Start, range.End, range.Title.Trim())).ToArray());
+            approved);
     }
 
-    private sealed record PagePreview(int PageNumber, string? DataUrl);
-
-    private sealed class RangeDraft(int start, int end, string title)
+    private sealed class RangeDraft(
+        int start,
+        int end,
+        string title)
     {
-        public Guid Id { get; } = Guid.NewGuid();
-        public int Start { get; set; } = start;
-        public int End { get; set; } = end;
-        public string Title { get; set; } = title;
+        public Guid Id { get; } =
+            Guid.NewGuid();
+
+        public int Start { get; set; } =
+            start;
+
+        public int End { get; set; } =
+            end;
+
+        public string Title { get; set; } =
+            title;
+
+        public bool IsExpanded { get; set; }
+
+        public int LoadedPageCount { get; set; } =
+            1;
     }
 }

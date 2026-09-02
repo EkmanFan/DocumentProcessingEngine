@@ -486,14 +486,20 @@ internal sealed class ManagerHostClient(
     public async ValueTask<ManagerSplitPendingUnitResult> SplitPendingUnitAsync(
         Guid unitId,
         long expectedVersion,
-        IReadOnlyList<ManagerPageRangeRequest> ranges,
+        IReadOnlyList<ManagerSplitRangeDraft> ranges,
         bool releaseAfterSplit,
         CancellationToken cancellationToken = default)
     {
         using var response =
             await _httpClient.PostAsJsonAsync(
                 $"api/manager/queue/{unitId:D}/split",
-                new ManagerSplitPendingUnitRequest(expectedVersion, ranges, releaseAfterSplit),
+                new ManagerSplitPendingUnitRequest(
+                    expectedVersion,
+                    ranges
+                        .Select(
+                            ToRequest)
+                        .ToArray(),
+                    releaseAfterSplit),
                 cancellationToken).ConfigureAwait(false);
 
         EnsureSuccess(response);
@@ -502,6 +508,37 @@ internal sealed class ManagerHostClient(
                    .ConfigureAwait(false) ??
                throw new InvalidDataException("The Manager returned an empty split result.");
     }
+
+    private static ManagerSplitRangeRequest ToRequest(
+        ManagerSplitRangeDraft range) =>
+        range switch
+        {
+            ManagerSplitRangeDraft.PhysicalPageRange pageRange =>
+                new ManagerSplitRangeRequest(
+                    "physicalPageRange",
+                    pageRange.StartPhysicalPageNumber,
+                    pageRange.EndPhysicalPageNumber,
+                    null,
+                    null,
+                    null,
+                    null,
+                    pageRange.Title),
+            ManagerSplitRangeDraft.ContentUnitRange contentRange =>
+                new ManagerSplitRangeRequest(
+                    "contentUnitRange",
+                    null,
+                    null,
+                    contentRange.StartContentUnitIndex,
+                    contentRange.StartContentUnitId,
+                    contentRange.EndContentUnitIndex,
+                    contentRange.EndContentUnitId,
+                    contentRange.Title),
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(range),
+                    range,
+                    "Unknown split-range draft.")
+        };
 
     #endregion
 

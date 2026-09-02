@@ -230,6 +230,9 @@ public sealed class DocumentProcessingHostExecutor
                             visualWriter,
                         physicalPageRange:
                             ToPhysicalPageRange(
+                                workItem.Scope),
+                        contentUnitRange:
+                            ToContentUnitRange(
                                 workItem.Scope)),
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -335,6 +338,29 @@ public sealed class DocumentProcessingHostExecutor
                 new PhysicalPageRange(
                     range.StartPhysicalPageNumber,
                     range.EndPhysicalPageNumber),
+            ProcessingUnitScope.ContentUnitRange =>
+                null,
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(scope),
+                    scope,
+                    "Unknown processing-unit scope.")
+        };
+
+    internal static ContentUnitRange? ToContentUnitRange(
+        ProcessingUnitScope scope) =>
+        scope switch
+        {
+            ProcessingUnitScope.WholeDocument =>
+                null,
+            ProcessingUnitScope.PageRange =>
+                null,
+            ProcessingUnitScope.ContentUnitRange range =>
+                new ContentUnitRange(
+                    range.StartContentUnitIndex,
+                    range.StartContentUnitId,
+                    range.EndContentUnitIndex,
+                    range.EndContentUnitId),
             _ =>
                 throw new ArgumentOutOfRangeException(
                     nameof(scope),

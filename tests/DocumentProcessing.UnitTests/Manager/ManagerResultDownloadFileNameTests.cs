@@ -40,6 +40,34 @@ public sealed class ManagerResultDownloadFileNameTests
     }
 
     [Fact]
+    public void Create_AddsOneBasedUnitPositionsForContentUnitRange()
+    {
+        var result =
+            ManagerResultDownloadFileName.Create(
+                "Habermas.epub",
+                new ManagerWorkItemScopeView(
+                    ManagerWorkItemScopeKind.ContentUnitRange,
+                    StartPhysicalPageNumber:
+                        null,
+                    EndPhysicalPageNumber:
+                        null,
+                    Title:
+                        "Chapter",
+                    StartContentUnitIndex:
+                        4,
+                    StartContentUnitId:
+                        "OPS/chapter4.xhtml",
+                    EndContentUnitIndex:
+                        8,
+                    EndContentUnitId:
+                        "OPS/chapter8.xhtml"));
+
+        Assert.Equal(
+            "Habermas.units-5-9.dpengine-result.json",
+            result);
+    }
+
+    [Fact]
     public void Create_FallsBackWhenSourceStemHasNoSafeCharacters()
     {
         Assert.Equal(

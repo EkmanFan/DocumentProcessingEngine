@@ -37,7 +37,11 @@ public sealed class PostgresProcessingQueueReader
                 processing_unit.created_at_utc,
                 processing_unit.updated_at_utc,
                 processing_unit.released_at_utc,
-                submission.original_file_name
+                submission.original_file_name,
+                processing_unit.start_content_unit_index,
+                processing_unit.start_content_unit_id,
+                processing_unit.end_content_unit_index,
+                processing_unit.end_content_unit_id
             FROM document_processing_manager.processing_units AS processing_unit
             INNER JOIN document_processing_manager.document_submissions AS submission
                 ON submission.submission_id = processing_unit.submission_id
@@ -438,23 +442,24 @@ public sealed class PostgresProcessingQueueReader
 
     private static ProcessingUnitScope ReadScope(
         NpgsqlDataReader reader) =>
-        reader.GetInt16(
-            2) switch
-        {
-            0 =>
-                new ProcessingUnitScope.WholeDocument(),
-            1 =>
-                new ProcessingUnitScope.PageRange(
-                    reader.GetInt32(
-                        3),
-                    reader.GetInt32(
-                        4),
-                    reader.GetString(
-                        5)),
-            var value =>
-                throw new InvalidOperationException(
-                    $"Unknown durable processing-unit scope kind '{value}'.")
-        };
+        PostgresProcessingUnitScopeMapper.ReadScope(
+            reader,
+            kindOrdinal:
+                2,
+            startPageOrdinal:
+                3,
+            endPageOrdinal:
+                4,
+            titleOrdinal:
+                5,
+            startContentUnitIndexOrdinal:
+                17,
+            startContentUnitIdOrdinal:
+                18,
+            endContentUnitIndexOrdinal:
+                19,
+            endContentUnitIdOrdinal:
+                20);
 
     #endregion
 }

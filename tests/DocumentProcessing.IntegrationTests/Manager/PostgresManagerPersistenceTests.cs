@@ -79,7 +79,7 @@ public sealed class PostgresManagerPersistenceTests
                 "SELECT MAX(version) FROM document_processing_manager.schema_versions;");
 
         Assert.Equal(
-            8,
+            9,
             Convert.ToInt32(
                 await versionCommand.ExecuteScalarAsync()));
     }
@@ -778,6 +778,106 @@ public sealed class PostgresManagerPersistenceTests
     }
 
     [PostgresFact]
+    public async Task QueueStore_SplitPendingAtomicallyPersistsContentUnitRangesInPlace()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var firstSubmission =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    'e');
+
+        var secondSubmission =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    'f');
+
+        var whole =
+            new ProcessingWorkItem(
+                ProcessingUnitId.New(),
+                firstSubmission.SubmissionId,
+                new ProcessingUnitScope.WholeDocument(),
+                attemptNumber:
+                    1);
+
+        var following =
+            new ProcessingWorkItem(
+                ProcessingUnitId.New(),
+                secondSubmission.SubmissionId,
+                new ProcessingUnitScope.WholeDocument(),
+                attemptNumber:
+                    1);
+
+        await context.SubmissionStore.RegisterReadyAsync(
+            firstSubmission,
+            [whole]);
+
+        await context.SubmissionStore.RegisterReadyAsync(
+            secondSubmission,
+            [following]);
+
+        var replacementScopes =
+            new ProcessingUnitScope.ContentUnitRange[]
+            {
+                new(
+                    0,
+                    "OPS/front.xhtml",
+                    1,
+                    "OPS/chapter1.xhtml",
+                    "Part one"),
+                new(
+                    2,
+                    "OPS/chapter2.xhtml",
+                    3,
+                    "OPS/chapter3.xhtml",
+                    "Part two")
+            };
+
+        var replacements =
+            replacementScopes
+                .Select(
+                    scope =>
+                        new ProcessingUnitIntake(
+                            new ProcessingWorkItem(
+                                ProcessingUnitId.New(),
+                                firstSubmission.SubmissionId,
+                                scope,
+                                attemptNumber:
+                                    1),
+                            ProcessingUnitDispatchState.Ready))
+                .ToArray();
+
+        await context.QueueStore.SplitPendingAsync(
+            new SplitPendingProcessingUnitCommand(
+                expectedQueueVersion:
+                    2,
+                whole.UnitId,
+                replacements));
+
+        var snapshot =
+            await context.QueueReader.GetSnapshotAsync();
+
+        Assert.Equal(
+            [replacements[0].WorkItem.UnitId, replacements[1].WorkItem.UnitId, following.UnitId],
+            snapshot.Items.Select(
+                item =>
+                    item.WorkItem.UnitId));
+
+        Assert.Equal(
+            replacementScopes,
+            snapshot.Items
+                .Take(
+                    2)
+                .Select(
+                    item =>
+                        Assert.IsType<ProcessingUnitScope.ContentUnitRange>(
+                            item.WorkItem.Scope)));
+    }
+
+    [PostgresFact]
     public async Task SubmissionStore_IdempotentReplayPreservesInitialBatchOrder()
     {
         await using var context =
@@ -907,6 +1007,133 @@ public sealed class PostgresManagerPersistenceTests
                     2),
             await ReadSubmissionCountsAsync(
                 context.DataSource));
+    }
+
+    [PostgresFact]
+    public async Task SubmissionStore_PersistsContentUnitRangesWithoutLosingStableBoundaries()
+    {
+        await using var context =
+            await CreateContextAsync();
+
+        var submission =
+            CreateSubmission(
+                DocumentSubmissionId.New(),
+                digestCharacter:
+                    'c');
+
+        var scopes =
+            new ProcessingUnitScope.ContentUnitRange[]
+            {
+                new(
+                    0,
+                    "OPS/front.xhtml",
+                    1,
+                    "OPS/chapter1.xhtml",
+                    "Front and chapter one"),
+                new(
+                    2,
+                    "OPS/chapter2.xhtml",
+                    3,
+                    "OPS/chapter3.xhtml",
+                    "Chapters two and three")
+            };
+
+        var units =
+            scopes
+                .Select(
+                    scope =>
+                        new ProcessingWorkItem(
+                            ProcessingUnitId.New(),
+                            submission.SubmissionId,
+                            scope,
+                            attemptNumber:
+                                1))
+                .ToArray();
+
+        await context.SubmissionStore.RegisterReadyAsync(
+            submission,
+            units);
+
+        var snapshot =
+            await context.QueueReader.GetSnapshotAsync();
+
+        Assert.Equal(
+            scopes,
+            snapshot.Items
+                .Select(
+                    item =>
+                        Assert.IsType<ProcessingUnitScope.ContentUnitRange>(
+                            item.WorkItem.Scope)));
+
+        var now =
+            DateTimeOffset.UtcNow;
+
+        var runtimeLease =
+            await context.RuntimeLeaseStore.TryAcquireAsync(
+                "content-unit-range-test",
+                now,
+                now.AddMinutes(
+                    1));
+
+        Assert.NotNull(
+            runtimeLease);
+
+        var processingLease =
+            await context.QueueStore.ClaimNextAsync(
+                runtimeLease,
+                runtimeLease.WorkerId,
+                now,
+                now.AddMinutes(
+                    1));
+
+        Assert.NotNull(
+            processingLease);
+
+        Assert.Equal(
+            scopes[0],
+            Assert.IsType<ProcessingUnitScope.ContentUnitRange>(
+                processingLease.WorkItem.Scope));
+
+        const string resultReference =
+            "content-unit-range-result";
+
+        await context.ResultRegistry.RegisterAsync(
+            new ProcessingResultRecord(
+                resultReference,
+                processingLease.WorkItem.UnitId,
+                processingLease.WorkItem.SubmissionId,
+                new ProcessingResultArtifact(
+                    new Sha256Digest(
+                        new string(
+                            'd',
+                            64)),
+                    byteLength:
+                        123),
+                "application/json",
+                "document-processing-result-v4",
+                now));
+
+        Assert.True(
+            await context.QueueStore.CompleteAsync(
+                processingLease,
+                new ProcessingExecutionOutcome.Success(
+                    resultReference),
+                now));
+
+        var delivery =
+            await context.ResultPublicationStore.ClaimNextAsync(
+                "content-unit-range-consumer",
+                now,
+                now.AddMinutes(
+                    1));
+
+        Assert.NotNull(
+            delivery);
+
+        Assert.Equal(
+            scopes[0],
+            Assert.IsType<ProcessingUnitScope.ContentUnitRange>(
+                delivery.Scope));
     }
 
     [PostgresFact]

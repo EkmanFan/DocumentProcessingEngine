@@ -477,8 +477,9 @@ public sealed class PostgresDocumentSubmissionStore
         var processingUnit =
             intake.WorkItem;
 
-        var pageRange =
-            processingUnit.Scope as ProcessingUnitScope.PageRange;
+        var durableScope =
+            PostgresProcessingUnitScopeMapper.ToDurableScope(
+                processingUnit.Scope);
 
         await using var command =
             new NpgsqlCommand(
@@ -491,6 +492,10 @@ public sealed class PostgresDocumentSubmissionStore
                     start_physical_page_number,
                     end_physical_page_number,
                     scope_title,
+                    start_content_unit_index,
+                    start_content_unit_id,
+                    end_content_unit_index,
+                    end_content_unit_id,
                     attempt_number,
                     submission_unit_ordinal,
                     status,
@@ -505,6 +510,10 @@ public sealed class PostgresDocumentSubmissionStore
                     @start_page,
                     @end_page,
                     @scope_title,
+                    @start_content_unit_index,
+                    @start_content_unit_id,
+                    @end_content_unit_index,
+                    @end_content_unit_id,
                     @attempt_number,
                     @submission_unit_ordinal,
                     0,
@@ -531,30 +540,56 @@ public sealed class PostgresDocumentSubmissionStore
         command.Parameters.AddWithValue(
             "scope_kind",
             NpgsqlDbType.Smallint,
-            pageRange is null
-                ? (short)0
-                : (short)1);
+            durableScope.Kind);
 
         command.Parameters.AddWithValue(
             "start_page",
             NpgsqlDbType.Integer,
-            pageRange is null
+            durableScope.StartPhysicalPageNumber is null
                 ? DBNull.Value
-                : pageRange.StartPhysicalPageNumber);
+                : durableScope.StartPhysicalPageNumber.Value);
 
         command.Parameters.AddWithValue(
             "end_page",
             NpgsqlDbType.Integer,
-            pageRange is null
+            durableScope.EndPhysicalPageNumber is null
                 ? DBNull.Value
-                : pageRange.EndPhysicalPageNumber);
+                : durableScope.EndPhysicalPageNumber.Value);
 
         command.Parameters.AddWithValue(
             "scope_title",
             NpgsqlDbType.Text,
-            pageRange is null
+            durableScope.Title is null
                 ? DBNull.Value
-                : pageRange.Title);
+                : durableScope.Title);
+
+        command.Parameters.AddWithValue(
+            "start_content_unit_index",
+            NpgsqlDbType.Integer,
+            durableScope.StartContentUnitIndex is null
+                ? DBNull.Value
+                : durableScope.StartContentUnitIndex.Value);
+
+        command.Parameters.AddWithValue(
+            "start_content_unit_id",
+            NpgsqlDbType.Text,
+            durableScope.StartContentUnitId is null
+                ? DBNull.Value
+                : durableScope.StartContentUnitId);
+
+        command.Parameters.AddWithValue(
+            "end_content_unit_index",
+            NpgsqlDbType.Integer,
+            durableScope.EndContentUnitIndex is null
+                ? DBNull.Value
+                : durableScope.EndContentUnitIndex.Value);
+
+        command.Parameters.AddWithValue(
+            "end_content_unit_id",
+            NpgsqlDbType.Text,
+            durableScope.EndContentUnitId is null
+                ? DBNull.Value
+                : durableScope.EndContentUnitId);
 
         command.Parameters.AddWithValue(
             "attempt_number",
@@ -676,7 +711,11 @@ public sealed class PostgresDocumentSubmissionStore
                     start_physical_page_number,
                     end_physical_page_number,
                     scope_title,
-                    attempt_number
+                    attempt_number,
+                    start_content_unit_index,
+                    start_content_unit_id,
+                    end_content_unit_index,
+                    end_content_unit_id
                 FROM document_processing_manager.processing_units
                 WHERE submission_id = @submission_id
                 ORDER BY
@@ -706,24 +745,25 @@ public sealed class PostgresDocumentSubmissionStore
                        cancellationToken)
                    .ConfigureAwait(false))
         {
-            ProcessingUnitScope scope =
-                reader.GetInt16(
-                    1) switch
-                {
-                    0 =>
-                        new ProcessingUnitScope.WholeDocument(),
-                    1 =>
-                        new ProcessingUnitScope.PageRange(
-                            reader.GetInt32(
-                                2),
-                            reader.GetInt32(
-                                3),
-                            reader.GetString(
-                                4)),
-                    var scopeKind =>
-                        throw new InvalidOperationException(
-                            $"Unknown durable processing scope kind '{scopeKind}'.")
-                };
+            var scope =
+                PostgresProcessingUnitScopeMapper.ReadScope(
+                    reader,
+                    kindOrdinal:
+                        1,
+                    startPageOrdinal:
+                        2,
+                    endPageOrdinal:
+                        3,
+                    titleOrdinal:
+                        4,
+                    startContentUnitIndexOrdinal:
+                        6,
+                    startContentUnitIdOrdinal:
+                        7,
+                    endContentUnitIndexOrdinal:
+                        8,
+                    endContentUnitIdOrdinal:
+                        9);
 
             units.Add(
                 new ProcessingWorkItem(
@@ -804,7 +844,7 @@ public sealed class PostgresDocumentSubmissionStore
                     .ToArray()))
         {
             throw new ArgumentException(
-                "Initial processing units must be distinct attempt-one units for one coherent whole-document or page-range plan.",
+                "Initial processing units must be distinct attempt-one units for one coherent whole-document, page-range or content-unit-range plan.",
                 nameof(units));
         }
     }
@@ -816,7 +856,10 @@ public sealed class PostgresDocumentSubmissionStore
          units.Single().Scope is ProcessingUnitScope.WholeDocument) ||
         units.All(
             unit =>
-                unit.Scope is ProcessingUnitScope.PageRange);
+                unit.Scope is ProcessingUnitScope.PageRange) ||
+        units.All(
+            unit =>
+                unit.Scope is ProcessingUnitScope.ContentUnitRange);
 
     private static bool EquivalentForIdempotency(
         DocumentSubmission existing,

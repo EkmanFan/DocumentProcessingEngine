@@ -90,6 +90,7 @@
   <data name="HostUnavailableDetail" xml:space="preserve"><value>Vérifie que le Host est démarré et que la clé API est correcte.</value></data>
   <data name="WholeDocumentScope" xml:space="preserve"><value>Document entier</value></data>
   <data name="PageRangeScope" xml:space="preserve"><value>{0} · pages {1}–{2}</value></data>
+  <data name="ContentUnitRangeScope" xml:space="preserve"><value>{0} · sections {1}–{2}</value></data>
   <data name="TodayAt" xml:space="preserve"><value>Aujourd’hui à {0}</value></data>
   <data name="Settings" xml:space="preserve"><value>Paramètres</value></data>
   <data name="OpenSettings" xml:space="preserve"><value>Ouvrir les paramètres du Manager</value></data>
@@ -132,7 +133,7 @@
   <data name="NextPage" xml:space="preserve"><value>Suivant</value></data>
   <data name="ArchiveDateRangeInvalid" xml:space="preserve"><value>Saisis une plage de dates valide.</value></data>
   <data name="ArchiveLoadFailed" xml:space="preserve"><value>Les archives n’ont pas pu être chargées.</value></data>
-  <data name="OpenSplit" xml:space="preserve"><value>Choisir un PDF à découper</value></data>
+  <data name="OpenSplit" xml:space="preserve"><value>Choisir un PDF ou EPUB à découper</value></data>
   <data name="SplitDocument" xml:space="preserve"><value>Découper</value></data>
   <data name="SplitQueuedItem" xml:space="preserve"><value>Découper</value></data>
   <data name="SplitQueuedItemLabel" xml:space="preserve"><value>Découper {0} avant traitement</value></data>

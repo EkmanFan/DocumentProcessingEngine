@@ -143,7 +143,19 @@ public sealed class SubmitDocumentCommand
             scopes.Count != 1)
         {
             throw new ArgumentException(
-                "A whole-document scope cannot be combined with page ranges.",
+                "A whole-document scope cannot be combined with ranges.",
+                nameof(scopes));
+        }
+
+        if (scopes.Any(
+                scope =>
+                    scope is ProcessingUnitScope.PageRange) &&
+            scopes.Any(
+                scope =>
+                    scope is ProcessingUnitScope.ContentUnitRange))
+        {
+            throw new ArgumentException(
+                "Physical-page and content-unit ranges cannot be combined in one submission.",
                 nameof(scopes));
         }
 
@@ -161,6 +173,30 @@ public sealed class SubmitDocumentCommand
             {
                 throw new ArgumentException(
                     "Processing-unit page ranges cannot overlap.",
+                    nameof(scopes));
+            }
+        }
+
+        var orderedContentUnitRanges =
+            scopes
+                .OfType<ProcessingUnitScope.ContentUnitRange>()
+                .OrderBy(
+                    range =>
+                        range.StartContentUnitIndex)
+                .ThenBy(
+                    range =>
+                        range.EndContentUnitIndex)
+                .ToArray();
+
+        for (var index = 1;
+             index < orderedContentUnitRanges.Length;
+             index++)
+        {
+            if (orderedContentUnitRanges[index].StartContentUnitIndex <=
+                orderedContentUnitRanges[index - 1].EndContentUnitIndex)
+            {
+                throw new ArgumentException(
+                    "Processing-unit content-unit ranges cannot overlap.",
                     nameof(scopes));
             }
         }

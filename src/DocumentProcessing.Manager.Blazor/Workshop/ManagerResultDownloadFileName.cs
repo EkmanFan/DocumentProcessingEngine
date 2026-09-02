@@ -58,6 +58,10 @@ internal static class ManagerResultDownloadFileName
                     when scope.StartPhysicalPageNumber is not null &&
                          scope.EndPhysicalPageNumber is not null =>
                     $".pages-{scope.StartPhysicalPageNumber}-{scope.EndPhysicalPageNumber}",
+                ManagerWorkItemScopeKind.ContentUnitRange
+                    when scope.StartContentUnitIndex is not null &&
+                         scope.EndContentUnitIndex is not null =>
+                    $".units-{scope.StartContentUnitIndex + 1}-{scope.EndContentUnitIndex + 1}",
                 _ =>
                     throw new ArgumentOutOfRangeException(
                         nameof(scope),

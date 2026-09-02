@@ -78,10 +78,19 @@ internal sealed class DocumentFormatSelector
     public async ValueTask<DocumentFormatSelectionResult> SelectAsync(
         PreparedDocumentSource preparedSource,
         PhysicalPageRange? physicalPageRange = null,
+        ContentUnitRange? contentUnitRange = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(
             preparedSource);
+
+        if (physicalPageRange is not null &&
+            contentUnitRange is not null)
+        {
+            throw new ArgumentException(
+                "Format selection cannot combine physical-page and content-unit ranges.",
+                nameof(contentUnitRange));
+        }
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -103,13 +112,21 @@ internal sealed class DocumentFormatSelector
 
                 var outcome =
                     physicalPageRange is not null &&
-                    format is IPhysicalPageRangeDocumentFormat rangedFormat
-                        ? await rangedFormat
+                    format is IPhysicalPageRangeDocumentFormat pagedRangeFormat
+                        ? await pagedRangeFormat
                             .TryExtractNativeEvidenceAsync(
                                 preparedSource.Source,
                                 physicalPageRange,
                                 cancellationToken)
                             .ConfigureAwait(false)
+                        : contentUnitRange is not null &&
+                          format is IContentUnitRangeDocumentFormat contentRangeFormat
+                            ? await contentRangeFormat
+                                .TryExtractNativeEvidenceAsync(
+                                    preparedSource.Source,
+                                    contentUnitRange,
+                                    cancellationToken)
+                                .ConfigureAwait(false)
                         : await format
                             .TryExtractNativeEvidenceAsync(
                                 preparedSource.Source,
@@ -190,6 +207,14 @@ internal sealed class DocumentFormatSelector
                 new DocumentFormatSelectionResult.Invalid(
                     selected.Format,
                     $"Document format '{selected.Format.Format}' does not support physical-page ranges.",
+                    true),
+
+            NativeEvidenceExtractionResult.Success
+                when contentUnitRange is not null &&
+                     selected.Format is not IContentUnitRangeDocumentFormat =>
+                new DocumentFormatSelectionResult.Invalid(
+                    selected.Format,
+                    $"Document format '{selected.Format.Format}' does not support content-unit ranges.",
                     true),
 
             NativeEvidenceExtractionResult.Success success =>

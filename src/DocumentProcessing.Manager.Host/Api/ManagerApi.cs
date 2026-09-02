@@ -1,5 +1,6 @@
 using DocumentProcessing.Manager.Control;
 using DocumentProcessing.Manager.History;
+using DocumentProcessing.Manager.Partitioning;
 using DocumentProcessing.Manager.Ports;
 using DocumentProcessing.Manager.Processing;
 using DocumentProcessing.Manager.Publication;
@@ -963,20 +964,8 @@ internal static class ManagerApi
                     cancellationToken).ConfigureAwait(false);
 
             return HttpResults.Ok(
-                new SplitPreviewResponse(
-                    preview.UnitId.Value,
-                    preview.SubmissionId.Value,
-                    preview.OriginalFileName,
-                    preview.PhysicalPageCount,
-                    preview.SplitSuggested,
-                    preview.SuggestedRanges
-                        .Select(
-                            range =>
-                                new SplitSuggestedRangeResponse(
-                                    range.StartPhysicalPageNumber,
-                                    range.EndPhysicalPageNumber,
-                                    range.SuggestedTitle))
-                        .ToArray()));
+                ToResponse(
+                    preview));
         }
         catch (NotSupportedException exception)
         {
@@ -1022,6 +1011,7 @@ internal static class ManagerApi
         Guid unitId,
         SplitPendingUnitRequest request,
         SplitPendingProcessingUnitService splitService,
+        IDocumentSplitPreviewProvider previewProvider,
         DocumentProcessingManagerRuntime runtime,
         CancellationToken cancellationToken)
     {
@@ -1038,13 +1028,21 @@ internal static class ManagerApi
             }
 
             var ranges =
-                request.Ranges.Select(
-                        range =>
-                            new ProcessingUnitScope.PageRange(
-                                range.StartPhysicalPageNumber,
-                                range.EndPhysicalPageNumber,
-                                range.Title))
+                request.Ranges
+                    .Select(
+                        ToProcessingScope)
                     .ToArray();
+
+            var preview =
+                await previewProvider.InspectAsync(
+                        new ProcessingUnitId(
+                            unitId),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+            ValidateApprovedSplitPlan(
+                preview,
+                ranges);
 
             var replacementIds =
                 await splitService.SplitAsync(
@@ -1530,13 +1528,35 @@ internal static class ManagerApi
                     EndPhysicalPageNumber:
                         null,
                     Title:
+                        null,
+                    StartContentUnitIndex:
+                        null,
+                    StartContentUnitId:
+                        null,
+                    EndContentUnitIndex:
+                        null,
+                    EndContentUnitId:
                         null),
             ProcessingUnitScope.PageRange range =>
                 new ProcessingScopeResponse(
                     "pageRange",
                     range.StartPhysicalPageNumber,
                     range.EndPhysicalPageNumber,
-                    range.Title),
+                    range.Title,
+                    null,
+                    null,
+                    null,
+                    null),
+            ProcessingUnitScope.ContentUnitRange range =>
+                new ProcessingScopeResponse(
+                    "contentUnitRange",
+                    null,
+                    null,
+                    range.Title,
+                    range.StartContentUnitIndex,
+                    range.StartContentUnitId,
+                    range.EndContentUnitIndex,
+                    range.EndContentUnitId),
             _ =>
                 throw new InvalidOperationException(
                     $"Unsupported processing scope '{scope.GetType().FullName}'.")
@@ -1684,6 +1704,243 @@ internal static class ManagerApi
             .ToString();
     }
 
+    private static SplitPreviewResponse ToResponse(
+        DocumentSplitPreviewManifest preview)
+    {
+        var (
+            axisKind,
+            physicalPageCount,
+            contentUnits) =
+            preview.Axis switch
+            {
+                DocumentPartitionAxis.PhysicalPages pages =>
+                    (
+                        "physicalPages",
+                        (int?)pages.PhysicalPageCount,
+                        Array.Empty<SplitContentUnitResponse>()
+                    ),
+                DocumentPartitionAxis.ContentUnits units =>
+                    (
+                        "contentUnits",
+                        (int?)null,
+                        units.ContentUnitIds
+                            .Select(
+                                (id, index) =>
+                                    new SplitContentUnitResponse(
+                                        index,
+                                        id,
+                                        preview.ContentUnitLabels
+                                            .FirstOrDefault(
+                                                label =>
+                                                    label.ContentUnitIndex ==
+                                                    index)
+                                            ?.SuggestedTitle))
+                            .ToArray()
+                    ),
+                _ =>
+                    throw new InvalidOperationException(
+                        $"Unsupported split-preview axis '{preview.Axis.GetType().FullName}'.")
+            };
+
+        var suggestedRanges =
+            preview.SuggestedProposal?
+                .Segments
+                .Select(
+                    segment =>
+                        segment.Extent.Start switch
+                        {
+                            DocumentPartitionPosition.PhysicalPage start =>
+                                new SplitSuggestedRangeResponse(
+                                    "physicalPageRange",
+                                    start.PhysicalPageNumber,
+                                    ((DocumentPartitionPosition.PhysicalPage)
+                                        segment.Extent.End)
+                                    .PhysicalPageNumber,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    segment.SuggestedTitle),
+                            DocumentPartitionPosition.ContentUnit start =>
+                                new SplitSuggestedRangeResponse(
+                                    "contentUnitRange",
+                                    null,
+                                    null,
+                                    start.ContentUnitIndex,
+                                    start.ContentUnitId,
+                                    ((DocumentPartitionPosition.ContentUnit)
+                                        segment.Extent.End)
+                                    .ContentUnitIndex,
+                                    ((DocumentPartitionPosition.ContentUnit)
+                                        segment.Extent.End)
+                                    .ContentUnitId,
+                                    segment.SuggestedTitle),
+                            _ =>
+                                throw new InvalidOperationException(
+                                    $"Unsupported split-preview extent '{segment.Extent.GetType().FullName}'.")
+                        })
+                .ToArray() ??
+            [];
+
+        return new SplitPreviewResponse(
+            preview.UnitId.Value,
+            preview.SubmissionId.Value,
+            preview.OriginalFileName,
+            axisKind,
+            physicalPageCount,
+            contentUnits,
+            preview.SplitSuggested,
+            suggestedRanges);
+    }
+
+    private static ProcessingUnitScope ToProcessingScope(
+        SplitRangeRequest range)
+    {
+        ArgumentNullException.ThrowIfNull(
+            range);
+
+        return range.Kind switch
+        {
+            "physicalPageRange"
+                when range.StartPhysicalPageNumber is not null &&
+                     range.EndPhysicalPageNumber is not null =>
+                new ProcessingUnitScope.PageRange(
+                    range.StartPhysicalPageNumber.Value,
+                    range.EndPhysicalPageNumber.Value,
+                    range.Title),
+            "contentUnitRange"
+                when range.StartContentUnitIndex is not null &&
+                     range.StartContentUnitId is not null &&
+                     range.EndContentUnitIndex is not null &&
+                     range.EndContentUnitId is not null =>
+                new ProcessingUnitScope.ContentUnitRange(
+                    range.StartContentUnitIndex.Value,
+                    range.StartContentUnitId,
+                    range.EndContentUnitIndex.Value,
+                    range.EndContentUnitId,
+                    range.Title),
+            _ =>
+                throw new ArgumentException(
+                    $"Unsupported or incomplete split range kind '{range.Kind}'.",
+                    nameof(range))
+        };
+    }
+
+    private static void ValidateApprovedSplitPlan(
+        DocumentSplitPreviewManifest preview,
+        IReadOnlyList<ProcessingUnitScope> ranges)
+    {
+        if (ranges.Count <
+            2)
+        {
+            throw new ArgumentException(
+                "A split plan requires at least two ranges.",
+                nameof(ranges));
+        }
+
+        switch (preview.Axis)
+        {
+            case DocumentPartitionAxis.PhysicalPages pages:
+                ValidateApprovedPagePlan(
+                    pages,
+                    ranges);
+                return;
+
+            case DocumentPartitionAxis.ContentUnits units:
+                ValidateApprovedContentUnitPlan(
+                    units,
+                    ranges);
+                return;
+
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(preview),
+                    preview.Axis,
+                    "Unknown split-preview axis.");
+        }
+    }
+
+    private static void ValidateApprovedPagePlan(
+        DocumentPartitionAxis.PhysicalPages axis,
+        IReadOnlyList<ProcessingUnitScope> ranges)
+    {
+        var pages =
+            ranges
+                .OfType<ProcessingUnitScope.PageRange>()
+                .ToArray();
+
+        if (pages.Length !=
+                ranges.Count ||
+            pages[0].StartPhysicalPageNumber !=
+                1 ||
+            pages[^1].EndPhysicalPageNumber !=
+                axis.PhysicalPageCount ||
+            pages
+                .Skip(
+                    1)
+                .Zip(
+                    pages,
+                    (current, previous) =>
+                        current.StartPhysicalPageNumber !=
+                        previous.EndPhysicalPageNumber +
+                        1)
+                .Any(
+                    invalid =>
+                        invalid))
+        {
+            throw new ArgumentException(
+                "The approved page ranges must cover the complete source without gaps or overlaps.",
+                nameof(ranges));
+        }
+    }
+
+    private static void ValidateApprovedContentUnitPlan(
+        DocumentPartitionAxis.ContentUnits axis,
+        IReadOnlyList<ProcessingUnitScope> ranges)
+    {
+        var units =
+            ranges
+                .OfType<ProcessingUnitScope.ContentUnitRange>()
+                .ToArray();
+
+        if (units.Length !=
+                ranges.Count ||
+            units[0].StartContentUnitIndex !=
+                0 ||
+            units[^1].EndContentUnitIndex !=
+                axis.ContentUnitIds.Count -
+                1 ||
+            units
+                .Skip(
+                    1)
+                .Zip(
+                    units,
+                    (current, previous) =>
+                        current.StartContentUnitIndex !=
+                        previous.EndContentUnitIndex +
+                        1)
+                .Any(
+                    invalid =>
+                        invalid) ||
+            units.Any(
+                range =>
+                    range.EndContentUnitIndex >=
+                        axis.ContentUnitIds.Count ||
+                    !string.Equals(
+                        range.StartContentUnitId,
+                        axis.ContentUnitIds[range.StartContentUnitIndex],
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        range.EndContentUnitId,
+                        axis.ContentUnitIds[range.EndContentUnitIndex],
+                        StringComparison.Ordinal)))
+        {
+            throw new ArgumentException(
+                "The approved content-unit ranges must match and cover the complete source without gaps or overlaps.",
+                nameof(ranges));
+        }
+    }
+
     #endregion
 
     #region Types
@@ -1724,11 +1981,6 @@ internal static class ManagerApi
         IReadOnlyList<Guid> ProcessingUnitIds,
         bool Created);
 
-    internal sealed record PageRangeRequest(
-        int StartPhysicalPageNumber,
-        int EndPhysicalPageNumber,
-        string Title);
-
     internal sealed record QueueReorderRequest(
         long ExpectedVersion,
         IReadOnlyList<Guid> OrderedPendingUnitIds);
@@ -1746,18 +1998,40 @@ internal static class ManagerApi
         Guid UnitId,
         Guid SubmissionId,
         string OriginalFileName,
-        int PhysicalPageCount,
+        string AxisKind,
+        int? PhysicalPageCount,
+        IReadOnlyList<SplitContentUnitResponse> ContentUnits,
         bool SplitSuggested,
         IReadOnlyList<SplitSuggestedRangeResponse> SuggestedRanges);
 
-    internal sealed record SplitSuggestedRangeResponse(
-        int StartPhysicalPageNumber,
-        int EndPhysicalPageNumber,
+    internal sealed record SplitContentUnitResponse(
+        int ContentUnitIndex,
+        string ContentUnitId,
         string? SuggestedTitle);
+
+    internal sealed record SplitSuggestedRangeResponse(
+        string Kind,
+        int? StartPhysicalPageNumber,
+        int? EndPhysicalPageNumber,
+        int? StartContentUnitIndex,
+        string? StartContentUnitId,
+        int? EndContentUnitIndex,
+        string? EndContentUnitId,
+        string? SuggestedTitle);
+
+    internal sealed record SplitRangeRequest(
+        string Kind,
+        int? StartPhysicalPageNumber,
+        int? EndPhysicalPageNumber,
+        int? StartContentUnitIndex,
+        string? StartContentUnitId,
+        int? EndContentUnitIndex,
+        string? EndContentUnitId,
+        string Title);
 
     internal sealed record SplitPendingUnitRequest(
         long ExpectedVersion,
-        IReadOnlyList<PageRangeRequest> Ranges,
+        IReadOnlyList<SplitRangeRequest> Ranges,
         bool ReleaseAfterSplit);
 
     internal sealed record SplitPendingUnitResponse(
@@ -1793,7 +2067,11 @@ internal static class ManagerApi
         string Kind,
         int? StartPhysicalPageNumber,
         int? EndPhysicalPageNumber,
-        string? Title);
+        string? Title,
+        int? StartContentUnitIndex,
+        string? StartContentUnitId,
+        int? EndContentUnitIndex,
+        string? EndContentUnitId);
 
     internal sealed record QueueVersionConflictResponse(
         string Code,

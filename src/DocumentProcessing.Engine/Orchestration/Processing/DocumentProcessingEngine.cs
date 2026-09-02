@@ -154,6 +154,7 @@ public sealed class DocumentProcessingEngine
                 .SelectAsync(
                     prepared,
                     options.PhysicalPageRange,
+                    options.ContentUnitRange,
                     cancellationToken)
                 .ConfigureAwait(false);
 

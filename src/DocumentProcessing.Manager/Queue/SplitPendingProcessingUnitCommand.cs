@@ -2,7 +2,7 @@ namespace DocumentProcessing.Manager.Queue;
 
 /// <summary>
 /// Requests atomic replacement of one pending whole-document unit by ordered
-/// physical-page units.
+/// units using one native coordinate system.
 /// </summary>
 public sealed record SplitPendingProcessingUnitCommand
 {
@@ -43,10 +43,25 @@ public sealed record SplitPendingProcessingUnitCommand
             replacementUnits.Any(
                 intake =>
                     intake is null ||
-                    intake.WorkItem.Scope is not ProcessingUnitScope.PageRange))
+                    intake.WorkItem.Scope is not
+                        (ProcessingUnitScope.PageRange or
+                        ProcessingUnitScope.ContentUnitRange)))
         {
             throw new ArgumentException(
-                "At least one page-range replacement unit is required.",
+                "At least one ranged replacement unit is required.",
+                nameof(replacementUnits));
+        }
+
+        if (replacementUnits
+                .Select(
+                    intake =>
+                        intake.WorkItem.Scope.GetType())
+                .Distinct()
+                .Count() !=
+            1)
+        {
+            throw new ArgumentException(
+                "Replacement units must use one native coordinate system.",
                 nameof(replacementUnits));
         }
 

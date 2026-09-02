@@ -254,6 +254,77 @@ public sealed class SubmitDocumentServiceTests
     }
 
     [Fact]
+    public void Command_AcceptsOrderedNonOverlappingContentUnitRanges()
+    {
+        using var content =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        var ranges =
+            new ProcessingUnitScope[]
+            {
+                new ProcessingUnitScope.ContentUnitRange(
+                    0,
+                    "OPS/front.xhtml",
+                    1,
+                    "OPS/chapter1.xhtml",
+                    "Front and chapter one"),
+                new ProcessingUnitScope.ContentUnitRange(
+                    2,
+                    "OPS/chapter2.xhtml",
+                    3,
+                    "OPS/chapter3.xhtml",
+                    "Chapters two and three")
+            };
+
+        var command =
+            new SubmitDocumentCommand(
+                DocumentSubmissionId.New(),
+                content,
+                "book.epub",
+                scopes:
+                    ranges);
+
+        Assert.Equal(
+            ranges,
+            command.Scopes);
+    }
+
+    [Fact]
+    public void Command_RejectsOverlappingContentUnitRanges()
+    {
+        using var content =
+            new MemoryStream(
+                [1],
+                writable:
+                    false);
+
+        Assert.Throws<ArgumentException>(
+            () =>
+                new SubmitDocumentCommand(
+                    DocumentSubmissionId.New(),
+                    content,
+                    "book.epub",
+                    scopes:
+                    [
+                        new ProcessingUnitScope.ContentUnitRange(
+                            0,
+                            "OPS/front.xhtml",
+                            1,
+                            "OPS/chapter1.xhtml",
+                            "First"),
+                        new ProcessingUnitScope.ContentUnitRange(
+                            1,
+                            "OPS/chapter1.xhtml",
+                            2,
+                            "OPS/chapter2.xhtml",
+                            "Second")
+                    ]));
+    }
+
+    [Fact]
     public void Contracts_RejectInvalidCustodyMetadata()
     {
         Assert.Throws<ArgumentException>(

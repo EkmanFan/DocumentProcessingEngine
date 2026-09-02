@@ -14,6 +14,8 @@ namespace DocumentProcessing.Epub;
 /// </summary>
 public sealed class EpubDocumentFormat
     : IDocumentFormat,
+      INativeDocumentNavigationFormat,
+      IContentUnitRangeDocumentFormat,
       IStructuredNativeVisualMaterializer
 {
     #region Variables and Constants
@@ -77,12 +79,94 @@ public sealed class EpubDocumentFormat
 
     #endregion
 
+    #region Methods Native Navigation
+
+    /// <inheritdoc />
+    public ValueTask<NativeDocumentNavigationInspection?>
+        TryInspectNativeNavigationAsync(
+            DocumentSource source,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            source);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!source.Content.CanSeek)
+        {
+            throw new InvalidOperationException(
+                "EPUB navigation inspection requires the Engine-prepared seekable source.");
+        }
+
+        var originalPosition =
+            source.Content.Position;
+
+        try
+        {
+            if (!_recognizer.IsRecognized(
+                    source))
+            {
+                return ValueTask.FromResult<NativeDocumentNavigationInspection?>(
+                    null);
+            }
+
+            if (source.Content.Length >
+                _options.MaximumSourceBytes)
+            {
+                throw new InvalidDataException(
+                    SourceTooLargeMessage);
+            }
+
+            var inspection =
+                _extractor.InspectNativeNavigation(
+                    source.Content,
+                    _options,
+                    cancellationToken);
+
+            return ValueTask.FromResult<NativeDocumentNavigationInspection?>(
+                inspection);
+        }
+        finally
+        {
+            source.Content.Position =
+                originalPosition;
+        }
+    }
+
+    #endregion
+
     #region Methods Acquisition
 
     public async ValueTask<NativeEvidenceExtractionResult>
         TryExtractNativeEvidenceAsync(
             DocumentSource source,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default) =>
+        await AcquireNativeEvidenceAsync(
+                source,
+                contentUnitRange:
+                    null,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async ValueTask<NativeEvidenceExtractionResult>
+        TryExtractNativeEvidenceAsync(
+            DocumentSource source,
+            ContentUnitRange contentUnitRange,
+            CancellationToken cancellationToken = default) =>
+        await AcquireNativeEvidenceAsync(
+                source,
+                contentUnitRange ??
+                throw new ArgumentNullException(
+                    nameof(contentUnitRange)),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+    private async ValueTask<NativeEvidenceExtractionResult>
+        AcquireNativeEvidenceAsync(
+            DocumentSource source,
+            ContentUnitRange? contentUnitRange,
+            CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(
             source);
@@ -147,7 +231,8 @@ public sealed class EpubDocumentFormat
                 _extractor.Extract(
                     source.Content,
                     _options,
-                    cancellationToken);
+                    cancellationToken,
+                    contentUnitRange);
 
             return new NativeEvidenceExtractionResult.Success(
                 evidence);
@@ -160,6 +245,13 @@ public sealed class EpubDocumentFormat
         catch (OutOfMemoryException)
         {
             throw;
+        }
+        catch (EpubContentUnitRangeException exception)
+        {
+            return new NativeEvidenceExtractionResult.Invalid(
+                exception.Message,
+                isConsumerSafeReason:
+                    true);
         }
         catch (Exception exception)
             when (exception is InvalidDataException or
