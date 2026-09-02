@@ -44,8 +44,19 @@ POST /api/manager-consumers/results/claims
 ```
 
 HTTP 200 returns `ResultReference`, `SubmissionId`, `ProcessingUnitId`, scope,
-schema version, media type, byte length, SHA-256, availability time, claim token
-and claim expiry. HTTP 204 means no result is currently claimable.
+schema version, media type, byte length, SHA-256, availability time, claim token,
+claim expiry and the finalized `SubmissionManifest`. HTTP 204 means no result
+is currently claimable.
+
+The manifest is format-neutral and contains the submission identity, immutable
+revision, source SHA-256, original filename, finalization time and the complete
+ordered set of expected processing-unit identities and scopes. Revision 1
+describes the initial processing plan. Replacing that plan through a split
+appends a new revision instead of mutating the previous one.
+
+Every result claim carries the latest finalized manifest. A downstream consumer
+can therefore distinguish a complete work from a partially delivered one and
+must group parts by `SubmissionId`, never by filename or arrival order.
 
 Payload and visual reads additionally require:
 

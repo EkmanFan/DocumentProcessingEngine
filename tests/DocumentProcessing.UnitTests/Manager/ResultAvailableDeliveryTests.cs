@@ -23,16 +23,22 @@ public sealed class ResultAvailableDeliveryTests
                     2));
         var claimToken =
             Guid.NewGuid();
+        var submissionId =
+            DocumentSubmissionId.New();
+        var unitId =
+            ProcessingUnitId.New();
+        var scope =
+            new ProcessingUnitScope.PageRange(
+                10,
+                20,
+                "Part I");
 
         var delivery =
             new ResultAvailableDelivery(
                 " result-1 ",
-                DocumentSubmissionId.New(),
-                ProcessingUnitId.New(),
-                new ProcessingUnitScope.PageRange(
-                    10,
-                    20,
-                    "Part I"),
+                submissionId,
+                unitId,
+                scope,
                 " document-processing-result-v3 ",
                 " Application/JSON ",
                 byteLength:
@@ -44,7 +50,12 @@ public sealed class ResultAvailableDeliveryTests
                 availableAt,
                 claimToken,
                 availableAt.AddMinutes(
-                    5));
+                    5),
+                CreateManifest(
+                    submissionId,
+                    unitId,
+                    scope,
+                    availableAt));
 
         Assert.Equal(
             "result-1",
@@ -65,14 +76,17 @@ public sealed class ResultAvailableDeliveryTests
     {
         var now =
             DateTimeOffset.UtcNow;
+        var firstSubmissionId = DocumentSubmissionId.New();
+        var firstUnitId = ProcessingUnitId.New();
+        var firstScope = new ProcessingUnitScope.WholeDocument();
 
         Assert.Throws<ArgumentOutOfRangeException>(
             () =>
                 new ResultAvailableDelivery(
                     "result-1",
-                    DocumentSubmissionId.New(),
-                    ProcessingUnitId.New(),
-                    new ProcessingUnitScope.WholeDocument(),
+                    firstSubmissionId,
+                    firstUnitId,
+                    firstScope,
                     "v1",
                     "application/json",
                     byteLength:
@@ -84,15 +98,24 @@ public sealed class ResultAvailableDeliveryTests
                     now,
                     Guid.NewGuid(),
                     now.AddMinutes(
-                        1)));
+                        1),
+                    CreateManifest(
+                        firstSubmissionId,
+                        firstUnitId,
+                        firstScope,
+                        now)));
+
+        var secondSubmissionId = DocumentSubmissionId.New();
+        var secondUnitId = ProcessingUnitId.New();
+        var secondScope = new ProcessingUnitScope.WholeDocument();
 
         Assert.Throws<ArgumentException>(
             () =>
                 new ResultAvailableDelivery(
                     "result-1",
-                    DocumentSubmissionId.New(),
-                    ProcessingUnitId.New(),
-                    new ProcessingUnitScope.WholeDocument(),
+                    secondSubmissionId,
+                    secondUnitId,
+                    secondScope,
                     "v1",
                     "application/json",
                     byteLength:
@@ -104,8 +127,26 @@ public sealed class ResultAvailableDeliveryTests
                     now,
                     Guid.Empty,
                     now.AddMinutes(
-                        1)));
+                        1),
+                    CreateManifest(
+                        secondSubmissionId,
+                        secondUnitId,
+                        secondScope,
+                        now)));
     }
+
+    private static SubmissionPublicationManifest CreateManifest(
+        DocumentSubmissionId submissionId,
+        ProcessingUnitId unitId,
+        ProcessingUnitScope scope,
+        DateTimeOffset finalizedAtUtc) =>
+        new(
+            submissionId,
+            revision: 1,
+            new Sha256Digest(new string('a', 64)),
+            "book.pdf",
+            finalizedAtUtc,
+            [new ExpectedProcessingUnit(unitId, 1, scope)]);
 
     #endregion
 }

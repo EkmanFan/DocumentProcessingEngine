@@ -1602,7 +1602,21 @@ internal static class ManagerApi
             delivery.Digest.Value,
             delivery.AvailableAtUtc,
             delivery.ClaimToken,
-            delivery.ClaimExpiresAtUtc);
+            delivery.ClaimExpiresAtUtc,
+            new SubmissionManifestResponse(
+                delivery.SubmissionManifest.SubmissionId.Value,
+                delivery.SubmissionManifest.Revision,
+                delivery.SubmissionManifest.SourceDigest.Value,
+                delivery.SubmissionManifest.OriginalFileName,
+                delivery.SubmissionManifest.FinalizedAtUtc,
+                delivery.SubmissionManifest.ExpectedUnits
+                    .Select(
+                        unit =>
+                            new ExpectedProcessingUnitResponse(
+                                unit.ProcessingUnitId.Value,
+                                unit.Ordinal,
+                                ToResponse(unit.Scope)))
+                    .ToArray()));
 
     private static string? ReadOptionalHeader(
         HttpRequest request,
@@ -2127,7 +2141,21 @@ internal static class ManagerApi
         string Sha256,
         DateTimeOffset AvailableAtUtc,
         Guid ClaimToken,
-        DateTimeOffset ClaimExpiresAtUtc);
+        DateTimeOffset ClaimExpiresAtUtc,
+        SubmissionManifestResponse SubmissionManifest);
+
+    internal sealed record SubmissionManifestResponse(
+        Guid SubmissionId,
+        int Revision,
+        string SourceSha256,
+        string OriginalFileName,
+        DateTimeOffset FinalizedAtUtc,
+        IReadOnlyList<ExpectedProcessingUnitResponse> ExpectedUnits);
+
+    internal sealed record ExpectedProcessingUnitResponse(
+        Guid ProcessingUnitId,
+        int Ordinal,
+        ProcessingScopeResponse Scope);
 
     internal sealed record PublishedVisualAssetResponse(
         string AssetId,

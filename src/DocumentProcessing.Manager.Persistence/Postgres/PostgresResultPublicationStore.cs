@@ -248,35 +248,64 @@ public sealed class PostgresResultPublicationStore
             transaction);
         command.Parameters.AddWithValue("result_reference", NpgsqlDbType.Text, resultReference);
 
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        string retainedResultReference;
+        Guid submissionId;
+        Guid processingUnitId;
+        ProcessingUnitScope scope;
+        string schemaVersion;
+        string mediaType;
+        long byteLength;
+        string digest;
+        DateTimeOffset availableAtUtc;
+
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
         {
-            throw new InvalidOperationException("A claimed result publication disappeared inside its transaction.");
+            if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                throw new InvalidOperationException("A claimed result publication disappeared inside its transaction.");
+            }
+
+            retainedResultReference = reader.GetString(0);
+            submissionId = reader.GetGuid(1);
+            processingUnitId = reader.GetGuid(2);
+            scope = PostgresProcessingUnitScopeMapper.ReadScope(
+                reader,
+                kindOrdinal: 3,
+                startPageOrdinal: 4,
+                endPageOrdinal: 5,
+                titleOrdinal: 6,
+                startContentUnitIndexOrdinal: 12,
+                startContentUnitIdOrdinal: 13,
+                endContentUnitIndexOrdinal: 14,
+                endContentUnitIdOrdinal: 15);
+            schemaVersion = reader.GetString(7);
+            mediaType = reader.GetString(8);
+            byteLength = reader.GetInt64(9);
+            digest = reader.GetString(10);
+            availableAtUtc = reader.GetFieldValue<DateTimeOffset>(11);
         }
 
-        var scope = PostgresProcessingUnitScopeMapper.ReadScope(
-            reader,
-            kindOrdinal: 3,
-            startPageOrdinal: 4,
-            endPageOrdinal: 5,
-            titleOrdinal: 6,
-            startContentUnitIndexOrdinal: 12,
-            startContentUnitIdOrdinal: 13,
-            endContentUnitIndexOrdinal: 14,
-            endContentUnitIdOrdinal: 15);
+        var manifest =
+            await PostgresSubmissionPublicationManifestStore.ReadLatestAsync(
+                    connection,
+                    transaction,
+                    submissionId,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
         return new ResultAvailableDelivery(
-            reader.GetString(0),
-            new DocumentSubmissionId(reader.GetGuid(1)),
-            new ProcessingUnitId(reader.GetGuid(2)),
+            retainedResultReference,
+            new DocumentSubmissionId(submissionId),
+            new ProcessingUnitId(processingUnitId),
             scope,
-            reader.GetString(7),
-            reader.GetString(8),
-            reader.GetInt64(9),
-            new Sha256Digest(reader.GetString(10)),
-            reader.GetFieldValue<DateTimeOffset>(11),
+            schemaVersion,
+            mediaType,
+            byteLength,
+            new Sha256Digest(digest),
+            availableAtUtc,
             claimToken,
-            claimExpiresAtUtc);
+            claimExpiresAtUtc,
+            manifest);
     }
 
     private static string ValidateConsumerId(string consumerId)

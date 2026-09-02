@@ -79,7 +79,7 @@ public sealed class PostgresManagerPersistenceTests
                 "SELECT MAX(version) FROM document_processing_manager.schema_versions;");
 
         Assert.Equal(
-            9,
+            10,
             Convert.ToInt32(
                 await versionCommand.ExecuteScalarAsync()));
     }
@@ -1654,6 +1654,16 @@ public sealed class PostgresManagerPersistenceTests
             firstDelivery.ByteLength);
         Assert.IsType<ProcessingUnitScope.WholeDocument>(
             firstDelivery.Scope);
+        Assert.Equal(
+            workItem.SubmissionId,
+            firstDelivery.SubmissionManifest.SubmissionId);
+        Assert.Equal(
+            1,
+            firstDelivery.SubmissionManifest.Revision);
+        Assert.Equal(
+            workItem.UnitId,
+            Assert.Single(firstDelivery.SubmissionManifest.ExpectedUnits)
+                .ProcessingUnitId);
 
         Assert.True(
             await context.ResultPublicationStore.OwnsClaimAsync(
@@ -2807,6 +2817,8 @@ public sealed class PostgresManagerPersistenceTests
                 TRUNCATE TABLE
                     document_processing_manager.custody_purge_authorizations,
                     document_processing_manager.custody_purge_jobs,
+                    document_processing_manager.submission_publication_manifest_units,
+                    document_processing_manager.submission_publication_manifests,
                     document_processing_manager.result_consumer_deliveries,
                     document_processing_manager.result_available_events,
                     document_processing_manager.processing_results,
@@ -2841,6 +2853,7 @@ public sealed class PostgresManagerPersistenceTests
                 """);
 
         await command.ExecuteNonQueryAsync();
+
     }
 
     private static async Task InsertPendingAsync(
@@ -2934,6 +2947,79 @@ public sealed class PostgresManagerPersistenceTests
             "queue_position",
             NpgsqlDbType.Bigint,
             queuePosition);
+
+        await command.ExecuteNonQueryAsync();
+
+        await EnsureManifestFixtureAsync(
+            dataSource,
+            workItem,
+            scopeKind,
+            pageRange);
+    }
+
+    private static async Task EnsureManifestFixtureAsync(
+        NpgsqlDataSource dataSource,
+        ProcessingWorkItem workItem,
+        short scopeKind,
+        ProcessingUnitScope.PageRange? pageRange)
+    {
+        await using var command =
+            dataSource.CreateCommand(
+                """
+                INSERT INTO document_processing_manager.submission_publication_manifests
+                    (submission_id, revision, source_sha256_digest,
+                     original_file_name, finalized_at_utc)
+                SELECT submission_id, 1, source_sha256_digest,
+                    original_file_name, submitted_at_utc
+                FROM document_processing_manager.document_submissions
+                WHERE submission_id = @submission_id
+                ON CONFLICT (submission_id, revision) DO NOTHING;
+
+                INSERT INTO document_processing_manager.submission_publication_manifest_units
+                (
+                    submission_id, revision, processing_unit_id, unit_ordinal,
+                    scope_kind, start_physical_page_number,
+                    end_physical_page_number, scope_title
+                )
+                VALUES
+                (
+                    @submission_id, 1, @unit_id, 1,
+                    @scope_kind, @start_page, @end_page, @scope_title
+                )
+                ON CONFLICT (submission_id, revision, processing_unit_id)
+                    DO NOTHING;
+                """);
+
+        command.Parameters.AddWithValue(
+            "submission_id",
+            NpgsqlDbType.Uuid,
+            workItem.SubmissionId.Value);
+        command.Parameters.AddWithValue(
+            "unit_id",
+            NpgsqlDbType.Uuid,
+            workItem.UnitId.Value);
+        command.Parameters.AddWithValue(
+            "scope_kind",
+            NpgsqlDbType.Smallint,
+            scopeKind);
+        command.Parameters.AddWithValue(
+            "start_page",
+            NpgsqlDbType.Integer,
+            pageRange is null
+                ? DBNull.Value
+                : pageRange.StartPhysicalPageNumber);
+        command.Parameters.AddWithValue(
+            "end_page",
+            NpgsqlDbType.Integer,
+            pageRange is null
+                ? DBNull.Value
+                : pageRange.EndPhysicalPageNumber);
+        command.Parameters.AddWithValue(
+            "scope_title",
+            NpgsqlDbType.Text,
+            pageRange is null
+                ? DBNull.Value
+                : pageRange.Title);
 
         await command.ExecuteNonQueryAsync();
     }

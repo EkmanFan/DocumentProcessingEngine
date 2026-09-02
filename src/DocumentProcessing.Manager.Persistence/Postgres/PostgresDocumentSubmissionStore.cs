@@ -178,6 +178,14 @@ public sealed class PostgresDocumentSubmissionStore
                 .ConfigureAwait(false);
         }
 
+        await PostgresSubmissionPublicationManifestStore.AppendAsync(
+                connection,
+                transaction,
+                submission.SubmissionId.Value,
+                units.Select(unit => unit.WorkItem).ToArray(),
+                cancellationToken)
+            .ConfigureAwait(false);
+
         await IncrementQueueVersionAsync(
                 connection,
                 transaction,

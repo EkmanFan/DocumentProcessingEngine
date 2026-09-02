@@ -1,7 +1,9 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using DocumentProcessing.Manager.Blazor.Components;
+using DocumentProcessing.Manager.Blazor.Configuration;
 using DocumentProcessing.Manager.Blazor.DependencyInjection;
+using Microsoft.Net.Http.Headers;
 
 namespace DocumentProcessing.Manager.Blazor;
 
@@ -21,6 +23,21 @@ public static class Program
         var builder =
             WebApplication.CreateBuilder(
                 args);
+
+        var embeddingOptions =
+            ManagerEmbeddingOptions.Load(
+                builder.Configuration);
+
+        builder.Services.AddSingleton(
+            embeddingOptions);
+
+        if (embeddingOptions.IsEnabled)
+        {
+            builder.Services.AddAntiforgery(
+                options =>
+                    options.SuppressXFrameOptionsHeader =
+                        true);
+        }
 
         builder.Services
             .AddDocumentProcessingManagerWorkshop(
@@ -73,6 +90,32 @@ public static class Program
                 true);
 
         application.UseRequestLocalization();
+
+        if (embeddingOptions.IsEnabled)
+        {
+            application.Use(
+                async (
+                    context,
+                    next) =>
+                {
+                    context.Response.OnStarting(
+                        () =>
+                        {
+                            context.Response.Headers[
+                                    HeaderNames.ContentSecurityPolicy] =
+                                embeddingOptions.FrameAncestorsPolicy;
+
+                            context.Response.Headers.Remove(
+                                HeaderNames.XFrameOptions);
+
+                            return Task.CompletedTask;
+                        });
+
+                    await next(
+                            context)
+                        .ConfigureAwait(false);
+                });
+        }
 
         application.UseAntiforgery();
 

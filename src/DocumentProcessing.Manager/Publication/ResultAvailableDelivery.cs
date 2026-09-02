@@ -43,6 +43,9 @@ public sealed record ResultAvailableDelivery
     /// <summary>Gets the instant at which this claim expires.</summary>
     public DateTimeOffset ClaimExpiresAtUtc { get; }
 
+    /// <summary>Gets the finalized manifest for the owning submission.</summary>
+    public SubmissionPublicationManifest SubmissionManifest { get; }
+
     #endregion
 
     #region ctor
@@ -59,7 +62,8 @@ public sealed record ResultAvailableDelivery
         Sha256Digest digest,
         DateTimeOffset availableAtUtc,
         Guid claimToken,
-        DateTimeOffset claimExpiresAtUtc)
+        DateTimeOffset claimExpiresAtUtc,
+        SubmissionPublicationManifest submissionManifest)
     {
         if (string.IsNullOrWhiteSpace(resultReference))
         {
@@ -106,6 +110,17 @@ public sealed record ResultAvailableDelivery
         AvailableAtUtc = availableAtUtc.ToUniversalTime();
         ClaimToken = claimToken;
         ClaimExpiresAtUtc = claimExpiresAtUtc.ToUniversalTime();
+        SubmissionManifest = submissionManifest ??
+            throw new ArgumentNullException(nameof(submissionManifest));
+
+        if (SubmissionManifest.SubmissionId != SubmissionId ||
+            SubmissionManifest.ExpectedUnits.All(
+                unit => unit.ProcessingUnitId != ProcessingUnitId))
+        {
+            throw new ArgumentException(
+                "The submission manifest must own the delivered processing unit.",
+                nameof(submissionManifest));
+        }
     }
 
     #endregion

@@ -706,6 +706,90 @@ public sealed class PostgresManagerSchema
             $$;
             """;
 
+    private const string
+        MigrationTenSql =
+            """
+            CREATE TABLE document_processing_manager.submission_publication_manifests
+            (
+                submission_id uuid NOT NULL
+                    REFERENCES document_processing_manager.document_submissions
+                        (submission_id)
+                    ON DELETE CASCADE,
+                revision integer NOT NULL
+                    CHECK (revision > 0),
+                source_sha256_digest text NOT NULL
+                    CHECK (source_sha256_digest ~ '^[0-9a-f]{64}$'),
+                original_file_name text NOT NULL
+                    CHECK (length(original_file_name) > 0),
+                finalized_at_utc timestamp with time zone NOT NULL,
+                PRIMARY KEY (submission_id, revision)
+            );
+
+            CREATE TABLE document_processing_manager.submission_publication_manifest_units
+            (
+                submission_id uuid NOT NULL,
+                revision integer NOT NULL,
+                processing_unit_id uuid NOT NULL,
+                unit_ordinal integer NOT NULL
+                    CHECK (unit_ordinal > 0),
+                scope_kind smallint NOT NULL
+                    CHECK (scope_kind BETWEEN 0 AND 2),
+                start_physical_page_number integer NULL,
+                end_physical_page_number integer NULL,
+                scope_title text NULL,
+                start_content_unit_index integer NULL,
+                start_content_unit_id text NULL,
+                end_content_unit_index integer NULL,
+                end_content_unit_id text NULL,
+                PRIMARY KEY (submission_id, revision, processing_unit_id),
+                UNIQUE (submission_id, revision, unit_ordinal),
+                FOREIGN KEY (submission_id, revision)
+                    REFERENCES document_processing_manager.submission_publication_manifests
+                        (submission_id, revision)
+                    ON DELETE CASCADE
+            );
+
+            INSERT INTO document_processing_manager.submission_publication_manifests
+                (submission_id, revision, source_sha256_digest,
+                 original_file_name, finalized_at_utc)
+            SELECT submission.submission_id, 1,
+                submission.source_sha256_digest,
+                submission.original_file_name,
+                clock_timestamp()
+            FROM document_processing_manager.document_submissions AS submission
+            WHERE EXISTS
+            (
+                SELECT 1
+                FROM document_processing_manager.processing_units AS unit
+                WHERE unit.submission_id = submission.submission_id
+            );
+
+            INSERT INTO document_processing_manager.submission_publication_manifest_units
+            (
+                submission_id, revision, processing_unit_id, unit_ordinal,
+                scope_kind, start_physical_page_number,
+                end_physical_page_number, scope_title,
+                start_content_unit_index, start_content_unit_id,
+                end_content_unit_index, end_content_unit_id
+            )
+            SELECT unit.submission_id, 1, unit.unit_id,
+                (row_number() OVER
+                (
+                    PARTITION BY unit.submission_id
+                    ORDER BY unit.submission_unit_ordinal NULLS LAST,
+                        unit.created_at_utc, unit.unit_id
+                ))::integer,
+                unit.scope_kind, unit.start_physical_page_number,
+                unit.end_physical_page_number, unit.scope_title,
+                unit.start_content_unit_index, unit.start_content_unit_id,
+                unit.end_content_unit_index, unit.end_content_unit_id
+            FROM document_processing_manager.processing_units AS unit;
+
+            CREATE INDEX ix_submission_publication_manifests_latest
+                ON document_processing_manager.submission_publication_manifests
+                    (submission_id, revision DESC);
+            """;
+
     private static readonly Migration[]
         Migrations =
         [
@@ -744,7 +828,11 @@ public sealed class PostgresManagerSchema
             new(
                 Version:
                     9,
-                MigrationNineSql)
+                MigrationNineSql),
+            new(
+                Version:
+                    10,
+                MigrationTenSql)
         ];
 
     private readonly NpgsqlDataSource

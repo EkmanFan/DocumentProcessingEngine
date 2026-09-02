@@ -247,6 +247,16 @@ public sealed class PostgresProcessingQueueStore
             await insert.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        await PostgresSubmissionPublicationManifestStore.AppendAsync(
+                connection,
+                transaction,
+                submissionId,
+                command.ReplacementUnits
+                    .Select(intake => intake.WorkItem)
+                    .ToArray(),
+                cancellationToken)
+            .ConfigureAwait(false);
+
         await IncrementQueueVersionAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }

@@ -24,6 +24,13 @@ Run locally:
 ./scripts/run-manager-dev.sh
 ```
 
+The development configuration also permits the UI to be displayed inside
+Apologia Studio running on `http://localhost:5090` (or its loopback-address
+equivalent). Other embedding hosts must be explicitly allowlisted with
+`ManagerEmbedding__AllowedParentOrigins__0`, `__1`, and so on. Only HTTPS
+origins are accepted outside loopback. When no parent origin is configured,
+the default same-origin frame protection remains active.
+
 The repository-level launcher starts or reuses the development PostgreSQL
 container, waits for the Manager Host readiness endpoint and then starts this
 Blazor application. Both application processes stop together on `Ctrl+C`;
