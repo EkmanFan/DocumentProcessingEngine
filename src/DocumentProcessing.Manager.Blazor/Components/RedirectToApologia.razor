@@ -1,0 +1,15 @@
+@inject NavigationManager Navigation
+
+<p>Returning to Apologia Studio…</p>
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Navigation.NavigateTo(
+                "/auth/apologia/login?returnUrl=/",
+                forceLoad: true);
+        }
+    }
+}

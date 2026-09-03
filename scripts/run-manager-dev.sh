@@ -22,6 +22,7 @@ API_KEY="${DPE_MANAGER_API_KEY:-dpengine-manager-local-development-key-2026}"
 CONSUMER_API_KEY="${DPE_MANAGER_CONSUMER_API_KEY:-dpengine-consumer-local-development-key-2026}"
 NOTIFICATION_SHARED_SECRET="${DPE_MANAGER_NOTIFICATION_SHARED_SECRET:-dpengine-notification-local-development-key-2026}"
 DELIVERY_REPLAY_API_KEY="${DPE_MANAGER_DELIVERY_REPLAY_API_KEY:-dpengine-delivery-replay-local-development-key-2026}"
+SESSION_BRIDGE_KEY="${APOLOGIA_MANAGER_SESSION_BRIDGE_KEY:-apologia-manager-session-bridge-local-development-2026}"
 APOLOGIA_NOTIFICATION_URL="${DPE_APOLOGIA_NOTIFICATION_URL:-http://127.0.0.1:5090/internal/document-manager/result-available}"
 CUSTODY_ROOT="${DPE_MANAGER_CUSTODY_ROOT:-${REPO_ROOT}/tests/document_manager_custody}"
 SOURCE_ROOT="${CUSTODY_ROOT}/sources"
@@ -143,6 +144,7 @@ docker info >/dev/null 2>&1 ||
 [[ "${#CONSUMER_API_KEY}" -ge 32 ]] || fail "DPE_MANAGER_CONSUMER_API_KEY must contain at least 32 characters."
 [[ "${#NOTIFICATION_SHARED_SECRET}" -ge 32 ]] || fail "DPE_MANAGER_NOTIFICATION_SHARED_SECRET must contain at least 32 characters."
 [[ "${#DELIVERY_REPLAY_API_KEY}" -ge 32 ]] || fail "DPE_MANAGER_DELIVERY_REPLAY_API_KEY must contain at least 32 characters."
+[[ "${#SESSION_BRIDGE_KEY}" -ge 32 ]] || fail "APOLOGIA_MANAGER_SESSION_BRIDGE_KEY must contain at least 32 characters."
 [[ "$POSTGRES_DATA_ROOT" == /* ]] || fail "DPE_MANAGER_POSTGRES_DATA_ROOT must be an absolute container path."
 
 require_positive_port "DPE_MANAGER_POSTGRES_PORT" "$POSTGRES_PORT"
@@ -223,6 +225,8 @@ env \
   ManagerApi__ApiKey="$API_KEY" \
   ManagerApi__AllowPermanentDeletion=true \
   ManagerApi__ReplayConsumerId=apologia-studio \
+  ManagerIdentity__ApologiaConnectUrl=http://localhost:5090/document-manager/connect \
+  ManagerIdentity__SharedSecret="$SESSION_BRIDGE_KEY" \
   dotnet run \
     --project "$UI_PROJECT" \
     --no-launch-profile &

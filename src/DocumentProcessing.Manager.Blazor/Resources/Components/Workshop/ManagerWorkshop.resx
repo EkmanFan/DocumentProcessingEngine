@@ -72,7 +72,7 @@
   <data name="PurgeProcessed" xml:space="preserve"><value>Delete permanently</value></data>
   <data name="PurgeProcessedLabel" xml:space="preserve"><value>Permanently delete {0} and its unshared custody data</value></data>
   <data name="PurgeProcessedConfirmation" xml:space="preserve"><value>Permanently delete {0}? This cannot be undone. The Manager will remove the processing record, result, visuals, audit trail, and every unshared source artifact. Copies already imported into another system are not deleted.</value></data>
-  <data name="PurgeAdminUnavailableLabel" xml:space="preserve"><value>Permanent custody deletion is reserved for administrators and will be enabled with role-based login.</value></data>
+  <data name="PurgeAdminUnavailableLabel" xml:space="preserve"><value>You do not have permission to permanently delete custody data.</value></data>
   <data name="ReplayDelivery" xml:space="preserve"><value>Send to Apologia again</value></data>
   <data name="ReplayDeliveryLabel" xml:space="preserve"><value>Make every result for {0} available to Apologia again</value></data>
   <data name="ReplayDeliveryConfirmation" xml:space="preserve"><value>Send the complete work {0} to Apologia again? Existing Manager processing and custody will be preserved.</value></data>

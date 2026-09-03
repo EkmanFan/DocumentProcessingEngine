@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Localization;
 using DocumentProcessing.Manager.Blazor.Components;
 using DocumentProcessing.Manager.Blazor.Configuration;
 using DocumentProcessing.Manager.Blazor.DependencyInjection;
+using DocumentProcessing.Manager.Blazor.Security;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Net.Http.Headers;
 
 namespace DocumentProcessing.Manager.Blazor;
@@ -27,9 +30,60 @@ public static class Program
         var embeddingOptions =
             ManagerEmbeddingOptions.Load(
                 builder.Configuration);
+        var identityOptions =
+            ManagerIdentityOptions.Load(
+                builder.Configuration);
 
         builder.Services.AddSingleton(
             embeddingOptions);
+        builder.Services.AddSingleton(identityOptions);
+        builder.Services.AddSingleton<ManagerSessionNonceStore>();
+        builder.Services.AddSingleton<ManagerSessionTicketValidator>();
+        builder.Services.AddSingleton<ManagerSessionPrincipalValidator>();
+        builder.Services.AddSingleton(TimeProvider.System);
+
+        builder.Services
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme =
+                    ManagerAuthenticationDefaults.Scheme;
+                options.DefaultChallengeScheme =
+                    ManagerAuthenticationDefaults.Scheme;
+                options.DefaultSignInScheme =
+                    ManagerAuthenticationDefaults.Scheme;
+            })
+            .AddCookie(
+                ManagerAuthenticationDefaults.Scheme,
+                options =>
+                {
+                    options.Cookie.Name =
+                        ".DocumentProcessing.Manager.Human";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.IsEssential = true;
+                    options.Cookie.SameSite =
+                        Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+                    options.Cookie.SecurePolicy =
+                        CookieSecurePolicy.SameAsRequest;
+                    options.LoginPath = "/auth/apologia/login";
+                    options.AccessDeniedPath = "/auth/access-denied";
+                    options.ExpireTimeSpan = identityOptions.SessionLifetime;
+                    options.SlidingExpiration = false;
+                });
+        builder.Services.AddAuthorization(options =>
+        {
+            foreach (var permission in ManagerPermissions.All)
+            {
+                options.AddPolicy(
+                    permission,
+                    policy => policy.RequireClaim(
+                        ManagerAuthenticationDefaults.PermissionClaimType,
+                        permission));
+            }
+        });
+        builder.Services.AddCascadingAuthenticationState();
+        builder.Services.AddScoped<
+            AuthenticationStateProvider,
+            ManagerRevalidatingAuthenticationStateProvider>();
 
         if (embeddingOptions.IsEnabled)
         {
@@ -117,13 +171,17 @@ public static class Program
                 });
         }
 
+        application.UseAuthentication();
+        application.UseAuthorization();
         application.UseAntiforgery();
 
         application.MapStaticAssets();
+        application.MapManagerIdentityEndpoints();
 
         application
             .MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode();
+            .AddInteractiveServerRenderMode()
+            .RequireAuthorization(ManagerPermissions.Operate);
 
         application.Run();
     }

@@ -16,6 +16,11 @@ export ManagerApi__MaximumUploadBytes='2147483648'
 export ManagerApi__AllowPermanentDeletion='false'
 # Optional; displays “Send to Apologia again” for completed submissions.
 export ManagerApi__ReplayConsumerId='apologia-studio'
+# Required human-session bridge. Must match Apologia Studio.
+export ManagerIdentity__ApologiaConnectUrl='https://studio.apologia.example/document-manager/connect'
+export ManagerIdentity__SharedSecret='a-distinct-secret-with-at-least-32-characters'
+# Optional; defaults to five minutes and is intentionally not sliding.
+export ManagerIdentity__SessionLifetimeMinutes='5'
 # Optional; source streaming defaults to one hour independently of short API calls.
 export ManagerApi__SubmissionTimeoutSeconds='3600'
 # Optional; result streaming through the authenticated Blazor circuit also defaults to one hour.
@@ -42,13 +47,19 @@ PostgreSQL remains available for the next run. The launcher also creates and
 prints the development visual directory that can be selected in Settings.
 
 The API key remains in the server process and is never sent to the browser.
+The browser enters through a signed, 30-second, one-use Apologia ticket and
+receives a separate HTTP-only Manager session. Opening the Manager directly
+redirects through Apologia Studio; the Manager has no independent human login.
+`manager.operate` protects the workshop, `manager.delivery.replay` protects
+delivery replay, and `manager.custody.purge` protects permanent custody deletion.
 Permanent deletion is disabled by default in both the UI and Host. The local
 `scripts/run-manager-dev.sh` launcher enables it explicitly for test work. The
 action requires confirmation and removes the terminal processing record,
 result, visuals, audit trail and every source artifact that is not shared by
 another submission. It does not remove copies already imported by downstream
 systems. A production deployment must keep the flag disabled until its
-administrator authorization boundary is configured.
+administrator authorization boundary is configured. See
+[`docs/security/apologia-human-session-v1.md`](../../docs/security/apologia-human-session-v1.md).
 
 When `ManagerApi:ReplayConsumerId` is configured, a completed item also offers
 “Send to Apologia again”. This reopens every result delivery for the complete

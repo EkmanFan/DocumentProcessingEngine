@@ -1,6 +1,26 @@
 @page "/"
+@attribute [Authorize(Policy = ManagerPermissions.Operate)]
 @inject IStringLocalizer<StandaloneUiResources> Localizer
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>@Localizer["WorkshopTitle"]</PageTitle>
 
-<ManagerWorkshop />
+<ManagerWorkshop CanReplayDelivery="@_canReplayDelivery"
+                 CanPurgeCustody="@_canPurgeCustody" />
+
+@code {
+    private bool _canReplayDelivery;
+    private bool _canPurgeCustody;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var principal = (await AuthenticationStateProvider
+            .GetAuthenticationStateAsync()).User;
+        _canReplayDelivery = principal.HasClaim(
+            ManagerAuthenticationDefaults.PermissionClaimType,
+            ManagerPermissions.ReplayDelivery);
+        _canPurgeCustody = principal.HasClaim(
+            ManagerAuthenticationDefaults.PermissionClaimType,
+            ManagerPermissions.PurgeCustody);
+    }
+}

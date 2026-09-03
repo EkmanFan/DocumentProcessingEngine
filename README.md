@@ -39,7 +39,9 @@ policy.
   submission, queue observation/reordering and result retrieval.
 - Manager workshop: a server-side Blazor adapter presents pending, active and
   completed work with lifecycle controls while retaining the Manager API key
-  outside the browser. Its reusable sprite-animated librarian reflects waiting,
+  outside the browser. A signed, one-use Apologia handoff establishes a
+  short-lived human session and enforces operation, delivery-replay and
+  custody-purge permissions on the server. Its reusable sprite-animated librarian reflects waiting,
   reading, paused, stopped and unavailable states and celebrates newly
   completed work. English and French presentation follows the embedding
   application's ambient .NET culture, with English as the standalone default.
@@ -70,13 +72,15 @@ Host and its Blazor workshop with one command:
 ./scripts/run-manager-dev.sh
 ```
 
-Open `http://127.0.0.1:5092` and press `Ctrl+C` when finished. The Host and UI
+Start Apologia Studio on port `5090`, then open `http://127.0.0.1:5092` or use
+the embedded workspace. Direct access returns through Apologia to establish the
+human session. Press `Ctrl+C` when finished. The Host and UI
 are stopped together; the PostgreSQL container and its named volume remain
 available for the next run. The launcher creates a `visuals` directory below
 the development custody root and prints the path to select in Manager Settings.
 For local testing it also enables the confirmed **Delete permanently** action;
-production configuration keeps that custody purge disabled by default until
-administrator authorization is available.
+production configuration keeps that custody purge disabled by default and
+requires both the feature flag and `manager.custody.purge` permission.
 The launcher also registers the local Apologia Studio callback. When a result
 becomes durable, the Manager wakes Apologia on port `5090`; failed callbacks are
 retried and a five-minute reconciliation remains as a safety net.

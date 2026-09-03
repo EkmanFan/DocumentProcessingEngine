@@ -72,7 +72,7 @@
   <data name="PurgeProcessed" xml:space="preserve"><value>Supprimer définitivement</value></data>
   <data name="PurgeProcessedLabel" xml:space="preserve"><value>Supprimer définitivement {0} et ses données de custody non partagées</value></data>
   <data name="PurgeProcessedConfirmation" xml:space="preserve"><value>Supprimer définitivement {0} ? Cette action est irréversible. Le Manager supprimera le traitement, le résultat, les visuels, la trace d’audit et tous les artefacts source non partagés. Les copies déjà importées dans un autre système ne seront pas supprimées.</value></data>
-  <data name="PurgeAdminUnavailableLabel" xml:space="preserve"><value>La suppression totale de la custody est réservée aux administrateurs et sera activée avec la connexion par rôles.</value></data>
+  <data name="PurgeAdminUnavailableLabel" xml:space="preserve"><value>Vous n’avez pas le droit de supprimer définitivement les données de custody.</value></data>
   <data name="ReplayDelivery" xml:space="preserve"><value>Renvoyer vers Apologia</value></data>
   <data name="ReplayDeliveryLabel" xml:space="preserve"><value>Remettre tous les résultats de {0} à disposition d’Apologia</value></data>
   <data name="ReplayDeliveryConfirmation" xml:space="preserve"><value>Renvoyer l’ouvrage complet {0} vers Apologia ? Le traitement et la custody du Manager seront conservés.</value></data>

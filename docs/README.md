@@ -35,6 +35,7 @@ The root [README](../README.md) is the current operational entry point.
 | `evaluation/allison-targeted-pdf-quality-v1.md` | Current validation | Four-window Allison PDF/EPUB qualification, semi-blind control, and human sign-off oracle. |
 | `evaluation/habermas-p28-figure-title-review-v1.md` | Current validation | Result-impact review of the known p28 provider `figure_title` misclassification. |
 | `integration/result-publication-v1.md` | Current contract | Durable ResultAvailable claim/ack protocol, readable export and Apologia integration rules. |
+| `security/apologia-human-session-v1.md` | Current contract | One-use Apologia session handoff, Manager permissions and human/service identity separation. |
 | `epub/epub-1-validation-boundary-v1.md` | Current design | Official EPUBCheck boundary and its integration with native non-paged EPUB processing. |
 | `epub/epub-publication-export-prototype-v1.md` | Current prototype | Reflowable EPUB writing from `DocumentProcessingResult`, current limits and first Ehrman experiment. |
 | `evaluation/` | Historical evidence | Reproducible corpus, diagnostic, performance and semantic observations. |
