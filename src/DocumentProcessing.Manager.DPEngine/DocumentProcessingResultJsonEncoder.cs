@@ -33,6 +33,9 @@ public sealed class DocumentProcessingResultJsonEncoder
     private const string EpubKind =
         "epub";
 
+    private const string EpubVisualKind =
+        "epub-visual";
+
     private static readonly JsonSerializerOptions
         SerializerOptions =
             CreateSerializerOptions();
@@ -245,6 +248,11 @@ public sealed class DocumentProcessingResultJsonEncoder
                         writer,
                         epub);
                     return;
+                case EpubVisualSourceLocation visual:
+                    WriteEpubVisual(
+                        writer,
+                        visual);
+                    return;
                 default:
                     throw new NotSupportedException(
                         "Portable result encoding does not support source " +
@@ -300,6 +308,44 @@ public sealed class DocumentProcessingResultJsonEncoder
                 writer,
                 "fragmentId",
                 epub.FragmentId);
+
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// A visual carries its own coordinates: the content resource that
+        /// references it, the image resource itself, and which occurrence it is.
+        /// They are distinct from a text position and are written under their
+        /// own kind rather than flattened into one.
+        /// </summary>
+        private static void WriteEpubVisual(
+            Utf8JsonWriter writer,
+            EpubVisualSourceLocation visual)
+        {
+            writer.WriteStartObject();
+            writer.WriteString(
+                "kind",
+                EpubVisualKind);
+            writer.WriteNumber(
+                "spineIndex",
+                visual.SpineIndex);
+            writer.WriteString(
+                "contentResourcePath",
+                visual.ContentResourcePath);
+            writer.WriteString(
+                "imageResourcePath",
+                visual.ImageResourcePath);
+            writer.WriteNumber(
+                "occurrenceIndex",
+                visual.OccurrenceIndex);
+            writer.WriteBoolean(
+                "isAuxiliary",
+                visual.IsAuxiliary);
+
+            WriteOptionalString(
+                writer,
+                "fragmentId",
+                visual.FragmentId);
 
             writer.WriteEndObject();
         }

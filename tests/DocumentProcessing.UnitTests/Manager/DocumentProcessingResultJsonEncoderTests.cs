@@ -350,6 +350,63 @@ public sealed class DocumentProcessingResultJsonEncoderTests
                 out _));
     }
 
+    /// <summary>
+    /// A visual carries its own EPUB coordinates, distinct from a text
+    /// position.
+    /// </summary>
+    /// <remarks>
+    /// This case was missed by the first pass of the encoder and surfaced only
+    /// when a real illustrated EPUB traversed the host: a synthetic package
+    /// without images never produces it. The fail-closed converter is what made
+    /// it visible instead of silently dropping the visual's provenance.
+    /// </remarks>
+    [Fact]
+    public void Epub_visual_location_is_encoded_under_its_own_kind()
+    {
+        var location =
+            ElementLocation(
+                Encode(
+                    BuildResult(
+                        BuildEpubStructure(),
+                        new EpubVisualSourceLocation(
+                            2,
+                            "OEBPS/chapter-1.xhtml",
+                            "OEBPS/images/figure-1.png",
+                            1,
+                            "figure-1",
+                            true))));
+
+        Assert.Equal(
+            "epub-visual",
+            location.GetProperty(
+                    "kind")
+                .GetString());
+        Assert.Equal(
+            "OEBPS/chapter-1.xhtml",
+            location.GetProperty(
+                    "contentResourcePath")
+                .GetString());
+        Assert.Equal(
+            "OEBPS/images/figure-1.png",
+            location.GetProperty(
+                    "imageResourcePath")
+                .GetString());
+        Assert.Equal(
+            1,
+            location.GetProperty(
+                    "occurrenceIndex")
+                .GetInt32());
+        Assert.True(
+            location.GetProperty(
+                    "isAuxiliary")
+                .GetBoolean());
+
+        Assert.False(
+            location.TryGetProperty(
+                "physicalPageNumber",
+                out _));
+    }
+
     #endregion
 
     #region Methods Contract
