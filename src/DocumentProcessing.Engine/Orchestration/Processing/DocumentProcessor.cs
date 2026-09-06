@@ -478,7 +478,9 @@ public sealed class DocumentProcessor
             DocumentProcessingResultProjector
             .Project(
                 model.PagedModel,
-                model.Notes);
+                model.Notes,
+                DocumentMetadataReconciler.Reconcile(
+                    evidence.DocumentMetadata));
 
         ReportProgress(
             progressReporter,

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using DocumentProcessing.Layout.Adapters.PpStructureV3;
+using DocumentProcessing.Core.Results;
 using DocumentProcessing.Manager.Control;
 using DocumentProcessing.Manager.Custody;
 using DocumentProcessing.Manager.DPEngine;
@@ -1110,7 +1111,7 @@ public sealed class PostgresManagerPersistenceTests
                     byteLength:
                         123),
                 "application/json",
-                "document-processing-result-v4",
+                DocumentProcessingResult.SchemaVersionId,
                 now));
 
         Assert.True(
@@ -2733,7 +2734,7 @@ public sealed class PostgresManagerPersistenceTests
                 json.RootElement;
 
             Assert.Equal(
-                "document-processing-result-v4",
+                DocumentProcessingResult.SchemaVersionId,
                 root.GetProperty(
                         "schemaVersion")
                     .GetString());

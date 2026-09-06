@@ -25,7 +25,7 @@ public sealed record DocumentProcessingResult
     /// contract.
     /// </summary>
     public const string SchemaVersionId =
-        "document-processing-result-v4";
+        "document-processing-result-v5";
 
     #endregion
 
@@ -46,6 +46,18 @@ public sealed record DocumentProcessingResult
     /// Gets optional format-appropriate structural source custody.
     /// </summary>
     public DocumentSourceStructure? SourceStructure { get; }
+
+    /// <summary>
+    /// Gets neutral document metadata concluded by the engine.
+    /// </summary>
+    /// <remarks>
+    /// Describes the intellectual document, never the file that carried it:
+    /// <see cref="DocumentSourceDescriptor.FileName"/> is source identity and is
+    /// never promoted here. A result whose source states nothing carries
+    /// <see cref="DocumentMetadata.Empty"/> rather than null, so a consumer
+    /// branches on the values it needs instead of on the container.
+    /// </remarks>
+    public DocumentMetadata DocumentMetadata { get; }
 
     /// <summary>
     /// Gets deterministic processing-component custody.
@@ -113,7 +125,8 @@ public sealed record DocumentProcessingResult
         IReadOnlyList<DocumentVisualAsset> visualAssets,
         DocumentProcessingQualityObservations qualityObservations,
         DocumentSourceStructure? sourceStructure = null,
-        IReadOnlyList<DocumentNote>? notes = null)
+        IReadOnlyList<DocumentNote>? notes = null,
+        DocumentMetadata? documentMetadata = null)
     {
         Source =
             source ??
@@ -147,6 +160,10 @@ public sealed record DocumentProcessingResult
 
         SourceStructure =
             sourceStructure;
+
+        DocumentMetadata =
+            documentMetadata ??
+            DocumentMetadata.Empty;
 
         var elementArray =
             CopyWithoutNulls(

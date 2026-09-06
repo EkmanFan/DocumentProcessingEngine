@@ -592,7 +592,9 @@ internal static class StructuredNativeDocumentProjector
             evidence.SourceStructure,
             ProjectNotes(
                 structuredNotes,
-                elementsByNativeLocation));
+                elementsByNativeLocation),
+            DocumentMetadataReconciler.Reconcile(
+                evidence.DocumentMetadata));
 
         ReportProgress(
             progressReporter,

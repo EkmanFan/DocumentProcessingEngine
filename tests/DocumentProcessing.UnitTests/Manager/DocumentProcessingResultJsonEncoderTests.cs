@@ -446,6 +446,118 @@ public sealed class DocumentProcessingResultJsonEncoderTests
             StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Concluded metadata crosses the Manager boundary with its provenance.
+    /// </summary>
+    /// <remarks>
+    /// Provenance is what lets a consumer tell a publisher's own title from an
+    /// inferred one. Carrying the value without it would leave the consumer
+    /// exactly where it was before: unable to distinguish a real title from a
+    /// filename.
+    /// </remarks>
+    [Fact]
+    public void Document_metadata_is_encoded_with_its_provenance()
+    {
+        var metadata =
+            Encode(
+                    BuildResult(
+                        BuildEpubStructure(),
+                        new EpubDocumentSourceLocation(
+                            0,
+                            "OEBPS/chapter-1.xhtml",
+                            0),
+                        new DocumentMetadata(
+                            new DocumentMetadataValue(
+                                "Jesus and the Eyewitnesses",
+                                DocumentMetadataOrigin.Native,
+                                "epub.opf.dc:title"),
+                            subtitle:
+                                null,
+                            description:
+                                null,
+                            contributors:
+                            [
+                                new DocumentMetadataContributor(
+                                    "Bauckham, Richard",
+                                    DocumentMetadataOrigin.Native,
+                                    "epub.opf.dc:creator")
+                            ],
+                            publisher:
+                                null,
+                            language:
+                                new DocumentMetadataValue(
+                                    "en",
+                                    DocumentMetadataOrigin.Native,
+                                    "epub.opf.dc:language"),
+                            dates:
+                            [
+                                new DocumentMetadataDate(
+                                    "2017-04-28",
+                                    DocumentMetadataDateKind.Unspecified,
+                                    DocumentMetadataOrigin.Native,
+                                    "epub.opf.dc:date")
+                            ])))
+                .RootElement
+                .GetProperty(
+                    "documentMetadata");
+
+        var title =
+            metadata.GetProperty(
+                "title");
+
+        Assert.Equal(
+            "Jesus and the Eyewitnesses",
+            title.GetProperty(
+                    "value")
+                .GetString());
+        Assert.Equal(
+            "native",
+            title.GetProperty(
+                    "origin")
+                .GetString());
+        Assert.Equal(
+            "epub.opf.dc:title",
+            title.GetProperty(
+                    "sourceHint")
+                .GetString());
+
+        Assert.Equal(
+            "en",
+            metadata.GetProperty(
+                    "language")
+                .GetProperty(
+                    "value")
+                .GetString());
+        Assert.Equal(
+            "Bauckham, Richard",
+            metadata.GetProperty(
+                    "contributors")
+                .EnumerateArray()
+                .First()
+                .GetProperty(
+                    "statement")
+                .GetString());
+        Assert.Equal(
+            "unspecified",
+            metadata.GetProperty(
+                    "dates")
+                .EnumerateArray()
+                .First()
+                .GetProperty(
+                    "kind")
+                .GetString());
+
+        // Absent values are absent, never a placeholder.
+        Assert.False(
+            metadata.TryGetProperty(
+                "subtitle",
+                out _));
+        Assert.False(
+            metadata.TryGetProperty(
+                "publisher",
+                out _));
+    }
+
     [Fact]
     public void Schema_version_is_advertised_and_matches_the_payload()
     {
@@ -559,7 +671,8 @@ public sealed class DocumentProcessingResultJsonEncoderTests
 
     private static DocumentProcessingResult BuildResult(
         DocumentSourceStructure structure,
-        DocumentSourceLocation location)
+        DocumentSourceLocation location,
+        DocumentMetadata? documentMetadata = null)
     {
         const string text =
             "Ordered documentary content.";
@@ -661,7 +774,10 @@ public sealed class DocumentProcessingResultJsonEncoderTests
                 [],
             DocumentProcessingQualityObservations.Empty,
             sourceStructure:
-                structure);
+                structure,
+            notes:
+                null,
+            documentMetadata);
     }
 
     private sealed record FutureDocumentSourceStructure

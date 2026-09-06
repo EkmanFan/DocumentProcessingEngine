@@ -26,7 +26,8 @@ internal static class DocumentProcessingResultProjector
 
     public static DocumentProcessingResult Project(
         PagedDocumentProcessingModel pagedModel,
-        IReadOnlyList<DocumentNote> notes)
+        IReadOnlyList<DocumentNote> notes,
+        DocumentMetadata? documentMetadata = null)
     {
         ArgumentNullException.ThrowIfNull(
             pagedModel);
@@ -149,7 +150,8 @@ internal static class DocumentProcessingResultProjector
             visualAssets,
             quality,
             sourceStructure,
-            projectedNotes);
+            projectedNotes,
+            documentMetadata);
     }
 
     #endregion
