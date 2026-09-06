@@ -8,3 +8,6 @@ riderModule.iml
 
 # Temporary implementation artifacts
 scripts/tmp/
+
+# Runtime output produced by the evaluation tools, local to each machine.
+var/
