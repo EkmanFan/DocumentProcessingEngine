@@ -37,12 +37,16 @@ The missing control was restored locally on 2026-09-07 and the suite is green
 again: 1012 of 1012 unit tests, 54 of 54 integration tests. **That resolves the
 symptom, not the defect.**
 
-The corpus is excluded from version control by design, through
-`.git/info/exclude` rather than `.gitignore`, so it is local to each machine and
-absent from a fresh clone. The skip path therefore is not an edge case reached by
-accident: it is the path every machine without the corpus takes, including CI and
-any new developer. The next one to take it will be blocked exactly as this one
-was.
+The corpus is excluded from version control **for copyright reasons**: the
+controls are purchased books, and publishing them in a public repository would
+expose them to free download. That is not negotiable and will not change. It is
+enforced through `.git/info/exclude`, and no corpus file has ever been committed
+in the repository's history — verified.
+
+The skip path is therefore not an edge case reached by accident. It is the
+**normal** path for every machine that does not hold a private 2.8 GB corpus:
+CI, a fresh clone, any second developer. The next one to take it will be blocked
+exactly as this one was.
 
 ## Suspected cause
 
@@ -76,12 +80,23 @@ cause. Confirming it is the first task below.
    the commit helper passes. Restoring a corpus file is not a validation of this
    fix: the absence case is the one that must be proven.
 
-## Related question, deliberately left open
+## Why skipping is the only admissible behaviour
 
-Whether a missing optional corpus control should skip at all, or whether the
-qualified corpus should be a hard requirement of the suite, is a separate policy
-decision. This task restores the behaviour the code already asks for; it does not
-decide what that behaviour ought to be.
+An earlier draft of this note left open whether the qualified corpus should
+instead become a hard requirement of the suite. It should not, and the reason is
+legal rather than technical: the controls cannot be distributed, so a suite that
+requires them is a suite that cannot pass anywhere but on the machine holding the
+purchased files.
+
+Skipping is consequently a structural requirement of this repository, not a
+convenience. The mechanism the code already reaches for is the right one; only
+its translation by the runner is broken.
+
+That raises one design question worth deciding alongside the fix: a skipped
+control is silent, and a suite can be green while covering far less than it
+appears to. Reporting the skipped-control count explicitly — as the integration
+suite's 28 skips already do — keeps the difference visible between "everything
+passed" and "everything runnable here passed".
 
 ## Verification
 
