@@ -242,7 +242,7 @@ public static class Program
                             configuration.ProviderLifecycle)));
 
         services.AddSingleton<IDocumentProcessingResultEncoder,
-            PagedDocumentProcessingResultJsonEncoder>();
+            DocumentProcessingResultJsonEncoder>();
 
         services.AddSingleton<InMemoryProcessingProgressTracker>();
         services.AddSingleton<IProcessingProgressReporter>(

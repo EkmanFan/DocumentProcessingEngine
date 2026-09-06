@@ -2626,7 +2626,7 @@ public sealed class PostgresManagerPersistenceTests
                     resultStore,
                     context.ResultRegistry,
                     context.ResultRegistry,
-                    new PagedDocumentProcessingResultJsonEncoder(),
+                    new DocumentProcessingResultJsonEncoder(),
                     context.SettingsStore,
                     new FileSystemProcessingVisualAssetStore(),
                     progressReporter);
