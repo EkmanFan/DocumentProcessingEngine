@@ -69,9 +69,11 @@ public sealed record PagedNativeDocumentEvidence
     public PagedNativeDocumentEvidence(
         DocumentExtractionWithRasterObservationsResult currentEvidence,
         ProcessingComponentIdentity? nativeExtractionIdentity,
-        IReadOnlyList<NativeDocumentNote> documentNotes)
+        IReadOnlyList<NativeDocumentNote> documentNotes,
+        NativeDocumentMetadata? documentMetadata = null)
         : base(
-            documentNotes)
+            documentNotes,
+            documentMetadata)
     {
         _currentEvidence =
             currentEvidence ??

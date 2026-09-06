@@ -27,6 +27,15 @@ internal static class Program
 
             if (string.Equals(
                     args[0],
+                    "characterize-native-metadata",
+                    StringComparison.Ordinal))
+            {
+                return await NativeMetadataCharacterizationCli.RunAsync(
+                    args[1..]);
+            }
+
+            if (string.Equals(
+                    args[0],
                     "analyze-epub",
                     StringComparison.Ordinal))
             {

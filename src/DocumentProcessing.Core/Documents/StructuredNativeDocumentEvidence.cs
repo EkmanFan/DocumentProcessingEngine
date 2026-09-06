@@ -56,9 +56,11 @@ public sealed record StructuredNativeDocumentEvidence
         IReadOnlyList<StructuredNativeVisual>? visuals,
         IReadOnlyList<NativeDocumentNote> documentNotes,
         IReadOnlyList<DocumentSourceLocation>?
-            notePayloadCandidateLocations = null)
+            notePayloadCandidateLocations = null,
+        NativeDocumentMetadata? documentMetadata = null)
         : base(
-            documentNotes)
+            documentNotes,
+            documentMetadata)
     {
         SourceStructure =
             sourceStructure ??

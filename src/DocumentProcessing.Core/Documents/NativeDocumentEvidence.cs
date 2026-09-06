@@ -19,6 +19,8 @@ public abstract record NativeDocumentEvidence
     private readonly IReadOnlyList<NativeDocumentNote>
         _documentNotes;
 
+    private readonly NativeDocumentMetadata _documentMetadata;
+
     #endregion
 
     #region Properties
@@ -37,12 +39,24 @@ public abstract record NativeDocumentEvidence
     public IReadOnlyList<NativeDocumentNote> DocumentNotes =>
         _documentNotes;
 
+    /// <summary>
+    /// Gets descriptive metadata facts read from the native representation.
+    /// </summary>
+    /// <remarks>
+    /// Acquisition evidence only. A format adapter that exposes no descriptive
+    /// metadata supplies <see cref="NativeDocumentMetadata.Empty"/> rather than
+    /// null, so a consumer never branches on absence of the container.
+    /// </remarks>
+    public NativeDocumentMetadata DocumentMetadata =>
+        _documentMetadata;
+
     #endregion
 
     #region ctor
 
     private protected NativeDocumentEvidence(
-        IReadOnlyList<NativeDocumentNote> documentNotes)
+        IReadOnlyList<NativeDocumentNote> documentNotes,
+        NativeDocumentMetadata? documentMetadata = null)
     {
         ArgumentNullException.ThrowIfNull(
             documentNotes);
@@ -62,6 +76,10 @@ public abstract record NativeDocumentEvidence
         _documentNotes =
             Array.AsReadOnly(
                 notes);
+
+        _documentMetadata =
+            documentMetadata ??
+            NativeDocumentMetadata.Empty;
     }
 
     #endregion

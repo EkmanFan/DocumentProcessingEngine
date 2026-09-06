@@ -1,0 +1,478 @@
+{
+  "schemaVersion": "document-native-metadata-characterization-v1",
+  "generatedAtUtc": "2026-09-06T21:43:42.7319223+00:00",
+  "sources": [
+    {
+      "format": "epub",
+      "fileName": "Institution de la Religion Chretienne.epub",
+      "acquired": true,
+      "title": {
+        "value": "Institution de la Religion Chr\u00E9tienne (French Edition)",
+        "sourceHint": "epub.opf.dc:title"
+      },
+      "description": {
+        "value": "Lire aujourd\u0027hui Calvin, c\u0027est un peu comme visiter la tour de Constance ou le Mus\u00E9e du d\u00E9sert : soudain, la R\u00E9forme protestante, dont nous avions tous entendu parler, devient vivante devant nos yeux. Et cependant, la plupart des chr\u00E9tiens se r\u00E9clamant du protestantisme, n\u0027ont jamais lu trois pages de l\u0027Institution, l\u0027ouvrage majeur du  grand r\u00E9formateur. Cher, d\u00E9mesur\u00E9, \u00E9crit en vieux fran\u00E7ais, il intimide...  Ici le num\u00E9rique facilite consid\u00E9rablement la visite de ce monument th\u00E9ologique, \u00E0 travers lequel se sont form\u00E9es des g\u00E9n\u00E9rations de pasteurs. Pour un prix minime, il fournit : deux introductions, l\u0027une \u00E9rudite, l\u0027autre \u00E9difiante ; un petit glossaire qui montre que le patois de Calvin n\u0027est en fait pas plus difficile \u00E0 d\u00E9crypter que les SMS ou que l\u0027argot des banlieues ; le texte int\u00E9gral avec notes ; de nombreux hyperliens permettant de naviguer rapidement entre les sections, et d\u0027acc\u00E9der \u00E0 toutes les citations bibliques, in extenso.\n\nLire l\u0027Institution, n\u0027apporte pas seulement au chr\u00E9tien \u00E9vang\u00E9lique une satisfaction culturelle ; car qu\u0027il partage ou non toutes les positions doctrinales de Calvin, son verbe dense et vigoureux, ses r\u00E9f\u00E9rences constantes \u00E0 la Parole de Dieu, nourriront sa pens\u00E9e et fortifieront son assurance dans le salut gratuit et parfait qui se trouve en J\u00E9sus-Christ.",
+        "sourceHint": "epub.opf.dc:description"
+      },
+      "contributors": [
+        {
+          "value": "Calvin, Jean",
+          "sourceHint": "epub.opf.dc:creator"
+        }
+      ],
+      "publisher": {
+        "value": "\u00C9ditions Th\u00E9oTeX",
+        "sourceHint": "epub.opf.dc:publisher"
+      },
+      "language": {
+        "value": "fr",
+        "sourceHint": "epub.opf.dc:language"
+      },
+      "dates": [
+        {
+          "value": "2023-04-20",
+          "sourceHint": "epub.opf.dc:date"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "epub",
+      "fileName": "Jesus and the Eyewitnesses - The Gospels as Eyewitness Testimony - Richard Bauckham.epub",
+      "acquired": true,
+      "title": {
+        "value": "Jesus and the Eyewitnesses, 2nd ed.: The Gospels as Eyewitness Testimony",
+        "sourceHint": "epub.opf.dc:title"
+      },
+      "contributors": [
+        {
+          "value": "Bauckham, Richard",
+          "sourceHint": "epub.opf.dc:creator"
+        }
+      ],
+      "publisher": {
+        "value": "Eerdmans",
+        "sourceHint": "epub.opf.dc:publisher"
+      },
+      "language": {
+        "value": "en",
+        "sourceHint": "epub.opf.dc:language"
+      },
+      "dates": [
+        {
+          "value": "2017-04-28",
+          "sourceHint": "epub.opf.dc:date"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "epub",
+      "fileName": "La Septante Grec-Francais - Ouvrage Collectif.epub",
+      "acquired": true,
+      "title": {
+        "value": "La Septante Grec-Fran\u00E7ais (French Edition)",
+        "sourceHint": "epub.opf.dc:title"
+      },
+      "description": {
+        "value": "La Septante est la premi\u00E8re traduction grecque de l\u0027Ancien Testament, commenc\u00E9e environ deux si\u00E8cles avant J\u00E9sus-Christ, \u00E0 Alexandrie en Egypte. Son nom lui vient d\u0027une tradition selon laquelle soixante-dix rabbins auraient particip\u00E9 \u00E0 cette t\u00E2che. La l\u00E9gende veut m\u00EAme que, chacun d\u0027eux ayant \u00E9t\u00E9 enferm\u00E9 s\u00E9par\u00E9ment dans une cellule, ils en soient sortis avec des traductions en tous points identiques ! La Septante \u00E9tait la version la plus r\u00E9pandue parmi les juifs du temps de J\u00E9sus. La diaspora avait en effet commenc\u00E9 bien avant la destruction du temple et les juifs pratiquaient couramment la Koin\u00E9, la langue grecque commune. Paul connaissait ce texte grec, J\u00E9sus lui-m\u00EAme l\u0027avait peut-\u00EAtre lu. Les traducteurs de la Septante avaient un usage de l\u0027h\u00E9breu contemporain et leur traduction peut nous aider \u00E0 comprendre le sens d\u0027un petit nombre de mots obscurs ; de plus ils disposaient de textes originaux aujourd\u0027hui disparus. Pour toutes ces raisons et plusieurs autres, tout bibliste doit se familiariser avec ce monument \u00E9ternel de l\u0027antiquit\u00E9. Cette \u00E9dition num\u00E9rique bilingue, Grec-Fran\u00E7ais, a pour but de permettre \u00E0 l\u0027amateur de Grec biblique de lire dans la langue originale, en pouvant s\u0027assurer imm\u00E9diatement de sa compr\u00E9hension.",
+        "sourceHint": "epub.opf.dc:description"
+      },
+      "contributors": [
+        {
+          "value": "Collectif, Ouvrage",
+          "sourceHint": "epub.opf.dc:creator"
+        }
+      ],
+      "publisher": {
+        "value": "\u00C9ditions Th\u00E9oTeX",
+        "sourceHint": "epub.opf.dc:publisher"
+      },
+      "language": {
+        "value": "fr",
+        "sourceHint": "epub.opf.dc:language"
+      },
+      "dates": [
+        {
+          "value": "2023-04-20",
+          "sourceHint": "epub.opf.dc:date"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "epub",
+      "fileName": "Logic and Philosophy - William H. Brenner.epub",
+      "acquired": true,
+      "title": {
+        "value": "Logic and Philosophy",
+        "sourceHint": "epub.opf.dc:title"
+      },
+      "contributors": [
+        {
+          "value": "Brenner, William H.",
+          "sourceHint": "epub.opf.dc:creator"
+        }
+      ],
+      "publisher": {
+        "value": "University of Notre Dame Press",
+        "sourceHint": "epub.opf.dc:publisher"
+      },
+      "language": {
+        "value": "en-US",
+        "sourceHint": "epub.opf.dc:language"
+      },
+      "dates": [
+        {
+          "value": "1993-09-30",
+          "sourceHint": "epub.opf.dc:date"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "epub",
+      "fileName": "The New Testament_ A Historical Introduction to the Early Christian Writings.epub",
+      "acquired": true,
+      "title": {
+        "value": "The New Testament: A Historical Introduction to the Early Christian Writings (8th ed.)",
+        "sourceHint": "epub.opf.dc:title"
+      },
+      "contributors": [
+        {
+          "value": "Bart D. Ehrman",
+          "sourceHint": "epub.opf.dc:creator"
+        },
+        {
+          "value": "Hugo M\u00E9ndez",
+          "sourceHint": "epub.opf.dc:creator"
+        },
+        {
+          "value": "calibre (9.11.0) [https://calibre-ebook.com]",
+          "sourceHint": "epub.opf.dc:contributor"
+        }
+      ],
+      "language": {
+        "value": "en",
+        "sourceHint": "epub.opf.dc:language"
+      },
+      "dates": [
+        {
+          "value": "0101-01-01T00:00:00\u002B00:00",
+          "sourceHint": "epub.opf.dc:date"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "epub",
+      "fileName": "The New Testament_ A Historical Introduction to the Early Christian Writings_OCR.epub",
+      "acquired": true,
+      "title": {
+        "value": "The New Testament: A Historical Introduction to the Early Christian Writings (8th ed.)",
+        "sourceHint": "epub.opf.dc:title"
+      },
+      "description": {
+        "value": "None",
+        "sourceHint": "epub.opf.dc:description"
+      },
+      "contributors": [
+        {
+          "value": "Bart D. Ehrman",
+          "sourceHint": "epub.opf.dc:creator"
+        },
+        {
+          "value": "Hugo M\u00E9ndez",
+          "sourceHint": "epub.opf.dc:creator"
+        },
+        {
+          "value": "calibre (9.11.0) [https://calibre-ebook.com]",
+          "sourceHint": "epub.opf.dc:contributor"
+        }
+      ],
+      "language": {
+        "value": "en",
+        "sourceHint": "epub.opf.dc:language"
+      },
+      "dates": [
+        {
+          "value": "0101-01-01T00:00:00\u002B00:00",
+          "sourceHint": "epub.opf.dc:date"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "epub",
+      "fileName": "habermas-case-for-resurrection.epub",
+      "acquired": true,
+      "title": {
+        "value": "The Case for the Resurrection of Jesus",
+        "sourceHint": "epub.opf.dc:title"
+      },
+      "contributors": [
+        {
+          "value": "Unknown",
+          "sourceHint": "epub.opf.dc:creator"
+        }
+      ],
+      "publisher": {
+        "value": "Kregel Publications",
+        "sourceHint": "epub.opf.dc:publisher"
+      },
+      "language": {
+        "value": "en-US",
+        "sourceHint": "epub.opf.dc:language"
+      },
+      "dates": [
+        {
+          "value": "2004-03-26",
+          "sourceHint": "epub.opf.dc:date"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "From Peter to Papal Supremacy: A Structured Inferential-Cost Analysis of the Roman Catholic Case V4 FR.pdf",
+      "acquired": true,
+      "contributors": [],
+      "dates": [
+        {
+          "value": "D:20260904014728\u002B02\u002700\u0027",
+          "sourceHint": "pdf.info.creationDate"
+        },
+        {
+          "value": "D:20260904014728\u002B02\u002700\u0027",
+          "sourceHint": "pdf.info.modificationDate"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "Institution de la Religion Chretienne - Jean Calvin.pdf",
+      "acquired": true,
+      "title": {
+        "value": "Institution de la Religion Chr\u00E9tienne (French Edition)",
+        "sourceHint": "pdf.info.title"
+      },
+      "contributors": [
+        {
+          "value": "Jean Calvin",
+          "sourceHint": "pdf.info.author"
+        }
+      ],
+      "dates": [
+        {
+          "value": "D:20260821141408\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.creationDate"
+        },
+        {
+          "value": "D:20260821141408\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.modificationDate"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "Jesus and the Eyewitnesses, 2nd ed._ The Gospels as Eyewitness Testimony - Richard Bauckham.pdf",
+      "acquired": true,
+      "title": {
+        "value": "Jesus and the Eyewitnesses, 2nd ed.: The Gospels as Eyewitness Testimony",
+        "sourceHint": "pdf.info.title"
+      },
+      "contributors": [
+        {
+          "value": "Richard Bauckham",
+          "sourceHint": "pdf.info.author"
+        }
+      ],
+      "dates": [
+        {
+          "value": "D:20260723165741\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.creationDate"
+        },
+        {
+          "value": "D:20260723165741\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.modificationDate"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "La Septante Grec-Francais (French Edition) - Ouvrage Collectif.pdf",
+      "acquired": true,
+      "title": {
+        "value": "La Septante Grec-Fran\u00E7ais (French Edition)",
+        "sourceHint": "pdf.info.title"
+      },
+      "contributors": [
+        {
+          "value": "Ouvrage Collectif",
+          "sourceHint": "pdf.info.author"
+        }
+      ],
+      "dates": [
+        {
+          "value": "D:20260821141357\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.creationDate"
+        },
+        {
+          "value": "D:20260821141357\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.modificationDate"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "Logic and Philosophy - William H. Brenner.pdf",
+      "acquired": true,
+      "title": {
+        "value": "Logic and Philosophy",
+        "sourceHint": "pdf.info.title"
+      },
+      "contributors": [
+        {
+          "value": "William H. Brenner",
+          "sourceHint": "pdf.info.author"
+        }
+      ],
+      "dates": [
+        {
+          "value": "D:20260821141541\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.creationDate"
+        },
+        {
+          "value": "D:20260821141541\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.modificationDate"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "Nicene and Post Nicene Fathers Series II Vol 4.pdf",
+      "acquired": true,
+      "title": {
+        "value": "NPNF2-04. Athanasius: Select Works and Letters",
+        "sourceHint": "pdf.info.title"
+      },
+      "description": {
+        "value": "All; Proofed; Early Church;",
+        "sourceHint": "pdf.info.subject"
+      },
+      "contributors": [
+        {
+          "value": "Athanasius",
+          "sourceHint": "pdf.info.author"
+        }
+      ],
+      "dates": [
+        {
+          "value": "D:20180712055445",
+          "sourceHint": "pdf.info.creationDate"
+        },
+        {
+          "value": "D:20180712055445",
+          "sourceHint": "pdf.info.modificationDate"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "The Case for the Resurrection of Jesus - Gary R. Habernas.pdf",
+      "acquired": true,
+      "title": {
+        "value": "The Case for the Resurrection of Jesus",
+        "sourceHint": "pdf.info.title"
+      },
+      "contributors": [
+        {
+          "value": "Unknown",
+          "sourceHint": "pdf.info.author"
+        }
+      ],
+      "dates": [
+        {
+          "value": "D:20260511075937\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.creationDate"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "Vers une \u00E9cologie des \u00E9motions.pdf",
+      "acquired": true,
+      "contributors": [],
+      "dates": [
+        {
+          "value": "D:20250728221222\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.creationDate"
+        },
+        {
+          "value": "D:20250728221222\u002B00\u002700\u0027",
+          "sourceHint": "pdf.info.modificationDate"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "the-new-testament-a-historical-introduction-to-the-early-christian-writings.pdf",
+      "acquired": true,
+      "title": {
+        "value": "The New Testament: A Historical Introduction to the Early Christian Writings (8th ed.)",
+        "sourceHint": "pdf.info.title"
+      },
+      "contributors": [
+        {
+          "value": "Bart D. Ehrman and Hugo M\u00E9ndez",
+          "sourceHint": "pdf.info.author"
+        }
+      ],
+      "dates": [
+        {
+          "value": "D:20250130213731-06\u002700\u0027",
+          "sourceHint": "pdf.info.creationDate"
+        },
+        {
+          "value": "D:20250130213731-06\u002700\u0027",
+          "sourceHint": "pdf.info.modificationDate"
+        }
+      ],
+      "isEmpty": false
+    },
+    {
+      "format": "pdf",
+      "fileName": "the-new-testament-a-historical-introduction-to-the-early-christian-writings_OCR.pdf",
+      "acquired": true,
+      "title": {
+        "value": "The New Testament: A Historical Introduction to the Early Christian Writings (8th ed.)",
+        "sourceHint": "pdf.info.title"
+      },
+      "contributors": [
+        {
+          "value": "Bart D. Ehrman and Hugo M\u00E9ndez",
+          "sourceHint": "pdf.info.author"
+        }
+      ],
+      "dates": [
+        {
+          "value": "D:20250130213731-06\u002700\u0027",
+          "sourceHint": "pdf.info.creationDate"
+        },
+        {
+          "value": "D:20250130213731-06\u002700\u0027",
+          "sourceHint": "pdf.info.modificationDate"
+        }
+      ],
+      "isEmpty": false
+    }
+  ]
+}

@@ -376,12 +376,17 @@ public sealed class PdfDocumentFormat
                         extractionWithLinks.NativeNumericLinks,
                         cancellationToken);
 
+            var documentMetadata =
+                ReadNativeMetadata(
+                    source);
+
             return new NativeEvidenceExtractionResult
                 .Success(
                     new PagedNativeDocumentEvidence(
                         currentEvidence,
                         NativeExtractionIdentity,
-                        documentNotes));
+                        documentNotes,
+                        documentMetadata));
         }
         catch (OperationCanceledException)
             when (cancellationToken.IsCancellationRequested)
@@ -401,6 +406,52 @@ public sealed class PdfDocumentFormat
         {
             return Invalid(
                 exception);
+        }
+    }
+
+    /// <summary>
+    /// Reads the document information dictionary as native metadata evidence.
+    /// </summary>
+    /// <remarks>
+    /// The document is opened separately, as native navigation and structural
+    /// headings already do. Metadata acquisition must never fail extraction: a
+    /// document whose information dictionary is malformed still yields its text,
+    /// so any failure here degrades to no metadata rather than to no result.
+    /// </remarks>
+    private static NativeDocumentMetadata ReadNativeMetadata(
+        DocumentSource source)
+    {
+        if (!source.Content.CanSeek)
+        {
+            return NativeDocumentMetadata.Empty;
+        }
+
+        // The caller's stream position is part of the acquisition contract and
+        // is restored exactly, not reset: extraction must leave the source as it
+        // found it.
+        var callerPosition =
+            source.Content.Position;
+
+        try
+        {
+            source.Content.Position =
+                0;
+
+            using var document =
+                UglyToad.PdfPig.PdfDocument.Open(
+                    source.Content);
+
+            return PdfNativeMetadataReader.Read(
+                document.Information);
+        }
+        catch (Exception)
+        {
+            return NativeDocumentMetadata.Empty;
+        }
+        finally
+        {
+            source.Content.Position =
+                callerPosition;
         }
     }
 

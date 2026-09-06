@@ -288,7 +288,9 @@ internal sealed class EpubPackageExtractor
                 entries,
                 visualUsages),
             noteExtraction.DocumentNotes,
-            noteExtraction.PayloadCandidateLocations);
+            noteExtraction.PayloadCandidateLocations,
+            EpubNativeMetadataReader.Read(
+                package));
     }
 
     private static IReadOnlyList<EpubSpineItemDescriptor> SelectSpineItems(
